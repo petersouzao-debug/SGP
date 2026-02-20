@@ -1669,6 +1669,9 @@ i.fa .sgp-ico-fill, i.fas .sgp-ico-fill, i.far .sgp-ico-fill, i.fab .sgp-ico-fil
         .evt-aula { background-color: #3b82f6; }
         .evt-prova { background-color: #dc2626; }
         .evt-atividade { background-color: #9333ea; }
+        .evt-planner { background-color: #f59e0b; }
+        .evt-planner.done { background-color: #94a3b8; text-decoration: line-through; opacity:.7; }
+        .evt-freq { background-color: #0d9488; font-size: .6rem !important; }
 
         /* MODAIS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); display: none; justify-content: center; align-items: center; z-index: 9999; }
@@ -3320,6 +3323,13 @@ body.sidebar-hidden main{margin-left:0;}
 
         <div id="viewCalendar" class="calendar-container">
             <div class="cal-header"><button class="cal-nav-btn" data-onclick="mudarMes(-1)">Anterior</button><h2 id="lblMesAno">Mês Ano</h2><button class="cal-nav-btn" data-onclick="mudarMes(1)">Próximo</button></div>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:4px 0 8px;font-size:.72rem;">
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3b82f6;"></span> Aula</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#dc2626;"></span> Prova</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#9333ea;"></span> Atividade</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f59e0b;"></span> Planner</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#0d9488;"></span> Chamada</span>
+            </div>
             <div class="cal-grid" id="calendarGrid"></div>
         </div>
 
@@ -6236,19 +6246,73 @@ function addAulaIndividual(){
             
             const fd=new Date(currAno,currMes,1).getDay(); const dim=new Date(currAno,currMes+1,0).getDate(); const t=new Date();
             for(let i=0;i<fd;i++)htmlBuffer+=`<div></div>`;
+
+            // Build planner tasks lookup by date
+            const plannerByDate={};
+            try{
+              (plannerTasks||[]).forEach(tk=>{
+                if(!tk.date) return;
+                if(!plannerByDate[tk.date]) plannerByDate[tk.date]=[];
+                plannerByDate[tk.date].push(tk);
+              });
+            }catch(_){}
+
+            // Build frequency lookup by date
+            const freqByDate={};
+            try{
+              const freq=window.__sgpFrequencia||{};
+              Object.keys(freq).forEach(key=>{
+                const p=key.split('|');
+                if(filtroTurma!=='Todas' && p[0]!==filtroTurma) return;
+                const dt=p[2]; if(!dt) return;
+                const reg=freq[key]||{};
+                let countP=0,countF=0;
+                Object.keys(reg).forEach(k=>{ if(k==='_meta') return; if(reg[k]==='P') countP++; else if(reg[k]==='F') countF++; });
+                if(countP+countF>0) freqByDate[dt]={P:countP,F:countF,turma:p[0]};
+              });
+            }catch(_){}
+
+            // Build registro de aula lookup
+            const registroByDate={};
+            try{
+              const freq=window.__sgpFrequencia||{};
+              Object.keys(freq).forEach(key=>{
+                const p=key.split('|');
+                if(filtroTurma!=='Todas' && p[0]!==filtroTurma) return;
+                const meta=(freq[key]||{})._meta;
+                if(meta && meta.registroAula) registroByDate[p[2]]=meta.registroAula;
+              });
+            }catch(_){}
             
             for(let d=1;d<=dim;d++){
                 const dt=`${currAno}-${String(currMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const evs=aulas.filter(a=>a.data===dt);
                 let h=''; 
+
+                // Aulas/eventos
                 evs.forEach(e=>{
                     let cClass = 'evt-aula';
                     if(e.tipo === 'prova') cClass = 'evt-prova';
                     if(e.tipo === 'atividade') cClass = 'evt-atividade';
-                    h+=`<div class="cal-event ${cClass}" data-onclick="excluirEventoCal(${__u(e.id)}, event)">${__u(e.turma)}: ${__u(e.tema)}</div>`
+                    h+=`<div class="cal-event ${cClass}" data-onclick="excluirEventoCal(${__u(e.id)}, event)" title="${_escHTML(e.tema||'')}">${__u(e.turma?e.turma+': ':'')}${__u(e.tema)}</div>`
                 });
+
+                // Planner tasks
+                const pTasks=plannerByDate[dt]||[];
+                pTasks.forEach(tk=>{
+                    const isDone=tk.status==='done';
+                    const icon=isDone?'✓':'📋';
+                    h+=`<div class="cal-event evt-planner ${isDone?'done':''}" onclick="try{abrirPlanner();}catch(e){}" title="${_escHTML(tk.title||'')}">${icon} ${_escHTML((tk.title||'').substring(0,20))}</div>`;
+                });
+
+                // Frequency indicator
+                const fr=freqByDate[dt];
+                if(fr){
+                    h+=`<div class="cal-event evt-freq" title="Chamada: ${fr.P}P ${fr.F}F${fr.turma?' — '+fr.turma:''}">📝 ${fr.P}P ${fr.F}F</div>`;
+                }
+
                 const cl=(d===t.getDate()&&currMes===t.getMonth()&&currAno===t.getFullYear())?'cal-today':'';
-                htmlBuffer+=`<div class="cal-day ${cl}" data-onclick="abrirModalEvento('${dt}')"><span class="cal-number">${d}</span>${h}</div>`;
+                htmlBuffer+=`<div class="cal-day ${cl}" data-date="${dt}" data-onclick="abrirModalEvento('${dt}')"><span class="cal-number">${d}</span>${h}</div>`;
             }
             g.innerHTML = htmlBuffer;
         }
@@ -12637,25 +12701,7 @@ try{
   };
 }catch(_){}
 
-// Hook into renderizarCalendario to show registro indicators
-try{
-  const __origRenderCal=renderizarCalendario;
-  renderizarCalendario=function(){
-    __origRenderCal();
-    if(filtroTurma==='Todas') return;
-    const registros=getRegistrosAulaPorData(filtroTurma, bimestreAtual);
-    document.querySelectorAll('.cal-day').forEach(el=>{
-      const date=el.dataset.date;
-      if(date && registros[date] && !el.querySelector('.cal-registro-dot')){
-        const dot=document.createElement('div');
-        dot.className='cal-registro-dot';
-        dot.style.cssText='width:6px;height:6px;background:#0ea5e9;border-radius:50%;margin:2px auto 0;';
-        dot.title='Registro: '+registros[date].registro.substring(0,50);
-        el.appendChild(dot);
-      }
-    });
-  };
-}catch(_){}
+// V13 calendar hook removed — registro indicators now integrated into renderizarCalendario
 
 // ================================================================
 // F4: CONTROLE DE ENTREGAS DE ATIVIDADES
@@ -13913,6 +13959,20 @@ try{
         }
       }
     }catch(_){}
+  };
+}catch(_){}
+
+// ================================================================
+// PLANNER → CALENDAR SYNC
+// ================================================================
+try{
+  const __origPlannerPersist=plannerPersist;
+  plannerPersist=function(){
+    __origPlannerPersist();
+    // Refresh calendar if visible
+    if(visaoAtual==='calendar'){
+      try{ renderizarCalendario(); }catch(_){}
+    }
   };
 }catch(_){}
 
