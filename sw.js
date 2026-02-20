@@ -1,7 +1,7 @@
 // SGP - Service Worker v14
 // Garante funcionamento offline e instalação como PWA
 
-const CACHE_NAME = 'sgp-v14';
+const CACHE_NAME = 'sgp-v15';
 
 // Instala: salva o app no cache
 self.addEventListener('install', event => {

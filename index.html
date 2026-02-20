@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (v14.0 — Melhorias Completas)</title>
+    <title>SGP - Gestão Final (v15.0 — Diário + Mobile)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -118,15 +118,18 @@ i.fa .sgp-ico-fill, i.fas .sgp-ico-fill, i.far .sgp-ico-fill, i.fab .sgp-ico-fil
     "fa-chalkboard":"board",
     "fa-chalkboard-teacher":"board",
     "fa-book":"book",
+    "fa-book-open":"book",
     "fa-clipboard-list":"clipboard",
     "fa-clipboard-check":"checklist",
     "fa-cloud-arrow-up":"upload",
     "fa-list":"list",
     "fa-list-check":"checklist",
+    "fa-bars":"list",
     "fa-calendar":"calendar",
     "fa-calendar-alt":"calendar",
     "fa-calendar-day":"calendar",
     "fa-calendar-week":"calendar",
+    "fa-calendar-check":"calendar",
     "fa-clock":"clock",
     "fa-stopwatch":"stopwatch",
     "fa-play":"play",
@@ -2939,11 +2942,118 @@ input.nota-invalid{border-color:#ef4444!important;background:rgba(239,68,68,.08)
 .audit-ts{color:#64748b;font-size:.72rem;white-space:nowrap;min-width:120px;}
 .audit-msg{flex:1;}
 
+/* ===== V15 FEATURES CSS ===== */
+
+/* F11: Sidebar toggle */
+.sidebar-toggle{
+  position:fixed;top:12px;left:12px;z-index:25;width:40px;height:40px;border-radius:10px;
+  border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);
+  cursor:pointer;display:none;align-items:center;justify-content:center;font-size:1.1rem;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);transition:.2s;
+}
+.sidebar-toggle:hover{background:var(--primary);color:#fff;}
+/* Desktop: toggle hides sidebar completely */
+body.sidebar-hidden .sidebar-toggle{display:flex;}
+body.sidebar-hidden aside{display:none;}
+body.sidebar-hidden main{margin-left:0;}
+/* Mobile: sidebar is drawer overlay */
+@media(max-width:980px){
+  .sidebar-toggle{display:flex!important;z-index:201;}
+  aside{position:fixed;left:0;top:0;bottom:0;z-index:200;width:280px;
+    transform:translateX(-100%);transition:transform .25s ease;overflow-y:auto;}
+  body.sidebar-open aside{transform:translateX(0)!important;display:flex!important;}
+  body:not(.sidebar-open) aside{transform:translateX(-100%);}
+  /* On mobile, sidebar-hidden just means the drawer is closed (default state) */
+  body.sidebar-hidden aside{display:flex;transform:translateX(-100%);}
+  .sidebar-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:199;
+    display:none;opacity:0;transition:opacity .25s;}
+  body.sidebar-open .sidebar-backdrop{display:block;opacity:1;}
+}
+
+/* F12: Mobile PWA improvements */
+@media(max-width:980px){
+  main{padding-top:56px!important;}
+}
+@media(max-width:768px){
+  body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}
+  main{padding:.75rem!important;padding-top:56px!important;}
+  .top-bar{padding:12px!important;gap:10px!important;border-radius:12px!important;}
+  .title-area h1{font-size:1.15rem!important;}
+  .search-bar{font-size:16px!important;padding:12px 40px!important;} /* prevent iOS zoom */
+  .modal-box{max-width:100vw!important;max-height:95vh!important;margin:8px!important;border-radius:14px!important;}
+  .modal-overlay{align-items:flex-end!important;} /* bottom sheet on mobile */
+  .freq-header-row{flex-direction:column;gap:6px;}
+  .freq-table td,.freq-table th{padding:4px 3px!important;font-size:.72rem!important;}
+  .freq-btn{width:36px!important;height:36px!important;font-size:.85rem!important;}
+  .card-stats{flex-direction:column;gap:6px;}
+  .btn-tool{min-width:44px;min-height:44px;}
+  .search-filters-row{gap:4px!important;overflow-x:auto;flex-wrap:nowrap!important;padding-bottom:4px;}
+  .search-filter-chip{padding:6px 8px!important;font-size:.68rem!important;white-space:nowrap;flex-shrink:0;}
+  .controls-section{gap:6px!important;}
+  .top-row{gap:8px!important;}
+  .ata-container,.diario-container{padding:12px!important;max-height:95vh!important;} 
+  .ata-table{font-size:.62rem!important;}
+  .diario-entry-body{grid-template-columns:1fr!important;gap:8px!important;}
+  .comp-turmas-table th,.comp-turmas-table td{padding:5px 4px!important;font-size:.7rem!important;}
+}
+@media(max-width:480px){
+  .view-toggle{grid-template-columns:repeat(3,1fr)!important;}
+  .tools-group{grid-template-columns:repeat(2,1fr)!important;}
+  .bimestre-selector{gap:3px!important;}
+  .btn-bim{padding:8px 4px!important;font-size:.68rem!important;}
+}
+/* Print support for overlays */
+@media print{
+  .diario-overlay,.diario-overlay *,.mensal-overlay-wrap,.mensal-overlay-wrap *{visibility:visible!important;}
+  .diario-overlay,.mensal-overlay-wrap{position:fixed;inset:0;background:#fff!important;}
+  .diario-container,.mensal-container-wrap{width:100%!important;max-width:100%!important;max-height:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important;}
+  .diario-overlay button,.mensal-overlay-wrap button,.sidebar-toggle,.sidebar-backdrop{display:none!important;}
+  aside{display:none!important;}
+  .diario-chamada-mini span{width:18px!important;height:18px!important;font-size:.5rem!important;}
+  .mensal-table{font-size:.55rem!important;}
+  .mensal-table th,.mensal-table td{padding:1px 2px!important;}
+}
+
+/* F4: Diário de Classe */
+.diario-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;display:flex;align-items:center;justify-content:center;}
+.diario-container{background:#fff;color:#1e293b;width:96vw;max-width:1100px;max-height:94vh;overflow-y:auto;border-radius:12px;padding:20px;position:relative;}
+.diario-nav{display:flex;gap:6px;align-items:center;justify-content:center;margin:10px 0;flex-wrap:wrap;}
+.diario-nav button{padding:6px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font-size:.82rem;transition:.15s;}
+.diario-nav button:hover,.diario-nav button.active{background:#0ea5e9;color:#fff;border-color:#0ea5e9;}
+.diario-entry{border:1px solid #e2e8f0;border-radius:10px;margin:10px 0;overflow:hidden;}
+.diario-entry-header{background:#f1f5f9;padding:10px 14px;font-weight:600;font-size:.88rem;display:flex;justify-content:space-between;align-items:center;}
+.diario-entry-body{padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:768px){.diario-entry-body{grid-template-columns:1fr;}}
+.diario-field{font-size:.82rem;}
+.diario-field label{font-weight:600;color:#475569;display:block;margin-bottom:3px;font-size:.72rem;text-transform:uppercase;letter-spacing:.3px;}
+.diario-chamada-mini{display:flex;gap:3px;flex-wrap:wrap;}
+.diario-chamada-mini span{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;}
+.diario-chamada-mini span.P{background:#dcfce7;color:#166534;} .diario-chamada-mini span.F{background:#fee2e2;color:#991b1b;} .diario-chamada-mini span.J{background:#fef9c3;color:#854d0e;}
+
+/* F10: Diário mensal imprimível */
+.mensal-table{width:100%;border-collapse:collapse;font-size:.65rem;}
+.mensal-table th,.mensal-table td{border:1px solid #cbd5e1;padding:2px 3px;text-align:center;min-width:22px;}
+.mensal-table th{background:#f1f5f9;font-weight:600;}
+.mensal-table td.P{background:#dcfce7;color:#166534;} .mensal-table td.F{background:#fee2e2;color:#991b1b;} .mensal-table td.J{background:#fef9c3;color:#854d0e;}
+.mensal-table td.total{font-weight:700;background:#f8fafc;}
+
+/* F8/F9: Comparativo turmas + evolução */
+.comp-turmas-table{width:100%;border-collapse:collapse;margin:12px 0;}
+.comp-turmas-table th,.comp-turmas-table td{padding:8px 10px;border:1px solid var(--border-color);font-size:.82rem;text-align:center;}
+.comp-turmas-table th{background:rgba(14,165,233,.08);font-weight:600;}
+.comp-turmas-table td:first-child{text-align:left;font-weight:600;}
+.comp-turmas-bar{height:8px;border-radius:4px;background:#e2e8f0;overflow:hidden;min-width:60px;}
+.comp-turmas-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
+.dash-evo-chart{margin:12px 0;padding:12px;background:var(--card-bg);border:1px solid var(--border-color);border-radius:12px;}
+
 </style>
 </head>
 <body>
     
     <button class="btn-zen-exit" data-onclick="toggleZenMode()"><i class="fas fa-compress"></i> Sair do Modo Foco</button>
+
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Menu"><i class="fas fa-bars"></i></button>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
 
     <aside>
         <div class="brand"><i class="fas fa-shapes"></i> SGP Pro</div>
@@ -3108,6 +3218,8 @@ input.nota-invalid{border-color:#ef4444!important;background:rgba(239,68,68,.08)
             <button class="search-filter-chip" id="sfFreqBaixa" data-onclick="toggleSearchFilter('freqBaixa')"><i class="fas fa-clock"></i> Frequência &lt; 75%</button>
             <button class="search-filter-chip" id="sfBoletim" data-onclick="gerarBoletimTurma()" style="border-color:#8b5cf6;color:#8b5cf6;"><i class="fas fa-print"></i> Boletim Turma</button>
             <button class="search-filter-chip" id="sfAta" data-onclick="gerarAtaTurma()" style="border-color:#0ea5e9;color:#0ea5e9;"><i class="fas fa-file-signature"></i> Ata da Turma</button>
+            <button class="search-filter-chip" id="sfDiario" data-onclick="abrirDiarioClasse()" style="border-color:#7c3aed;color:#7c3aed;"><i class="fas fa-book-open"></i> Diário</button>
+            <button class="search-filter-chip" id="sfMensal" data-onclick="abrirDiarioMensal()" style="border-color:#0d9488;color:#0d9488;"><i class="fas fa-calendar-check"></i> Mensal</button>
             <button class="search-filter-chip" id="sfAtividades" data-onclick="abrirControleEntregas()" style="border-color:#16a34a;color:#16a34a;"><i class="fas fa-list-check"></i> Entregas</button>
             <button class="search-filter-chip" id="sfAudit" data-onclick="abrirAuditTrail()" style="border-color:#64748b;color:#64748b;"><i class="fas fa-clock"></i> Histórico</button>
         </div>
@@ -13336,8 +13448,546 @@ window.addEventListener('load', function(){
   setTimeout(()=>{
     try{ updateSidebarBadges(); }catch(_){}
     try{ updatePlannerBadge(); }catch(_){}
+    try{ initSidebarMobile(); }catch(_){}
   }, 600);
 });
+
+// ================================================================
+// V15 FEATURES
+// ================================================================
+
+// ================================================================
+// F11: SIDEBAR TOGGLE
+// ================================================================
+function toggleSidebar(){
+  const isMobile = window.innerWidth <= 980;
+  if(isMobile){
+    // Mobile: toggle drawer open/close
+    document.body.classList.toggle('sidebar-open');
+  } else {
+    // Desktop: toggle sidebar hidden/visible
+    document.body.classList.toggle('sidebar-hidden');
+    try{ __safeLSSet('sgp_sidebar_hidden', document.body.classList.contains('sidebar-hidden')?'1':'0'); }catch(_){}
+  }
+}
+
+function initSidebarMobile(){
+  // Restore desktop sidebar state
+  try{
+    const saved=localStorage.getItem('sgp_sidebar_hidden');
+    if(saved==='1' && window.innerWidth > 980) document.body.classList.add('sidebar-hidden');
+  }catch(_){}
+  // Mobile starts with drawer closed
+  if(window.innerWidth <= 980){
+    document.body.classList.remove('sidebar-open');
+  }
+  // Close drawer when clicking a turma on mobile
+  document.querySelector('#listaTurmas')?.addEventListener('click', function(){
+    if(window.innerWidth <= 980) setTimeout(()=>document.body.classList.remove('sidebar-open'), 150);
+  });
+}
+
+// ================================================================
+// F4: DIÁRIO DE CLASSE UNIFICADO
+// ================================================================
+function abrirDiarioClasse(){
+  if(filtroTurma==='Todas') return showToast("Selecione uma turma.","error");
+
+  const freq=window.__sgpFrequencia||{};
+  // Collect all dates with data for this turma+bimestre
+  const dates=[];
+  Object.keys(freq).forEach(key=>{
+    const p=key.split('|');
+    if(p[0]===filtroTurma && parseInt(p[1])===bimestreAtual) dates.push(p[2]);
+  });
+  dates.sort().reverse();
+
+  // Also collect aulas for this turma+bimestre
+  const aulasMap={};
+  (aulas||[]).filter(a=>a.turma===filtroTurma && a.bimestre===bimestreAtual).forEach(a=>{
+    if(a.data) aulasMap[a.data]=a;
+  });
+
+  // Merge dates from aulas too
+  Object.keys(aulasMap).forEach(d=>{ if(!dates.includes(d)) dates.push(d); });
+  dates.sort().reverse();
+
+  const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+
+  let html=`<div class="diario-overlay" id="diarioOverlay" onclick="if(event.target===this)this.remove();">
+  <div class="diario-container">
+    <button style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b;" onclick="document.getElementById('diarioOverlay').remove();">&times;</button>
+    <div style="text-align:center;border-bottom:2px solid #1e293b;padding-bottom:8px;margin-bottom:10px;">
+      <h2 style="margin:0;"><i class="fas fa-book-open"></i> Diário de Classe</h2>
+      <p style="margin:2px 0;font-size:.88rem;color:#475569;">${escHTML(filtroTurma)} — ${bimestreAtual}º Bimestre</p>
+    </div>`;
+
+  if(!dates.length){
+    html+=`<p style="text-align:center;color:#64748b;padding:30px;">Nenhum registro encontrado. Faça chamadas e cadastre aulas para ver o diário.</p>`;
+  }
+
+  dates.forEach(date=>{
+    const key=`${filtroTurma}|${bimestreAtual}|${date}`;
+    const registro=freq[key]||{};
+    const meta=registro._meta||{};
+    const aula=aulasMap[date]||{};
+    const dObj=new Date(date+'T12:00:00');
+    const dataFmt=dObj.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+    // Count P/F/J
+    let countP=0,countF=0,countJ=0;
+    lista.forEach(a=>{
+      const s=registro[a.id]; if(s==='P')countP++; else if(s==='F')countF++; else if(s==='J')countJ++;
+    });
+
+    html+=`<div class="diario-entry">
+      <div class="diario-entry-header">
+        <span>${dataFmt}</span>
+        <span style="font-size:.78rem;color:#64748b;">${meta.qtdAulas||1} aula(s) | ${countP}P ${countF}F ${countJ}J</span>
+      </div>
+      <div class="diario-entry-body">
+        <div class="diario-field">
+          <label><i class="fas fa-book"></i> Conteúdo / Tema</label>
+          <div>${aula.tema?escHTML(aula.tema):'<span style="color:#94a3b8;">—</span>'}</div>
+          ${aula.bncc?`<div style="margin-top:3px;"><span style="background:#ede9fe;color:#7c3aed;padding:1px 6px;border-radius:4px;font-size:.72rem;">BNCC: ${escHTML(aula.bncc)}</span></div>`:''}
+        </div>
+        <div class="diario-field">
+          <label><i class="fas fa-pen"></i> Registro de Aula</label>
+          <div>${meta.registroAula?escHTML(meta.registroAula):'<span style="color:#94a3b8;">—</span>'}</div>
+        </div>
+        <div class="diario-field" style="grid-column:1/-1;">
+          <label><i class="fas fa-users"></i> Chamada</label>
+          <div class="diario-chamada-mini">`;
+    lista.forEach(a=>{
+      const s=registro[a.id]||'';
+      if(s) html+=`<span class="${s}" title="${escHTML(a.nome)}">${s}</span>`;
+    });
+    html+=`</div></div></div></div>`;
+  });
+
+  html+=`<div style="text-align:center;margin-top:14px;display:flex;gap:8px;justify-content:center;">
+      <button style="background:#7c3aed;color:#fff;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+      <button style="background:#475569;color:#fff;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;" onclick="document.getElementById('diarioOverlay').remove();">Fechar</button>
+    </div>
+  </div></div>`;
+
+  const old=document.getElementById('diarioOverlay'); if(old)old.remove();
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+
+// ================================================================
+// F10: DIÁRIO MENSAL IMPRIMÍVEL
+// ================================================================
+function abrirDiarioMensal(){
+  if(filtroTurma==='Todas') return showToast("Selecione uma turma.","error");
+
+  // Show month picker first
+  const now=new Date();
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let pickerHtml=`<div class="diario-overlay" id="mensalPicker" onclick="if(event.target===this)this.remove();">
+  <div class="diario-container" style="max-width:400px;text-align:center;">
+    <h3 style="margin:0 0 14px;"><i class="fas fa-calendar-check"></i> Diário Mensal — Escolha o período</h3>
+    <div style="display:flex;gap:10px;justify-content:center;margin:12px 0;">
+      <select id="mensalMes" style="padding:10px;border-radius:8px;border:1px solid #cbd5e1;font-size:.95rem;flex:1;">`;
+  meses.forEach((n,i)=>{ pickerHtml+=`<option value="${i}" ${i===now.getMonth()?'selected':''}>${n}</option>`; });
+  pickerHtml+=`</select>
+      <input type="number" id="mensalAno" value="${now.getFullYear()}" min="2020" max="2030" style="padding:10px;border-radius:8px;border:1px solid #cbd5e1;font-size:.95rem;width:100px;">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;">
+      <button onclick="gerarDiarioMensal()" style="background:#0d9488;color:#fff;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;"><i class="fas fa-check"></i> Gerar</button>
+      <button onclick="document.getElementById('mensalPicker').remove();" style="background:#64748b;color:#fff;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;">Cancelar</button>
+    </div>
+  </div></div>`;
+  const old=document.getElementById('mensalPicker'); if(old)old.remove();
+  document.body.insertAdjacentHTML('beforeend', pickerHtml);
+}
+
+function gerarDiarioMensal(){
+  const mSel=document.getElementById('mensalMes');
+  const aSel=document.getElementById('mensalAno');
+  if(!mSel||!aSel) return;
+  const m=parseInt(mSel.value), y=parseInt(aSel.value);
+  document.getElementById('mensalPicker')?.remove();
+  if(isNaN(m)||isNaN(y)) return showToast("Dados inválidos.","error");
+
+  const diasNoMes=new Date(y, m+1, 0).getDate();
+  const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  const freq=window.__sgpFrequencia||{};
+  const nomeMes=new Date(y,m,15).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  // Build lookup: date string -> registro
+  const regMap={};
+  Object.keys(freq).forEach(key=>{
+    const p=key.split('|');
+    if(p[0]===filtroTurma) regMap[p[2]]=freq[key];
+  });
+
+  // Find which days have data
+  const diasComDados=[];
+  for(let d=1;d<=diasNoMes;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    if(regMap[ds]) diasComDados.push(d);
+  }
+
+  let html=`<div class="diario-overlay mensal-overlay-wrap" id="mensalOverlay" onclick="if(event.target===this)this.remove();">
+  <div class="diario-container mensal-container-wrap" style="max-width:1200px;">
+    <button style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b;" onclick="document.getElementById('mensalOverlay').remove();">&times;</button>
+    <div style="text-align:center;border-bottom:2px solid #1e293b;padding-bottom:8px;margin-bottom:10px;">
+      <h2 style="margin:0;"><i class="fas fa-calendar-check"></i> Diário de Classe Mensal</h2>
+      <p style="margin:2px 0;font-size:.88rem;color:#475569;">${escHTML(filtroTurma)} — ${nomeMes}</p>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="mensal-table"><thead><tr>
+      <th style="text-align:left;min-width:120px;">#</th>
+      <th style="text-align:left;min-width:150px;">Nome</th>`;
+
+  for(let d=1;d<=diasNoMes;d++){
+    const dow=new Date(y,m,d).getDay();
+    const isWeekend=dow===0||dow===6;
+    html+=`<th style="${isWeekend?'background:#fef3c7;':''}font-size:.6rem;">${d}</th>`;
+  }
+  html+=`<th class="total">P</th><th class="total">F</th><th class="total">J</th><th class="total">%</th></tr></thead><tbody>`;
+
+  // Day totals
+  const dayTotals={}; for(let d=1;d<=diasNoMes;d++) dayTotals[d]={P:0,F:0,J:0};
+
+  lista.forEach((a,i)=>{
+    let tP=0,tF=0,tJ=0;
+    html+=`<tr><td>${i+1}</td><td style="text-align:left;white-space:nowrap;">${escHTML(a.nome)}</td>`;
+    for(let d=1;d<=diasNoMes;d++){
+      const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const reg=regMap[ds];
+      const s=reg?reg[a.id]:'';
+      const dow=new Date(y,m,d).getDay();
+      const isWeekend=dow===0||dow===6;
+      if(s==='P'){tP++;dayTotals[d].P++;} else if(s==='F'){tF++;dayTotals[d].F++;} else if(s==='J'){tJ++;dayTotals[d].J++;}
+      html+=`<td class="${s||''}" style="${isWeekend&&!s?'background:#fef3c7;':''}">${s||''}</td>`;
+    }
+    const total=tP+tF+tJ;
+    const pct=total?(((tP+tJ)/total)*100):0;
+    html+=`<td class="total">${tP}</td><td class="total">${tF}</td><td class="total">${tJ}</td>`;
+    html+=`<td class="total" style="color:${pct>=75?'#16a34a':(pct>=50?'#f59e0b':'#dc2626')};">${pct.toFixed(0)}%</td></tr>`;
+  });
+
+  // Totals row
+  html+=`<tr style="font-weight:700;background:#f1f5f9;"><td colspan="2">Totais do dia</td>`;
+  for(let d=1;d<=diasNoMes;d++){
+    const t=dayTotals[d];
+    html+=`<td style="font-size:.55rem;">${t.P+t.F+t.J>0?(t.P+'P'):'—'}</td>`;
+  }
+  html+=`<td colspan="4"></td></tr>`;
+
+  html+=`</tbody></table></div>
+    <div style="text-align:center;margin-top:14px;display:flex;gap:8px;justify-content:center;">
+      <button style="background:#0d9488;color:#fff;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+      <button style="background:#475569;color:#fff;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;" onclick="document.getElementById('mensalOverlay').remove();">Fechar</button>
+    </div>
+  </div></div>`;
+
+  const old=document.getElementById('mensalOverlay'); if(old)old.remove();
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+
+// ================================================================
+// F8: COMPARATIVO ENTRE TURMAS
+// ================================================================
+function renderComparativoTurmas(){
+  if(filtroTurma!=='Todas' || !turmas.length) return '';
+
+  const d1=getDiscById(config.slot1), d2=getDiscById(config.slot2);
+  const nm1=d1?.nome||config.materia1||'Mat1', nm2=d2?.nome||config.materia2||'Mat2';
+
+  let rows=[];
+  turmas.forEach(t=>{
+    const als=alunos.filter(a=>a.turma===t);
+    if(!als.length) return;
+    let somLp=0, somRed=0, n=0, risco=0, occTotal=0;
+    als.forEach(a=>{
+      const b=a.bimestres[bimestreAtual]; if(!b) return;
+      _syncBimestreRefs(b);
+      const m1=parseFloat(b.media_lp)||0, m2=parseFloat(b.media_red)||0;
+      somLp+=m1; somRed+=m2; n++;
+      if(m1<5||m2<5) risco++;
+      occTotal+=(b.ocorrencias||[]).length;
+    });
+    const avgLp=n?somLp/n:0, avgRed=n?somRed/n:0;
+    const avgGeral=(avgLp+avgRed)/2;
+    // Frequency
+    let freqSum=0;
+    als.forEach(a=>{ freqSum+=calcFreqAluno(a.id,bimestreAtual).pct; });
+    const avgFreq=n?freqSum/n:100;
+
+    rows.push({turma:t, qtd:als.length, avgLp, avgRed, avgGeral, avgFreq, risco, pctRisco:n?(risco/n*100):0, occs:occTotal});
+  });
+
+  if(!rows.length) return '';
+
+  // Sort by media geral desc
+  rows.sort((a,b)=>b.avgGeral-a.avgGeral);
+
+  let html=`<div style="margin-top:16px;"><h3 style="margin:0 0 8px;font-size:.95rem;"><i class="fas fa-chart-bar"></i> Comparativo entre Turmas — ${bimestreAtual}º Bimestre</h3>
+  <div style="overflow-x:auto;">
+  <table class="comp-turmas-table"><thead><tr>
+    <th>Turma</th><th>Alunos</th><th>${escHTML(nm1)}</th><th>${escHTML(nm2)}</th><th>Geral</th>
+    <th>Freq.</th><th>Em Risco</th><th>Ocorr.</th><th>Desempenho</th>
+  </tr></thead><tbody>`;
+
+  const maxGeral=Math.max(...rows.map(r=>r.avgGeral),1);
+  rows.forEach(r=>{
+    const cor=r.avgGeral>=7?'#16a34a':(r.avgGeral>=5?'#f59e0b':'#dc2626');
+    const pctBar=(r.avgGeral/10*100).toFixed(0);
+    html+=`<tr>
+      <td>${escHTML(r.turma)}</td>
+      <td>${r.qtd}</td>
+      <td style="color:${r.avgLp>=5?'#16a34a':'#dc2626'};">${r.avgLp.toFixed(1)}</td>
+      <td style="color:${r.avgRed>=5?'#16a34a':'#dc2626'};">${r.avgRed.toFixed(1)}</td>
+      <td style="font-weight:700;color:${cor};">${r.avgGeral.toFixed(1)}</td>
+      <td style="color:${r.avgFreq>=75?'#16a34a':'#dc2626'};">${r.avgFreq.toFixed(0)}%</td>
+      <td style="color:${r.risco>0?'#dc2626':'#16a34a'};">${r.risco} (${r.pctRisco.toFixed(0)}%)</td>
+      <td>${r.occs}</td>
+      <td><div class="comp-turmas-bar"><div class="comp-turmas-bar-fill" style="width:${pctBar}%;background:${cor};"></div></div></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+  return html;
+}
+
+// ================================================================
+// F9: EVOLUÇÃO TEMPORAL DA TURMA
+// ================================================================
+function renderEvolucaoTurma(){
+  if(filtroTurma==='Todas') return '';
+
+  const als=alunos.filter(a=>a.turma===filtroTurma);
+  if(!als.length) return '';
+
+  const d1=getDiscById(config.slot1), d2=getDiscById(config.slot2);
+  const nm1=d1?.nome||'Mat1', nm2=d2?.nome||'Mat2';
+
+  const data1=[], data2=[], dataGeral=[];
+  [1,2,3,4].forEach(bim=>{
+    let s1=0,s2=0,n=0;
+    als.forEach(a=>{
+      const b=a.bimestres[bim]; if(!b) return;
+      _syncBimestreRefs(b);
+      s1+=parseFloat(b.media_lp)||0;
+      s2+=parseFloat(b.media_red)||0;
+      n++;
+    });
+    data1.push(n?s1/n:0);
+    data2.push(n?s2/n:0);
+    dataGeral.push(n?(s1+s2)/(n*2):0);
+  });
+
+  // Only show if at least 2 bimestres have data
+  const hasData=dataGeral.filter(v=>v>0).length;
+  if(hasData<2) return '';
+
+  const trend=dataGeral[dataGeral.length-1]-dataGeral[0];
+  const trendLabel=trend>0.3?'📈 Tendência positiva':(trend<-0.3?'📉 Tendência negativa':'➡️ Estável');
+  const trendColor=trend>0.3?'#16a34a':(trend<-0.3?'#dc2626':'#64748b');
+
+  let html=`<div class="dash-evo-chart">
+    <h3 style="margin:0 0 6px;font-size:.92rem;display:flex;justify-content:space-between;align-items:center;">
+      <span><i class="fas fa-chart-line"></i> Evolução da Turma — ${escHTML(filtroTurma)}</span>
+      <span style="font-size:.78rem;color:${trendColor};font-weight:600;">${trendLabel}</span>
+    </h3>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0;">`;
+
+  [1,2,3,4].forEach((bim,i)=>{
+    const g=dataGeral[i];
+    const cor=g>=7?'#16a34a':(g>=5?'#f59e0b':'#dc2626');
+    const bg=g>=7?'rgba(22,163,74,.08)':(g>=5?'rgba(245,158,11,.08)':'rgba(220,38,38,.08)');
+    html+=`<div style="text-align:center;padding:10px;border-radius:8px;background:${bg};border:1px solid ${cor}22;">
+      <div style="font-size:.72rem;color:#64748b;">${bim}º Bimestre</div>
+      <div style="font-size:1.5rem;font-weight:800;color:${cor};">${g>0?g.toFixed(1):'—'}</div>
+      <div style="font-size:.68rem;color:#94a3b8;">${escHTML(nm1)}: ${data1[i]>0?data1[i].toFixed(1):'—'} | ${escHTML(nm2)}: ${data2[i]>0?data2[i].toFixed(1):'—'}</div>
+    </div>`;
+  });
+
+  html+=`</div>
+    <canvas id="evoTurmaCanvas" width="500" height="120" style="width:100%;max-height:120px;"></canvas>
+  </div>`;
+  return html;
+}
+
+function drawEvoTurmaChart(){
+  const canvas=document.getElementById('evoTurmaCanvas');
+  if(!canvas) return;
+  const als=alunos.filter(a=>a.turma===filtroTurma);
+  if(!als.length) return;
+
+  const vals=[];
+  [1,2,3,4].forEach(bim=>{
+    let s=0,n=0;
+    als.forEach(a=>{
+      const b=a.bimestres[bim]; if(!b) return;
+      _syncBimestreRefs(b);
+      s+=(parseFloat(b.media_lp)||0)+(parseFloat(b.media_red)||0);
+      n++;
+    });
+    vals.push(n?s/(n*2):0);
+  });
+
+  const W=canvas.width=canvas.offsetWidth*2, H=canvas.height=240;
+  const c=canvas.getContext('2d');
+  const pad={t:20,b:30,l:40,r:20};
+  const pW=W-pad.l-pad.r, pH=H-pad.t-pad.b;
+
+  c.clearRect(0,0,W,H);
+
+  // Grid lines
+  c.strokeStyle='rgba(148,163,184,.15)'; c.lineWidth=1;
+  [0,2,4,5,6,7,8,10].forEach(v=>{
+    const y=pad.t+pH-(v/10)*pH;
+    c.beginPath(); c.moveTo(pad.l,y); c.lineTo(W-pad.r,y); c.stroke();
+    c.fillStyle='#94a3b8'; c.font='18px sans-serif'; c.textAlign='right';
+    c.fillText(v,pad.l-6,y+5);
+  });
+
+  // Danger zone (below 5)
+  const y5=pad.t+pH-(5/10)*pH;
+  c.fillStyle='rgba(220,38,38,.04)';
+  c.fillRect(pad.l, y5, pW, pH-(5/10)*pH+pad.t);
+
+  // Line
+  const step=pW/3;
+  const points=vals.map((v,i)=>({x:pad.l+i*step, y:pad.t+pH-(Math.max(0,Math.min(10,v))/10)*pH}));
+
+  // Gradient fill
+  const grad=c.createLinearGradient(0,pad.t,0,H-pad.b);
+  grad.addColorStop(0,'rgba(14,165,233,.15)'); grad.addColorStop(1,'rgba(14,165,233,0)');
+  c.beginPath(); c.moveTo(points[0].x, H-pad.b);
+  points.forEach(p=>c.lineTo(p.x,p.y));
+  c.lineTo(points[points.length-1].x, H-pad.b); c.closePath();
+  c.fillStyle=grad; c.fill();
+
+  // Line
+  c.beginPath(); c.strokeStyle='#0ea5e9'; c.lineWidth=4; c.lineJoin='round';
+  points.forEach((p,i)=>{ if(i===0) c.moveTo(p.x,p.y); else c.lineTo(p.x,p.y); });
+  c.stroke();
+
+  // Dots + labels
+  points.forEach((p,i)=>{
+    const v=vals[i];
+    c.beginPath(); c.arc(p.x,p.y,8,0,Math.PI*2);
+    c.fillStyle=v>=7?'#16a34a':(v>=5?'#f59e0b':'#dc2626'); c.fill();
+    c.fillStyle='#fff'; c.font='bold 16px sans-serif'; c.textAlign='center';
+    c.fillText(v>0?v.toFixed(1):'—',p.x,p.y+5);
+    // Bimestre label
+    c.fillStyle='#64748b'; c.font='18px sans-serif';
+    c.fillText(`${i+1}ºB`,p.x,H-8);
+  });
+}
+
+// Hook into dashboard rendering
+try{
+  const __origRenderDash2=renderizarDashboard;
+  renderizarDashboard=function(){
+    __origRenderDash2();
+    try{
+      const dashEl=document.getElementById('viewDashboard');
+      if(!dashEl) return;
+
+      // Remove old V15 elements
+      dashEl.querySelectorAll('.v15-comp,.v15-evo').forEach(el=>el.remove());
+
+      if(filtroTurma==='Todas'){
+        // F8: Show comparativo
+        const compHtml=renderComparativoTurmas();
+        if(compHtml){
+          const div=document.createElement('div');
+          div.className='v15-comp'; div.style.gridColumn='1/-1';
+          div.innerHTML=compHtml;
+          dashEl.appendChild(div);
+        }
+      } else {
+        // F9: Show evolução da turma
+        const evoHtml=renderEvolucaoTurma();
+        if(evoHtml){
+          const div=document.createElement('div');
+          div.className='v15-evo'; div.style.gridColumn='1/-1';
+          div.innerHTML=evoHtml;
+          dashEl.appendChild(div);
+          setTimeout(drawEvoTurmaChart, 50);
+        }
+      }
+    }catch(_){}
+  };
+}catch(_){}
+
+// ================================================================
+// F12: MOBILE PWA IMPROVEMENTS
+// ================================================================
+(function(){
+  // Prevent double-tap zoom on interactive elements
+  let lastTap=0;
+  document.addEventListener('touchend', function(e){
+    const now=Date.now();
+    if(now-lastTap<300){
+      const btn=e.target.closest('button,.btn-tool,.btn-view,.btn-bim,.btn-primary,.btn-blitz,.search-filter-chip,.turma-item');
+      if(btn) e.preventDefault();
+    }
+    lastTap=now;
+  },{passive:false});
+
+  // Swipe right to open sidebar on mobile
+  let touchStartX=0, touchStartY=0;
+  document.addEventListener('touchstart',function(e){
+    touchStartX=e.touches[0].clientX;
+    touchStartY=e.touches[0].clientY;
+  },{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(window.innerWidth>980) return;
+    const dx=e.changedTouches[0].clientX-touchStartX;
+    const dy=Math.abs(e.changedTouches[0].clientY-touchStartY);
+    // Swipe right from left edge to open
+    if(touchStartX<30 && dx>80 && dy<60 && !document.body.classList.contains('sidebar-open')){
+      document.body.classList.add('sidebar-open');
+    }
+    // Swipe left to close
+    if(dx<-80 && dy<60 && document.body.classList.contains('sidebar-open')){
+      document.body.classList.remove('sidebar-open');
+    }
+  },{passive:true});
+
+  // Close sidebar when pressing back (for PWA)
+  window.addEventListener('popstate', function(){
+    if(document.body.classList.contains('sidebar-open')){
+      document.body.classList.remove('sidebar-open');
+    }
+  });
+
+  // Add safe-area-inset support for notched phones
+  const style=document.createElement('style');
+  style.textContent=`
+    @supports(padding:env(safe-area-inset-top)){
+      body{
+        padding-top:env(safe-area-inset-top);
+        padding-bottom:env(safe-area-inset-bottom);
+      }
+      .sidebar-toggle{top:calc(12px + env(safe-area-inset-top))!important;left:calc(12px + env(safe-area-inset-left))!important;}
+      @media(max-width:980px){main{padding-top:calc(56px + env(safe-area-inset-top))!important;}}
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Fix iOS 100vh bug
+  function setVH(){
+    const vh=window.innerHeight*0.01;
+    document.documentElement.style.setProperty('--vh',`${vh}px`);
+  }
+  setVH();
+  window.addEventListener('resize',setVH);
+  window.addEventListener('orientationchange',function(){ setTimeout(setVH,200); });
+
+  // On mobile, ensure modals are scrollable
+  document.addEventListener('touchmove',function(e){
+    const modal=e.target.closest('.modal-box,.diario-container,.ata-container');
+    if(modal) return; // allow scroll inside modals
+  },{passive:true});
+})();
+
 
 
 </script>
