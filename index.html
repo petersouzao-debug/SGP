@@ -1647,6 +1647,15 @@ i.fa .sgp-ico-fill, i.fas .sgp-ico-fill, i.far .sgp-ico-fill, i.fab .sgp-ico-fil
         #cmpTurmasTable tbody tr:hover{ background: rgba(2,6,23,0.04); }
         .cmp-bar{ display:flex; width:220px; height:10px; border-radius:999px; overflow:hidden; background:#e2e8f0; }
         .cmp-bar > span{ height:100%; }
+.cmp-bar.cmp-bins{ height:8px; width:220px; background:#e2e8f0; }
+.cmp-bar.cmp-bins > span{ height:100%; }
+.cmp-bar.cmp-bins > span:nth-child(1){ background: var(--farol-vermelho); }
+.cmp-bar.cmp-bins > span:nth-child(2){ background: #f97316; }
+.cmp-bar.cmp-bins > span:nth-child(3){ background: var(--farol-amarelo); }
+.cmp-bar.cmp-bins > span:nth-child(4){ background: #84cc16; }
+.cmp-bar.cmp-bins > span:nth-child(5){ background: var(--farol-verde); }
+.cmp-mini-meta{ font-size:0.78rem; color:#64748b; line-height:1.25; }
+.cmp-mini-meta .cmp-k{ font-weight:600; color: var(--text-main); }
         .cmp-badge{ font-size:0.72rem; padding:2px 8px; border-radius:999px; border:1px solid var(--border-color); color: var(--text-main); background: var(--card-bg); }
 
         .big-number { font-size: 2.5rem; font-weight: bold; color: var(--primary); }
@@ -6960,6 +6969,72 @@ function addAulaIndividual(){
         
 
         // DASH: Comparar turmas (média, distribuição e ranking por atividade)
+let __cmpTurmasCache = { key:'', res:null, agg:null };
+
+function __cmpLastCoreSave(){
+    try{ return parseInt(localStorage.getItem('sgp_last_core_save')||'0',10) || 0; }catch(_){ return 0; }
+}
+function __cmpMakeKey(bim, discId, metric){
+    return [bim, String(discId||''), String(metric||''), __cmpLastCoreSave()].join('|');
+}
+function __cmpInferTouched(notas, disc){
+    try{
+        if(!notas || typeof notas !== 'object') return false;
+        if(notas.__touched) return true;
+        // Heurística (dados antigos): se existir qualquer nota > 0, considera preenchido
+        for(const av of (disc?.avaliacoes||[])){
+            const n = clampNota(notas?.[av.id]);
+            if(n > 0) return true;
+        }
+        try{ if(clampNota(notas?.['rec']) > 0) return true; }catch(_){}
+        return false;
+    }catch(_){ return false; }
+}
+function __cmpIsDiscEmpty(notas, disc){
+    try{
+        if(!notas || typeof notas !== 'object') return true;
+        for(const av of (disc?.avaliacoes||[])){
+            const raw = notas[av.id];
+            if(raw === null || typeof raw === 'undefined') continue;
+            if(typeof raw === 'string' && raw.trim()==='') continue;
+            const n = clampNota(raw);
+            if(n !== 0) return false;
+        }
+        const rec = notas['rec'];
+        if(!(rec===null || typeof rec==='undefined' || (typeof rec==='string' && rec.trim()===''))){
+            if(clampNota(rec) !== 0) return false;
+        }
+        return true;
+    }catch(_){ return true; }
+}
+function __cmpPercentile(sorted, p){
+    const n = sorted.length;
+    if(!n) return 0;
+    if(n===1) return sorted[0];
+    const idx = (n-1)*p;
+    const lo = Math.floor(idx), hi = Math.ceil(idx);
+    if(lo===hi) return sorted[lo];
+    const w = idx - lo;
+    return sorted[lo]*(1-w) + sorted[hi]*w;
+}
+function __cmpCalcPercentiles(values){
+    const arr = (values||[]).slice().sort((a,b)=>a-b);
+    const p25 = __cmpPercentile(arr, 0.25);
+    const p50 = __cmpPercentile(arr, 0.50);
+    const p75 = __cmpPercentile(arr, 0.75);
+    let lt4=0, ge9=0;
+    arr.forEach(v=>{ if(v < 4) lt4++; if(v >= 9) ge9++; });
+    const tot = arr.length||1;
+    return { p25, p50, p75, lt4: lt4/tot*100, ge9: ge9/tot*100 };
+}
+function __cmpBinIndex(v){
+    const n = clampNota(v);
+    if(n < 2) return 0;
+    if(n < 4) return 1;
+    if(n < 6) return 2;
+    if(n < 8) return 3;
+    return 4;
+}
         function __cmpTurmasEnsureUI(){
             const card = document.getElementById('dashCompareTurmas');
             if(!card) return false;
@@ -7028,103 +7103,227 @@ function addAulaIndividual(){
         }
 
         function renderDashCompareTurmas(force){
-            const ok = __cmpTurmasEnsureUI();
-            if(!ok) return;
+    const ok = __cmpTurmasEnsureUI();
+    if(!ok) return;
 
-            const selBim = document.getElementById('cmpTurmasBim');
-            const selDisc = document.getElementById('cmpTurmasDisc');
-            const selMetric = document.getElementById('cmpTurmasMetric');
-            const tbody = document.getElementById('cmpTurmasTbody');
-            const summary = document.getElementById('cmpTurmasSummary');
+    const selBim = document.getElementById('cmpTurmasBim');
+    const selDisc = document.getElementById('cmpTurmasDisc');
+    const selMetric = document.getElementById('cmpTurmasMetric');
+    const tbody = document.getElementById('cmpTurmasTbody');
+    const summary = document.getElementById('cmpTurmasSummary');
 
-            if(!selBim || !selDisc || !selMetric || !tbody) return;
+    if(!selBim || !selDisc || !selMetric || !tbody) return;
 
-            ensureConfigSchema();
+    ensureConfigSchema();
 
-            const bim = parseInt(selBim.value || bimestreAtual || 1, 10) || 1;
-            const discId = selDisc.value || config.slot1;
-            const metric = selMetric.value || '__media__';
+    const bim = parseInt(selBim.value || bimestreAtual || 1, 10) || 1;
+    const discId = selDisc.value || config.slot1;
+    const metric = selMetric.value || '__media__';
 
-            const disc = getDiscById(discId);
-            if(!disc){
-                tbody.innerHTML = '';
-                if(summary) summary.textContent = 'Disciplina não encontrada.';
-                return;
-            }
+    const disc = getDiscById(discId);
+    if(!disc){
+        tbody.innerHTML = '';
+        if(summary) summary.textContent = 'Disciplina não encontrada.';
+        return;
+    }
 
-            const cat = (m)=> (m>=7 ? 'verde' : (m>=5 ? 'amarelo' : 'vermelho'));
-            const fmt1 = (n)=> (Math.round((n||0)*10)/10).toFixed(1);
+    const cacheKey = (typeof __cmpMakeKey==='function') ? __cmpMakeKey(bim, discId, metric) : '';
+    let res = null, agg = null;
 
-            const res = [];
-            (turmas||[]).forEach(t=>{
-                const lst = alunos.filter(a=>a.turma===t);
-                let sum=0, cnt=0;
-                const dist = {verde:0, amarelo:0, vermelho:0};
+    if(!force && __cmpTurmasCache && __cmpTurmasCache.key === cacheKey && Array.isArray(__cmpTurmasCache.res)){
+        res = __cmpTurmasCache.res;
+        agg = __cmpTurmasCache.agg;
+    }else{
+        const cat = (m)=> (m>=7 ? 'verde' : (m>=5 ? 'amarelo' : 'vermelho'));
+        const alunosByTurma = new Map();
+        (alunos||[]).forEach(a=>{
+            const t = a?.turma;
+            if(typeof t === 'undefined' || t === null) return;
+            if(!alunosByTurma.has(t)) alunosByTurma.set(t, []);
+            alunosByTurma.get(t).push(a);
+        });
 
-                lst.forEach(a=>{
-                    const b = a?.bimestres?.[bim];
-                    if(!b) return;
-                    _syncBimestreRefs(b);
+        res = [];
+        let totalSum = 0, totalCnt = 0;
 
-                    let v=0;
-                    if(metric==='__media__'){
-                        v = clampNota(calcularMediaDisc(discId, b.notas_disc?.[discId] || {}));
-                    }else{
-                        v = clampNota((b.notas_disc?.[discId] || {})[metric]);
-                    }
-                    sum += v;
-                    cnt += 1;
-                    dist[cat(v)]++;
-                });
+        (turmas||[]).forEach(t=>{
+            const lst = alunosByTurma.get(t) || [];
+            const total = lst.length;
 
-                const avg = cnt ? (sum/cnt) : 0;
-                res.push({turma:t, alunos:cnt, media:avg, dist});
-            });
+            let sum=0, cnt=0;
+            let semBim=0, semNota=0;
+            const dist = {verde:0, amarelo:0, vermelho:0};
+            const bins = [0,0,0,0,0];
+            const vals = [];
 
-            // Ranking (maior média primeiro)
-            res.sort((a,b)=> (b.media - a.media) || String(a.turma).localeCompare(String(b.turma),'pt-BR'));
+            lst.forEach(a=>{
+                const b = a?.bimestres?.[bim];
+                if(!b){ semBim++; return; }
 
-            // Resumo
-            if(summary){
-                if(res.length===0){
-                    summary.textContent = 'Nenhuma turma cadastrada.';
+                // Mantém compatibilidade com o sistema (refs/migração)
+                try{ _syncBimestreRefs(b); }catch(_){}
+
+                const notasDisc = (b.notas_disc && typeof b.notas_disc === 'object') ? b.notas_disc[discId] : null;
+                if(!notasDisc || typeof notasDisc !== 'object'){ semNota++; return; }
+
+                const touched = (typeof __cmpInferTouched==='function') ? __cmpInferTouched(notasDisc, disc) : false;
+                const empty = (typeof __cmpIsDiscEmpty==='function') ? __cmpIsDiscEmpty(notasDisc, disc) : false;
+
+                // Regra: se está "vazio" e nunca foi tocado, não entra na comparação (evita 0 padrão distorcer)
+                if(empty && !touched){ semNota++; return; }
+
+                let v=0;
+                if(metric==='__media__'){
+                    v = clampNota(calcularMediaDisc(discId, notasDisc));
                 }else{
-                    const top = res[0];
-                    const bottom = res[res.length-1];
-                    const mediaGeral = res.reduce((acc,x)=> acc + (x.media||0), 0) / (res.length||1);
-                    const labelMetric = (metric==='__media__') ? 'Média do bimestre' : (disc.avaliacoes||[]).find(a=>a.id===metric)?.nome || metric;
-                    summary.innerHTML = `Bimestre <span class="cmp-badge">${bim}º</span> · Disciplina <span class="cmp-badge">${__u(disc.nome||disc.id)}</span> · Métrica <span class="cmp-badge">${__u(labelMetric)}</span> · Média geral <span class="cmp-badge">${fmt1(mediaGeral)}</span> · Melhor <span class="cmp-badge">${__u(top.turma)} (${fmt1(top.media)})</span> · Pior <span class="cmp-badge">${__u(bottom.turma)} (${fmt1(bottom.media)})</span>`;
+                    const raw = notasDisc[metric];
+                    if(raw === null || typeof raw === 'undefined' || (typeof raw === 'string' && raw.trim()==='')){
+                        semNota++; return;
+                    }
+                    v = clampNota(raw);
                 }
-            }
 
-            // Tabela
-            const bar = (dist, total)=>{
-                const t = total || 0;
-                const pv = t ? (dist.verde/t*100) : 0;
-                const pa = t ? (dist.amarelo/t*100) : 0;
-                const pr = t ? (dist.vermelho/t*100) : 0;
-                return `<div style="display:flex; align-items:center; gap:10px;">
-                    <div class="cmp-bar" title="Verde ${pv.toFixed(0)}% · Amarelo ${pa.toFixed(0)}% · Vermelho ${pr.toFixed(0)}%">
-                        <span style="width:${pv}%; background:var(--farol-verde);"></span>
-                        <span style="width:${pa}%; background:var(--farol-amarelo);"></span>
-                        <span style="width:${pr}%; background:var(--farol-vermelho);"></span>
-                    </div>
-                    <span style="font-size:0.8rem; color:#64748b;">${pv.toFixed(0)}% · ${pa.toFixed(0)}% · ${pr.toFixed(0)}%</span>
-                </div>`;
-            };
+                sum += v;
+                cnt += 1;
+                totalSum += v;
+                totalCnt += 1;
 
-            let html='';
-            res.forEach((r, i)=>{
-                html += `<tr>
-                    <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); color:#64748b;">${i+1}</td>
-                    <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); font-weight:600;">${__u(r.turma)}</td>
-                    <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); text-align:right;">${r.alunos}</td>
-                    <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); text-align:right; font-variant-numeric: tabular-nums;">${fmt1(r.media)}</td>
-                    <td style="padding:10px 12px; border-bottom:1px solid var(--border-color);">${bar(r.dist, r.alunos)}</td>
-                </tr>`;
+                dist[cat(v)]++;
+                const bi = (typeof __cmpBinIndex==='function') ? __cmpBinIndex(v) : 0;
+                bins[bi] = (bins[bi]||0) + 1;
+                vals.push(v);
             });
-            tbody.innerHTML = html || `<tr><td colspan="5" style="padding:14px; color:#64748b;">Sem dados para comparar.</td></tr>`;
+
+            const avg = cnt ? (sum/cnt) : NaN;
+            const pct = cnt ? ((typeof __cmpCalcPercentiles==='function') ? __cmpCalcPercentiles(vals) : null) : null;
+
+            res.push({
+                turma: t,
+                total,
+                valid: cnt,
+                semBim,
+                semNota,
+                media: avg,
+                dist,
+                bins,
+                pct
+            });
+        });
+
+        // Ranking (maior média primeiro; turmas sem dados vão para o fim)
+        res.sort((a,b)=> {
+            const am = (a.valid ? a.media : -1);
+            const bm = (b.valid ? b.media : -1);
+            return (bm - am) || String(a.turma).localeCompare(String(b.turma),'pt-BR');
+        });
+
+        // Agregados para o resumo
+        const comDados = res.filter(x=>x.valid>0);
+        const top = comDados.length ? comDados[0] : null;
+        const bottom = comDados.length ? comDados[comDados.length-1] : null;
+
+        agg = {
+            totalSum, totalCnt,
+            semDadosTurmas: res.filter(x=>x.valid===0).length,
+            top, bottom
+        };
+
+        if(cacheKey){
+            __cmpTurmasCache = { key: cacheKey, res, agg };
         }
+    }
+
+    const fmt1 = (n)=> (Math.round((n||0)*10)/10).toFixed(1);
+
+    // Resumo
+    if(summary){
+        if(!res || res.length===0){
+            summary.textContent = 'Nenhuma turma cadastrada.';
+        }else{
+            const labelMetric = (metric==='__media__')
+                ? 'Média do bimestre'
+                : (disc.avaliacoes||[]).find(a=>a.id===metric)?.nome || metric;
+
+            const mediaGeral = (agg && agg.totalCnt) ? (agg.totalSum/agg.totalCnt) : 0;
+
+            const extra = (agg && agg.semDadosTurmas)
+                ? ` · <span class="cmp-badge">${agg.semDadosTurmas}</span> turma(s) sem dados nesta métrica`
+                : '';
+
+            const bestTxt = (agg && agg.top) ? ` · Melhor <span class="cmp-badge">${__u(agg.top.turma)} (${fmt1(agg.top.media)})</span>` : '';
+            const worstTxt = (agg && agg.bottom) ? ` · Pior <span class="cmp-badge">${__u(agg.bottom.turma)} (${fmt1(agg.bottom.media)})</span>` : '';
+
+            summary.innerHTML =
+                `Bimestre <span class="cmp-badge">${bim}º</span> · Disciplina <span class="cmp-badge">${__u(disc.nome||disc.id)}</span> · Métrica <span class="cmp-badge">${__u(labelMetric)}</span> · Média geral <span class="cmp-badge">${fmt1(mediaGeral)}</span>${bestTxt}${worstTxt}${extra}`
+                + `<div class="cmp-mini-meta" style="margin-top:6px;">`+
+                  `Obs.: Média/distribuição usam apenas <span class="cmp-k">notas preenchidas</span>. Alunos sem nota (ou sem bimestre) são excluídos da média e sinalizados na linha.</div>`;
+        }
+    }
+
+    const bar = (r)=>{
+        const valid = r.valid || 0;
+        const total = r.total || 0;
+
+        // Farol (3 faixas)
+        const pv = valid ? (r.dist.verde/valid*100) : 0;
+        const pa = valid ? (r.dist.amarelo/valid*100) : 0;
+        const pr = valid ? (r.dist.vermelho/valid*100) : 0;
+
+        // Bins (0-2,2-4,4-6,6-8,8-10)
+        const p0 = valid ? (r.bins[0]/valid*100) : 0;
+        const p1 = valid ? (r.bins[1]/valid*100) : 0;
+        const p2 = valid ? (r.bins[2]/valid*100) : 0;
+        const p3 = valid ? (r.bins[3]/valid*100) : 0;
+        const p4 = valid ? (r.bins[4]/valid*100) : 0;
+
+        const pct = r.pct;
+        const meta = valid
+            ? `P25 ${fmt1(pct?.p25||0)} · P50 ${fmt1(pct?.p50||0)} · P75 ${fmt1(pct?.p75||0)} · <4 ${((pct?.lt4||0)).toFixed(0)}% · ≥9 ${((pct?.ge9||0)).toFixed(0)}%`
+            : `Sem dados para esta métrica`;
+
+        const missNota = r.semNota || 0;
+        const missBim = r.semBim || 0;
+
+        const missTxt = (missNota || missBim)
+            ? ` · Sem nota: ${missNota}${missBim ? ` · Sem bimestre: ${missBim}` : ''}`
+            : '';
+
+        return `<div style="display:flex; flex-direction:column; gap:6px; min-width:340px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="cmp-bar" title="Farol — Verde ${pv.toFixed(0)}% · Amarelo ${pa.toFixed(0)}% · Vermelho ${pr.toFixed(0)}%">
+                    <span style="width:${pv}%; background:var(--farol-verde);"></span>
+                    <span style="width:${pa}%; background:var(--farol-amarelo);"></span>
+                    <span style="width:${pr}%; background:var(--farol-vermelho);"></span>
+                </div>
+                <span style="font-size:0.8rem; color:#64748b;">${valid ? `${pv.toFixed(0)}% · ${pa.toFixed(0)}% · ${pr.toFixed(0)}%` : '—'}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="cmp-bar cmp-bins" title="Faixas — 0–2 ${p0.toFixed(0)}% · 2–4 ${p1.toFixed(0)}% · 4–6 ${p2.toFixed(0)}% · 6–8 ${p3.toFixed(0)}% · 8–10 ${p4.toFixed(0)}%">
+                    <span style="width:${p0}%;"></span>
+                    <span style="width:${p1}%;"></span>
+                    <span style="width:${p2}%;"></span>
+                    <span style="width:${p3}%;"></span>
+                    <span style="width:${p4}%;"></span>
+                </div>
+                <span style="font-size:0.8rem; color:#64748b;">${valid ? `${p0.toFixed(0)}·${p1.toFixed(0)}·${p2.toFixed(0)}·${p3.toFixed(0)}·${p4.toFixed(0)}%` : '—'}</span>
+            </div>
+            <div class="cmp-mini-meta">${meta} · <span class="cmp-k">Válidas</span> ${valid}/${total}${missTxt}</div>
+        </div>`;
+    };
+
+    let html='';
+    (res||[]).forEach((r, i)=>{
+        const mediaTxt = (r.valid ? fmt1(r.media) : '—');
+        html += `<tr>
+            <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); color:#64748b;">${i+1}</td>
+            <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); font-weight:600;">${__u(r.turma)}</td>
+            <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); text-align:right;">${r.total}</td>
+            <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); text-align:right; font-variant-numeric: tabular-nums;">${mediaTxt}</td>
+            <td style="padding:10px 12px; border-bottom:1px solid var(--border-color);">${bar(r)}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = html || `<tr><td colspan="5" style="padding:14px; color:#64748b;">Sem dados para comparar.</td></tr>`;
+}
 
         // MAPA
         function gerarMesas(){const g=document.getElementById('salaGrid');g.innerHTML='';for(let i=0;i<36;i++)g.innerHTML+=`<div id="mesa_${i}" class="mesa" ondrop="drop(event,${i})" ondragover="allowDrop(event)" data-onclick="touchSelectMesa(${i})"></div>`;}
@@ -8420,6 +8619,8 @@ function salvarAlteracoesDetalhadas(){
     b.notas_disc[d2][inp.dataset.eval] = clampNota(inp.value);
   });
 
+
+  try{ b.notas_disc[d1].__touched = true; b.notas_disc[d2].__touched = true; }catch(_){ }
   _syncBimestreRefs(b);
 
   // Parecer
@@ -8688,6 +8889,7 @@ function salvarEdicaoMassa(){
 
     Object.keys(discMap).forEach(discId=>{
       if(!b.notas_disc[discId]) b.notas_disc[discId] = {};
+      try{ b.notas_disc[discId].__touched = true; }catch(_){ }
       const evs = discMap[discId];
       Object.keys(evs).forEach(evId=>{
         b.notas_disc[discId][evId] = evs[evId];
