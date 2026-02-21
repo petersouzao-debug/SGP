@@ -1637,6 +1637,18 @@ i.fa .sgp-ico-fill, i.fas .sgp-ico-fill, i.far .sgp-ico-fill, i.fab .sgp-ico-fil
         .dash-card.wide { grid-column: 1 / -1; }
         .dash-chart-box { height: 260px; }
         .dash-chart-box canvas { width: 100% !important; height: 100% !important; }
+        /* Dashboard: Comparar Turmas */
+        .dash-compare-controls{ display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; }
+        .dash-compare-controls label{ display:flex; flex-direction:column; gap:4px; font-size:0.75rem; color:#64748b; }
+        .dash-compare-controls select{
+            padding:8px 10px; border-radius:10px; border:1px solid var(--border-color);
+            background: var(--input-bg); color: var(--text-main);
+        }
+        #cmpTurmasTable tbody tr:hover{ background: rgba(2,6,23,0.04); }
+        .cmp-bar{ display:flex; width:220px; height:10px; border-radius:999px; overflow:hidden; background:#e2e8f0; }
+        .cmp-bar > span{ height:100%; }
+        .cmp-badge{ font-size:0.72rem; padding:2px 8px; border-radius:999px; border:1px solid var(--border-color); color: var(--text-main); background: var(--card-bg); }
+
         .big-number { font-size: 2.5rem; font-weight: bold; color: var(--primary); }
         .bar-row { margin-bottom: 15px; } .bar-bg { width: 100%; background: #f1f5f9; height: 12px; border-radius: 6px; overflow: hidden; } .bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s; }
         .mapa-container { display: none; gap: 20px; height: calc(100vh - 180px); }
@@ -3602,6 +3614,42 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                 <h3>Histograma de Notas — <span class="lbl-mat2">Matéria 2</span></h3>
                 <div class="dash-chart-box"><canvas id="dashHistMat2"></canvas></div>
             </div>
+        
+            <div class="dash-card wide" id="dashCompareTurmas">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                    <h3 style="margin:0;">Comparar turmas</h3>
+                    <div class="dash-compare-controls">
+                        <label>Bimestre
+                            <select id="cmpTurmasBim" aria-label="Bimestre"></select>
+                        </label>
+                        <label>Disciplina
+                            <select id="cmpTurmasDisc" aria-label="Disciplina"></select>
+                        </label>
+                        <label>Métrica
+                            <select id="cmpTurmasMetric" aria-label="Métrica"></select>
+                        </label>
+                        <button class="btn btn-secondary" id="btnCmpTurmasAtualizar" type="button" title="Atualizar">
+                            <i class="fas fa-rotate"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="cmpTurmasSummary" style="margin-top:8px; font-size:0.85rem; color:#64748b;"></div>
+                <div style="margin-top:12px; overflow:auto; border:1px solid var(--border-color); border-radius:12px;">
+                    <table id="cmpTurmasTable" style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left; padding:10px 12px; border-bottom:1px solid var(--border-color);">#</th>
+                                <th style="text-align:left; padding:10px 12px; border-bottom:1px solid var(--border-color);">Turma</th>
+                                <th style="text-align:right; padding:10px 12px; border-bottom:1px solid var(--border-color);">Alunos</th>
+                                <th style="text-align:right; padding:10px 12px; border-bottom:1px solid var(--border-color);">Média</th>
+                                <th style="text-align:left; padding:10px 12px; border-bottom:1px solid var(--border-color);">Distribuição</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cmpTurmasTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
 
         <div id="viewMapa" class="mapa-container">
@@ -6906,8 +6954,178 @@ function addAulaIndividual(){
                     }
                 }
             });
-        }
         
+            try{ renderDashCompareTurmas(); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'dash.compare'); }catch(_){} }
+}
+        
+
+        // DASH: Comparar turmas (média, distribuição e ranking por atividade)
+        function __cmpTurmasEnsureUI(){
+            const card = document.getElementById('dashCompareTurmas');
+            if(!card) return false;
+            if(card.dataset.init === '1') return true;
+
+            const selBim = document.getElementById('cmpTurmasBim');
+            const selDisc = document.getElementById('cmpTurmasDisc');
+            const selMetric = document.getElementById('cmpTurmasMetric');
+            const btn = document.getElementById('btnCmpTurmasAtualizar');
+
+            if(!selBim || !selDisc || !selMetric) return false;
+
+            // Bimestres 1..4
+            selBim.innerHTML = '';
+            [1,2,3,4].forEach(n=>{
+                const o=document.createElement('option');
+                o.value=String(n);
+                o.textContent = n+'º';
+                selBim.appendChild(o);
+            });
+            selBim.value = String(bimestreAtual || 1);
+
+            // Disciplinas
+            ensureConfigSchema();
+            selDisc.innerHTML = '';
+            (config.disciplinas||[]).forEach(d=>{
+                const o=document.createElement('option');
+                o.value=d.id;
+                o.textContent = d.nome || d.id;
+                selDisc.appendChild(o);
+            });
+            selDisc.value = String(config.slot1 || (config.disciplinas?.[0]?.id||''));
+
+            const updateMetric = ()=>{
+                const discId = selDisc.value;
+                const disc = getDiscById(discId);
+                selMetric.innerHTML = '';
+
+                const o0=document.createElement('option');
+                o0.value='__media__';
+                o0.textContent='Média do bimestre';
+                selMetric.appendChild(o0);
+
+                (disc?.avaliacoes||[]).forEach(av=>{
+                    const o=document.createElement('option');
+                    o.value=av.id;
+                    o.textContent=av.nome || av.id;
+                    selMetric.appendChild(o);
+                });
+
+                // Mantém seleção se possível
+                if(!selMetric.value) selMetric.value='__media__';
+            };
+
+            selDisc.addEventListener('change', ()=>{ updateMetric(); renderDashCompareTurmas(true); });
+            selBim.addEventListener('change', ()=>{ renderDashCompareTurmas(true); });
+            selMetric.addEventListener('change', ()=>{ renderDashCompareTurmas(true); });
+
+            if(btn){
+                btn.addEventListener('click', ()=> renderDashCompareTurmas(true));
+            }
+
+            updateMetric();
+            card.dataset.init = '1';
+            return true;
+        }
+
+        function renderDashCompareTurmas(force){
+            const ok = __cmpTurmasEnsureUI();
+            if(!ok) return;
+
+            const selBim = document.getElementById('cmpTurmasBim');
+            const selDisc = document.getElementById('cmpTurmasDisc');
+            const selMetric = document.getElementById('cmpTurmasMetric');
+            const tbody = document.getElementById('cmpTurmasTbody');
+            const summary = document.getElementById('cmpTurmasSummary');
+
+            if(!selBim || !selDisc || !selMetric || !tbody) return;
+
+            ensureConfigSchema();
+
+            const bim = parseInt(selBim.value || bimestreAtual || 1, 10) || 1;
+            const discId = selDisc.value || config.slot1;
+            const metric = selMetric.value || '__media__';
+
+            const disc = getDiscById(discId);
+            if(!disc){
+                tbody.innerHTML = '';
+                if(summary) summary.textContent = 'Disciplina não encontrada.';
+                return;
+            }
+
+            const cat = (m)=> (m>=7 ? 'verde' : (m>=5 ? 'amarelo' : 'vermelho'));
+            const fmt1 = (n)=> (Math.round((n||0)*10)/10).toFixed(1);
+
+            const res = [];
+            (turmas||[]).forEach(t=>{
+                const lst = alunos.filter(a=>a.turma===t);
+                let sum=0, cnt=0;
+                const dist = {verde:0, amarelo:0, vermelho:0};
+
+                lst.forEach(a=>{
+                    const b = a?.bimestres?.[bim];
+                    if(!b) return;
+                    _syncBimestreRefs(b);
+
+                    let v=0;
+                    if(metric==='__media__'){
+                        v = clampNota(calcularMediaDisc(discId, b.notas_disc?.[discId] || {}));
+                    }else{
+                        v = clampNota((b.notas_disc?.[discId] || {})[metric]);
+                    }
+                    sum += v;
+                    cnt += 1;
+                    dist[cat(v)]++;
+                });
+
+                const avg = cnt ? (sum/cnt) : 0;
+                res.push({turma:t, alunos:cnt, media:avg, dist});
+            });
+
+            // Ranking (maior média primeiro)
+            res.sort((a,b)=> (b.media - a.media) || String(a.turma).localeCompare(String(b.turma),'pt-BR'));
+
+            // Resumo
+            if(summary){
+                if(res.length===0){
+                    summary.textContent = 'Nenhuma turma cadastrada.';
+                }else{
+                    const top = res[0];
+                    const bottom = res[res.length-1];
+                    const mediaGeral = res.reduce((acc,x)=> acc + (x.media||0), 0) / (res.length||1);
+                    const labelMetric = (metric==='__media__') ? 'Média do bimestre' : (disc.avaliacoes||[]).find(a=>a.id===metric)?.nome || metric;
+                    summary.innerHTML = `Bimestre <span class="cmp-badge">${bim}º</span> · Disciplina <span class="cmp-badge">${__u(disc.nome||disc.id)}</span> · Métrica <span class="cmp-badge">${__u(labelMetric)}</span> · Média geral <span class="cmp-badge">${fmt1(mediaGeral)}</span> · Melhor <span class="cmp-badge">${__u(top.turma)} (${fmt1(top.media)})</span> · Pior <span class="cmp-badge">${__u(bottom.turma)} (${fmt1(bottom.media)})</span>`;
+                }
+            }
+
+            // Tabela
+            const bar = (dist, total)=>{
+                const t = total || 0;
+                const pv = t ? (dist.verde/t*100) : 0;
+                const pa = t ? (dist.amarelo/t*100) : 0;
+                const pr = t ? (dist.vermelho/t*100) : 0;
+                return `<div style="display:flex; align-items:center; gap:10px;">
+                    <div class="cmp-bar" title="Verde ${pv.toFixed(0)}% · Amarelo ${pa.toFixed(0)}% · Vermelho ${pr.toFixed(0)}%">
+                        <span style="width:${pv}%; background:var(--farol-verde);"></span>
+                        <span style="width:${pa}%; background:var(--farol-amarelo);"></span>
+                        <span style="width:${pr}%; background:var(--farol-vermelho);"></span>
+                    </div>
+                    <span style="font-size:0.8rem; color:#64748b;">${pv.toFixed(0)}% · ${pa.toFixed(0)}% · ${pr.toFixed(0)}%</span>
+                </div>`;
+            };
+
+            let html='';
+            res.forEach((r, i)=>{
+                html += `<tr>
+                    <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); color:#64748b;">${i+1}</td>
+                    <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); font-weight:600;">${__u(r.turma)}</td>
+                    <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); text-align:right;">${r.alunos}</td>
+                    <td style="padding:10px 12px; border-bottom:1px solid var(--border-color); text-align:right; font-variant-numeric: tabular-nums;">${fmt1(r.media)}</td>
+                    <td style="padding:10px 12px; border-bottom:1px solid var(--border-color);">${bar(r.dist, r.alunos)}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = html || `<tr><td colspan="5" style="padding:14px; color:#64748b;">Sem dados para comparar.</td></tr>`;
+        }
+
         // MAPA
         function gerarMesas(){const g=document.getElementById('salaGrid');g.innerHTML='';for(let i=0;i<36;i++)g.innerHTML+=`<div id="mesa_${i}" class="mesa" ondrop="drop(event,${i})" ondragover="allowDrop(event)" data-onclick="touchSelectMesa(${i})"></div>`;}
         function renderizarMapa(){

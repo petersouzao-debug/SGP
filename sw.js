@@ -1,7 +1,7 @@
-// SGP - Service Worker v15.2 (Sorteador + Mapa + Grupos)
-const CACHE_NAME = 'sgp-v15.2';
+// SGP - Service Worker v15.3 (Sorteador + Mapa + Grupos)
+const CACHE_NAME = 'sgp-v15.3';
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['./', './index.html']).catch(() => {})));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['./', './index.html', './SGP_Gestao_Final_v15.html']).catch(() => {})));
   self.skipWaiting();
 });
 self.addEventListener('activate', event => {
