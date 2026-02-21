@@ -124,6 +124,9 @@ i.fa .sgp-ico-fill, i.fas .sgp-ico-fill, i.far .sgp-ico-fill, i.fab .sgp-ico-fil
     "fa-cloud-arrow-up":"upload",
     "fa-list":"list",
     "fa-list-check":"checklist",
+    "fa-list-ol":"list",
+    "fa-pen-nib":"pen",
+    "fa-sort":"sort",
     "fa-bars":"list",
     "fa-calendar":"calendar",
     "fa-calendar-alt":"calendar",
@@ -145,6 +148,7 @@ i.fa .sgp-ico-fill, i.fas .sgp-ico-fill, i.far .sgp-ico-fill, i.fab .sgp-ico-fil
     "fa-shuffle":"shuffle",
     "fa-dice":"dice",
     "fa-gamepad":"gamepad",
+    "fa-desktop":"expand",
     "fa-map":"map",
     "fa-tv":"tv",
     "fa-expand":"expand",
@@ -2685,8 +2689,14 @@ body.dark-mode #modalAtividades .fc-small{ color:#94a3b8; }
   grid-template-columns: repeat(4, 1fr);
   gap:10px;
 }
+.act-mgrid.grid-8{ grid-template-columns: repeat(4, 1fr); }
+.act-mgrid.grid-12{ grid-template-columns: repeat(4, 1fr); }
+.act-mgrid.grid-16{ grid-template-columns: repeat(4, 1fr); }
+.act-mgrid.grid-24{ grid-template-columns: repeat(6, 1fr); gap:6px; }
+.act-mgrid.grid-24 .mem-card,.act-mgrid.grid-24 .act-mcard{ min-height:55px!important; font-size:.78rem!important; padding:6px!important; }
 @media (max-width: 760px){
   .act-mgrid{ grid-template-columns: repeat(3, 1fr); }
+  .act-mgrid.grid-24{ grid-template-columns: repeat(4, 1fr); gap:4px; }
 }
 .act-mcard{
   border: 1px solid var(--border-color);
@@ -3143,6 +3153,86 @@ body.sidebar-hidden main{margin-left:0;}
 .comp-turmas-bar{height:8px;border-radius:4px;background:#e2e8f0;overflow:hidden;min-width:60px;}
 .comp-turmas-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
 .dash-evo-chart{margin:12px 0;padding:12px;background:var(--card-bg);border:1px solid var(--border-color);border-radius:12px;}
+
+/* ===== V15 GAME ENHANCEMENTS CSS ===== */
+
+/* Score bar */
+.act-scorebar{display:flex;gap:12px;align-items:center;padding:8px 12px;background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.15);border-radius:10px;margin:8px 0;font-size:.82rem;flex-wrap:wrap;}
+.act-scorebar .sc-item{display:flex;align-items:center;gap:4px;font-weight:600;}
+.sc-correct{color:#16a34a;} .sc-wrong{color:#dc2626;} .sc-total{color:#0ea5e9;} .sc-pct{color:#7c3aed;}
+.act-scorebar .sc-timer{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;font-size:1rem;}
+.sc-timer.warning{color:#f59e0b;animation:pulse .5s infinite alternate;}
+.sc-timer.danger{color:#dc2626;animation:pulse .3s infinite alternate;}
+@keyframes pulse{from{opacity:1}to{opacity:.5}}
+
+/* Feedback animations */
+@keyframes actConfetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(-60px) rotate(360deg);opacity:0}}
+@keyframes actShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@keyframes actFlashGreen{0%{box-shadow:0 0 0 0 rgba(22,163,74,.5)}100%{box-shadow:0 0 0 30px rgba(22,163,74,0)}}
+@keyframes actFlashRed{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}100%{box-shadow:0 0 0 30px rgba(220,38,38,0)}}
+.act-feedback-correct{animation:actFlashGreen .5s ease-out;}
+.act-feedback-wrong{animation:actShake .4s ease-out,actFlashRed .5s ease-out;}
+.act-confetti-particle{position:absolute;width:8px;height:8px;border-radius:50%;pointer-events:none;animation:actConfetti .8s ease-out forwards;}
+.act-result-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:4rem;font-weight:900;pointer-events:none;z-index:10;animation:fadeIn .2s ease-out;}
+.act-result-overlay.correct{color:rgba(22,163,74,.3);} .act-result-overlay.wrong{color:rgba(220,38,38,.3);}
+
+/* TV Mode (bigger everything for projector) */
+#modalAtividades.act-tv .act-view .act-panel-body{font-size:1.1rem;}
+#modalAtividades.act-tv .vf-btn{font-size:1.8rem!important;padding:24px 40px!important;min-width:180px!important;}
+#modalAtividades.act-tv #vfShow{font-size:2rem!important;}
+#modalAtividades.act-tv #forcaWord{font-size:2.5rem!important;letter-spacing:8px!important;}
+#modalAtividades.act-tv .act-key{width:52px!important;height:52px!important;font-size:1.3rem!important;}
+#modalAtividades.act-tv .act-mgrid{gap:10px!important;}
+#modalAtividades.act-tv .mem-card{min-height:90px!important;font-size:1.2rem!important;}
+#modalAtividades.act-tv #fcText{font-size:2rem!important;}
+#modalAtividades.act-tv .act-scorebar{font-size:1rem;}
+#modalAtividades.act-tv .quiz-option{font-size:1.3rem!important;padding:18px 24px!important;}
+#modalAtividades.act-tv .comp-input{font-size:1.5rem!important;padding:14px!important;}
+#modalAtividades.act-tv .ord-word{font-size:1.3rem!important;padding:14px 20px!important;}
+
+/* Progress bar */
+.act-progress{height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;width:100%;margin:4px 0;}
+.act-progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#0ea5e9,#7c3aed);transition:width .3s;}
+
+/* Timer config */
+.act-timer-cfg{display:inline-flex;gap:4px;align-items:center;font-size:.78rem;}
+.act-timer-cfg select{padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);font-size:.78rem;}
+
+/* Session end summary */
+.act-summary{background:linear-gradient(135deg,rgba(14,165,233,.08),rgba(124,58,237,.08));border:1px solid rgba(14,165,233,.2);border-radius:12px;padding:16px;margin:10px 0;text-align:center;}
+.act-summary h3{margin:0 0 8px;font-size:1.1rem;} .act-summary .big{font-size:2.5rem;font-weight:900;margin:8px 0;}
+.act-summary .detail{font-size:.85rem;color:#64748b;margin:4px 0;}
+
+/* Quiz game */
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;}
+.quiz-option{padding:14px 18px;border:2px solid var(--border-color);border-radius:10px;background:var(--card-bg);cursor:pointer;font-size:1rem;font-weight:600;transition:.2s;text-align:left;}
+.quiz-option:hover{border-color:#0ea5e9;transform:translateY(-1px);}
+.quiz-option.correct{background:#dcfce7!important;border-color:#16a34a!important;color:#166534!important;}
+.quiz-option.wrong{background:#fee2e2!important;border-color:#dc2626!important;color:#991b1b!important;}
+.quiz-option.dimmed{opacity:.5;pointer-events:none;}
+@media(max-width:600px){.quiz-options{grid-template-columns:1fr;}}
+
+/* Complete phrase */
+.comp-phrase{font-size:1.2rem;font-weight:600;line-height:1.6;margin:12px 0;}
+.comp-blank{display:inline-block;border-bottom:3px solid #0ea5e9;min-width:80px;text-align:center;margin:0 4px;}
+.comp-input{padding:10px;border:2px solid var(--border-color);border-radius:8px;font-size:1.1rem;width:100%;max-width:300px;margin:10px 0;}
+.comp-input.correct{border-color:#16a34a;background:#dcfce7;} .comp-input.wrong{border-color:#dc2626;background:#fee2e2;}
+
+/* Word order */
+.ord-words{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:14px 0;min-height:50px;}
+.ord-word{padding:10px 16px;background:var(--card-bg);border:2px solid var(--border-color);border-radius:8px;cursor:pointer;font-size:1rem;font-weight:600;transition:.2s;user-select:none;}
+.ord-word:hover{border-color:#0ea5e9;transform:translateY(-2px);}
+.ord-word.placed{opacity:.3;pointer-events:none;}
+.ord-answer{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:12px 0;min-height:50px;padding:10px;border:2px dashed var(--border-color);border-radius:10px;}
+.ord-answer .ord-word{background:#eff6ff;border-color:#93c5fd;cursor:pointer;}
+.ord-answer .ord-word.correct{background:#dcfce7;border-color:#16a34a;} .ord-answer .ord-word.wrong{background:#fee2e2;border-color:#dc2626;}
+
+/* Leitner boxes */
+.fc-leitner{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;}
+.fc-leitner button{padding:8px 14px;border:2px solid var(--border-color);border-radius:8px;background:var(--card-bg);cursor:pointer;font-weight:600;font-size:.85rem;transition:.2s;}
+.fc-leitner .fc-l-wrong{border-color:#dc2626;color:#dc2626;} .fc-leitner .fc-l-ok{border-color:#f59e0b;color:#f59e0b;} .fc-leitner .fc-l-know{border-color:#16a34a;color:#16a34a;}
+.fc-leitner button:hover{transform:translateY(-1px);}
+
 
 </style>
 </head>
@@ -4219,6 +4309,9 @@ body.sidebar-hidden main{margin-left:0;}
                     <button id="actTabVF" class="act-tab" data-onclick="atividadesSetTab('vf')"><i class="fas fa-check-double"></i> V/F</button>
                     <button id="actTabMem" class="act-tab" data-onclick="atividadesSetTab('mem')"><i class="fas fa-clone"></i> Memória</button>
                     <button id="actTabFC" class="act-tab" data-onclick="atividadesSetTab('fc')"><i class="fas fa-id-card"></i> Flashcards</button>
+                    <button id="actTabQuiz" class="act-tab" data-onclick="atividadesSetTab('quiz')"><i class="fas fa-list-ol"></i> Quiz</button>
+                    <button id="actTabComp" class="act-tab" data-onclick="atividadesSetTab('comp')"><i class="fas fa-pen-nib"></i> Completar</button>
+                    <button id="actTabOrd" class="act-tab" data-onclick="atividadesSetTab('ord')"><i class="fas fa-sort"></i> Ordenar</button>
                 </div>
                 <div class="act-actions">
                     <button class="btn-planner" data-onclick="atividadesExportAll()"><i class="fas fa-file-arrow-down"></i> Exportar</button>
@@ -4226,6 +4319,7 @@ body.sidebar-hidden main{margin-left:0;}
                     <button id="actBtnTeacher" class="btn-planner" data-onclick="atividadesToggleTeacher()" title="Modo professor: desbloquear/ocultar banco"><i class="fas fa-lock"></i> Professor</button>
                     
                     <button id="actBtnPresent" class="btn-planner" data-onclick="atividadesTogglePresent()" title="Modo apresentação (mostra só o jogo)"><i class="fas fa-tv"></i> Apresentar</button>
+                    <button id="actBtnTV" class="btn-planner" data-onclick="actToggleTVMode()" title="Modo TV (botões grandes para projetor)"><i class="fas fa-desktop"></i> TV</button>
                     <button id="actBtnFullscreen" class="btn-planner" data-onclick="atividadesToggleFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i> Tela cheia</button>
                     <input type="file" id="actImportFile" style="display:none;" accept="application/json" data-onchange="atividadesImportFile(this)">
                 </div>
@@ -4368,6 +4462,10 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                                     <label for="vfTeoria">Explicação teórica (aparece após responder)</label>
                                     <textarea id="vfTeoria" class="inp" rows="4" placeholder="Explique rapidamente por que é verdadeiro ou falso."></textarea>
                                 </div>
+                                <div class="form-group">
+                                    <label for="vfTag">Categoria/Tag (opcional)</label>
+                                    <input id="vfTag" class="inp" placeholder="Ex: Gramática, Interpretação, Ortografia">
+                                </div>
 
                                 <div class="actions" style="gap:10px; flex-wrap:wrap;">
                                     <button class="btn-planner" data-onclick="vfIniciarSessao()"><i class="fas fa-play"></i> Iniciar sessão</button>
@@ -4437,8 +4535,10 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                                 </div>
                                 <div class="actions" style="gap:10px; flex-wrap:wrap;">
                                     <button class="btn-primary" data-onclick="memAdicionar()"><i class="fas fa-plus"></i> Adicionar par</button>
-                                    <button class="btn-planner" data-onclick="memIniciar(8)"><i class="fas fa-play"></i> Iniciar (8 pares)</button>
+                                    <button class="btn-planner" data-onclick="memIniciar(4)"><i class="fas fa-play"></i> 4 pares</button>
                                     <button class="btn-planner" data-onclick="memIniciar(6)"><i class="fas fa-play"></i> 6 pares</button>
+                                    <button class="btn-planner" data-onclick="memIniciar(8)"><i class="fas fa-play"></i> 8 pares</button>
+                                    <button class="btn-planner" data-onclick="memIniciar(12)"><i class="fas fa-play"></i> 12 pares</button>
                                     <button class="btn-planner danger" data-onclick="memLimparBanco()"><i class="fas fa-trash"></i> Limpar banco</button>
                                 </div>
 
@@ -4530,6 +4630,133 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                         </div>
                     </div>
                 </div>
+
+                <!-- QUIZ MÚLTIPLA ESCOLHA -->
+                <div id="actViewQuiz" class="act-view" style="display:none;">
+                    <div class="act-grid">
+                        <div class="act-panel">
+                            <div class="act-panel-header">
+                                <div class="act-title"><i class="fas fa-list-ol"></i> Banco (Quiz)</div>
+                                <div class="act-mini">Crie perguntas com 4 alternativas. Marque a correta.</div>
+                            </div>
+                            <div class="act-panel-body">
+                                <div class="form-group"><label>Pergunta</label><textarea id="quizPerg" class="inp" rows="2" placeholder="Ex: Qual figura de linguagem consiste em repetir palavras?"></textarea></div>
+                                <div class="form-group"><label>A)</label><input id="quizA" class="inp" placeholder="Alternativa A"></div>
+                                <div class="form-group"><label>B)</label><input id="quizB" class="inp" placeholder="Alternativa B"></div>
+                                <div class="form-group"><label>C)</label><input id="quizC" class="inp" placeholder="Alternativa C"></div>
+                                <div class="form-group"><label>D)</label><input id="quizD" class="inp" placeholder="Alternativa D"></div>
+                                <div class="form-row"><div class="form-group"><label>Correta</label><select id="quizCorreta" class="inp"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></div>
+                                <div class="form-group"><label>&nbsp;</label><button class="btn-primary" style="width:100%;" data-onclick="quizAdicionar()"><i class="fas fa-plus"></i> Adicionar</button></div></div>
+                                <div class="form-group"><label>Explicação (opcional)</label><textarea id="quizExp" class="inp" rows="2" placeholder="Por que esta é a resposta correta?"></textarea></div>
+                                <div class="actions" style="gap:10px;flex-wrap:wrap;"><button class="btn-planner" data-onclick="quizIniciarSessao()"><i class="fas fa-play"></i> Iniciar</button><button class="btn-planner danger" data-onclick="quizLimparBanco()"><i class="fas fa-trash"></i> Limpar</button></div>
+                                <div class="act-mini" style="margin-top:10px;"><i class="fas fa-database"></i> Perguntas (<span id="quizCount">0</span>)</div>
+                                <div id="quizList" class="act-list"></div>
+                            </div>
+                        </div>
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-chalkboard"></i> Sessão</div></div>
+                            <div class="act-panel-body" style="position:relative;">
+                                <div id="quizScorebar"></div>
+                                <div id="quizProgress" class="act-mini">—</div>
+                                <div id="quizShow" style="font-size:1.25rem;font-weight:900;line-height:1.25;margin:10px 0;">Adicione perguntas para começar.</div>
+                                <div id="quizOptions" class="quiz-options"></div>
+                                <div id="quizTheoryWrap" class="act-theory" style="display:none;"><div class="act-theory-title"><i class="fas fa-lightbulb"></i> Explicação</div><div id="quizTheoryText" class="act-theory-text"></div></div>
+                                <div class="actions" style="margin-top:12px;gap:10px;flex-wrap:wrap;">
+                                    <button class="btn-planner" data-onclick="quizIniciarSessao()"><i class="fas fa-play"></i> Iniciar</button>
+                                    <button id="quizBtnNext" class="btn-primary" data-onclick="quizProxima()"><i class="fas fa-forward"></i> Próxima</button>
+                                </div>
+                                <div id="quizMsg" class="act-mini" style="margin-top:10px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COMPLETAR FRASE -->
+                <div id="actViewComp" class="act-view" style="display:none;">
+                    <div class="act-grid">
+                        <div class="act-panel">
+                            <div class="act-panel-header">
+                                <div class="act-title"><i class="fas fa-pen-nib"></i> Banco (Completar)</div>
+                                <div class="act-mini">Escreva frases com <b>___</b> no lugar da palavra a completar.</div>
+                            </div>
+                            <div class="act-panel-body">
+                                <div class="form-group"><label>Frase (use ___ para a lacuna)</label><textarea id="compFrase" class="inp" rows="2" placeholder="Ex: O sujeito da oração é quem ___ a ação."></textarea></div>
+                                <div class="form-group"><label>Resposta correta</label><input id="compResp" class="inp" placeholder="Ex: pratica"></div>
+                                <div class="form-group"><label>Explicação (opcional)</label><input id="compExp" class="inp" placeholder="Explicação breve"></div>
+                                <div class="actions" style="gap:10px;flex-wrap:wrap;">
+                                    <button class="btn-primary" data-onclick="compAdicionar()"><i class="fas fa-plus"></i> Adicionar</button>
+                                    <button class="btn-planner" data-onclick="compIniciarSessao()"><i class="fas fa-play"></i> Iniciar</button>
+                                    <button class="btn-planner danger" data-onclick="compLimparBanco()"><i class="fas fa-trash"></i> Limpar</button>
+                                </div>
+                                <div class="act-mini" style="margin-top:10px;"><i class="fas fa-database"></i> Frases (<span id="compCount">0</span>)</div>
+                                <div id="compList" class="act-list"></div>
+                            </div>
+                        </div>
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-chalkboard"></i> Sessão</div></div>
+                            <div class="act-panel-body" style="position:relative;">
+                                <div id="compScorebar"></div>
+                                <div id="compProgress" class="act-mini">—</div>
+                                <div id="compShow" class="comp-phrase">Adicione frases para começar.</div>
+                                <div id="compInputArea" style="display:none;text-align:center;"><input id="compAnswer" class="comp-input" placeholder="Digite a resposta..." autocomplete="off"><br><button class="btn-primary" data-onclick="compVerificar()" style="margin-top:8px;"><i class="fas fa-check"></i> Verificar</button></div>
+                                <div id="compTheoryWrap" class="act-theory" style="display:none;"><div class="act-theory-title"><i class="fas fa-lightbulb"></i> Explicação</div><div id="compTheoryText" class="act-theory-text"></div></div>
+                                <div class="actions" style="margin-top:12px;gap:10px;flex-wrap:wrap;">
+                                    <button class="btn-planner" data-onclick="compIniciarSessao()"><i class="fas fa-play"></i> Iniciar</button>
+                                    <button id="compBtnNext" class="btn-primary" data-onclick="compProxima()"><i class="fas fa-forward"></i> Próxima</button>
+                                </div>
+                                <div id="compMsg" class="act-mini" style="margin-top:10px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ORDENAR PALAVRAS -->
+                <div id="actViewOrd" class="act-view" style="display:none;">
+                    <div class="act-grid">
+                        <div class="act-panel">
+                            <div class="act-panel-header">
+                                <div class="act-title"><i class="fas fa-sort"></i> Banco (Ordenar)</div>
+                                <div class="act-mini">Escreva frases corretas. O jogo embaralha as palavras para o aluno reordenar.</div>
+                            </div>
+                            <div class="act-panel-body">
+                                <div class="form-group"><label>Frase na ordem correta</label><textarea id="ordFrase" class="inp" rows="2" placeholder="Ex: O gato bebeu o leite da tigela."></textarea></div>
+                                <div class="form-group"><label>Dica (opcional)</label><input id="ordDica" class="inp" placeholder="Ex: Sujeito + Verbo + Objeto"></div>
+                                <div class="actions" style="gap:10px;flex-wrap:wrap;">
+                                    <button class="btn-primary" data-onclick="ordAdicionar()"><i class="fas fa-plus"></i> Adicionar</button>
+                                    <button class="btn-planner" data-onclick="ordIniciarSessao()"><i class="fas fa-play"></i> Iniciar</button>
+                                    <button class="btn-planner danger" data-onclick="ordLimparBanco()"><i class="fas fa-trash"></i> Limpar</button>
+                                </div>
+                                <div class="act-mini" style="margin-top:10px;"><i class="fas fa-database"></i> Frases (<span id="ordCount">0</span>)</div>
+                                <div id="ordList" class="act-list"></div>
+                            </div>
+                        </div>
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-chalkboard"></i> Sessão</div></div>
+                            <div class="act-panel-body" style="position:relative;">
+                                <div id="ordScorebar"></div>
+                                <div id="ordProgress" class="act-mini">—</div>
+                                <div id="ordHint" class="act-mini" style="display:none;"></div>
+                                <div id="ordAnswer" class="ord-answer"></div>
+                                <div id="ordWords" class="ord-words"></div>
+                                <div class="actions" style="margin-top:12px;gap:10px;flex-wrap:wrap;">
+                                    <button class="btn-planner" data-onclick="ordIniciarSessao()"><i class="fas fa-play"></i> Iniciar</button>
+                                    <button class="btn-primary" data-onclick="ordVerificar()"><i class="fas fa-check"></i> Verificar</button>
+                                    <button id="ordBtnNext" class="btn-primary" data-onclick="ordProxima()"><i class="fas fa-forward"></i> Próxima</button>
+                                    <button class="btn-planner" data-onclick="ordLimpar()"><i class="fas fa-rotate"></i> Limpar</button>
+                                </div>
+                                <div id="ordMsg" class="act-mini" style="margin-top:10px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Timer global config -->
+            <div style="padding:4px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.78rem;border-top:1px solid var(--border-color);">
+                <span class="act-timer-cfg"><i class="fas fa-clock"></i> Timer: <select id="actTimerCfg" data-onchange="actSetTimerCfg()"><option value="0">Sem limite</option><option value="30">30s</option><option value="60">60s</option><option value="90">90s</option></select></span>
+                <span style="color:#64748b;">|</span>
+                <span id="actGlobalScore" style="font-weight:600;color:#64748b;">Placar: —</span>
             </div>
 
             <div class="modal-footer-xl">
@@ -10784,7 +11011,7 @@ function atividadesSetTab(tab){
   const modal = document.getElementById('modalAtividades');
   if(modal) modal.dataset.actTab = tab;
   atividadesUpdateTeacherBtn();
-  const map = { forca:['actTabForca','actViewForca'], vf:['actTabVF','actViewVF'], mem:['actTabMem','actViewMem'], fc:['actTabFC','actViewFC'] };
+  const map = { forca:['actTabForca','actViewForca'], vf:['actTabVF','actViewVF'], mem:['actTabMem','actViewMem'], fc:['actTabFC','actViewFC'], quiz:['actTabQuiz','actViewQuiz'], comp:['actTabComp','actViewComp'], ord:['actTabOrd','actViewOrd'] };
   Object.keys(map).forEach(k=>{
     const [btnId, viewId] = map[k];
     const btn = document.getElementById(btnId);
@@ -11240,10 +11467,11 @@ function vfRenderBank(){
     const ans = (it.a==='V') ? '<i class="fas fa-check"></i> Verdadeiro' : '<i class="fas fa-xmark"></i> Falso';
     const teor = (it.e || '').trim();
     const teorLine = teor ? `<div class="act-mini"><i class="fas fa-lightbulb"></i> ${_escHTML(teor.slice(0,120))}${teor.length>120?'…':''}</div>` : '';
+    const tagLine = (it.tag||'').trim() ? `<span style="display:inline-block;background:#ede9fe;color:#7c3aed;padding:1px 6px;border-radius:4px;font-size:.68rem;margin-top:2px;">${_escHTML(it.tag)}</span>` : '';
     return `
       <div class="act-item">
         <div class="txt">
-          <b>${_escHTML(ans)}</b>
+          <b>${_escHTML(ans)}</b> ${tagLine}
           <div class="act-mini">${_escHTML(it.t)}</div>
           ${teorLine}
         </div>
@@ -11259,13 +11487,15 @@ function vfAdicionar(){
   const t = String(document.getElementById('vfTexto')?.value || '').trim();
   const a = String(document.getElementById('vfResposta')?.value || 'V').toUpperCase()==='F' ? 'F' : 'V';
   const e = String(document.getElementById('vfTeoria')?.value || '').trim();
+  const tag = String(document.getElementById('vfTag')?.value || '').trim();
 
   if(!t){ _actToast('Digite uma pergunta/afirmação para adicionar.', 'error'); return; }
 
-  vfBank.push({ t, a, e });
+  vfBank.push({ t, a, e, tag });
 
   document.getElementById('vfTexto').value = '';
   document.getElementById('vfTeoria').value = '';
+  const tagEl=document.getElementById('vfTag'); if(tagEl) tagEl.value='';
 
   _actSaveAll();
   vfRenderBank();
@@ -11611,6 +11841,9 @@ function memResetUI(msg){
 function memRenderGrid(){
   const grid = document.getElementById('memGrid');
   if(!grid) return;
+  // Set grid class based on number of cards
+  const n=memState.cards?memState.cards.length:0;
+  grid.className='act-mgrid'+(n?(' grid-'+n):'');
   if(!memState.started || memState.cards.length === 0){
     grid.innerHTML = `<div class="act-mini">Adicione pares e clique em “Iniciar”.</div>`;
     return;
@@ -14196,6 +14429,759 @@ try{
     };
   }catch(_){}
 })();
+
+
+
+
+// ================================================================
+// V15 GAME ENGINE — Score, Timer, Feedback, TV Mode, 3 New Games
+// ================================================================
+
+// === GLOBAL SCORE TRACKER ===
+const actScore = { correct:0, wrong:0, total:0, startTime:0 };
+function actScoreReset(){ actScore.correct=0; actScore.wrong=0; actScore.total=0; actScore.startTime=Date.now(); actUpdateGlobalScore(); }
+function actScoreHit(isCorrect){ if(isCorrect) actScore.correct++; else actScore.wrong++; actScore.total++; actUpdateGlobalScore(); actFeedback(isCorrect); }
+function actUpdateGlobalScore(){
+  const el=document.getElementById('actGlobalScore');
+  if(el) el.innerHTML=`Placar: <span style="color:#16a34a;">✓${actScore.correct}</span> <span style="color:#dc2626;">✗${actScore.wrong}</span> de ${actScore.total}`;
+}
+function actGetScoreSummary(){
+  const elapsed=Math.round((Date.now()-actScore.startTime)/1000);
+  const pct=actScore.total?Math.round(actScore.correct/actScore.total*100):0;
+  return {correct:actScore.correct, wrong:actScore.wrong, total:actScore.total, pct, elapsed};
+}
+function actShowSummary(container){
+  const s=actGetScoreSummary();
+  const el=document.getElementById(container);
+  if(!el) return;
+  const emoji=s.pct>=80?'🏆':(s.pct>=60?'👍':(s.pct>=40?'📚':'💪'));
+  el.innerHTML=`<div class="act-summary"><h3>${emoji} Sessão Concluída!</h3><div class="big" style="color:${s.pct>=60?'#16a34a':'#dc2626'};">${s.pct}%</div><div class="detail">Acertos: ${s.correct} | Erros: ${s.wrong} | Total: ${s.total}</div><div class="detail">Tempo: ${Math.floor(s.elapsed/60)}min ${s.elapsed%60}s</div></div>`;
+}
+
+// === FEEDBACK ANIMATIONS ===
+function actFeedback(isCorrect){
+  const panel=document.querySelector('#modalAtividades .act-view:not([style*="none"]) .act-panel:last-child .act-panel-body');
+  if(!panel) return;
+  panel.classList.remove('act-feedback-correct','act-feedback-wrong');
+  void panel.offsetWidth; // trigger reflow
+  panel.classList.add(isCorrect?'act-feedback-correct':'act-feedback-wrong');
+  setTimeout(()=>panel.classList.remove('act-feedback-correct','act-feedback-wrong'),600);
+  if(isCorrect) actSpawnConfetti(panel);
+}
+function actSpawnConfetti(container){
+  const colors=['#16a34a','#0ea5e9','#f59e0b','#ec4899','#7c3aed'];
+  for(let i=0;i<8;i++){
+    const p=document.createElement('div');
+    p.className='act-confetti-particle';
+    p.style.left=Math.random()*80+10+'%';
+    p.style.top='50%';
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDelay=Math.random()*0.3+'s';
+    container.appendChild(p);
+    setTimeout(()=>p.remove(),1000);
+  }
+}
+
+// === GLOBAL TIMER ===
+let actTimerSec=0, actTimerInterval=null, actTimerRemaining=0;
+function actSetTimerCfg(){ actTimerSec=parseInt(document.getElementById('actTimerCfg')?.value||'0')||0; }
+function actTimerStart(onExpire){
+  actTimerStop();
+  if(!actTimerSec) return;
+  actTimerRemaining=actTimerSec;
+  actTimerInterval=setInterval(()=>{
+    actTimerRemaining--;
+    actUpdateTimerDisplay();
+    if(actTimerRemaining<=0){ actTimerStop(); if(onExpire) onExpire(); }
+  },1000);
+  actUpdateTimerDisplay();
+}
+function actTimerStop(){ if(actTimerInterval){clearInterval(actTimerInterval);actTimerInterval=null;} }
+function actUpdateTimerDisplay(){
+  document.querySelectorAll('.sc-timer').forEach(el=>{
+    if(!actTimerSec){el.textContent='';return;}
+    el.textContent=actTimerRemaining+'s';
+    el.className='sc-timer'+(actTimerRemaining<=5?' danger':(actTimerRemaining<=10?' warning':''));
+  });
+}
+function actRenderScorebar(containerId){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  const s=actScore;
+  el.innerHTML=`<div class="act-scorebar"><span class="sc-item sc-correct">✓ ${s.correct}</span><span class="sc-item sc-wrong">✗ ${s.wrong}</span><span class="sc-item sc-total">📊 ${s.total}</span>${actTimerSec?'<span class="sc-timer"></span>':''}</div>`;
+}
+
+// === TV MODE ===
+let actTVMode=false;
+function actToggleTVMode(){
+  actTVMode=!actTVMode;
+  const modal=document.getElementById('modalAtividades');
+  if(modal) modal.classList.toggle('act-tv',actTVMode);
+  const btn=document.getElementById('actBtnTV');
+  if(btn) btn.innerHTML=actTVMode?'<i class="fas fa-compress"></i> Normal':'<i class="fas fa-desktop"></i> TV';
+}
+
+// === PROGRESS BAR HELPER ===
+function actProgressHTML(current,total){
+  const pct=total?Math.round(current/total*100):0;
+  return `<div style="display:flex;align-items:center;gap:8px;"><span>${current}/${total}</span><div class="act-progress" style="flex:1;"><div class="act-progress-fill" style="width:${pct}%;"></div></div></div>`;
+}
+
+// ================================================================
+// FORCA IMPROVEMENTS (5: progress, 6: dynamic difficulty)
+// ================================================================
+try{
+  const __origForcaStartWord=_forcaStartWord;
+  _forcaStartWord=function(w,h,t){
+    // F6: Dynamic difficulty — longer words get more attempts
+    const len=(w||'').replace(/\s/g,'').length;
+    forcaState.maxErr = len>=10 ? 9 : (len>=7 ? 7 : 6);
+    __origForcaStartWord(w,h,t);
+    // Start timer
+    actTimerStart(()=>{
+      if(forcaState.active){ forcaState.active=false; forcaState.finished=true; forcaState.lastResult='timeout'; actScoreHit(false); forcaUpdateUI('⏰ Tempo esgotado!'); }
+    });
+  };
+  
+  const __origForcaUpdateUI=forcaUpdateUI;
+  forcaUpdateUI=function(msg){
+    __origForcaUpdateUI(msg);
+    // F5: Progress bar in session
+    if(forcaSession.started && forcaSession.order.length>0){
+      const prog=document.querySelector('#actViewForca .act-mini');
+      if(prog){
+        const idx=forcaSession.idx+1, total=forcaSession.order.length;
+        prog.innerHTML=actProgressHTML(idx,total);
+      }
+    }
+    // Score tracking on finish
+    if(forcaState.finished && forcaState.lastResult && !forcaState._scored){
+      forcaState._scored=true;
+      actScoreHit(forcaState.lastResult==='win');
+    }
+  };
+
+  const __origForcaIniciarSessao=forcaIniciarSessao;
+  forcaIniciarSessao=function(){ actScoreReset(); __origForcaIniciarSessao(); };
+  
+  // Reset scored flag on new word
+  const __origForcaReiniciar=forcaReiniciar;
+  forcaReiniciar=function(){ forcaState._scored=false; __origForcaReiniciar(); };
+}catch(_){}
+
+// ================================================================
+// V/F IMPROVEMENTS (7: explanation, 8: categories)
+// ================================================================
+try{
+  const __origVfUpdateSessionUI=vfUpdateSessionUI;
+  vfUpdateSessionUI=function(){
+    __origVfUpdateSessionUI();
+    // F7: Show explanation prominently after answering
+    if(vfState.started && vfState.answered){
+      const idx=vfState.order[vfState.idx];
+      const item=vfBank[idx];
+      if(item){
+        const tw=document.getElementById('vfTheoryWrap');
+        const tt=document.getElementById('vfTheoryText');
+        const correct=item.a===vfState.choice;
+        if(tw && tt){
+          const expText=item.e||'';
+          tw.style.display='block';
+          tt.innerHTML=`<div style="font-weight:700;margin-bottom:6px;color:${correct?'#16a34a':'#dc2626'};">${correct?'✓ Correto!':'✗ Incorreto!'} Resposta: ${item.a==='V'?'Verdadeiro':'Falso'}</div>${expText?'<div>'+_escHTML(expText)+'</div>':''}`;
+        }
+        // Score
+        if(!vfState._scoredIdx || vfState._scoredIdx!==vfState.idx){
+          vfState._scoredIdx=vfState.idx;
+          actScoreHit(correct);
+        }
+      }
+    } else {
+      const tw=document.getElementById('vfTheoryWrap');
+      if(tw) tw.style.display='none';
+    }
+    // Progress bar
+    if(vfState.started){
+      const prog=document.getElementById('vfProgress');
+      if(prog) prog.innerHTML=actProgressHTML(vfState.idx+1, vfState.order.length);
+    }
+    actRenderScorebar('vfScorebar_wrap');
+  };
+
+  const __origVfIniciarSessao=vfIniciarSessao;
+  vfIniciarSessao=function(){ actScoreReset(); vfState._scoredIdx=-1; __origVfIniciarSessao(); };
+
+  // F7: Timer for VF
+  const __origVfResponder=vfResponder;
+  // Hook into session start for timer
+  const __origVfNext=vfProxima;
+  vfProxima=function(){
+    __origVfNext();
+    if(vfState.started) actTimerStart(()=>{
+      if(vfState.started && !vfState.answered){ vfResponder('X'); } // auto-fail on timeout
+    });
+  };
+}catch(_){}
+
+// Add VF scorebar container if missing
+try{
+  const vfPanel=document.querySelector('#actViewVF .act-panel:last-child .act-panel-body');
+  if(vfPanel && !document.getElementById('vfScorebar_wrap')){
+    const d=document.createElement('div'); d.id='vfScorebar_wrap';
+    vfPanel.insertBefore(d, vfPanel.firstChild);
+  }
+}catch(_){}
+
+// ================================================================
+// MEMORY IMPROVEMENTS (9: timer+record, 10: grid sizes, 11: emoji)
+// ================================================================
+let memRecord=Infinity, memTimer=null, memTimeElapsed=0;
+try{
+  // F10: Add more grid size buttons
+  const memPanel=document.querySelector('#actViewMem .act-panel:last-child .act-panel-body');
+  if(memPanel){
+    const actionsDiv=memPanel.querySelector('.actions');
+    if(actionsDiv){
+      actionsDiv.innerHTML=`
+        <button class="btn-planner" data-onclick="memIniciar(4)"><i class="fas fa-play"></i> 4 pares</button>
+        <button class="btn-planner" data-onclick="memIniciar(6)"><i class="fas fa-play"></i> 6 pares</button>
+        <button class="btn-planner" data-onclick="memIniciar(8)"><i class="fas fa-play"></i> 8 pares</button>
+        <button class="btn-planner" data-onclick="memIniciar(12)"><i class="fas fa-play"></i> 12 pares</button>
+        <button class="btn-planner" data-onclick="memReiniciar()"><i class="fas fa-rotate"></i> Reiniciar</button>
+      `;
+      try{['memIniciar','memReiniciar'].forEach(n=>{if(typeof window[n]==='function')__wrapSafeGlobal(n)});}catch(_){}
+    }
+  }
+
+  // F9: Timer and record tracking
+  const __origMemIniciar=memIniciar;
+  memIniciar=function(n){
+    memTimeElapsed=0;
+    if(memTimer) clearInterval(memTimer);
+    memTimer=setInterval(()=>{memTimeElapsed++;},1000);
+    actScoreReset();
+    __origMemIniciar(n);
+  };
+
+  // Hook into memory completion
+  const __origMemMsg=memMsg;
+  memMsg=function(msg){
+    if(msg && msg.includes('todos os pares')){
+      if(memTimer){clearInterval(memTimer);memTimer=null;}
+      if(memState.moves<memRecord) memRecord=memState.moves;
+      const recTxt=memRecord<Infinity?` — Recorde: ${memRecord} movimentos`:'';
+      __origMemMsg(`🎉 Parabéns! ${memState.moves} movimentos em ${memTimeElapsed}s${recTxt}`);
+      actScoreHit(true);
+      return;
+    }
+    __origMemMsg(msg);
+  };
+
+  // F11: Emoji/image support in memory cards — handled in memRenderGrid
+  const __origMemRenderGrid=memRenderGrid;
+  memRenderGrid=function(){
+    __origMemRenderGrid();
+    // Post-process cards to render emoji/images
+    document.querySelectorAll('#memGrid .mem-card').forEach(card=>{
+      const text=card.textContent.trim();
+      // If content looks like URL, render as image
+      if(text.match(/^https?:\/\/.+\.(png|jpg|gif|svg|webp)/i)){
+        card.innerHTML=`<img src="${_escHTML(text)}" style="max-width:80px;max-height:60px;object-fit:contain;" onerror="this.parentNode.textContent='❌'">`;
+      }
+    });
+  };
+}catch(_){}
+
+// ================================================================
+// FLASHCARDS IMPROVEMENTS (12: Leitner, 13: swipe)
+// ================================================================
+try{
+  // F12: Add Leitner buttons after flip
+  const fcPanel=document.querySelector('#actViewFC .act-panel:last-child .act-panel-body');
+  if(fcPanel && !document.getElementById('fcLeitner')){
+    const d=document.createElement('div');
+    d.id='fcLeitner';
+    d.className='fc-leitner';
+    d.style.display='none';
+    d.innerHTML=`
+      <button class="fc-l-wrong" data-onclick="fcLeitnerMark('wrong')">❌ Não sei</button>
+      <button class="fc-l-ok" data-onclick="fcLeitnerMark('ok')">🤔 Quase</button>
+      <button class="fc-l-know" data-onclick="fcLeitnerMark('know')">✅ Sei</button>
+    `;
+    const actions=fcPanel.querySelector('.actions');
+    if(actions) fcPanel.insertBefore(d,actions);
+    try{__wrapSafeGlobal('fcLeitnerMark');}catch(_){}
+  }
+
+  let fcLeitnerBoxes={wrong:[],ok:[],know:[]};
+  
+  window.fcLeitnerMark=function(box){
+    const it=_fcCurrent();
+    if(!it) return;
+    const idx=fcState.order[fcState.idx];
+    // Remove from other boxes
+    ['wrong','ok','know'].forEach(b=>{ fcLeitnerBoxes[b]=fcLeitnerBoxes[b].filter(i=>i!==idx); });
+    fcLeitnerBoxes[box].push(idx);
+    // Auto advance
+    fcProximo();
+  };
+
+  // Show Leitner buttons when card is flipped
+  const __origFcRenderSessao=fcRenderSessao;
+  fcRenderSessao=function(){
+    __origFcRenderSessao();
+    const leitner=document.getElementById('fcLeitner');
+    if(leitner) leitner.style.display=(fcState.started && fcState.flipped)?'flex':'none';
+  };
+
+  // At end of session, re-queue wrong items first
+  const __origFcIniciarSessao=fcIniciarSessao;
+  fcIniciarSessao=function(shuffle){
+    // If there are "wrong" items from previous session, prioritize them
+    if(fcLeitnerBoxes.wrong.length>0 && fcBank.length>0){
+      const wrongFirst=[...fcLeitnerBoxes.wrong];
+      const rest=fcBank.map((_,i)=>i).filter(i=>!wrongFirst.includes(i));
+      fcState.started=true;
+      fcState.order=[...wrongFirst,...rest];
+      fcState.idx=0;
+      fcState.flipped=false;
+      fcLeitnerBoxes={wrong:[],ok:[],know:[]};
+      atividadesSetLocked(true);
+      fcRenderSessao();
+      _actToast('Revisando itens que errou primeiro!');
+      return;
+    }
+    fcLeitnerBoxes={wrong:[],ok:[],know:[]};
+    __origFcIniciarSessao(shuffle);
+  };
+
+  // F13: Swipe support for flashcards
+  const fcCardEl=document.getElementById('fcCard');
+  if(fcCardEl){
+    let fcTouchX=0;
+    fcCardEl.addEventListener('touchstart',e=>{fcTouchX=e.touches[0].clientX;},{passive:true});
+    fcCardEl.addEventListener('touchend',e=>{
+      const dx=e.changedTouches[0].clientX-fcTouchX;
+      if(Math.abs(dx)>50){
+        if(dx>0) try{fcAnterior();}catch(_){} // swipe right = previous
+        else try{fcProximo();}catch(_){} // swipe left = next
+      }
+    },{passive:true});
+  }
+}catch(_){}
+
+// ================================================================
+// NEW GAME: QUIZ MÚLTIPLA ESCOLHA (14)
+// ================================================================
+let quizBank=[], quizState={started:false, idx:0, order:[], answered:false};
+const QUIZ_STORAGE='sgp_atividades_quiz_bank';
+function quizLoad(){ try{quizBank=JSON.parse(localStorage.getItem(QUIZ_STORAGE))||[];}catch(_){quizBank=[];} }
+function quizSave(){ try{__safeLSSet(QUIZ_STORAGE,JSON.stringify(quizBank));}catch(_){} }
+
+function quizAdicionar(){
+  const q=document.getElementById('quizPerg')?.value?.trim();
+  const alts=[document.getElementById('quizA')?.value?.trim(),document.getElementById('quizB')?.value?.trim(),document.getElementById('quizC')?.value?.trim(),document.getElementById('quizD')?.value?.trim()];
+  const corr=parseInt(document.getElementById('quizCorreta')?.value||'0');
+  const exp=document.getElementById('quizExp')?.value?.trim()||'';
+  if(!q||alts.some(a=>!a)) return _actToast('Preencha pergunta e 4 alternativas.','error');
+  quizBank.push({q,alts,corr,exp}); quizSave(); quizRenderBank();
+  ['quizPerg','quizA','quizB','quizC','quizD','quizExp'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  _actToast('Pergunta adicionada!');
+}
+function quizRenderBank(){
+  const el=document.getElementById('quizList'), cnt=document.getElementById('quizCount');
+  if(cnt) cnt.textContent=quizBank.length;
+  if(!el) return;
+  el.innerHTML=quizBank.map((it,i)=>`<div class="act-list-item"><span>${_escHTML(it.q.substring(0,50))}... <small style="color:#64748b;">[${['A','B','C','D'][it.corr]}]</small></span><button class="btn-planner danger" style="padding:2px 6px;" data-onclick="quizRemover(${i})"><i class="fas fa-trash"></i></button></div>`).join('');
+}
+function quizRemover(i){ quizBank.splice(i,1); quizSave(); quizRenderBank(); }
+function quizLimparBanco(){ if(confirm('Limpar banco do Quiz?')){quizBank=[];quizSave();quizRenderBank();} }
+
+function quizIniciarSessao(){
+  if(!quizBank.length) return _actToast('Adicione perguntas.','error');
+  atividadesSetLocked(true); actScoreReset();
+  quizState.started=true; quizState.idx=0; quizState.answered=false;
+  quizState.order=quizBank.map((_,i)=>i).sort(()=>Math.random()-.5);
+  quizRenderSessao();
+}
+function quizRenderSessao(){
+  const show=document.getElementById('quizShow'), opts=document.getElementById('quizOptions'), prog=document.getElementById('quizProgress');
+  const tw=document.getElementById('quizTheoryWrap'), tt=document.getElementById('quizTheoryText');
+  if(!quizState.started){show.textContent='Adicione perguntas para começar.';opts.innerHTML='';return;}
+  const it=quizBank[quizState.order[quizState.idx]];
+  if(!it){quizState.started=false;actShowSummary('quizMsg');return;}
+  if(prog) prog.innerHTML=actProgressHTML(quizState.idx+1,quizState.order.length);
+  actRenderScorebar('quizScorebar');
+  show.textContent=it.q;
+  if(tw) tw.style.display='none';
+  const letters=['A','B','C','D'];
+  opts.innerHTML=it.alts.map((a,i)=>`<button class="quiz-option" data-onclick="quizResponder(${i})">${letters[i]}) ${_escHTML(a)}</button>`).join('');
+  quizState.answered=false;
+  actTimerStart(()=>{ if(quizState.started&&!quizState.answered) quizResponder(-1); });
+}
+function quizResponder(choice){
+  if(!quizState.started||quizState.answered) return;
+  quizState.answered=true;
+  actTimerStop();
+  const it=quizBank[quizState.order[quizState.idx]];
+  const correct=choice===it.corr;
+  actScoreHit(correct);
+  // Highlight options
+  document.querySelectorAll('.quiz-option').forEach((btn,i)=>{
+    if(i===it.corr) btn.classList.add('correct');
+    else if(i===choice) btn.classList.add('wrong');
+    else btn.classList.add('dimmed');
+    btn.style.pointerEvents='none';
+  });
+  // Show explanation
+  const tw=document.getElementById('quizTheoryWrap'),tt=document.getElementById('quizTheoryText');
+  if(tw&&it.exp){tw.style.display='block';tt.textContent=it.exp;}
+  actRenderScorebar('quizScorebar');
+}
+function quizProxima(){
+  if(!quizState.started) return;
+  if(!quizState.answered) return _actToast('Responda antes de avançar.','error');
+  quizState.idx++;
+  if(quizState.idx>=quizState.order.length){quizState.started=false;actShowSummary('quizMsg');actRenderScorebar('quizScorebar');return;}
+  quizRenderSessao();
+}
+
+// ================================================================
+// NEW GAME: COMPLETAR FRASE (15)
+// ================================================================
+let compBank=[], compState={started:false, idx:0, order:[], answered:false};
+const COMP_STORAGE='sgp_atividades_comp_bank';
+function compLoad(){ try{compBank=JSON.parse(localStorage.getItem(COMP_STORAGE))||[];}catch(_){compBank=[];} }
+function compSave(){ try{__safeLSSet(COMP_STORAGE,JSON.stringify(compBank));}catch(_){} }
+
+function compAdicionar(){
+  const f=document.getElementById('compFrase')?.value?.trim();
+  const r=document.getElementById('compResp')?.value?.trim();
+  const e=document.getElementById('compExp')?.value?.trim()||'';
+  if(!f||!r) return _actToast('Preencha frase e resposta.','error');
+  if(!f.includes('___')) return _actToast('Use ___ na frase para marcar a lacuna.','error');
+  compBank.push({f,r,e}); compSave(); compRenderBank();
+  ['compFrase','compResp','compExp'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  _actToast('Frase adicionada!');
+}
+function compRenderBank(){
+  const el=document.getElementById('compList'),cnt=document.getElementById('compCount');
+  if(cnt) cnt.textContent=compBank.length;
+  if(!el) return;
+  el.innerHTML=compBank.map((it,i)=>`<div class="act-list-item"><span>${_escHTML(it.f.substring(0,50))}... <small style="color:#16a34a;">[${_escHTML(it.r)}]</small></span><button class="btn-planner danger" style="padding:2px 6px;" data-onclick="compRemover(${i})"><i class="fas fa-trash"></i></button></div>`).join('');
+}
+function compRemover(i){ compBank.splice(i,1); compSave(); compRenderBank(); }
+function compLimparBanco(){ if(confirm('Limpar banco?')){compBank=[];compSave();compRenderBank();} }
+
+function compIniciarSessao(){
+  if(!compBank.length) return _actToast('Adicione frases.','error');
+  atividadesSetLocked(true); actScoreReset();
+  compState.started=true; compState.idx=0; compState.answered=false;
+  compState.order=compBank.map((_,i)=>i).sort(()=>Math.random()-.5);
+  compRenderSessao();
+}
+function compRenderSessao(){
+  const show=document.getElementById('compShow'),inp=document.getElementById('compInputArea'),prog=document.getElementById('compProgress');
+  const tw=document.getElementById('compTheoryWrap');
+  if(!compState.started){show.textContent='Adicione frases para começar.';inp.style.display='none';return;}
+  const it=compBank[compState.order[compState.idx]];
+  if(!it){compState.started=false;actShowSummary('compMsg');return;}
+  if(prog) prog.innerHTML=actProgressHTML(compState.idx+1,compState.order.length);
+  actRenderScorebar('compScorebar');
+  // Replace ___ with visual blank
+  show.innerHTML=_escHTML(it.f).replace(/___/g,'<span class="comp-blank">&nbsp;</span>');
+  inp.style.display='block';
+  const answer=document.getElementById('compAnswer');
+  if(answer){answer.value='';answer.classList.remove('correct','wrong');answer.focus();}
+  if(tw) tw.style.display='none';
+  compState.answered=false;
+  actTimerStart(()=>{ if(compState.started&&!compState.answered) compVerificar(); });
+}
+function _compNormalize(s){ return (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function compVerificar(){
+  if(!compState.started||compState.answered) return;
+  compState.answered=true;
+  actTimerStop();
+  const it=compBank[compState.order[compState.idx]];
+  const answer=document.getElementById('compAnswer');
+  const userAnswer=answer?.value||'';
+  const correct=_compNormalize(userAnswer)===_compNormalize(it.r);
+  actScoreHit(correct);
+  if(answer) answer.classList.add(correct?'correct':'wrong');
+  // Show correct answer and explanation
+  const show=document.getElementById('compShow');
+  show.innerHTML=_escHTML(it.f).replace(/___/g,`<span class="comp-blank" style="color:${correct?'#16a34a':'#dc2626'};font-weight:700;">${_escHTML(it.r)}</span>`);
+  if(!correct && answer) answer.value=answer.value+' → '+it.r;
+  const tw=document.getElementById('compTheoryWrap'),tt=document.getElementById('compTheoryText');
+  if(tw&&it.e){tw.style.display='block';tt.textContent=it.e;}
+  actRenderScorebar('compScorebar');
+}
+function compProxima(){
+  if(!compState.started) return;
+  if(!compState.answered) return _actToast('Verifique antes de avançar.','error');
+  compState.idx++;
+  if(compState.idx>=compState.order.length){compState.started=false;actShowSummary('compMsg');actRenderScorebar('compScorebar');return;}
+  compRenderSessao();
+}
+
+// ================================================================
+// NEW GAME: ORDENAR PALAVRAS (16)
+// ================================================================
+let ordBank=[], ordState={started:false, idx:0, order:[], answered:false, placed:[]};
+const ORD_STORAGE='sgp_atividades_ord_bank';
+function ordLoad(){ try{ordBank=JSON.parse(localStorage.getItem(ORD_STORAGE))||[];}catch(_){ordBank=[];} }
+function ordSave(){ try{__safeLSSet(ORD_STORAGE,JSON.stringify(ordBank));}catch(_){} }
+
+function ordAdicionar(){
+  const f=document.getElementById('ordFrase')?.value?.trim();
+  const d=document.getElementById('ordDica')?.value?.trim()||'';
+  if(!f||f.split(/\s+/).length<3) return _actToast('Frase deve ter pelo menos 3 palavras.','error');
+  ordBank.push({f,d}); ordSave(); ordRenderBank();
+  ['ordFrase','ordDica'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  _actToast('Frase adicionada!');
+}
+function ordRenderBank(){
+  const el=document.getElementById('ordList'),cnt=document.getElementById('ordCount');
+  if(cnt) cnt.textContent=ordBank.length;
+  if(!el) return;
+  el.innerHTML=ordBank.map((it,i)=>`<div class="act-list-item"><span>${_escHTML(it.f.substring(0,50))}</span><button class="btn-planner danger" style="padding:2px 6px;" data-onclick="ordRemover(${i})"><i class="fas fa-trash"></i></button></div>`).join('');
+}
+function ordRemover(i){ ordBank.splice(i,1); ordSave(); ordRenderBank(); }
+function ordLimparBanco(){ if(confirm('Limpar banco?')){ordBank=[];ordSave();ordRenderBank();} }
+
+function ordIniciarSessao(){
+  if(!ordBank.length) return _actToast('Adicione frases.','error');
+  atividadesSetLocked(true); actScoreReset();
+  ordState.started=true; ordState.idx=0; ordState.answered=false; ordState.placed=[];
+  ordState.order=ordBank.map((_,i)=>i).sort(()=>Math.random()-.5);
+  ordRenderSessao();
+}
+function ordRenderSessao(){
+  const words=document.getElementById('ordWords'),answer=document.getElementById('ordAnswer'),prog=document.getElementById('ordProgress'),hint=document.getElementById('ordHint');
+  if(!ordState.started){words.innerHTML='';answer.innerHTML='';return;}
+  const it=ordBank[ordState.order[ordState.idx]];
+  if(!it){ordState.started=false;actShowSummary('ordMsg');return;}
+  if(prog) prog.innerHTML=actProgressHTML(ordState.idx+1,ordState.order.length);
+  actRenderScorebar('ordScorebar');
+  if(hint&&it.d){hint.style.display='block';hint.innerHTML='💡 '+_escHTML(it.d);}else if(hint) hint.style.display='none';
+  // Shuffle words
+  const wordArr=it.f.split(/\s+/);
+  const shuffled=[...wordArr].sort(()=>Math.random()-.5);
+  ordState.placed=[];
+  ordState.answered=false;
+  ordState._words=wordArr;
+  ordState._shuffled=shuffled;
+  words.innerHTML=shuffled.map((w,i)=>`<button class="ord-word" data-onclick="ordSelectWord(${i})">${_escHTML(w)}</button>`).join('');
+  answer.innerHTML='';
+  actTimerStart(()=>{ if(ordState.started&&!ordState.answered) ordVerificar(); });
+}
+window.ordSelectWord=function(i){
+  if(ordState.answered) return;
+  const words=document.getElementById('ordWords'),answer=document.getElementById('ordAnswer');
+  const btns=words.querySelectorAll('.ord-word');
+  if(btns[i]&&!btns[i].classList.contains('placed')){
+    btns[i].classList.add('placed');
+    ordState.placed.push(ordState._shuffled[i]);
+    const wb=document.createElement('button');
+    wb.className='ord-word';
+    wb.textContent=ordState._shuffled[i];
+    wb.setAttribute('data-onclick',`ordRemoveWord(${ordState.placed.length-1})`);
+    answer.appendChild(wb);
+  }
+};
+window.ordRemoveWord=function(i){
+  if(ordState.answered) return;
+  ordState.placed.splice(i,1);
+  // Rebuild answer and source
+  const answer=document.getElementById('ordAnswer'),words=document.getElementById('ordWords');
+  answer.innerHTML=ordState.placed.map((w,j)=>`<button class="ord-word" data-onclick="ordRemoveWord(${j})">${_escHTML(w)}</button>`).join('');
+  // Reset source highlights
+  const btns=words.querySelectorAll('.ord-word');
+  btns.forEach(b=>b.classList.remove('placed'));
+  const usedCounts={};
+  ordState.placed.forEach(w=>{usedCounts[w]=(usedCounts[w]||0)+1;});
+  btns.forEach((b,idx)=>{
+    const w=ordState._shuffled[idx];
+    if(usedCounts[w]>0){b.classList.add('placed');usedCounts[w]--;}
+  });
+};
+function ordLimpar(){
+  ordState.placed=[];
+  const answer=document.getElementById('ordAnswer'),words=document.getElementById('ordWords');
+  if(answer) answer.innerHTML='';
+  if(words) words.querySelectorAll('.ord-word').forEach(b=>b.classList.remove('placed'));
+}
+function ordVerificar(){
+  if(!ordState.started||ordState.answered) return;
+  if(ordState.placed.length===0) return _actToast('Ordene as palavras primeiro.','error');
+  ordState.answered=true;
+  actTimerStop();
+  const correct=ordState.placed.join(' ')===ordState._words.join(' ');
+  actScoreHit(correct);
+  // Color answer words
+  const answerEl=document.getElementById('ordAnswer');
+  answerEl.querySelectorAll('.ord-word').forEach((b,i)=>{
+    if(ordState._words[i]&&b.textContent===ordState._words[i]) b.classList.add('correct');
+    else b.classList.add('wrong');
+  });
+  if(!correct){
+    const msg=document.getElementById('ordMsg');
+    if(msg) msg.innerHTML='Ordem correta: <b>'+_escHTML(ordState._words.join(' '))+'</b>';
+  }
+  actRenderScorebar('ordScorebar');
+}
+function ordProxima(){
+  if(!ordState.started) return;
+  if(!ordState.answered) return _actToast('Verifique antes de avançar.','error');
+  document.getElementById('ordMsg').innerHTML='';
+  ordState.idx++;
+  if(ordState.idx>=ordState.order.length){ordState.started=false;actShowSummary('ordMsg');actRenderScorebar('ordScorebar');return;}
+  ordRenderSessao();
+}
+
+// ================================================================
+// EXPORT/IMPORT ENHANCEMENTS (19)
+// ================================================================
+try{
+  const __origExportAll=atividadesExportAll;
+  atividadesExportAll=function(){
+    const payload={
+      version:'sgp_atividades_v2',
+      exportedAt:new Date().toISOString(),
+      forcaBank, vfBank, memBank, fcBank,
+      quizBank: quizBank||[],
+      compBank: compBank||[],
+      ordBank: ordBank||[]
+    };
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='SGP_Atividades_Backup.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},0);
+  };
+
+  // Enhance import to include new games
+  const __origImportFile=atividadesImportFile;
+  atividadesImportFile=function(input){
+    const file=input?.files?.[0];
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        const data=JSON.parse(e.target.result);
+        // Use original import for base games
+        __origImportFile.call(null,{files:[file]});
+        // Also import new games
+        setTimeout(()=>{
+          if(Array.isArray(data.quizBank)){ quizBank=data.quizBank; quizSave(); quizRenderBank(); }
+          if(Array.isArray(data.compBank)){ compBank=data.compBank; compSave(); compRenderBank(); }
+          if(Array.isArray(data.ordBank)){ ordBank=data.ordBank; ordSave(); ordRenderBank(); }
+        },500);
+      }catch(_){ _actToast('Erro ao importar.','error'); }
+    };
+    reader.readAsText(file);
+  };
+}catch(_){}
+
+// ================================================================
+// INIT NEW GAMES
+// ================================================================
+try{
+  quizLoad(); compLoad(); ordLoad();
+  quizRenderBank(); compRenderBank(); ordRenderBank();
+}catch(_){}
+
+// Whitelist new functions
+try{
+  ['quizAdicionar','quizRemover','quizLimparBanco','quizIniciarSessao','quizResponder','quizProxima',
+   'compAdicionar','compRemover','compLimparBanco','compIniciarSessao','compVerificar','compProxima',
+   'ordAdicionar','ordRemover','ordLimparBanco','ordIniciarSessao','ordVerificar','ordProxima','ordLimpar',
+   'ordSelectWord','ordRemoveWord','actToggleTVMode','actSetTimerCfg','fcLeitnerMark','memIniciar'
+  ].forEach(n=>{ if(typeof __wrapSafeGlobal==='function' && typeof window[n]==='function') __wrapSafeGlobal(n); });
+}catch(_){}
+
+// ================================================================
+// FEATURE 17: VINCULAR ATIVIDADES A AULAS DO CRONOGRAMA
+// ================================================================
+// Add "Jogar" button to each aula in the cronograma view
+try{
+  const __origRenderAulas = renderizarAulas;
+  renderizarAulas = function(){
+    __origRenderAulas();
+    // After rendering, add game buttons to each aula row
+    document.querySelectorAll('.aula-item, .aula-row, [data-aula-id]').forEach(el => {
+      if(el.querySelector('.aula-game-btn')) return;
+      const btn = document.createElement('button');
+      btn.className = 'btn-planner aula-game-btn';
+      btn.style.cssText = 'padding:3px 8px;font-size:.72rem;margin-left:4px;';
+      btn.innerHTML = '<i class="fas fa-gamepad"></i>';
+      btn.title = 'Abrir atividades';
+      btn.setAttribute('data-onclick', 'abrirAtividadesFromAula()');
+      const actionsArea = el.querySelector('.aula-actions, .actions') || el;
+      actionsArea.appendChild(btn);
+    });
+  };
+}catch(_){}
+
+function abrirAtividadesFromAula(){
+  try{ abrirModal('modalAtividades'); }catch(_){}
+}
+
+// ================================================================
+// FEATURE 18: GROUP SCORING (Groups mode for TV)
+// ================================================================
+let actGroups = [];
+function actGroupSetup(){
+  const n = prompt('Quantos grupos? (2-8):', '4');
+  const num = parseInt(n);
+  if(!num || num < 2 || num > 8) return _actToast('Número inválido.', 'error');
+  const colors = ['#dc2626','#2563eb','#16a34a','#f59e0b','#7c3aed','#ec4899','#0d9488','#ea580c'];
+  const names = ['Vermelho','Azul','Verde','Amarelo','Roxo','Rosa','Turquesa','Laranja'];
+  actGroups = [];
+  for(let i = 0; i < num; i++){
+    actGroups.push({ name: names[i] || 'Grupo '+(i+1), color: colors[i] || '#64748b', score: 0 });
+  }
+  actRenderGroupScore();
+  _actToast(`${num} grupos criados!`);
+}
+
+function actGroupPoint(idx, pts){
+  if(!actGroups[idx]) return;
+  actGroups[idx].score += pts;
+  actRenderGroupScore();
+}
+
+function actRenderGroupScore(){
+  const el = document.getElementById('actGlobalScore');
+  if(!el || !actGroups.length) return;
+  let html = '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">';
+  actGroups.forEach((g,i) => {
+    html += `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;background:${g.color}22;border:2px solid ${g.color};font-weight:700;font-size:.85rem;cursor:pointer;" onclick="actGroupPoint(${i},1)" title="Clique para +1 ponto">
+      <span style="color:${g.color};">${_escHTML(g.name)}</span>
+      <span style="font-size:1.1rem;">${g.score}</span>
+    </span>`;
+  });
+  html += '<button style="padding:2px 6px;border:1px solid #cbd5e1;border-radius:4px;background:transparent;cursor:pointer;font-size:.65rem;" onclick="actGroupSetup()">⚙️</button>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// Add groups button to global score area
+try{
+  const scoreEl = document.getElementById('actGlobalScore');
+  if(scoreEl && !scoreEl.dataset.groupInit){
+    scoreEl.dataset.groupInit = '1';
+    const origHTML = scoreEl.innerHTML;
+    scoreEl.innerHTML = origHTML + ' <button style="padding:2px 8px;border:1px solid #cbd5e1;border-radius:6px;background:transparent;cursor:pointer;font-size:.72rem;" onclick="actGroupSetup()"><i class="fas fa-users"></i> Grupos</button>';
+  }
+}catch(_){}
+
+// Whitelist group functions
+try{
+  ['actGroupSetup','actGroupPoint','abrirAtividadesFromAula'].forEach(n=>{
+    if(typeof __wrapSafeGlobal==='function' && typeof window[n]==='function') __wrapSafeGlobal(n);
+  });
+}catch(_){}
 
 
 </script>
