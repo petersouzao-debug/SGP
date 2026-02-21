@@ -1,7 +1,7 @@
-// SGP - Service Worker v14
+// SGP - Service Worker v15.1 (Games + Bulk Import)
 // Garante funcionamento offline e instalação como PWA
 
-const CACHE_NAME = 'sgp-v15';
+const CACHE_NAME = 'sgp-v15.1';
 
 // Instala: salva o app no cache
 self.addEventListener('install', event => {

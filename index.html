@@ -127,6 +127,7 @@ i.fa .sgp-ico-fill, i.fas .sgp-ico-fill, i.far .sgp-ico-fill, i.fab .sgp-ico-fil
     "fa-list-ol":"list",
     "fa-pen-nib":"pen",
     "fa-sort":"sort",
+    "fa-paste":"clipboard",
     "fa-bars":"list",
     "fa-calendar":"calendar",
     "fa-calendar-alt":"calendar",
@@ -3233,6 +3234,22 @@ body.sidebar-hidden main{margin-left:0;}
 .fc-leitner .fc-l-wrong{border-color:#dc2626;color:#dc2626;} .fc-leitner .fc-l-ok{border-color:#f59e0b;color:#f59e0b;} .fc-leitner .fc-l-know{border-color:#16a34a;color:#16a34a;}
 .fc-leitner button:hover{transform:translateY(-1px);}
 
+/* Bulk import modal */
+.bulk-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10001;display:flex;align-items:center;justify-content:center;}
+.bulk-container{background:#fff;color:#1e293b;width:94vw;max-width:700px;max-height:90vh;overflow-y:auto;border-radius:14px;padding:20px;position:relative;}
+body.dark-mode .bulk-container{background:#1e293b;color:#e2e8f0;}
+.bulk-container h3{margin:0 0 8px;}
+.bulk-textarea{width:100%;min-height:200px;padding:12px;border:2px solid #cbd5e1;border-radius:10px;font-family:monospace;font-size:.85rem;line-height:1.5;resize:vertical;background:var(--card-bg,#fff);color:var(--text-color,#1e293b);}
+.bulk-textarea:focus{border-color:#7c3aed;outline:none;}
+.bulk-hint{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:.78rem;color:#5b21b6;line-height:1.6;}
+body.dark-mode .bulk-hint{background:#2d2052;border-color:#5b21b6;color:#c4b5fd;}
+.bulk-hint code{background:#ede9fe;padding:1px 5px;border-radius:3px;font-size:.75rem;}
+body.dark-mode .bulk-hint code{background:#3b2d6e;}
+.bulk-preview{margin:10px 0;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:.78rem;max-height:150px;overflow-y:auto;}
+body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
+.bulk-preview .bp-ok{color:#16a34a;} .bulk-preview .bp-err{color:#dc2626;}
+.bulk-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
+
 
 </style>
 </head>
@@ -4365,6 +4382,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                                 <div class="actions" style="gap:10px; flex-wrap:wrap;">
                                     <button class="btn-primary" data-onclick="forcaIniciar()"><i class="fas fa-play"></i> Iniciar</button>
                                     <button class="btn-planner" data-onclick="forcaAdicionarAoBanco()"><i class="fas fa-plus"></i> Banco</button>
+                                    <button class="btn-planner" data-onclick="actBulkOpen('forca')" style="background:#7c3aed22;border-color:#7c3aed;color:#7c3aed;"><i class="fas fa-paste"></i> Colar em Lote</button>
                                     <button class="btn-planner" data-onclick="forcaSortear()"><i class="fas fa-shuffle"></i> Sortear</button>
                                     <button class="btn-planner" data-onclick="forcaIniciarSessao()"><i class="fas fa-layer-group"></i> Sessão</button>
                                     <button class="btn-planner danger" data-onclick="forcaLimparBanco()"><i class="fas fa-trash"></i> Limpar banco</button>
@@ -4469,6 +4487,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
 
                                 <div class="actions" style="gap:10px; flex-wrap:wrap;">
                                     <button class="btn-planner" data-onclick="vfIniciarSessao()"><i class="fas fa-play"></i> Iniciar sessão</button>
+                                    <button class="btn-planner" data-onclick="actBulkOpen('vf')" style="background:#7c3aed22;border-color:#7c3aed;color:#7c3aed;"><i class="fas fa-paste"></i> Colar em Lote</button>
                                     <button class="btn-planner" data-onclick="vfEmbaralhar()"><i class="fas fa-shuffle"></i> Embaralhar</button>
                                     <button class="btn-planner danger" data-onclick="vfLimparBanco()"><i class="fas fa-trash"></i> Limpar banco</button>
                                 </div>
@@ -4535,6 +4554,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                                 </div>
                                 <div class="actions" style="gap:10px; flex-wrap:wrap;">
                                     <button class="btn-primary" data-onclick="memAdicionar()"><i class="fas fa-plus"></i> Adicionar par</button>
+                                    <button class="btn-planner" data-onclick="actBulkOpen('mem')" style="background:#7c3aed22;border-color:#7c3aed;color:#7c3aed;"><i class="fas fa-paste"></i> Colar em Lote</button>
                                     <button class="btn-planner" data-onclick="memIniciar(4)"><i class="fas fa-play"></i> 4 pares</button>
                                     <button class="btn-planner" data-onclick="memIniciar(6)"><i class="fas fa-play"></i> 6 pares</button>
                                     <button class="btn-planner" data-onclick="memIniciar(8)"><i class="fas fa-play"></i> 8 pares</button>
@@ -4592,6 +4612,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
 
                                 <div class="actions" style="gap:10px; flex-wrap:wrap;">
                                     <button class="btn-primary" data-onclick="fcAdicionar()"><i class="fas fa-plus"></i> Adicionar</button>
+                                    <button class="btn-planner" data-onclick="actBulkOpen('fc')" style="background:#7c3aed22;border-color:#7c3aed;color:#7c3aed;"><i class="fas fa-paste"></i> Colar em Lote</button>
                                     <button class="btn-planner" data-onclick="fcIniciarSessao(false)"><i class="fas fa-play"></i> Iniciar</button>
                                     <button class="btn-planner" data-onclick="fcIniciarSessao(true)"><i class="fas fa-shuffle"></i> Iniciar embaralhado</button>
                                     <button class="btn-planner danger" data-onclick="fcLimparBanco()"><i class="fas fa-trash"></i> Limpar banco</button>
@@ -4648,7 +4669,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                                 <div class="form-row"><div class="form-group"><label>Correta</label><select id="quizCorreta" class="inp"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></div>
                                 <div class="form-group"><label>&nbsp;</label><button class="btn-primary" style="width:100%;" data-onclick="quizAdicionar()"><i class="fas fa-plus"></i> Adicionar</button></div></div>
                                 <div class="form-group"><label>Explicação (opcional)</label><textarea id="quizExp" class="inp" rows="2" placeholder="Por que esta é a resposta correta?"></textarea></div>
-                                <div class="actions" style="gap:10px;flex-wrap:wrap;"><button class="btn-planner" data-onclick="quizIniciarSessao()"><i class="fas fa-play"></i> Iniciar</button><button class="btn-planner danger" data-onclick="quizLimparBanco()"><i class="fas fa-trash"></i> Limpar</button></div>
+                                <div class="actions" style="gap:10px;flex-wrap:wrap;"><button class="btn-planner" data-onclick="quizIniciarSessao()"><i class="fas fa-play"></i> Iniciar</button><button class="btn-planner" data-onclick="actBulkOpen('quiz')" style="background:#7c3aed22;border-color:#7c3aed;color:#7c3aed;"><i class="fas fa-paste"></i> Colar em Lote</button><button class="btn-planner danger" data-onclick="quizLimparBanco()"><i class="fas fa-trash"></i> Limpar</button></div>
                                 <div class="act-mini" style="margin-top:10px;"><i class="fas fa-database"></i> Perguntas (<span id="quizCount">0</span>)</div>
                                 <div id="quizList" class="act-list"></div>
                             </div>
@@ -4685,6 +4706,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                                 <div class="form-group"><label>Explicação (opcional)</label><input id="compExp" class="inp" placeholder="Explicação breve"></div>
                                 <div class="actions" style="gap:10px;flex-wrap:wrap;">
                                     <button class="btn-primary" data-onclick="compAdicionar()"><i class="fas fa-plus"></i> Adicionar</button>
+                                    <button class="btn-planner" data-onclick="actBulkOpen('comp')" style="background:#7c3aed22;border-color:#7c3aed;color:#7c3aed;"><i class="fas fa-paste"></i> Colar em Lote</button>
                                     <button class="btn-planner" data-onclick="compIniciarSessao()"><i class="fas fa-play"></i> Iniciar</button>
                                     <button class="btn-planner danger" data-onclick="compLimparBanco()"><i class="fas fa-trash"></i> Limpar</button>
                                 </div>
@@ -4723,6 +4745,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                                 <div class="form-group"><label>Dica (opcional)</label><input id="ordDica" class="inp" placeholder="Ex: Sujeito + Verbo + Objeto"></div>
                                 <div class="actions" style="gap:10px;flex-wrap:wrap;">
                                     <button class="btn-primary" data-onclick="ordAdicionar()"><i class="fas fa-plus"></i> Adicionar</button>
+                                    <button class="btn-planner" data-onclick="actBulkOpen('ord')" style="background:#7c3aed22;border-color:#7c3aed;color:#7c3aed;"><i class="fas fa-paste"></i> Colar em Lote</button>
                                     <button class="btn-planner" data-onclick="ordIniciarSessao()"><i class="fas fa-play"></i> Iniciar</button>
                                     <button class="btn-planner danger" data-onclick="ordLimparBanco()"><i class="fas fa-trash"></i> Limpar</button>
                                 </div>
@@ -15179,6 +15202,358 @@ try{
 // Whitelist group functions
 try{
   ['actGroupSetup','actGroupPoint','abrirAtividadesFromAula'].forEach(n=>{
+    if(typeof __wrapSafeGlobal==='function' && typeof window[n]==='function') __wrapSafeGlobal(n);
+  });
+}catch(_){}
+
+
+
+
+// ================================================================
+// BULK IMPORT SYSTEM — "Colar em Lote" for all 7 games
+// ================================================================
+
+const BULK_FORMATS = {
+  forca: {
+    title: 'Forca — Colar Palavras em Lote',
+    hint: `<b>Formato:</b> Uma palavra por linha. Opcionalmente adicione dica e teoria separadas por <code>;</code> ou <code>|</code><br><br>
+<b>Exemplos:</b><br>
+<code>Paralelepípedo</code><br>
+<code>Onomatopeia ; Figura de linguagem que imita sons</code><br>
+<code>Metáfora | Comparação implícita | Figura de linguagem</code><br><br>
+<b>Ordem:</b> <code>palavra ; dica ; teoria</code>`,
+    placeholder: 'Paralelepípedo\nOnomatopeia ; Figura de linguagem que imita sons\nMetáfora | Comparação implícita | Figura de linguagem\nHipérbole ; Exagero intencional\nAnáfora\nProsopopeia ; Personificação',
+    parse: function(text){
+      const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+      const items = [];
+      lines.forEach(line => {
+        const sep = line.includes('|') ? '|' : ';';
+        const parts = line.split(sep).map(s=>s.trim());
+        if(parts[0]) items.push({ w: parts[0], h: parts[1]||'', t: parts[2]||'' });
+      });
+      return items;
+    },
+    apply: function(items){
+      let added=0;
+      items.forEach(it=>{
+        if(it.w && !forcaBank.some(b=>b.w.toLowerCase()===it.w.toLowerCase())){
+          forcaBank.push(it); added++;
+        }
+      });
+      _actSaveAll(); forcaRenderBank();
+      return added;
+    }
+  },
+
+  vf: {
+    title: 'Verdadeiro/Falso — Colar em Lote',
+    hint: `<b>Formato:</b> Uma pergunta por linha, separada da resposta por <code>|</code> ou <code>;</code><br><br>
+<b>Exemplos:</b><br>
+<code>O Sol é uma estrela | V | É uma estrela de tipo G</code><br>
+<code>O Brasil tem __(26)__ estados ; F ; São 26 estados + DF = 27 UFs</code><br>
+<code>A Terra é plana | F</code><br><br>
+<b>Ordem:</b> <code>pergunta | V ou F | explicação (opcional) | tag (opcional)</code>`,
+    placeholder: 'O Sol é uma estrela | V | É uma estrela anã amarela de tipo G\nA Lua é um planeta | F | A Lua é um satélite natural da Terra\nO DNA tem formato de dupla hélice | V\nA água ferve a 50°C | F | A água ferve a 100°C ao nível do mar\nO verbo é uma classe de palavras invariável | F | Verbos se conjugam | Gramática',
+    parse: function(text){
+      const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+      return lines.map(line => {
+        const sep = line.includes('|') ? '|' : ';';
+        const parts = line.split(sep).map(s=>s.trim());
+        if(!parts[0]) return null;
+        const answer = (parts[1]||'V').toUpperCase().startsWith('F') ? 'F' : 'V';
+        return { t: parts[0], a: answer, e: parts[2]||'', tag: parts[3]||'' };
+      }).filter(Boolean);
+    },
+    apply: function(items){
+      let added=0;
+      items.forEach(it=>{
+        if(it.t && !vfBank.some(b=>b.t===it.t)){
+          vfBank.push(it); added++;
+        }
+      });
+      _actSaveAll(); vfRenderBank();
+      return added;
+    }
+  },
+
+  mem: {
+    title: 'Memória — Colar Pares em Lote',
+    hint: `<b>Formato:</b> Um par por linha, separado por <code>|</code> ou <code>;</code><br><br>
+<b>Exemplos:</b><br>
+<code>🍎 | Maçã</code><br>
+<code>Anáfora | Repetição de palavras</code><br>
+<code>H₂O ; Água</code><br><br>
+<b>Dica:</b> Use emojis no lado A e a palavra no lado B para jogo visual!`,
+    placeholder: '🍎 | Maçã\n🐱 | Gato\n🌍 | Terra\n📚 | Livro\nAnáfora | Repetição\nMetáfora | Comparação implícita\nHipérbole | Exagero\nIronia | Sentido oposto',
+    parse: function(text){
+      const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+      return lines.map(line => {
+        const sep = line.includes('|') ? '|' : ';';
+        const parts = line.split(sep).map(s=>s.trim());
+        if(parts[0] && parts[1]) return { a: parts[0], b: parts[1] };
+        return null;
+      }).filter(Boolean);
+    },
+    apply: function(items){
+      let added=0;
+      items.forEach(it=>{
+        if(it.a && it.b && !memBank.some(b=>b.a===it.a && b.b===it.b)){
+          memBank.push(it); added++;
+        }
+      });
+      _actSaveAll(); memRenderBank();
+      return added;
+    }
+  },
+
+  fc: {
+    title: 'Flashcards — Colar em Lote',
+    hint: `<b>Formato:</b> Um cartão por linha: <code>frente | verso | tag(opcional)</code><br><br>
+<b>Exemplos:</b><br>
+<code>O que é anáfora? | Repetição de palavras no início de versos/frases | Figuras de linguagem</code><br>
+<code>Sujeito | Termo que pratica a ação verbal | Sintaxe</code><br>
+<code>H₂O | Fórmula da água</code>`,
+    placeholder: 'O que é anáfora? | Repetição de palavras no início de versos | Figuras\nO que é metáfora? | Comparação implícita sem "como" | Figuras\nSujeito | Pratica ou sofre a ação do verbo | Sintaxe\nPredicado | Tudo que se declara sobre o sujeito | Sintaxe',
+    parse: function(text){
+      const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+      return lines.map(line => {
+        const sep = line.includes('|') ? '|' : ';';
+        const parts = line.split(sep).map(s=>s.trim());
+        if(parts[0] && parts[1]) return { f: parts[0], b: parts[1], g: parts[2]||'' };
+        return null;
+      }).filter(Boolean);
+    },
+    apply: function(items){
+      let added=0;
+      items.forEach(it=>{
+        if(it.f && it.b && !fcBank.some(b=>b.f===it.f)){
+          fcBank.push(it); added++;
+        }
+      });
+      _actSaveAll(); fcRenderBank();
+      return added;
+    }
+  },
+
+  quiz: {
+    title: 'Quiz — Colar Perguntas em Lote',
+    hint: `<b>Formato:</b> Cada pergunta separada por linha em branco. Use A), B), C), D) para alternativas. Marque a correta com * ou escreva <code>Correta: X</code><br><br>
+<b>Exemplo:</b><br>
+<code>Qual figura de linguagem usa exagero?</code><br>
+<code>A) Metáfora</code><br>
+<code>B) *Hipérbole</code><br>
+<code>C) Ironia</code><br>
+<code>D) Anáfora</code><br>
+<code>Explicação: Hipérbole é o uso de exagero intencional</code><br><br>
+<b>Dica:</b> Marque a correta com <code>*</code> antes do texto OU use <code>Correta: B</code>`,
+    placeholder: `Qual figura de linguagem usa exagero?\nA) Metáfora\nB) *Hipérbole\nC) Ironia\nD) Anáfora\nExplicação: Hipérbole é o exagero intencional para dar ênfase\n\nQual classe gramatical varia em número e gênero?\nA) Advérbio\nB) Conjunção\nC) *Substantivo\nD) Preposição`,
+    parse: function(text){
+      // Split by double newline or by numbered questions
+      const blocks = text.split(/\n\s*\n/).filter(b=>b.trim());
+      const items = [];
+      blocks.forEach(block => {
+        const lines = block.split('\n').map(l=>l.trim()).filter(Boolean);
+        if(lines.length < 3) return;
+        
+        let question = '';
+        const alts = ['','','',''];
+        let corr = -1;
+        let exp = '';
+        
+        lines.forEach(line => {
+          const altMatch = line.match(/^([A-Da-d])\)\s*(\*?)(.+)/);
+          const corrMatch = line.match(/^[Cc]orreta:\s*([A-Da-d])/);
+          const expMatch = line.match(/^[Ee]xplica[çc][ãa]o:\s*(.+)/);
+          
+          if(altMatch){
+            const idx = 'abcd'.indexOf(altMatch[1].toLowerCase());
+            if(idx>=0){
+              alts[idx] = altMatch[3].trim();
+              if(altMatch[2]==='*') corr = idx;
+            }
+          } else if(corrMatch){
+            corr = 'abcd'.indexOf(corrMatch[1].toLowerCase());
+          } else if(expMatch){
+            exp = expMatch[1].trim();
+          } else if(!question){
+            question = line;
+          } else if(!line.match(/^[A-Da-d]\)/)){
+            // Could be continuation of question
+            question += ' ' + line;
+          }
+        });
+        
+        // If no alt marked with *, try "Correta:" line
+        if(corr < 0) corr = 0; // default to A if not specified
+        
+        if(question && alts.filter(Boolean).length >= 2){
+          // Fill empty alts
+          for(let i=0;i<4;i++) if(!alts[i]) alts[i]='—';
+          items.push({ q: question, alts, corr, exp });
+        }
+      });
+      return items;
+    },
+    apply: function(items){
+      let added=0;
+      items.forEach(it=>{
+        if(it.q && !quizBank.some(b=>b.q===it.q)){
+          quizBank.push(it); added++;
+        }
+      });
+      quizSave(); quizRenderBank();
+      return added;
+    }
+  },
+
+  comp: {
+    title: 'Completar Frase — Colar em Lote',
+    hint: `<b>Formato:</b> Uma frase por linha com <code>___</code> na lacuna, seguida de <code>|</code> e a resposta correta<br><br>
+<b>Exemplos:</b><br>
+<code>O sujeito da oração é quem ___ a ação | pratica</code><br>
+<code>A ___ é a classe de palavras que modifica o verbo | advérbio | Gramática: classes de palavras</code><br><br>
+<b>Ordem:</b> <code>frase com ___ | resposta | explicação (opcional)</code>`,
+    placeholder: 'O sujeito da oração é quem ___ a ação | pratica\nA ___ é a classe de palavras que modifica o verbo | advérbio\nO predicado ___ tudo que se declara sobre o sujeito | contém | Análise sintática\nA água ferve a ___ graus Celsius | 100',
+    parse: function(text){
+      const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+      return lines.map(line => {
+        const sep = line.includes('|') ? '|' : ';';
+        const parts = line.split(sep).map(s=>s.trim());
+        if(parts[0] && parts[1] && parts[0].includes('___')) return { f: parts[0], r: parts[1], e: parts[2]||'' };
+        // Try auto-detecting: if no ___, but has separator, assume first part is question with missing word
+        if(parts[0] && parts[1] && !parts[0].includes('___')){
+          return { f: parts[0].replace(new RegExp(parts[1].replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'), '___'), r: parts[1], e: parts[2]||'' };
+        }
+        return null;
+      }).filter(Boolean);
+    },
+    apply: function(items){
+      let added=0;
+      items.forEach(it=>{
+        if(it.f && it.r && !compBank.some(b=>b.f===it.f)){
+          compBank.push(it); added++;
+        }
+      });
+      compSave(); compRenderBank();
+      return added;
+    }
+  },
+
+  ord: {
+    title: 'Ordenar Palavras — Colar em Lote',
+    hint: `<b>Formato:</b> Uma frase correta por linha. Opcionalmente adicione dica após <code>|</code><br><br>
+<b>Exemplos:</b><br>
+<code>O gato bebeu o leite da tigela</code><br>
+<code>A menina leu o livro na biblioteca | Sujeito + Verbo + Objeto + Adjunto</code><br><br>
+<b>O sistema embaralha automaticamente!</b>`,
+    placeholder: 'O gato bebeu o leite da tigela\nA menina leu o livro na biblioteca | Sujeito + Verbo + Objeto\nOs alunos estudaram para a prova de história\nO professor explicou a matéria com clareza | Ordem direta',
+    parse: function(text){
+      const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+      return lines.map(line => {
+        const sep = line.includes('|') ? '|' : (line.includes(';') ? ';' : null);
+        let f, d='';
+        if(sep){
+          const parts = line.split(sep).map(s=>s.trim());
+          f = parts[0]; d = parts[1]||'';
+        } else {
+          f = line;
+        }
+        if(f && f.split(/\s+/).length >= 3) return { f, d };
+        return null;
+      }).filter(Boolean);
+    },
+    apply: function(items){
+      let added=0;
+      items.forEach(it=>{
+        if(it.f && !ordBank.some(b=>b.f===it.f)){
+          ordBank.push(it); added++;
+        }
+      });
+      ordSave(); ordRenderBank();
+      return added;
+    }
+  }
+};
+
+function actBulkOpen(game){
+  const cfg = BULK_FORMATS[game];
+  if(!cfg) return;
+  
+  const old = document.getElementById('bulkOverlay');
+  if(old) old.remove();
+  
+  const html = `<div class="bulk-overlay" id="bulkOverlay" onclick="if(event.target===this)this.remove();">
+    <div class="bulk-container">
+      <button style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b;" onclick="document.getElementById('bulkOverlay').remove();">&times;</button>
+      <h3><i class="fas fa-paste"></i> ${cfg.title}</h3>
+      <div class="bulk-hint">${cfg.hint}</div>
+      <textarea id="bulkTextarea" class="bulk-textarea" placeholder="${_escHTML(cfg.placeholder)}" rows="10"></textarea>
+      <div id="bulkPreview" class="bulk-preview" style="display:none;"></div>
+      <div class="bulk-actions">
+        <button class="btn-planner" onclick="actBulkPreview('${game}')"><i class="fas fa-eye"></i> Pré-visualizar</button>
+        <button class="btn-primary" onclick="actBulkImport('${game}')"><i class="fas fa-check"></i> Importar</button>
+        <button class="btn-planner" onclick="document.getElementById('bulkOverlay').remove();">Cancelar</button>
+      </div>
+    </div>
+  </div>`;
+  
+  document.body.insertAdjacentHTML('beforeend', html);
+  
+  // Focus textarea
+  setTimeout(()=>document.getElementById('bulkTextarea')?.focus(), 100);
+}
+
+function actBulkPreview(game){
+  const cfg = BULK_FORMATS[game];
+  if(!cfg) return;
+  const text = document.getElementById('bulkTextarea')?.value||'';
+  if(!text.trim()) return _actToast('Cole o conteúdo primeiro.','error');
+  
+  const items = cfg.parse(text);
+  const el = document.getElementById('bulkPreview');
+  if(!el) return;
+  
+  if(items.length === 0){
+    el.style.display = 'block';
+    el.innerHTML = '<span class="bp-err">❌ Nenhum item reconhecido. Verifique o formato.</span>';
+    return;
+  }
+  
+  let preview = `<span class="bp-ok">✅ ${items.length} item(s) reconhecido(s):</span><br>`;
+  items.slice(0, 10).forEach((it, i) => {
+    let desc = '';
+    if(game==='forca') desc = `<b>${_escHTML(it.w)}</b>${it.h?' — '+_escHTML(it.h):''}`;
+    else if(game==='vf') desc = `[${it.a}] ${_escHTML(it.t.substring(0,60))}${it.tag?' <span style="color:#7c3aed;">#'+_escHTML(it.tag)+'</span>':''}`;
+    else if(game==='mem') desc = `${_escHTML(it.a)} ↔ ${_escHTML(it.b)}`;
+    else if(game==='fc') desc = `${_escHTML(it.f.substring(0,30))} ⇄ ${_escHTML(it.b.substring(0,30))}${it.g?' <span style="color:#7c3aed;">#'+_escHTML(it.g)+'</span>':''}`;
+    else if(game==='quiz') desc = `${_escHTML(it.q.substring(0,50))}... [${['A','B','C','D'][it.corr]}]`;
+    else if(game==='comp') desc = `${_escHTML(it.f.substring(0,50))} → <b>${_escHTML(it.r)}</b>`;
+    else if(game==='ord') desc = `${_escHTML(it.f.substring(0,60))}`;
+    preview += `${i+1}. ${desc}<br>`;
+  });
+  if(items.length > 10) preview += `<span style="color:#64748b;">... e mais ${items.length-10} item(s)</span>`;
+  
+  el.style.display = 'block';
+  el.innerHTML = preview;
+}
+
+function actBulkImport(game){
+  const cfg = BULK_FORMATS[game];
+  if(!cfg) return;
+  const text = document.getElementById('bulkTextarea')?.value||'';
+  if(!text.trim()) return _actToast('Cole o conteúdo primeiro.','error');
+  
+  const items = cfg.parse(text);
+  if(items.length === 0) return _actToast('Nenhum item reconhecido. Verifique o formato.','error');
+  
+  const added = cfg.apply(items);
+  document.getElementById('bulkOverlay')?.remove();
+  _actToast(`✅ ${added} item(s) adicionado(s) ao banco!${added<items.length?' ('+(items.length-added)+' duplicado(s) ignorado(s))':''}`);
+}
+
+// Whitelist bulk functions
+try{
+  ['actBulkOpen','actBulkPreview','actBulkImport'].forEach(n=>{
     if(typeof __wrapSafeGlobal==='function' && typeof window[n]==='function') __wrapSafeGlobal(n);
   });
 }catch(_){}
