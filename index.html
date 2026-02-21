@@ -128,6 +128,11 @@ i.fa .sgp-ico-fill, i.fas .sgp-ico-fill, i.far .sgp-ico-fill, i.fab .sgp-ico-fil
     "fa-pen-nib":"pen",
     "fa-sort":"sort",
     "fa-paste":"clipboard",
+    "fa-wand-magic-sparkles":"wand",
+    "fa-arrows-rotate":"rotate",
+    "fa-square-minus":"minus",
+    "fa-dice":"shuffle",
+    "fa-copy":"clipboard",
     "fa-bars":"list",
     "fa-calendar":"calendar",
     "fa-calendar-alt":"calendar",
@@ -1764,10 +1769,40 @@ i.fa .sgp-ico-fill, i.fas .sgp-ico-fill, i.far .sgp-ico-fill, i.fab .sgp-ico-fil
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 
         /* GROUP GENERATOR */
-        .group-result { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 15px; max-height: 300px; overflow-y: auto; }
-        .group-card { background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; }
-        .group-title { font-weight: bold; color: var(--primary); margin-bottom: 5px; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; }
-        .group-member { font-size: 0.9rem; margin-bottom: 2px; }
+        .group-result { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 15px; max-height: 400px; overflow-y: auto; }
+        .group-card { background: #f1f5f9; padding: 10px; border-radius: 6px; border-left: 4px solid var(--primary); border-top:1px solid #cbd5e1;border-right:1px solid #cbd5e1;border-bottom:1px solid #cbd5e1; }
+        .group-title { font-weight: bold; color: var(--primary); margin-bottom: 5px; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; display:flex; justify-content:space-between; align-items:center; }
+        .group-member { font-size: 0.9rem; margin-bottom: 2px; padding:2px 0; }
+        .group-member .gm-badge{font-size:.65rem;padding:1px 5px;border-radius:3px;margin-left:4px;}
+        .group-member .gm-fixed{background:#ede9fe;color:#7c3aed;}
+
+        /* Sorteador enhanced */
+        .sort-slot{height:80px;overflow:hidden;border:2px solid var(--border-color);border-radius:12px;margin:12px auto;max-width:350px;position:relative;background:var(--card-bg);}
+        .sort-reel{transition:transform 0.1s linear;display:flex;flex-direction:column;align-items:center;}
+        .sort-reel .sort-name{height:80px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;color:var(--primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;padding:0 10px;}
+        .sort-slot::before,.sort-slot::after{content:'';position:absolute;left:0;right:0;height:20px;z-index:2;pointer-events:none;}
+        .sort-slot::before{top:0;background:linear-gradient(to bottom,var(--card-bg),transparent);}
+        .sort-slot::after{bottom:0;background:linear-gradient(to top,var(--card-bg),transparent);}
+        .sort-opt{font-size:.82rem;display:inline-flex;align-items:center;gap:3px;cursor:pointer;padding:3px 8px;border:1px solid var(--border-color);border-radius:6px;}
+        .sort-opt:has(input:checked){background:#eff6ff;border-color:#3b82f6;}
+        .sort-history{font-size:.75rem;color:#64748b;max-height:60px;overflow-y:auto;margin:8px 0;text-align:left;padding:0 10px;}
+        .sort-winner{animation:sortPop .5s ease-out;}
+        @keyframes sortPop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+        .sort-confetti{position:absolute;pointer-events:none;z-index:10;}
+
+        /* Mapa enhanced */
+        .mesa.disabled{background:#1e293b22!important;border-color:#475569!important;opacity:.3;pointer-events:none;}
+        .mesa.disabled::after{content:'✕';position:absolute;font-size:1.2rem;color:#94a3b8;}
+        .mesa.swap-target{border-color:#f59e0b!important;border-style:solid!important;cursor:pointer!important;}
+        .aluno-drag .mesa-badges{position:absolute;top:1px;right:2px;display:flex;gap:1px;font-size:.55rem;}
+        .aluno-drag .mb-paee{color:#9333ea;} .aluno-drag .mb-risk{color:#dc2626;} .aluno-drag .mb-beh{color:#f59e0b;}
+        .mesa-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:6px 10px;border-radius:6px;font-size:.7rem;white-space:nowrap;z-index:100;pointer-events:none;opacity:0;transition:.2s;}
+        .mesa:hover .mesa-tooltip,.aluno-drag:hover .mesa-tooltip{opacity:1;}
+
+        /* Group colors */
+        .grp-color-0{border-left-color:#dc2626!important;} .grp-color-1{border-left-color:#2563eb!important;} .grp-color-2{border-left-color:#16a34a!important;} .grp-color-3{border-left-color:#f59e0b!important;}
+        .grp-color-4{border-left-color:#7c3aed!important;} .grp-color-5{border-left-color:#ec4899!important;} .grp-color-6{border-left-color:#0d9488!important;} .grp-color-7{border-left-color:#ea580c!important;}
+        @media print{.group-result{max-height:none!important;overflow:visible!important;} .group-card{break-inside:avoid;} .modal-overlay{position:static!important;background:none!important;} .modal-box{box-shadow:none!important;max-height:none!important;overflow:visible!important;width:100%!important;}}
 
         /* MOBILE RESPONSIVE */
         @media (max-width: 768px) {
@@ -3572,13 +3607,27 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
         <div id="viewMapa" class="mapa-container">
             <div class="mapa-livres"><div class="mapa-livres-header">Alunos sem carteira</div><div id="listaAlunosLivres" class="lista-livres" ondrop="dropLivre(event)" ondragover="allowDrop(event)"></div></div>
             <div class="sala-grid-wrap">
-                <div class="mapa-controls">
-                    <input type="text" id="inputNomeLayout" placeholder="Nome do cenário..." style="padding:5px;">
+                <div class="mapa-controls" style="flex-wrap:wrap;gap:6px;">
+                    <select id="mapaGridSize" class="inp" style="width:auto;padding:4px 6px;font-size:.78rem;" data-onchange="mapaChangeGrid()">
+                        <option value="6x6">6×6 (36)</option>
+                        <option value="6x7">6×7 (42)</option>
+                        <option value="5x5">5×5 (25)</option>
+                        <option value="7x5">7×5 (35)</option>
+                        <option value="4x8">4×8 (32)</option>
+                        <option value="5x8">5×8 (40)</option>
+                    </select>
+                    <button class="btn-tool" data-onclick="mapaAutoDistribuir()" title="Distribuir automaticamente"><i class="fas fa-wand-magic-sparkles"></i></button>
+                    <button id="btnMapaSwap" class="btn-tool" data-onclick="mapaToggleSwap()" title="Trocar 2 alunos de lugar"><i class="fas fa-arrows-rotate"></i></button>
+                    <button class="btn-tool" data-onclick="mapaToggleDisable()" title="Desabilitar/habilitar mesas"><i class="fas fa-square-minus"></i></button>
+                    <button class="btn-tool" data-onclick="mapaImprimir()" title="Imprimir mapa"><i class="fas fa-print"></i></button>
+                    <span style="border-left:1px solid var(--border-color);height:20px;"></span>
+                    <input type="text" id="inputNomeLayout" placeholder="Cenário..." style="padding:4px 6px;width:100px;font-size:.78rem;">
                     <button class="btn-tool" data-onclick="salvarLayout()"><i class="fas fa-save"></i></button>
                     <select id="selectLayouts" data-onchange="carregarLayout()"><option value="">Carregar...</option></select>
                     <button class="btn-tool" data-onclick="apagarLayout()" style="color:red;"><i class="fas fa-trash"></i></button>
                     <button id="btnMapaFullscreen" class="btn-tool" data-onclick="mapaToggleFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i></button>
                 </div>
+                <div id="mapaSwapMsg" style="display:none;padding:4px 10px;background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;font-size:.78rem;text-align:center;color:#92400e;">🔄 Modo troca: clique em 2 alunos para trocar de lugar. Clique ↻ para sair.</div>
                 <div class="lousa">LOUSA</div>
                 <div id="salaGrid" class="sala-grid"></div>
             </div>
@@ -3776,25 +3825,59 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
     </div>
 
     <div id="modalGeradorGrupos" class="modal-overlay">
-        <div class="modal-box" style="width: 500px;">
-            <h2><i class="fas fa-users-cog"></i> Gerador de Grupos</h2>
-            <div class="form-group">
-                <label>Quantidade de Grupos</label>
-                <input type="number" id="inputQtdGrupos" class="inp" value="4" min="2">
+        <div class="modal-box" style="width:700px;max-width:96vw;max-height:92vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <h2 style="margin:0;"><i class="fas fa-users-cog"></i> Gerador de Grupos</h2>
+                <button class="btn-tool" data-onclick="fecharModais()" title="Fechar"><i class="fas fa-times"></i></button>
             </div>
-            <div class="form-group">
-                <label>Modo de Criação</label>
-                <select id="selectTipoGrupo" class="inp">
-                    <option value="aleatorio">Aleatório</option>
-                    <option value="equilibrado">Equilibrado (Por Notas)</option>
-                </select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+                <div class="form-group">
+                    <label>Modo</label>
+                    <select id="selectModoGrupo" class="inp" data-onchange="grupoModoChanged()">
+                        <option value="qtdGrupos">Por quantidade de grupos</option>
+                        <option value="qtdAlunos">Por alunos por grupo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label id="lblQtdGrupo">Quantidade de Grupos</label>
+                    <input type="number" id="inputQtdGrupos" class="inp" value="4" min="2">
+                </div>
+                <div class="form-group">
+                    <label>Critério</label>
+                    <select id="selectTipoGrupo" class="inp">
+                        <option value="aleatorio">Aleatório</option>
+                        <option value="equilibrado">Equilibrado (Notas)</option>
+                        <option value="comportamento">Equilibrado (Comportamento)</option>
+                        <option value="misto">Misto (Notas + Comportamento)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <label style="font-size:.78rem;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="grpExcludeAbsent"> Excluir ausentes do dia</label>
+                </div>
             </div>
-            <button data-onclick="gerarGrupos()" class="btn-primary" style="width: 100%; justify-content: center;">Gerar</button>
-            <hr style="margin: 15px 0;">
+            <details style="margin:8px 0;">
+                <summary style="cursor:pointer;font-size:.82rem;color:#7c3aed;font-weight:600;">⚙️ Opções avançadas</summary>
+                <div style="padding:8px;display:flex;flex-direction:column;gap:8px;">
+                    <div class="form-group">
+                        <label>Não juntar (um par por linha: <code>Nome1 ; Nome2</code>)</label>
+                        <textarea id="grpSeparar" class="inp" rows="3" placeholder="João ; Maria&#10;Pedro ; Ana"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Fixar alunos em grupos (<code>Nome ; Grupo 1</code>)</label>
+                        <textarea id="grpFixar" class="inp" rows="3" placeholder="João ; 1&#10;Maria ; 2"></textarea>
+                    </div>
+                </div>
+            </details>
+            <button data-onclick="gerarGrupos()" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-shuffle"></i> Gerar Grupos</button>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                <button data-onclick="grpCopiarTexto()" class="btn-planner"><i class="fas fa-copy"></i> Copiar texto</button>
+                <button data-onclick="grpImprimir()" class="btn-planner"><i class="fas fa-print"></i> Imprimir</button>
+                <span style="flex:1;"></span>
+                <span id="grpHistoricoInfo" style="font-size:.72rem;color:#64748b;align-self:center;"></span>
+            </div>
+            <hr style="margin:10px 0;">
             <div id="resultadoGrupos" class="group-result"></div>
-            <div style="text-align: right; margin-top: 20px;">
-                <button data-onclick="fecharModais()" style="padding: 8px 15px; border:none; bg:transparent; cursor:pointer;">Fechar</button>
-            </div>
         </div>
     </div>
 
@@ -3991,7 +4074,29 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
     <div id="planoSemanalPrint" style="position:fixed; left:-9999px; top:0; width:794px; padding:24px; background:#fff; color:#000; font-family: Arial, sans-serif;"></div>
     <div id="modalNovaTurma" class="modal-overlay"><div class="modal-box"><h2>Criar Turma</h2><div class="form-group"><input type="text" id="inputNomeTurma" class="inp"></div><div style="text-align: right; margin-top: 20px;"><button data-onclick="fecharModais()" style="padding: 8px 15px; border:none; bg:transparent; cursor:pointer;">Cancelar</button><button data-onclick="salvarTurma()" class="btn-primary">Salvar</button></div></div></div>
     <div id="modalNovoAluno" class="modal-overlay"><div class="modal-box"><h2>Adicionar Alunos</h2><div class="form-group"><select id="selectTurmaAluno" class="inp"></select></div><div class="form-group"><textarea id="inputNomes" class="inp" rows="5"></textarea></div><div style="text-align: right; margin-top: 20px;"><button data-onclick="fecharModais()" style="padding: 8px 15px; border:none; bg:transparent; cursor:pointer;">Cancelar</button><button data-onclick="salvarAlunos()" class="btn-primary">Cadastrar</button></div></div></div>
-    <div id="modalSorteio" class="modal-overlay"><div class="modal-box" style="text-align:center;"><h2 style="color:#64748b;">Sorteador</h2><div id="winnerName">...</div><button data-onclick="fecharModais()" class="btn-primary" style="margin: 0 auto;">Fechar</button></div></div>
+    <div id="modalSorteio" class="modal-overlay">
+        <div class="modal-box" style="text-align:center;max-width:520px;">
+            <h2 style="color:#64748b;"><i class="fas fa-dice"></i> Sorteador</h2>
+            <div style="display:flex;gap:8px;justify-content:center;margin:8px 0;flex-wrap:wrap;">
+                <label class="sort-opt"><input type="radio" name="sortMode" value="1" checked> 1 aluno</label>
+                <label class="sort-opt"><input type="radio" name="sortMode" value="2"> Dupla</label>
+                <label class="sort-opt"><input type="radio" name="sortMode" value="3"> Trio</label>
+                <label class="sort-opt"><input type="radio" name="sortMode" value="n"> N:</label>
+                <input type="number" id="sortN" class="inp" value="4" min="1" max="20" style="width:50px;padding:4px;">
+            </div>
+            <label style="font-size:.78rem;color:#64748b;cursor:pointer;"><input type="checkbox" id="sortExcludeAbsent"> Excluir ausentes do dia</label>
+            <div id="sortSlot" class="sort-slot">
+                <div id="sortReel" class="sort-reel"></div>
+            </div>
+            <div id="sortResult" style="min-height:60px;margin:10px 0;"></div>
+            <div id="sortHistory" class="sort-history"></div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px;">
+                <button data-onclick="sortearAluno()" class="btn-primary"><i class="fas fa-dice"></i> Sortear</button>
+                <button data-onclick="sortLimparHistorico()" class="btn-planner"><i class="fas fa-rotate"></i> Limpar histórico</button>
+                <button data-onclick="fecharModais()" class="btn-planner">Fechar</button>
+            </div>
+        </div>
+    </div>
 
     <div id="modalEventoCal" class="modal-overlay">
         <div class="modal-box">
@@ -15555,6 +15660,550 @@ function actBulkImport(game){
 try{
   ['actBulkOpen','actBulkPreview','actBulkImport'].forEach(n=>{
     if(typeof __wrapSafeGlobal==='function' && typeof window[n]==='function') __wrapSafeGlobal(n);
+  });
+}catch(_){}
+
+
+
+
+// ================================================================
+// V15.1 — 22 MELHORIAS: SORTEADOR, MAPA DE SALA, GERADOR DE GRUPOS
+// ================================================================
+
+// ================================================================
+// SORTEADOR (Features 1-6)
+// ================================================================
+let sortHistorico = [];
+let sortAnimId = null;
+
+function sortearAluno(){
+  if(filtroTurma==='Todas') return showToast("Selecione uma turma.", "error");
+  let lista = getAlunosFiltrados();
+  if(lista.length===0) return showToast("Sem alunos.", "error");
+
+  // F3: Exclude absent
+  if(document.getElementById('sortExcludeAbsent')?.checked){
+    lista = _sortExcluirAusentes(lista);
+    if(lista.length===0) return showToast("Todos ausentes!", "error");
+  }
+
+  // Remove already sorted (avoid repeat)
+  const disponiveis = lista.filter(a => !sortHistorico.includes(a.id));
+  const pool = disponiveis.length > 0 ? disponiveis : lista;
+
+  // F4: Get mode
+  const mode = document.querySelector('input[name="sortMode"]:checked')?.value || '1';
+  let qty = mode === 'n' ? parseInt(document.getElementById('sortN')?.value||'1') : parseInt(mode);
+  qty = Math.min(qty, pool.length);
+  if(qty < 1) qty = 1;
+
+  // Open modal if not open
+  const modal = document.getElementById('modalSorteio');
+  if(modal && (modal.style.display === 'none' || (window.getComputedStyle && getComputedStyle(modal).display === 'none'))) abrirModal('modalSorteio');
+
+  // F1: Slot machine animation
+  const reel = document.getElementById('sortReel');
+  const result = document.getElementById('sortResult');
+  if(!reel) return;
+  result.innerHTML = '';
+
+  // Build reel names
+  const allNames = pool.map(a => a.nome);
+  let reelHTML = '';
+  for(let r = 0; r < 40; r++){
+    reelHTML += `<div class="sort-name">${_escHTML(allNames[Math.floor(Math.random()*allNames.length)])}</div>`;
+  }
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const winners = shuffled.slice(0, qty);
+  reelHTML += `<div class="sort-name">${_escHTML(winners[0].nome)}</div>`;
+  reel.innerHTML = reelHTML;
+
+  // Animate
+  let pos = 0;
+  const targetPos = 40 * 80; // 40 items × 80px
+  const duration = 2500;
+  const startTime = Date.now();
+  if(sortAnimId) cancelAnimationFrame(sortAnimId);
+
+  function animate(){
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    reel.style.transform = `translateY(-${eased * targetPos}px)`;
+    if(progress < 1) sortAnimId = requestAnimationFrame(animate);
+    else { sortAnimId = null; _sortShowWinners(winners); }
+  }
+  sortAnimId = requestAnimationFrame(animate);
+}
+
+function _sortShowWinners(winners){
+  const result = document.getElementById('sortResult');
+  if(!result) return;
+  result.style.position = 'relative';
+  let html = '';
+  winners.forEach(w => {
+    html += `<div class="sort-winner" style="font-size:${winners.length>1?'1.2rem':'1.8rem'};font-weight:800;color:var(--primary);margin:4px 0;">🎉 ${_escHTML(w.nome)}</div>`;
+    if(!sortHistorico.includes(w.id)) sortHistorico.push(w.id);
+  });
+  result.innerHTML = html;
+  // Confetti
+  const colors = ['#dc2626','#2563eb','#16a34a','#f59e0b','#7c3aed','#ec4899'];
+  for(let i=0;i<12;i++){
+    const p=document.createElement('div');
+    p.className='act-confetti-particle';
+    p.style.cssText=`left:${Math.random()*90+5}%;top:20%;background:${colors[i%colors.length]};animation-delay:${Math.random()*0.3}s;width:${6+Math.random()*5}px;height:${6+Math.random()*5}px;`;
+    result.appendChild(p);
+    setTimeout(()=>p.remove(),1200);
+  }
+  _sortRenderHistorico();
+}
+
+function _sortRenderHistorico(){
+  const el=document.getElementById('sortHistory');
+  if(!el) return;
+  if(!sortHistorico.length){el.innerHTML='';return;}
+  const nomes=sortHistorico.map(id=>{const a=alunos.find(x=>x.id===id);return a?a.nome.split(' ')[0]:'?';});
+  el.innerHTML=`<b>Já sorteados (${nomes.length}):</b> ${nomes.join(', ')}`;
+}
+
+function sortLimparHistorico(){sortHistorico=[];_sortRenderHistorico();showToast("Histórico limpo!");}
+
+function _sortExcluirAusentes(lista){
+  const freq=window.__sgpFrequencia||{};
+  const hoje=new Date().toISOString().split('T')[0];
+  const key=`${filtroTurma}|${bimestreAtual}|${hoje}`;
+  const chamada=freq[key];
+  if(!chamada) return lista;
+  return lista.filter(a=>{const s=chamada[a.id];return !s||s==='P'||s==='J';});
+}
+
+// ================================================================
+// MAPA DE SALA (Features 7-13)
+// ================================================================
+let mapaGridCols=6, mapaGridRows=6;
+let mapaDisabledDesks=new Set();
+let mapaSwapMode=false, mapaSwapFirst=null, mapaDisableMode=false;
+
+// F7: Configurable grid
+function mapaChangeGrid(){
+  const val=document.getElementById('mapaGridSize')?.value||'6x6';
+  const [c,r]=val.split('x').map(Number);
+  mapaGridCols=c||6; mapaGridRows=r||6;
+  try{localStorage.setItem('sgp_mapa_grid',val);}catch(_){}
+  mapaDisabledDesks.clear();
+  gerarMesas();
+  renderizarMapa();
+}
+
+// Override gerarMesas
+try{
+  const __origGerarMesas=gerarMesas;
+  gerarMesas=function(){
+    const g=document.getElementById('salaGrid');
+    if(!g) return;
+    g.innerHTML='';
+    g.style.gridTemplateColumns=`repeat(${mapaGridCols}, 1fr)`;
+    const total=mapaGridCols*mapaGridRows;
+    for(let i=0;i<total;i++){
+      g.innerHTML+=`<div id="mesa_${i}" class="mesa${mapaDisabledDesks.has(i)?' disabled':''}" ondrop="drop(event,${i})" ondragover="allowDrop(event)" data-onclick="mapaMesaClick(${i})"></div>`;
+    }
+  };
+}catch(_){}
+
+// Restore saved grid
+try{
+  const saved=localStorage.getItem('sgp_mapa_grid');
+  if(saved){
+    const sel=document.getElementById('mapaGridSize');
+    if(sel){sel.value=saved;const [c,r]=saved.split('x').map(Number);mapaGridCols=c||6;mapaGridRows=r||6;}
+  }
+}catch(_){}
+
+// F8: Toggle disable mode
+function mapaToggleDisable(){
+  mapaDisableMode=!mapaDisableMode;
+  mapaSwapMode=false;
+  const msg=document.getElementById('mapaSwapMsg');
+  if(msg) msg.style.display='none';
+  showToast(mapaDisableMode?"Clique nas mesas vazias para desabilitar. Clique ⊟ de novo para sair.":"Modo desabilitar: OFF");
+}
+
+// F11: Swap mode
+function mapaToggleSwap(){
+  mapaSwapMode=!mapaSwapMode;
+  mapaSwapFirst=null;
+  mapaDisableMode=false;
+  const msg=document.getElementById('mapaSwapMsg');
+  if(msg) msg.style.display=mapaSwapMode?'block':'none';
+  const btn=document.getElementById('btnMapaSwap');
+  if(btn) btn.style.color=mapaSwapMode?'#f59e0b':'';
+  if(!mapaSwapMode) renderizarMapa();
+}
+
+// Unified mesa click handler
+window.mapaMesaClick=function(index){
+  if(mapaDisableMode){
+    if(mapaDisabledDesks.has(index)){mapaDisabledDesks.delete(index);}
+    else{
+      const ls=getAlunosFiltrados();
+      if(ls.some(a=>a.mesa===index)) return showToast("Remova o aluno primeiro.","error");
+      mapaDisabledDesks.add(index);
+    }
+    gerarMesas(); renderizarMapa(); return;
+  }
+  if(mapaSwapMode){
+    const ls=getAlunosFiltrados();
+    const alunoNaMesa=ls.find(a=>a.mesa===index);
+    if(!alunoNaMesa) return;
+    if(mapaSwapFirst===null){
+      mapaSwapFirst=index; renderizarMapa();
+      showToast(`${alunoNaMesa.nome.split(' ')[0]} selecionado. Clique no segundo.`);
+    } else {
+      const a1=ls.find(a=>a.mesa===mapaSwapFirst);
+      if(a1&&alunoNaMesa&&a1.id!==alunoNaMesa.id){
+        const tmp=a1.mesa; a1.mesa=alunoNaMesa.mesa; alunoNaMesa.mesa=tmp;
+        salvarDadosLocal();
+        showToast(`${a1.nome.split(' ')[0]} ↔ ${alunoNaMesa.nome.split(' ')[0]}`);
+      }
+      mapaSwapFirst=null; renderizarMapa();
+    }
+    return;
+  }
+  touchSelectMesa(index);
+};
+
+// F9/F10: Enhanced renderizarMapa with tooltips and indicators
+try{
+  const __origRenderMapa=renderizarMapa;
+  renderizarMapa=function(){
+    if(filtroTurma==='Todas') return;
+    const ls=getAlunosFiltrados();
+    const lv=document.getElementById('listaAlunosLivres');
+    if(lv) lv.innerHTML='';
+
+    const total=mapaGridCols*mapaGridRows;
+    document.querySelectorAll('.mesa').forEach(m=>{
+      const idx=parseInt(m.id.replace('mesa_',''));
+      m.innerHTML='';
+      m.style.borderStyle='dashed';
+      m.classList.remove('mobile-target','swap-target');
+      if(mapaDisabledDesks.has(idx)){m.classList.add('disabled');}
+      else{m.classList.remove('disabled');}
+    });
+
+    ls.forEach(a=>{
+      const b=a.bimestres[bimestreAtual];
+      const c=getCorFarol(b.media_lp);
+      const mlp=parseFloat(b.media_lp)||0;
+      const mred=parseFloat(b.media_red)||0;
+      const comp=b.comportamento||10;
+      const isPAEE=a.elegivel;
+      const isRisk=mlp<5||mred<5;
+      const isBehLow=comp<7;
+
+      // F10: Badges
+      let badges='<div class="mesa-badges">';
+      if(isPAEE) badges+='<span class="mb-paee" title="PAEE">♿</span>';
+      if(isRisk) badges+='<span class="mb-risk" title="Risco">⚠</span>';
+      if(isBehLow) badges+='<span class="mb-beh" title="Comportamento baixo">⛔</span>';
+      badges+='</div>';
+
+      // F9: Tooltip
+      const tip=`<div class="mesa-tooltip">${_escHTML(a.nome)}<br>LP: ${mlp.toFixed(1)} | RED: ${mred.toFixed(1)} | Comp: ${comp}${isPAEE?' | PAEE':''}</div>`;
+
+      const selected=alunoSelecionadoParaMover===a.id;
+      const swapSel=mapaSwapMode&&mapaSwapFirst!==null&&a.mesa===mapaSwapFirst;
+      const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${selected?'mobile-selected':''}" draggable="true" ondragstart="drag(event)" data-onclick="${mapaSwapMode?'mapaMesaClick('+a.mesa+')':'touchSelectAluno('+__u(a.id)+')'}" style="border-left-color:${c};${swapSel?'box-shadow:0 0 10px #f59e0b;border-color:#f59e0b;':''}">${_escHTML((a.nome||'').split(' ')[0])}${badges}${tip}</div>`;
+
+      if(a.mesa!==null&&a.mesa<total&&!mapaDisabledDesks.has(a.mesa)){
+        const m=document.getElementById('mesa_'+a.mesa);
+        if(m){m.innerHTML=h;m.style.borderStyle='solid';}
+      } else {
+        if(a.mesa!==null&&mapaDisabledDesks.has(a.mesa)){a.mesa=null;}
+        if(lv) lv.innerHTML+=h;
+      }
+    });
+
+    if(alunoSelecionadoParaMover!==null){
+      document.querySelectorAll('.mesa').forEach(m=>{
+        if(m.innerHTML===''&&!m.classList.contains('disabled')) m.classList.add('mobile-target');
+      });
+    }
+  };
+}catch(_){}
+
+// F12: Print map
+function mapaImprimir(){
+  const grid=document.getElementById('salaGrid');
+  if(!grid) return;
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(`<html><head><title>Mapa de Sala - ${_escHTML(filtroTurma)}</title>
+  <style>
+    body{font-family:sans-serif;padding:20px;}
+    h2{text-align:center;color:#334155;}
+    .lousa{text-align:center;background:#475569;color:#fff;padding:6px;border-radius:4px;margin-bottom:12px;font-weight:bold;}
+    .grid{display:grid;grid-template-columns:repeat(${mapaGridCols},1fr);gap:8px;max-width:800px;margin:0 auto;}
+    .mesa{border:2px solid #cbd5e1;border-radius:6px;height:55px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:bold;text-align:center;}
+    .mesa.occupied{background:#eff6ff;border-style:solid;}
+    .mesa.disabled{background:#f1f5f9;opacity:.3;}
+    .mesa.empty{border-style:dashed;}
+  </style></head><body>
+  <h2>Mapa de Sala — ${_escHTML(filtroTurma)}</h2>
+  <div class="lousa">LOUSA</div><div class="grid">`);
+
+  const total=mapaGridCols*mapaGridRows;
+  const ls=getAlunosFiltrados();
+  for(let i=0;i<total;i++){
+    if(mapaDisabledDesks.has(i)){
+      w.document.write('<div class="mesa disabled">✕</div>');
+    } else {
+      const a=ls.find(x=>x.mesa===i);
+      w.document.write(a?`<div class="mesa occupied">${_escHTML(a.nome.split(' ')[0])}</div>`:'<div class="mesa empty"></div>');
+    }
+  }
+  w.document.write('</div></body></html>');
+  w.document.close();
+  setTimeout(()=>{w.print();},300);
+}
+
+// F13: Auto-distribute
+function mapaAutoDistribuir(){
+  if(filtroTurma==='Todas') return showToast("Selecione uma turma.","error");
+  const ls=getAlunosFiltrados();
+  const livres=ls.filter(a=>a.mesa===null||a.mesa===undefined);
+  if(livres.length===0) return showToast("Todos já estão sentados.","error");
+  const total=mapaGridCols*mapaGridRows;
+  const ocupadas=new Set(ls.filter(a=>a.mesa!==null&&a.mesa!==undefined).map(a=>a.mesa));
+  const vagasDisponiveis=[];
+  for(let i=0;i<total;i++){
+    if(!ocupadas.has(i)&&!mapaDisabledDesks.has(i)) vagasDisponiveis.push(i);
+  }
+  if(vagasDisponiveis.length<livres.length) return showToast(`Só ${vagasDisponiveis.length} vagas para ${livres.length} alunos.`,"error");
+  // Shuffle available seats
+  vagasDisponiveis.sort(()=>Math.random()-0.5);
+  livres.forEach((a,i)=>{a.mesa=vagasDisponiveis[i];});
+  salvarDadosLocal();
+  renderizarMapa();
+  showToast(`${livres.length} alunos distribuídos!`);
+}
+
+// ================================================================
+// GERADOR DE GRUPOS (Features 14-22)
+// ================================================================
+const GRP_COLORS=['#dc2626','#2563eb','#16a34a','#f59e0b','#7c3aed','#ec4899','#0d9488','#ea580c','#6366f1','#14b8a6','#d946ef','#78716c'];
+const GRP_NAMES=['Vermelho','Azul','Verde','Amarelo','Roxo','Rosa','Turquesa','Laranja','Índigo','Menta','Magenta','Cinza'];
+let grpHistorico=[];
+let grpUltimoResultado=[];
+
+// F16: Mode switch
+function grupoModoChanged(){
+  const modo=document.getElementById('selectModoGrupo')?.value;
+  const lbl=document.getElementById('lblQtdGrupo');
+  const inp=document.getElementById('inputQtdGrupos');
+  if(modo==='qtdAlunos'){
+    if(lbl) lbl.textContent='Alunos por grupo';
+    if(inp) inp.value='4';
+  } else {
+    if(lbl) lbl.textContent='Quantidade de Grupos';
+    if(inp) inp.value='4';
+  }
+}
+
+function gerarGrupos(){
+  const modo=document.getElementById('selectModoGrupo')?.value||'qtdGrupos';
+  const inputVal=parseInt(document.getElementById('inputQtdGrupos')?.value)||4;
+  const tipo=document.getElementById('selectTipoGrupo')?.value||'aleatorio';
+  let lista=getAlunosFiltrados();
+  if(lista.length===0) return showToast("Turma vazia!","error");
+
+  // F17: Exclude absent
+  if(document.getElementById('grpExcludeAbsent')?.checked){
+    lista=_sortExcluirAusentes(lista);
+    if(lista.length===0) return showToast("Todos ausentes!","error");
+  }
+
+  // F16: Calculate N groups
+  let n;
+  if(modo==='qtdAlunos'){
+    n=Math.ceil(lista.length/inputVal);
+    if(n<2) n=2;
+  } else {
+    n=inputVal;
+  }
+  if(!n||n<2) return showToast("Mínimo 2 grupos","error");
+
+  // F15: Parse "não juntar" pairs
+  const sepPairs=_grpParsePairs(document.getElementById('grpSeparar')?.value||'');
+
+  // F21: Parse "fixar" assignments
+  const fixados=_grpParseFixed(document.getElementById('grpFixar')?.value||'', lista, n);
+
+  // Shuffle
+  lista=[...lista].sort(()=>Math.random()-0.5);
+
+  // F14: Sort by criteria
+  if(tipo==='equilibrado'){
+    lista.sort((a,b)=>{
+      const mA=(parseFloat(a.bimestres[bimestreAtual].media_lp)+parseFloat(a.bimestres[bimestreAtual].media_red))/2;
+      const mB=(parseFloat(b.bimestres[bimestreAtual].media_lp)+parseFloat(b.bimestres[bimestreAtual].media_red))/2;
+      return mB-mA;
+    });
+  } else if(tipo==='comportamento'){
+    lista.sort((a,b)=>(b.bimestres[bimestreAtual].comportamento||10)-(a.bimestres[bimestreAtual].comportamento||10));
+  } else if(tipo==='misto'){
+    lista.sort((a,b)=>{
+      const mA=(parseFloat(a.bimestres[bimestreAtual].media_lp)+parseFloat(a.bimestres[bimestreAtual].media_red))/2+((a.bimestres[bimestreAtual].comportamento||10)/2);
+      const mB=(parseFloat(b.bimestres[bimestreAtual].media_lp)+parseFloat(b.bimestres[bimestreAtual].media_red))/2+((b.bimestres[bimestreAtual].comportamento||10)/2);
+      return mB-mA;
+    });
+  }
+
+  // Build groups
+  const grupos=Array.from({length:n},()=>[]);
+
+  // F21: Place fixed students first
+  const fixedIds=new Set();
+  fixados.forEach(({id,group})=>{
+    if(group>=0&&group<n){
+      const a=lista.find(x=>x.id===id);
+      if(a){grupos[group].push(a);fixedIds.add(id);}
+    }
+  });
+
+  // Remaining students
+  const remaining=lista.filter(a=>!fixedIds.has(a.id));
+
+  // Snake distribution with separation constraint
+  if(tipo==='equilibrado'||tipo==='comportamento'||tipo==='misto'){
+    let g=0,dir=1;
+    remaining.forEach(aluno=>{
+      // F15: Try to respect separation
+      let placed=false;
+      for(let attempt=0;attempt<n;attempt++){
+        const testG=(g+attempt)%n;
+        if(!_grpViolatesSeparation(aluno,grupos[testG],sepPairs)){
+          grupos[testG].push(aluno);placed=true;
+          g=testG+dir;
+          if(g>=n){g=n-1;dir=-1;} if(g<0){g=0;dir=1;}
+          break;
+        }
+      }
+      if(!placed){grupos[g].push(aluno);g+=dir;if(g>=n){g=n-1;dir=-1;}if(g<0){g=0;dir=1;}}
+    });
+  } else {
+    let g=0;
+    remaining.forEach(aluno=>{
+      let placed=false;
+      for(let attempt=0;attempt<n;attempt++){
+        const testG=(g+attempt)%n;
+        if(!_grpViolatesSeparation(aluno,grupos[testG],sepPairs)){
+          grupos[testG].push(aluno);placed=true;g=(testG+1)%n;break;
+        }
+      }
+      if(!placed){grupos[g].push(aluno);g=(g+1)%n;}
+    });
+  }
+
+  // F22: Save to history
+  grpUltimoResultado=grupos.map(g=>g.map(a=>({id:a.id,nome:a.nome})));
+  grpHistorico.push({date:new Date().toISOString(),grupos:grpUltimoResultado});
+  if(grpHistorico.length>10) grpHistorico.shift();
+  const histInfo=document.getElementById('grpHistoricoInfo');
+  if(histInfo) histInfo.textContent=`Histórico: ${grpHistorico.length} geração(ões)`;
+
+  // F18: Render with colors and names
+  const res=document.getElementById('resultadoGrupos');
+  if(!res) return;
+  res.innerHTML='';
+  grupos.forEach((g,i)=>{
+    const color=GRP_COLORS[i%GRP_COLORS.length];
+    const nome=GRP_NAMES[i%GRP_NAMES.length];
+    let html=`<div class="group-card grp-color-${i%8}">`;
+    html+=`<div class="group-title"><span style="color:${color};">${nome} (${g.length})</span></div>`;
+    g.forEach(a=>{
+      const isFixed=fixedIds.has(a.id);
+      html+=`<div class="group-member">${_escHTML(a.nome)}${isFixed?'<span class="gm-badge gm-fixed">fixo</span>':''}</div>`;
+    });
+    html+='</div>';
+    res.innerHTML+=html;
+  });
+}
+
+function _grpParsePairs(text){
+  if(!text.trim()) return [];
+  return text.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const parts=l.split(/[;|]/).map(s=>s.trim().toLowerCase());
+    return parts.length>=2?[parts[0],parts[1]]:null;
+  }).filter(Boolean);
+}
+
+function _grpParseFixed(text,lista,maxGroups){
+  if(!text.trim()) return [];
+  return text.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const parts=l.split(/[;|]/).map(s=>s.trim());
+    if(parts.length<2) return null;
+    const nome=parts[0].toLowerCase();
+    const group=parseInt(parts[1])-1; // 1-based to 0-based
+    const aluno=lista.find(a=>(a.nome||'').toLowerCase().includes(nome));
+    if(aluno&&group>=0&&group<maxGroups) return {id:aluno.id,group};
+    return null;
+  }).filter(Boolean);
+}
+
+function _grpViolatesSeparation(aluno,grupo,pairs){
+  if(!pairs.length) return false;
+  const nomeA=(aluno.nome||'').toLowerCase();
+  return grupo.some(mem=>{
+    const nomeB=(mem.nome||'').toLowerCase();
+    return pairs.some(([p1,p2])=>(nomeA.includes(p1)&&nomeB.includes(p2))||(nomeA.includes(p2)&&nomeB.includes(p1)));
+  });
+}
+
+// F19: Copy as text
+function grpCopiarTexto(){
+  if(!grpUltimoResultado.length) return showToast("Gere grupos primeiro.","error");
+  let txt=`GRUPOS — ${filtroTurma} — ${new Date().toLocaleDateString('pt-BR')}\n\n`;
+  grpUltimoResultado.forEach((g,i)=>{
+    txt+=`${GRP_NAMES[i%GRP_NAMES.length]} (${g.length}):\n`;
+    g.forEach(a=>txt+=`  • ${a.nome}\n`);
+    txt+='\n';
+  });
+  navigator.clipboard.writeText(txt).then(()=>showToast("Copiado!")).catch(()=>{
+    // Fallback
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast("Copiado!");
+  });
+}
+
+// F20: Print groups
+function grpImprimir(){
+  if(!grpUltimoResultado.length) return showToast("Gere grupos primeiro.","error");
+  const w=window.open('','_blank','width=700,height=600');
+  w.document.write(`<html><head><title>Grupos — ${_escHTML(filtroTurma)}</title>
+  <style>body{font-family:sans-serif;padding:20px;}h2{text-align:center;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+  .card{border:1px solid #ccc;border-radius:6px;padding:8px;border-left:4px solid var(--c);}
+  .title{font-weight:bold;border-bottom:1px solid #eee;padding-bottom:3px;margin-bottom:4px;}
+  .member{font-size:.9rem;margin:2px 0;}</style></head><body>
+  <h2>Grupos — ${_escHTML(filtroTurma)} — ${new Date().toLocaleDateString('pt-BR')}</h2><div class="grid">`);
+  grpUltimoResultado.forEach((g,i)=>{
+    const color=GRP_COLORS[i%GRP_COLORS.length];
+    w.document.write(`<div class="card" style="--c:${color};border-left-color:${color};"><div class="title" style="color:${color};">${GRP_NAMES[i%GRP_NAMES.length]} (${g.length})</div>`);
+    g.forEach(a=>w.document.write(`<div class="member">${_escHTML(a.nome)}</div>`));
+    w.document.write('</div>');
+  });
+  w.document.write('</div></body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(),300);
+}
+
+// ================================================================
+// WHITELIST ALL NEW FUNCTIONS
+// ================================================================
+try{
+  ['sortearAluno','sortLimparHistorico','mapaChangeGrid','mapaToggleDisable','mapaToggleSwap',
+   'mapaAutoDistribuir','mapaImprimir','mapaMesaClick','gerarGrupos','grupoModoChanged',
+   'grpCopiarTexto','grpImprimir'].forEach(n=>{
+    if(typeof __wrapSafeGlobal==='function'&&typeof window[n]==='function') __wrapSafeGlobal(n);
   });
 }catch(_){}
 
