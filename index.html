@@ -1724,15 +1724,12 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         .mapa-livres { width: 280px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden;}
         .mapa-livres-header { background: #f8fafc; padding: 15px; font-weight: bold; border-bottom: 1px solid var(--border-color); color: var(--text-main);}
         .lista-livres { padding: 15px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; background: var(--bg-body); }
-        .sala-grid-wrap { flex: 1; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; align-items: center; overflow-y: auto;}
-        .sala-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; width: 100%; max-width: 900px; }
-        /* Mesa do Professor (decorativa) */
+        .sala-grid-wrap { flex: 1; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; min-width: 0;}
+        .sala-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; width: 100%; max-width: 900px; flex-shrink: 0; }
+        /* Mesa do Professor (decorativa) — abaixo do grid (sem sobrepor carteiras) */
         .sala-grid-wrap{
-            position: relative;
             --mesa-prof-w: 220px;
             --mesa-prof-h: 64px;
-            padding-bottom: calc(var(--mesa-prof-h) + 32px);
-            padding-right: calc(var(--mesa-prof-w) + 32px);
         }
         @media (max-width: 720px){
             .sala-grid-wrap{
@@ -1740,13 +1737,18 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
                 --mesa-prof-h: 56px;
             }
         }
+        .mesa-prof-row{
+            width: 100%;
+            max-width: 900px;
+            margin-top: 18px;
+            display: flex;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
         .mesa-prof{
-            position:absolute;
-            right:16px;
-            bottom:16px;
             width: var(--mesa-prof-w);
-            max-width: calc(100% - 32px);
-            height: var(--mesa-prof-h);
+            max-width: 100%;
+            min-height: var(--mesa-prof-h);
             border:2px solid var(--border-color);
             border-radius:12px;
             background: var(--bg-body);
@@ -1761,10 +1763,13 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             opacity:.96;
             pointer-events:none;
             user-select:none;
-        
-            box-sizing:border-box;}
+            box-sizing:border-box;
+            padding: 10px 12px;
+        }
         .mesa-prof i{ font-size:1.05rem; opacity:.9; }
         .mesa-prof span{ padding:2px 10px; border-radius:999px; border:1px dashed var(--border-color); }
+
+
 
         .mesa { background: #f1f5f9; border: 2px dashed #cbd5e1; height: 70px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 5px; transition: 0.2s; position: relative;}
         .aluno-drag.mobile-selected { border: 3px solid var(--inclusao) !important; transform: scale(1.05); box-shadow: 0 0 10px rgba(147, 51, 234, 0.5); }
@@ -2238,6 +2243,7 @@ body.dark-mode .podium-slot[data-pos="3"] .podium-base { background:linear-gradi
 
 /* === RANKING LIST === */
 .ranking-list-section { padding:0 24px 24px; }
+.rank-row-top3 { background: linear-gradient(90deg, rgba(251,191,36,0.06) 0%, transparent 100%); border-left: 3px solid #f59e0b; }
 .ranking-list-header { display:grid; grid-template-columns:50px 1fr 100px 120px 60px; gap:12px; padding:10px 16px; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); border-bottom:2px solid var(--border-color); }
 
 .rank-row {
@@ -4129,7 +4135,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                 </div>
                 <div id="mapaSwapMsg" style="display:none;padding:4px 10px;background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;font-size:.78rem;text-align:center;color:#92400e;">🔄 Modo troca: clique em 2 alunos para trocar de lugar. Clique ↻ para sair.</div>
 <div id="salaGrid" class="sala-grid"></div>
-                <div class="mesa-prof" aria-hidden="true"><i class="fas fa-user-tie"></i><span>Mesa do Professor</span></div>
+                <div class="mesa-prof-row"><div class="mesa-prof" aria-hidden="true"><i class="fas fa-user-tie"></i><span>Mesa do Professor</span></div></div>
             </div>
         </div>
 
@@ -19847,14 +19853,14 @@ function _renderList(ranked){
     }
     
     const maxPts = ranked[0] ? ranked[0].total : 1;
-    const remaining = ranked.slice(3); // Skip podium students
     
     let html = `<div class="ranking-list-header">
         <span>#</span><span>Aluno</span><span>Progresso</span><span>Detalhes</span><span>Pts</span>
     </div>`;
     
-    remaining.forEach((item, i) => {
-        const pos = i + 4;
+    // Show ALL students in the list (including top 3 from podium)
+    ranked.forEach((item, i) => {
+        const pos = i + 1;
         const a = item.aluno;
         const p = item.pontos;
         const color = _rankAvatarColor(item.idx);
@@ -19863,8 +19869,15 @@ function _renderList(ranked){
         const streak = _rankGetStreak(p);
         const streakHtml = streak >= 3 ? `<span class="rank-streak"><i class="fas fa-fire"></i> ${streak}x</span>` : '';
         
-        html += `<div class="rank-row">
-            <div class="rank-pos">${pos}º</div>
+        // Medal badge for top 3
+        let posHtml;
+        if(pos === 1) posHtml = `<span class="rank-pos-badge gold">1</span>`;
+        else if(pos === 2) posHtml = `<span class="rank-pos-badge silver">2</span>`;
+        else if(pos === 3) posHtml = `<span class="rank-pos-badge bronze">3</span>`;
+        else posHtml = `${pos}º`;
+        
+        html += `<div class="rank-row${pos <= 3 ? ' rank-row-top3' : ''}">
+            <div class="rank-pos">${posHtml}</div>
             <div class="rank-student">
                 <div class="rank-student-avatar" style="background:${color};">${initials}</div>
                 <div class="rank-student-info">
@@ -19885,40 +19898,6 @@ function _renderList(ranked){
             <div class="rank-total">${item.total}</div>
         </div>`;
     });
-    
-    // Also show top 3 in list format for completeness
-    if(ranked.length > 0 && ranked.length <= 3){
-        // Show all in list if 3 or fewer
-        ranked.forEach((item, i) => {
-            if(item.total <= 0) return;
-            const pos = i + 1;
-            const a = item.aluno;
-            const p = item.pontos;
-            const color = _rankAvatarColor(item.idx);
-            const initials = _rankInitials(a.nome);
-            const pct = maxPts > 0 ? Math.round((item.total / maxPts)*100) : 0;
-            const posCls = pos===1?'gold':(pos===2?'silver':'bronze');
-            
-            html += `<div class="rank-row">
-                <div class="rank-pos"><span class="rank-pos-badge ${posCls}">${pos}</span></div>
-                <div class="rank-student">
-                    <div class="rank-student-avatar" style="background:${color};">${initials}</div>
-                    <div class="rank-student-info">
-                        <div class="rank-student-name">${_escHTML(a.nome)}</div>
-                        <div class="rank-student-turma">${_escHTML(a.turma)}</div>
-                    </div>
-                </div>
-                <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%;background:${color};opacity:0.7;"></div><div class="rank-bar-label">${pct}%</div></div>
-                <div style="display:flex;gap:4px;flex-wrap:wrap;">
-                    <span style="font-size:0.68rem;color:var(--text-muted);">📝${p.notas||0}</span>
-                    <span style="font-size:0.68rem;color:var(--text-muted);">⭐${p.comportamento||0}</span>
-                    <span style="font-size:0.68rem;color:var(--text-muted);">🙋${p.participacao||0}</span>
-                    <span style="font-size:0.68rem;color:var(--text-muted);">🎁${p.bonus||0}</span>
-                </div>
-                <div class="rank-total">${item.total}</div>
-            </div>`;
-        });
-    }
     
     list.innerHTML = html;
 }
