@@ -999,7 +999,23 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             --card-bg: #ffffff; --text-main: #334155; --border-color: #e2e8f0; --input-bg: #ffffff;
             --farol-verde: #16a34a; --farol-amarelo: #f59e0b; --farol-vermelho: #dc2626;
             --inclusao: #9333ea;
+            --danger: #ef4444; --warning: #f59e0b; --text-muted: #64748b; --text-sub: #475569;
         }
+
+        /* CARD UTILITY CLASSES */
+        .card-info-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+        .card-actions-row { display:flex; gap:8px; align-items:center; }
+        .blitz-box { background:var(--bg-body); padding:6px; border-radius:8px; border:1px solid var(--border-color); display:inline-flex; align-items:center; gap:4px; }
+        .blitz-icon { color:var(--warning); font-size:0.8rem; }
+        .btn-delete-card { border:none; background:transparent; color:var(--danger); cursor:pointer; padding:8px; border-radius:6px; transition:background 0.2s; }
+        .btn-delete-card:hover { background:rgba(239,68,68,0.1); }
+        .btn-boletim-card { background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:0.75rem; padding:4px 8px; border-radius:6px; cursor:pointer; transition:background 0.2s; display:inline-flex; align-items:center; gap:4px; }
+        .btn-boletim-card:hover { background:#bae6fd; }
+        body.dark-mode .btn-boletim-card { background:#0c4a6e; color:#bae6fd; border-color:#075985; }
+        body.dark-mode .btn-boletim-card:hover { background:#075985; }
+        body.dark-mode .blitz-box { background:var(--bg-body); border-color:var(--border-color); }
+        body.dark-mode .btn-delete-card { color:#f87171; }
+        body.dark-mode .btn-delete-card:hover { background:rgba(248,113,113,0.15); }
 
         /* MODO NOTURNO */
         body.dark-mode {
@@ -1008,7 +1024,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         }
         body.dark-mode .card-stats, body.dark-mode .tabela-dados th, body.dark-mode .modal-header-xl, 
         body.dark-mode .modal-footer-xl, body.dark-mode .cal-day, body.dark-mode .mapa-livres-header {
-            background-color: #1e293b; color: #cbd5e1; border-color: #334155;
+            background: #1e293b; color: #cbd5e1; border-color: #334155;
         }
         body.dark-mode .aluno-nome, body.dark-mode h1, body.dark-mode h2, body.dark-mode h3 { color: #f1f5f9 !important; }
         body.dark-mode .tabela-dados td { border-color: #334155; color: #cbd5e1; }
@@ -1417,7 +1433,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         }
 
         /* GRIDS & CARDS */
-        .grid-alunos { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+        .grid-alunos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: 1.5rem; }
         .card-aluno { 
             background: var(--card-bg); 
             border-radius: 16px; 
@@ -1453,7 +1469,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         .aluno-nome { 
             font-size: 1.25rem; 
             font-weight: 700; 
-            color: #1e293b; 
+            color: var(--text-main); 
             text-decoration: none; 
             cursor: pointer;
             display: flex;
@@ -1498,7 +1514,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         }
         .card-stats { 
             display: grid; 
-            grid-template-columns: 1fr 1fr; 
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
             gap: 12px; 
             margin-top: 15px; 
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -1904,7 +1920,13 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         }
         
         .card-aluno {
-            animation: slideIn 0.3s ease-out forwards;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+        .card-aluno.card-visible {
+            opacity: 1;
+            transform: translateY(0);
         }
         
         .top-bar {
@@ -3190,11 +3212,11 @@ body.sidebar-hidden main{margin-left:0;}
   .search-filter-chip{padding:7px 10px!important;font-size:.7rem!important;white-space:nowrap!important;flex-shrink:0!important;}
 
   /* Grid alunos: single column, tighter cards */
-  .grid-alunos{grid-template-columns:1fr!important;gap:10px!important;}
-  .card-aluno{padding:12px!important;border-radius:10px!important;}
-  .aluno-nome{font-size:1rem!important;}
-  .card-stats{flex-direction:column!important;gap:4px!important;}
-  .card-stat{padding:6px 8px!important;font-size:.75rem!important;}
+  main .grid-alunos{grid-template-columns:1fr;gap:10px;}
+  main .card-aluno{padding:12px;border-radius:10px;}
+  main .aluno-nome{font-size:1rem;}
+  main .card-stats{flex-direction:column;gap:4px;}
+  main .card-stat{padding:6px 8px;font-size:.75rem;}
 
   /* Dashboard: single column */
   .dash-container{grid-template-columns:1fr!important;gap:10px!important;}
@@ -3251,7 +3273,7 @@ body.sidebar-hidden main{margin-left:0;}
   .tools-group{grid-template-columns:repeat(2,1fr)!important;}
   .cal-day{min-height:50px!important;}
   .cal-event{font-size:.5rem!important;}
-  .card-aluno{padding:10px!important;}
+  main .card-aluno{padding:10px;}
   .modal-box{padding:12px!important;}
 }
 
@@ -6783,61 +6805,186 @@ function selTurma(n){
         }
 
         
+        // Hook system for card rendering extensions
+        const _cardRenderHooks = [];
+        
+        // IntersectionObserver for staggered card reveal animation
+        let _cardRevealObserver = null;
+        function _initCardObserver(){
+            if(_cardRevealObserver) return;
+            _cardRevealObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry, i) => {
+                    if(entry.isIntersecting){
+                        const el = entry.target;
+                        const delay = parseInt(el.dataset.cardIdx || '0') * 40;
+                        setTimeout(() => el.classList.add('card-visible'), Math.min(delay, 300));
+                        _cardRevealObserver.unobserve(el);
+                    }
+                });
+            }, { threshold: 0.05 });
+        }
+
+        // Build sparkline data for a student (all bimestres)
+        function _buildSparklineData(a){
+            const vals=[];
+            [1,2,3,4].forEach(bim => {
+                const b=a.bimestres[bim]; if(!b) return;
+                _syncBimestreRefs(b);
+                const m1=parseFloat(b.media_lp)||0, m2=parseFloat(b.media_red)||0;
+                vals.push((m1+m2)/2);
+            });
+            return vals;
+        }
+        function _getSparklineTrend(vals){
+            if(vals.length < 2) return { cls:'stable', icon:'→' };
+            const trend = vals[vals.length-1] - vals[0];
+            if(trend > 0.5) return { cls:'up', icon:'↑' };
+            if(trend < -0.5) return { cls:'down', icon:'↓' };
+            return { cls:'stable', icon:'→' };
+        }
+
         function renderizarGrid(){
             const d = document.getElementById('gridAlunos');
             const l = getAlunosFiltrados();
             
             if (l.length === 0) {
-                d.innerHTML = '<div class="empty-state" style="text-align:center; padding:60px; color:#94a3b8; font-size:1.1rem;"><i class="fas fa-inbox" style="font-size:3rem; display:block; margin-bottom:15px; opacity:0.5;"></i>Nenhum aluno encontrado</div>';
+                d.innerHTML = '<div class="empty-state" style="text-align:center; padding:60px; color:var(--text-muted,#94a3b8); font-size:1.1rem;"><i class="fas fa-inbox" style="font-size:3rem; display:block; margin-bottom:15px; opacity:0.5;"></i>Nenhum aluno encontrado</div>';
                 return;
             }
 
-            let htmlBuffer = '';
+            _initCardObserver();
+
+            // Build a map of current IDs for efficient diffing
+            const newIds = new Set(l.map(a => String(a.id)));
+            const existingCards = d.querySelectorAll('.card-aluno[data-id]');
+            const existingMap = new Map();
+            existingCards.forEach(c => existingMap.set(c.getAttribute('data-id'), c));
+
+            // Remove cards no longer in filtered list
+            existingMap.forEach((card, id) => {
+                if(!newIds.has(id)){
+                    _cardRevealObserver.unobserve(card);
+                    card.remove();
+                }
+            });
+
+            // Build or update each card
+            const fragment = document.createDocumentFragment();
             l.forEach((a, idx) => {
                 const b = a.bimestres[bimestreAtual];
-                const bg = a.elegivel ? `<span class="badge-inclusao"><i class="fas fa-universal-access"></i> Elegivel</span>` : '';
-                
-                htmlBuffer += `
-                <div class="card-aluno" data-id="${a.id}">
-                    <div class="card-header">
-                        <div style="flex:1;">
-                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                                <span class="aluno-numero">${idx + 1}</span>
-                                <a class="aluno-nome" data-onclick="abrirDetalhes(${__u(a.id)})">${_escHTML(a.nome)}</a>
-                                ${bg}
-                            </div>
-                            <span class="aluno-turma"><i class="fas fa-users"></i> ${_escHTML(a.turma)}</span>
+                const cardId = String(a.id);
+                let card = existingMap.get(cardId);
+
+                if(card){
+                    // Update existing card content
+                    _updateCardContent(card, a, b, idx);
+                } else {
+                    // Create new card
+                    card = _createCardElement(a, b, idx);
+                    _cardRevealObserver.observe(card);
+                }
+                fragment.appendChild(card);
+            });
+
+            d.innerHTML = '';
+            d.appendChild(fragment);
+
+            // Draw sparklines on canvas elements (must be in DOM)
+            l.forEach(a => {
+                const cvs = d.querySelector(`.card-aluno[data-id="${a.id}"] .sparkline-canvas`);
+                if(cvs){
+                    const vals = _buildSparklineData(a);
+                    if(vals.length >= 2) drawSparkline(cvs, vals, 80, 28);
+                }
+            });
+
+            // Run any registered extension hooks
+            _cardRenderHooks.forEach(fn => { try{ fn(d, l); }catch(_){} });
+        }
+
+        function _createCardElement(a, b, idx){
+            const card = document.createElement('div');
+            card.className = 'card-aluno';
+            card.setAttribute('data-id', a.id);
+            card.setAttribute('data-card-idx', idx);
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('role', 'article');
+            card.setAttribute('aria-label', 'Aluno ' + (a.nome || ''));
+            _fillCardHTML(card, a, b, idx);
+            return card;
+        }
+
+        function _updateCardContent(card, a, b, idx){
+            card.setAttribute('data-card-idx', idx);
+            card.setAttribute('aria-label', 'Aluno ' + (a.nome || ''));
+            // Check if content actually changed
+            const oldHash = card.dataset.hash || '';
+            const newHash = `${idx}_${b.media_lp}_${b.media_red}_${b.comportamento}_${a.elegivel}`;
+            if(oldHash === newHash) return;
+            _fillCardHTML(card, a, b, idx);
+            card.dataset.hash = newHash;
+        }
+
+        function _fillCardHTML(card, a, b, idx){
+            const bg = a.elegivel ? `<span class="badge-inclusao"><i class="fas fa-universal-access"></i> Elegivel</span>` : '';
+            const compVal = parseFloat(b.comportamento) || 0;
+            
+            // Build sparkline section
+            const sparkVals = _buildSparklineData(a);
+            const trend = _getSparklineTrend(sparkVals);
+            const sparkHTML = sparkVals.length >= 2
+                ? `<div class="sparkline-box"><canvas class="sparkline-canvas" width="80" height="28"></canvas><span class="sparkline-trend ${trend.cls}">${trend.icon}</span></div>`
+                : '';
+
+            card.dataset.hash = `${idx}_${b.media_lp}_${b.media_red}_${b.comportamento}_${a.elegivel}`;
+            card.innerHTML = `
+                <div class="card-header">
+                    <div style="flex:1">
+                        <div class="card-info-row">
+                            <span class="aluno-numero">${idx + 1}</span>
+                            <a class="aluno-nome" data-onclick="abrirDetalhes(${__u(a.id)})">${_escHTML(a.nome)}</a>
+                            ${bg}
                         </div>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <div class="blitz-controls" title="Modo Blitz (Comportamento)" style="background:var(--bg-body); padding:6px; border-radius:8px; border:1px solid var(--border-color);">
-                                <i class="fas fa-bolt" style="color:#f59e0b; font-size:0.8rem;"></i>
-                                <button class="btn-blitz minus" data-onclick="funcBlitz(${__u(a.id)}, -0.5)">-</button>
-                                <button class="btn-blitz plus" data-onclick="funcBlitz(${__u(a.id)}, 0.5)">+</button>
-                            </div>
-                            <button data-onclick="delAluno(${__u(a.id)})" style="border:none; background:transparent; color:#ef4444; cursor:pointer; padding:8px; border-radius:6px; transition:0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='transparent'">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                        <span class="aluno-turma"><i class="fas fa-users"></i> ${_escHTML(a.turma)}</span>
+                    </div>
+                    <div class="card-actions-row">
+                        <div class="blitz-box" title="Modo Blitz (Comportamento)">
+                            <i class="fas fa-bolt blitz-icon"></i>
+                            <button class="btn-blitz minus" data-onclick="funcBlitz(${__u(a.id)}, -0.5)" aria-label="Diminuir comportamento">−</button>
+                            <button class="btn-blitz plus" data-onclick="funcBlitz(${__u(a.id)}, 0.5)" aria-label="Aumentar comportamento">+</button>
+                        </div>
+                        <button class="btn-boletim-card" data-onclick="abrirBoletim(${__u(a.id)})" title="Boletim" aria-label="Ver boletim">
+                            <i class="fas fa-print"></i>
+                        </button>
+                        <button class="btn-delete-card" data-onclick="delAluno(${__u(a.id)})" title="Remover aluno" aria-label="Remover aluno">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                ${sparkHTML}
+                <div class="card-stats">
+                    <div class="stat-item">
+                        <span><i class="fas fa-book"></i> ${_escHTML(config.materia1)}</span>
+                        <div class="farol-badge">
+                            <i class="fas fa-circle" style="color:${getCorFarol(b.media_lp)}"></i>
+                            <span>${__u(b.media_lp)}</span>
                         </div>
                     </div>
-                    <div class="card-stats">
-                        <div class="stat-item">
-                            <span><i class="fas fa-book"></i> ${_escHTML(config.materia1)}</span>
-                            <div class="farol-badge">
-                                <i class="fas fa-circle" style="color:${getCorFarol(b.media_lp)};"></i>
-                                <span>${__u(b.media_lp)}</span>
-                            </div>
+                    <div class="stat-item">
+                        <span><i class="fas fa-pen"></i> ${_escHTML(config.materia2)}</span>
+                        <div class="farol-badge">
+                            <i class="fas fa-circle" style="color:${getCorFarol(b.media_red)}"></i>
+                            <span>${__u(b.media_red)}</span>
                         </div>
-                        <div class="stat-item">
-                            <span><i class="fas fa-pen"></i> ${_escHTML(config.materia2)}</span>
-                            <div class="farol-badge">
-                                <i class="fas fa-circle" style="color:${getCorFarol(b.media_red)};"></i>
-                                <span>${__u(b.media_red)}</span>
-                            </div>
+                    </div>
+                    <div class="stat-item">
+                        <span><i class="fas fa-user-check"></i> Comportamento</span>
+                        <div class="farol-badge">
+                            <i class="fas fa-circle" style="color:${getCorFarol(compVal)}"></i>
+                            <span>${__u(compVal)}</span>
                         </div>
                     </div>
                 </div>`;
-            });
-            d.innerHTML = htmlBuffer;
         }
         
         function funcBlitz(id, valor) {
@@ -15111,29 +15258,8 @@ getAlunosFiltrados = function(){
 // ===============================================
 // V13: Add "Boletim" link to student card context
 // ===============================================
-// Hook into renderizarGrid to add boletim button to each card
-try{
-  const __origRenderGrid = renderizarGrid;
-  renderizarGrid = function(){
-    __origRenderGrid();
-    // Add boletim button to each card (via DOM manipulation after render)
-    document.querySelectorAll('.card-aluno').forEach(card=>{
-      const alunoId = card.dataset?.id || card.getAttribute('data-id');
-      if(!alunoId) return;
-      if(card.querySelector('.btn-boletim-v13')) return; // already added
-      const actions = card.querySelector('.card-actions, .card-footer');
-      if(actions){
-        const btn = document.createElement('button');
-        btn.className = 'btn-blitz btn-boletim-v13';
-        btn.title = 'Boletim';
-        btn.innerHTML = '<i class="fas fa-print"></i>';
-        btn.style.cssText = 'background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-size:0.75rem;padding:2px 6px;border-radius:4px;cursor:pointer;margin-left:4px;';
-        btn.onclick = function(e){ e.stopPropagation(); abrirBoletim(parseFloat(alunoId)||alunoId); };
-        actions.appendChild(btn);
-      }
-    });
-  };
-}catch(_){}
+// [CONSOLIDATED] Boletim button is now rendered natively inside renderizarGrid.
+// This monkey-patch is no longer needed.
 
 // ===============================================
 // V13: Include frequencia in __loadExtras / __collectBackupFiles
@@ -15430,9 +15556,10 @@ function renderEntregas(){
       if(title) btn.setAttribute('aria-label', title);
     }
   });
-  // Make cards focusable
-  document.querySelectorAll('.card-aluno').forEach(card=>{
-    if(!card.getAttribute('tabindex')) card.setAttribute('tabindex','0');
+  // Make cards focusable — [CONSOLIDATED] now done natively in renderizarGrid template
+  // Kept here only for cards that might be created by other code paths
+  document.querySelectorAll('.card-aluno:not([tabindex])').forEach(card=>{
+    card.setAttribute('tabindex','0');
   });
   // Observe DOM for new modals/buttons
   const obs=new MutationObserver(muts=>{
@@ -15644,47 +15771,8 @@ function drawSparkline(canvas, values, w, h){
   });
 }
 
-// Hook into card rendering to add sparklines
-try{
-  const __origRenderGrid2=renderizarGrid;
-  renderizarGrid=function(){
-    __origRenderGrid2();
-    document.querySelectorAll('.card-aluno').forEach(card=>{
-      const alunoId=card.dataset?.id||card.getAttribute('data-id');
-      if(!alunoId || card.querySelector('.sparkline-box')) return;
-      const a=alunos.find(al=>String(al.id)===String(alunoId));
-      if(!a) return;
-
-      const vals=[];
-      [1,2,3,4].forEach(bim=>{
-        const b=a.bimestres[bim]; if(!b) return;
-        _syncBimestreRefs(b);
-        const m1=parseFloat(b.media_lp)||0, m2=parseFloat(b.media_red)||0;
-        vals.push((m1+m2)/2);
-      });
-
-      if(vals.length<2) return;
-      const trend=vals[vals.length-1]-vals[0];
-      const trendCls=trend>0.5?'up':(trend<-0.5?'down':'stable');
-      const trendIcon=trend>0.5?'↑':(trend<-0.5?'↓':'→');
-
-      const box=document.createElement('div');
-      box.className='sparkline-box';
-      const cvs=document.createElement('canvas');
-      box.appendChild(cvs);
-      const tSpan=document.createElement('span');
-      tSpan.className=`sparkline-trend ${trendCls}`;
-      tSpan.textContent=trendIcon;
-      box.appendChild(tSpan);
-
-      const statsArea=card.querySelector('.card-stats, .card-footer, .card-actions');
-      if(statsArea) statsArea.parentElement.insertBefore(box, statsArea);
-      else card.appendChild(box);
-
-      drawSparkline(cvs, vals, 80, 28);
-    });
-  };
-}catch(_){}
+// [CONSOLIDATED] Sparklines are now rendered natively inside renderizarGrid.
+// The drawSparkline function is still used but called directly from the main render loop.
 
 // ================================================================
 // F10: UNDO/REDO GLOBAL
