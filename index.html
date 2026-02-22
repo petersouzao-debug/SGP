@@ -6934,6 +6934,41 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
 
                         try{ if(typeof __saveExtras === 'function') __saveExtras(); }catch(e){}
 
+                        // Restore frequência from backup
+                        try{
+                            const bkFreq = readJson('sgp_frequencia.json');
+                            if(bkFreq && typeof bkFreq === 'object'){
+                                window.__sgpFrequencia = bkFreq;
+                                __safeLSSet('sgp_frequencia', JSON.stringify(bkFreq));
+                            }
+                        }catch(_){}
+
+                        // Restore entregas from backup
+                        try{
+                            const bkEntregas = readJson('sgp_entregas.json');
+                            if(bkEntregas && typeof bkEntregas === 'object'){
+                                window.__sgpEntregas = bkEntregas;
+                                __safeLSSet('sgp_entregas', JSON.stringify(bkEntregas));
+                            }
+                        }catch(_){}
+
+                        // Restore ranking from backup
+                        try{
+                            const bkRanking = readJson('sgp_ranking_v1.json');
+                            if(bkRanking && typeof bkRanking === 'object'){
+                                __safeLSSet('sgp_ranking_v1', JSON.stringify(bkRanking));
+                            }
+                        }catch(_){}
+
+                        // Restore audit log from backup
+                        try{
+                            const bkAuditLog = readJson('sgp_audit_log.json');
+                            if(Array.isArray(bkAuditLog)){
+                                window.__sgpAuditLog = bkAuditLog;
+                                __safeLSSet('sgp_audit_log', JSON.stringify(bkAuditLog));
+                            }
+                        }catch(_){}
+
                         garantirEstruturaNova();
                         salvarDadosLocal();
                         renderizarMenu(); 
@@ -14754,6 +14789,8 @@ function __idbSaveState(){
     store.put({key:'core', value: __buildAtomicCoreState()});
     store.put({key:'planner', value: plannerTasks});
     store.put({key:'frequencia', value: window.__sgpFrequencia || {}});
+    try{ store.put({key:'ranking', value: JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}')||{}}); }catch(_){}
+    try{ store.put({key:'entregas', value: window.__sgpEntregas || {}}); }catch(_){}
   }catch(e){
     console.warn('[SGP] IDB save error:', e);
   }
@@ -16755,6 +16792,7 @@ try{
     const files=__origCollectBackup2();
     try{ files.push(['sgp_entregas.json', JSON.stringify(window.__sgpEntregas||{},null,2)]); }catch(_){}
     try{ files.push(['sgp_audit_log.json', JSON.stringify(window.__sgpAuditLog||[],null,2)]); }catch(_){}
+    try{ files.push(['sgp_ranking_v1.json', JSON.stringify(JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}')||{},null,2)]); }catch(_){}
     return files;
   };
 }catch(_){}
@@ -19922,6 +19960,9 @@ function _rankGetPontos(alunoId){
 function _rankTotal(p){ return (p.notas||0) + (p.comportamento||0) + (p.participacao||0) + (p.bonus||0); }
 
 // --- Auto-sync: Calculate auto-points from frequency and grades ---
+// Performance cache to avoid recalculating on every render
+let __rankAutoSyncCache = { version: -1, freqVersion: -1, turma: '', bim: 0 };
+
 function _rankCalcAutoFreq(alunoId, turma, bim){
     // Count all P marks for this student in this turma/bimestre
     const freq = window.__sgpFrequencia || {};
@@ -19965,6 +20006,15 @@ function _rankSyncAuto(){
         const turma = filtroTurma || 'Todas';
         if(turma === 'Todas') return;
         const bim = bimestreAtual || 1;
+        
+        // Skip if nothing changed since last sync
+        const freqV = window.__sgpFreqVersion || 0;
+        const coreV = parseInt(localStorage.getItem('sgp_last_core_save')||'0') || 0;
+        if(__rankAutoSyncCache.turma === turma && __rankAutoSyncCache.bim === bim
+           && __rankAutoSyncCache.freqVersion === freqV && __rankAutoSyncCache.version === coreV){
+            return; // Cache hit — skip expensive recalculation
+        }
+        
         const { data } = _rankGetTurma();
         if(!data[turma]) data[turma] = {};
         if(!data[turma][bim]) data[turma][bim] = {};
@@ -19985,6 +20035,9 @@ function _rankSyncAuto(){
         });
         
         _rankSave(data);
+        
+        // Update cache
+        __rankAutoSyncCache = { version: coreV, freqVersion: freqV, turma, bim };
     }catch(_){}
 }
 
