@@ -87,6 +87,35 @@ i.fa .sgp-ico-fill, i.fas .sgp-ico-fill, i.far .sgp-ico-fill, i.fab .sgp-ico-fil
   fill: currentColor;
   stroke: none;
 }
+
+/* Plano Semanal — Tela cheia (fullscreen) */
+#modalPlanoSemanal .modal-box.is-fullscreen{
+  width:100vw !important;
+  height:100vh !important;
+  max-width:100vw !important;
+  max-height:100vh !important;
+  border-radius:0 !important;
+  margin:0 !important;
+}
+#modalPlanoSemanal .modal-box.is-fullscreen #planoSemanalScroll{
+  padding-right: 10px;
+}
+
+.plano-pr-tab{
+  padding:6px 12px; border:1px solid var(--border-color); border-radius:8px;
+  background:transparent; color:var(--text-muted); font-size:.75rem; font-weight:600;
+  cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.plano-pr-tab:hover{ background:rgba(124,58,237,.08); color:#7c3aed; border-color:#7c3aed; }
+.plano-pr-tab-active{ background:#7c3aed !important; color:#fff !important; border-color:#7c3aed !important; }
+.plano-pr-tab-done{ border-color:#059669; color:#059669; }
+.plano-pr-tab-done::after{ content:" ✓"; font-size:.65rem; }
+body.dark-mode .plano-pr-tab{ border-color:#475569; color:#94a3b8; }
+body.dark-mode .plano-pr-tab:hover{ background:rgba(124,58,237,.15); color:#a78bfa; border-color:#a78bfa; }
+body.dark-mode .plano-pr-tab-active{ background:#7c3aed !important; color:#fff !important; }
+body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
+
+
 </style>
 
 <script id="sgp-emoji-pack">
@@ -3055,7 +3084,7 @@ body.sidebar-hidden main{margin-left:0;}
   main{flex:1;padding:10px!important;padding-top:56px!important;padding-bottom:70px!important;overflow:visible!important;height:auto!important;min-height:0;}
 
   /* Top bar: compact */
-  .top-bar{padding:10px!important;gap:8px!important;border-radius:10px!important;margin-bottom:12px!important;}
+  .top-bar{padding:10px!important;gap:8px!important;border-radius:10px!important;margin-bottom:12px!important;position:sticky!important;top:0!important;z-index:150!important;background:var(--card-bg)!important;box-shadow:0 2px 10px rgba(0,0,0,.08)!important;}
   .top-row{gap:6px!important;flex-direction:column!important;}
   .title-area h1{font-size:1.1rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .title-subtitle{font-size:.7rem!important;}
@@ -3107,9 +3136,11 @@ body.sidebar-hidden main{margin-left:0;}
   .cal-nav-btn{padding:8px 12px!important;font-size:.8rem!important;}
 
   /* Modals: full width bottom sheet */
-  .modal-overlay{align-items:flex-end!important;}
-  .modal-box{max-width:100vw!important;width:100vw!important;max-height:90vh!important;margin:0!important;
-    border-radius:16px 16px 0 0!important;padding:16px!important;overflow-y:auto!important;}
+  .modal-overlay{align-items:stretch!important;}
+  .modal-box{max-width:100vw!important;width:100vw!important;height:100vh!important;max-height:100vh!important;margin:0!important;
+    border-radius:0!important;padding:14px!important;padding-bottom:calc(14px + env(safe-area-inset-bottom, 0px))!important;overflow-y:auto!important;}
+  .modal-header-xl{position:sticky;top:0;z-index:3;}
+  .modal-footer-xl{position:sticky;bottom:0;z-index:3;}
 
   /* Frequency modal */
   .freq-table td,.freq-table th{padding:3px 2px!important;font-size:.68rem!important;}
@@ -3178,6 +3209,30 @@ body.sidebar-hidden main{margin-left:0;}
 .mobile-nav button i{font-size:1.1rem;}
 .mobile-nav button.active{color:#0ea5e9;}
 .mobile-nav button:active{background:rgba(14,165,233,.1);}
+
+/* Mobile: card lists for tables (Lista / Entregas) */
+.mobile-table-cards{display:none;margin-top:10px;}
+.mobile-table-cards .mcard{background:var(--card-bg);border:1px solid var(--border-color);border-radius:12px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.mcard-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.mcard-title{font-weight:800;font-size:.95rem;line-height:1.2;}
+.mcard-sub{font-size:.75rem;color:#64748b;white-space:nowrap;}
+.mcard-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.mchip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(148,163,184,.5);font-size:.75rem;background:rgba(14,165,233,.06);}
+.mchip b{font-weight:800;}
+.mcard-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px;}
+.mcheck{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px;border:1px solid rgba(148,163,184,.35);border-radius:10px;background:rgba(2,6,23,.02);}
+.mcheck input{width:22px;height:22px;min-width:22px;}
+.mcheck .lbl{display:flex;align-items:center;gap:10px;font-weight:700;font-size:.85rem;}
+@media(max-width:768px){
+  /* Keep table scroll contained (when still used) */
+  .tabela-dados{display:block!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;max-width:100%!important;}
+  .tabela-dados thead,.tabela-dados tbody{white-space:nowrap;}
+  .tabela-dados th:first-child,.tabela-dados td:first-child{position:sticky;left:0;background:var(--card-bg);z-index:2;}
+  /* Map gestures: pinch-to-zoom + pan */
+  #salaGrid{transform-origin:0 0;will-change:transform;touch-action:none;}
+  .sala-grid-wrap{overflow:hidden;}
+}
+
 
 /* F4: Diário de Classe */
 .diario-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;display:flex;align-items:center;justify-content:center;}
@@ -3487,6 +3542,8 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
 
         <div id="gridAlunos" class="grid-alunos"></div>
         <table id="tabelaFechamento" class="tabela-dados"><thead><tr><th>#</th><th>Nome</th><th>Turma</th><th class="lbl-mat1">Média 1</th><th class="lbl-mat2">Média 2</th><th>Comp.</th></tr></thead><tbody id="tbodyFechamento"></tbody></table>
+        <div id="mobileFechamentoCards" class="mobile-table-cards" style="display:none;"></div>
+
         
         <!-- NOVA VIEW: EDIÇÃO EM MASSA -->
         <div id="viewMassa" style="display:none;">
@@ -3521,6 +3578,8 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
         </button>
 
         <table id="tabelaEntregas" class="tabela-dados"><thead><tr><th>#</th><th>Nome</th><th>Turma</th><th>Redação 1</th><th>Redação 2</th></tr></thead><tbody id="tbodyEntregas"></tbody></table>
+        <div id="mobileEntregasCards" class="mobile-table-cards" style="display:none;"></div>
+
 
         <div id="viewAnual" class="anual-container" style="display:none;">
             <h2 style="margin-bottom:15px; color:var(--text-main);">Conselho de Classe (Anual) - <span class="lbl-mat1">Matéria 1</span></h2>
@@ -3682,6 +3741,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                     <button class="btn-tool" data-onclick="salvarLayout()"><i class="fas fa-save"></i></button>
                     <select id="selectLayouts" data-onchange="carregarLayout()"><option value="">Carregar...</option></select>
                     <button class="btn-tool" data-onclick="apagarLayout()" style="color:red;"><i class="fas fa-trash"></i></button>
+                    <button id="btnMapaResetZoom" class="btn-tool" data-onclick="mapaResetZoom()" title="Reset zoom"><i class="fas fa-rotate-left"></i></button>
                     <button id="btnMapaFullscreen" class="btn-tool" data-onclick="mapaToggleFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i></button>
                 </div>
                 <div id="mapaSwapMsg" style="display:none;padding:4px 10px;background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;font-size:.78rem;text-align:center;color:#92400e;">🔄 Modo troca: clique em 2 alunos para trocar de lugar. Clique ↻ para sair.</div>
@@ -3941,11 +4001,44 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
     <div id="modalAulasLote" class="modal-overlay"><div class="modal-box"><h2>Aulas em Lote</h2><textarea id="inputAulasLote" class="inp" rows="10"></textarea><div style="text-align: right; margin-top: 20px;"><button data-onclick="fecharModais()" style="padding: 8px 15px; border:none; bg:transparent; cursor:pointer;">Cancelar</button><button data-onclick="salvarAulasLote()" class="btn-primary">Salvar</button></div></div></div>
 
     <div id="modalPlanoSemanal" class="modal-overlay">
-      <div class="modal-box" style="max-width: 1100px; width: 96%; max-height: 92vh; overflow:hidden;">
+      <div class="modal-box" id="planoSemanalBox" style="max-width: 1100px; width: 96%; max-height: 92vh; overflow:hidden; display:flex; flex-direction:column;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
           <h2 style="margin:0;">Plano Semanal</h2>
-          <button class="btn-tool" data-onclick="fecharModais()" title="Fechar"><i class="fas fa-times"></i></button>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="btn-tool" id="btnPlanoSemanalFullscreen" data-onclick="togglePlanoSemanalFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i></button>
+            <button class="btn-tool" data-onclick="fecharModais()" title="Fechar"><i class="fas fa-times"></i></button>
+          </div>
         </div>
+
+        <div id="planoSemanalScroll" style="flex:1; min-height:0; overflow:auto; padding-right:6px; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
+
+        <div id="planoPreenchWrap" style="margin-top:10px; border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg); overflow:hidden;">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px 0; gap:8px; flex-wrap:wrap;">
+            <span style="font-size:.85rem; font-weight:700; color:var(--text-main);"><i class="fas fa-pen-to-square" style="color:#7c3aed;"></i> Preenchimento Rápido</span>
+            <span id="planoPreenchProgress" style="font-size:.72rem; color:var(--text-muted);"></span>
+          </div>
+          <div id="planoPreenchTabs" style="display:flex; gap:4px; padding:8px 14px 0; flex-wrap:wrap;">
+            <button class="plano-pr-tab plano-pr-tab-active" data-campo="conteudo" data-onclick="planoPreenchTab('conteudo')">1. Conteúdo</button>
+            <button class="plano-pr-tab" data-campo="habilidades" data-onclick="planoPreenchTab('habilidades')">2. Habilidades</button>
+            <button class="plano-pr-tab" data-campo="objetivos" data-onclick="planoPreenchTab('objetivos')">3. Objetivos</button>
+            <button class="plano-pr-tab" data-campo="sensibilizacao" data-onclick="planoPreenchTab('sensibilizacao')">4. Sensibilização</button>
+            <button class="plano-pr-tab" data-campo="desenvolvimento" data-onclick="planoPreenchTab('desenvolvimento')">5. Desenvolvimento</button>
+            <button class="plano-pr-tab" data-campo="recursos" data-onclick="planoPreenchTab('recursos')">6. Recursos</button>
+            <button class="plano-pr-tab" data-campo="avaliacao" data-onclick="planoPreenchTab('avaliacao')">7. Avaliação</button>
+          </div>
+          <div style="padding:8px 14px 12px;">
+            <textarea id="planoPreenchTexto" class="inp" rows="7" style="width:100%; white-space:pre; font-size:13px;" placeholder="Cole aqui — uma linha por aula:&#10;Aula 1: Frações e números decimais&#10;Aula 2: Geometria plana&#10;Aula 3: Álgebra&#10;..."></textarea>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center;">
+              <button class="btn-primary" style="background:#7c3aed;" data-onclick="planoPreenchAplicar()"><i class="fas fa-check"></i> Aplicar</button>
+              <button class="btn-primary" style="background:#475569;" data-onclick="planoPreenchAplicarEProximo()"><i class="fas fa-forward-step"></i> Aplicar + Próximo</button>
+              <button class="btn-primary" style="background:#475569;" data-onclick="planoPreenchLerCampo()"><i class="fas fa-eye"></i> Ver Atual</button>
+              <span style="flex:1;"></span>
+              <span id="planoPreenchStatus" style="font-size:.72rem; color:var(--text-muted);"></span>
+            </div>
+          </div>
+        </div>
+        <span id="planoLoteMaxSpan" style="display:none;">7</span>
+
 
         <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
           <div class="form-group" style="margin:0;">
@@ -3956,6 +4049,21 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
             <label style="font-size:12px; color:var(--text-muted);">Semana termina</label>
             <input type="date" id="planoSemanaFim" class="inp" style="width:170px;">
           </div>
+
+          <div class="form-group" style="margin:0; width:240px;">
+            <label style="font-size:12px; color:var(--text-muted);">Disciplina</label>
+            <select id="planoDisciplina" class="inp"></select>
+          </div>
+
+          <div class="form-group" style="margin:0; width:210px;">
+            <label style="font-size:12px; color:var(--text-muted);">Aulas na semana</label>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="btn-tool" data-onclick="planoAdjustAulas(-1)" title="Remover aula"><i class="fas fa-minus"></i></button>
+              <input type="number" id="planoQtdAulas" class="inp" value="7" min="1" max="50" style="width:84px; text-align:center;">
+              <button class="btn-tool" data-onclick="planoAdjustAulas(1)" title="Adicionar aula"><i class="fas fa-plus"></i></button>
+            </div>
+          </div>
+
           <div class="form-group" style="margin:0; width:180px;">
             <label style="font-size:12px; color:var(--text-muted);">Escopo</label>
             <select id="planoEscopo" class="inp">
@@ -3991,7 +4099,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
           <div id="planoAplicarStatus" style="margin-top:8px; font-size:12px; color:var(--text-muted);"></div>
         </div>
 
-        <div id="planoSemanalBody" style="margin-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:12px; max-height: 46vh; overflow:auto; padding-right:6px;">
+        <div id="planoSemanalBody" style="margin-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:12px; max-height:none; overflow:visible; padding-right:0;">
           <!-- Aula 1 -->
           <div style="padding:12px; border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -4112,6 +4220,99 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
               <textarea id="pl_aula4_avaliacao" class="inp" rows="2" placeholder="7. Avaliação/Sistematização da aula"></textarea>
             </div>
           </div>
+          <!-- Aula 5 -->
+          <div style="padding:12px; border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="margin:0; font-size:14px; color:var(--text-main);">Aula 5</h3>
+              <button class="btn-tool" data-onclick="extrairPlanoAula(5)" title="Extrair do texto"><i class="fas fa-wand-magic-sparkles"></i></button>
+            </div>
+            <textarea id="pl_aula5_texto" class="inp" rows="3" placeholder="Cole o texto completo da Aula 5 (opcional)"></textarea>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+              <select id="pl_aula5_bloomNivel" class="inp" style="width: 190px;" data-onchange="onBloomNivelChangePlano(5)">
+                <option value="">Bloom (nível alvo)</option>
+                <option value="Lembrar">Lembrar</option>
+                <option value="Compreender">Compreender</option>
+                <option value="Aplicar">Aplicar</option>
+                <option value="Analisar">Analisar</option>
+                <option value="Avaliar">Avaliar</option>
+                <option value="Criar">Criar</option>
+              </select>
+              <input type="text" id="pl_aula5_bloomVerbo" class="inp" placeholder="Verbo-alvo (Bloom)" style="flex:1; min-width: 200px;" list="dlBloomVerbosPlano5">
+              <datalist id="dlBloomVerbosPlano5"></datalist>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr; gap:6px; margin-top:8px;">
+              <textarea id="pl_aula5_conteudo" class="inp" rows="2" placeholder="1. Conteúdo"></textarea>
+              <textarea id="pl_aula5_habilidades" class="inp" rows="2" placeholder="2. Habilidades"></textarea>
+              <textarea id="pl_aula5_objetivos" class="inp" rows="2" placeholder="3. Objetivos"></textarea>
+              <textarea id="pl_aula5_sensibilizacao" class="inp" rows="2" placeholder="4. Sensibilização"></textarea>
+              <textarea id="pl_aula5_desenvolvimento" class="inp" rows="2" placeholder="5. Desenvolvimento e estratégias da aula"></textarea>
+              <textarea id="pl_aula5_recursos" class="inp" rows="2" placeholder="6. Recursos utilizados na aula"></textarea>
+              <textarea id="pl_aula5_avaliacao" class="inp" rows="2" placeholder="7. Avaliação/Sistematização da aula"></textarea>
+            </div>
+          </div>
+
+          <!-- Aula 6 -->
+          <div style="padding:12px; border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="margin:0; font-size:14px; color:var(--text-main);">Aula 6</h3>
+              <button class="btn-tool" data-onclick="extrairPlanoAula(6)" title="Extrair do texto"><i class="fas fa-wand-magic-sparkles"></i></button>
+            </div>
+            <textarea id="pl_aula6_texto" class="inp" rows="3" placeholder="Cole o texto completo da Aula 6 (opcional)"></textarea>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+              <select id="pl_aula6_bloomNivel" class="inp" style="width: 190px;" data-onchange="onBloomNivelChangePlano(6)">
+                <option value="">Bloom (nível alvo)</option>
+                <option value="Lembrar">Lembrar</option>
+                <option value="Compreender">Compreender</option>
+                <option value="Aplicar">Aplicar</option>
+                <option value="Analisar">Analisar</option>
+                <option value="Avaliar">Avaliar</option>
+                <option value="Criar">Criar</option>
+              </select>
+              <input type="text" id="pl_aula6_bloomVerbo" class="inp" placeholder="Verbo-alvo (Bloom)" style="flex:1; min-width: 200px;" list="dlBloomVerbosPlano6">
+              <datalist id="dlBloomVerbosPlano6"></datalist>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr; gap:6px; margin-top:8px;">
+              <textarea id="pl_aula6_conteudo" class="inp" rows="2" placeholder="1. Conteúdo"></textarea>
+              <textarea id="pl_aula6_habilidades" class="inp" rows="2" placeholder="2. Habilidades"></textarea>
+              <textarea id="pl_aula6_objetivos" class="inp" rows="2" placeholder="3. Objetivos"></textarea>
+              <textarea id="pl_aula6_sensibilizacao" class="inp" rows="2" placeholder="4. Sensibilização"></textarea>
+              <textarea id="pl_aula6_desenvolvimento" class="inp" rows="2" placeholder="5. Desenvolvimento e estratégias da aula"></textarea>
+              <textarea id="pl_aula6_recursos" class="inp" rows="2" placeholder="6. Recursos utilizados na aula"></textarea>
+              <textarea id="pl_aula6_avaliacao" class="inp" rows="2" placeholder="7. Avaliação/Sistematização da aula"></textarea>
+            </div>
+          </div>
+
+          <!-- Aula 7 -->
+          <div style="padding:12px; border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="margin:0; font-size:14px; color:var(--text-main);">Aula 7</h3>
+              <button class="btn-tool" data-onclick="extrairPlanoAula(7)" title="Extrair do texto"><i class="fas fa-wand-magic-sparkles"></i></button>
+            </div>
+            <textarea id="pl_aula7_texto" class="inp" rows="3" placeholder="Cole o texto completo da Aula 7 (opcional)"></textarea>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+              <select id="pl_aula7_bloomNivel" class="inp" style="width: 190px;" data-onchange="onBloomNivelChangePlano(7)">
+                <option value="">Bloom (nível alvo)</option>
+                <option value="Lembrar">Lembrar</option>
+                <option value="Compreender">Compreender</option>
+                <option value="Aplicar">Aplicar</option>
+                <option value="Analisar">Analisar</option>
+                <option value="Avaliar">Avaliar</option>
+                <option value="Criar">Criar</option>
+              </select>
+              <input type="text" id="pl_aula7_bloomVerbo" class="inp" placeholder="Verbo-alvo (Bloom)" style="flex:1; min-width: 200px;" list="dlBloomVerbosPlano7">
+              <datalist id="dlBloomVerbosPlano7"></datalist>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr; gap:6px; margin-top:8px;">
+              <textarea id="pl_aula7_conteudo" class="inp" rows="2" placeholder="1. Conteúdo"></textarea>
+              <textarea id="pl_aula7_habilidades" class="inp" rows="2" placeholder="2. Habilidades"></textarea>
+              <textarea id="pl_aula7_objetivos" class="inp" rows="2" placeholder="3. Objetivos"></textarea>
+              <textarea id="pl_aula7_sensibilizacao" class="inp" rows="2" placeholder="4. Sensibilização"></textarea>
+              <textarea id="pl_aula7_desenvolvimento" class="inp" rows="2" placeholder="5. Desenvolvimento e estratégias da aula"></textarea>
+              <textarea id="pl_aula7_recursos" class="inp" rows="2" placeholder="6. Recursos utilizados na aula"></textarea>
+              <textarea id="pl_aula7_avaliacao" class="inp" rows="2" placeholder="7. Avaliação/Sistematização da aula"></textarea>
+            </div>
+          </div>
+
         </div>
 
         <div style="margin-top:12px;">
@@ -4119,6 +4320,11 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
           <textarea id="planoSemanalResumo" class="inp" rows="12" style="width:100%; white-space:pre;"></textarea>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:10px; flex-wrap:wrap;">
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <select id="planoResumoModo" class="inp" style="width:220px; padding:10px 12px;" data-onchange="planoResumoModoChanged()">
+                <option value="por_aula">Padrão (por aula)</option>
+                <option value="por_grupo">Agrupar aulas (grupos)</option>
+              </select>
+              <input id="planoGruposDef" class="inp" style="width:260px; padding:10px 12px;" placeholder="Grupos: 1-4;5-7;8-10 (opcional)">
               <button class="btn-primary" style="background:#475569;" data-onclick="gerarResumoPlanoSemana()"><i class="fas fa-bolt"></i> Gerar</button>
               <button class="btn-primary" data-onclick="copiarResumoPlanoSemana()"><i class="fas fa-copy"></i> Copiar</button>
               <button class="btn-primary" style="background:#475569;" data-onclick="exportarPlanoSemanaPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
@@ -4126,6 +4332,8 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
             <div id="planoSemanaStatus" style="font-size:12px; color:var(--text-muted);"></div>
           </div>
         </div>
+        </div>
+
       </div>
     </div>
     <div id="planoSemanalPrint" style="position:fixed; left:-9999px; top:0; width:794px; padding:24px; background:#fff; color:#000; font-family: Arial, sans-serif;"></div>
@@ -5007,6 +5215,17 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                 }catch(_){}
                 return false;
             }
+        }
+
+
+        // === Helper DOM: remover elemento com segurança (evita optional chaining em handlers inline) ===
+        function __sgpRemoveEl(id){
+            try{
+                var el = document.getElementById(id);
+                if(!el) return;
+                if(typeof el.remove === 'function') el.remove();
+                else if(el.parentNode) el.parentNode.removeChild(el);
+            }catch(_){ }
         }
 
 
@@ -6441,27 +6660,100 @@ function selTurma(n){
             }
         }
 
+                function __isMobileUI(){ return window.innerWidth <= 768; }
+
         function renderizarListaSED(){
-            const t = document.getElementById('tbodyFechamento');
+            const table = document.getElementById('tabelaFechamento');
+            const tbody = document.getElementById('tbodyFechamento');
+            const cards = document.getElementById('mobileFechamentoCards');
+
+            const lista = getAlunosFiltrados().sort((a,b)=>a.nome.localeCompare(b.nome));
+
             let htmlBuffer = '';
-            getAlunosFiltrados().sort((a,b)=>a.nome.localeCompare(b.nome)).forEach((a, idx)=>{
+            lista.forEach((a, idx)=>{
                 const b = a.bimestres[bimestreAtual];
                 htmlBuffer += `<tr><td>${idx+1}</td><td>${_escHTML(a.nome)}</td><td>${_escHTML(a.turma)}</td><td>${__u(b.media_lp)}</td><td>${__u(b.media_red)}</td><td>${__u(b.comportamento)}</td></tr>`;
             });
-            t.innerHTML = htmlBuffer;
+            if(tbody) tbody.innerHTML = htmlBuffer;
+
+            // Mobile: render as cards (better touch + readability)
+            if(__isMobileUI() && cards){
+                try{ if(table) table.style.display='none'; }catch(_){}
+                cards.style.display='block';
+                let cbuf = '';
+                lista.forEach((a, idx)=>{
+                    const b = a.bimestres[bimestreAtual] || {};
+                    cbuf += `
+                      <div class="mcard">
+                        <div class="mcard-head">
+                          <div>
+                            <div class="mcard-title">${idx+1}. ${_escHTML(a.nome)}</div>
+                            <div class="mcard-sub">${_escHTML(a.turma||'')}</div>
+                          </div>
+                        </div>
+                        <div class="mcard-tags">
+                          <span class="mchip"><b>LP</b> ${__u(b.media_lp)}</span>
+                          <span class="mchip"><b>RED</b> ${__u(b.media_red)}</span>
+                          <span class="mchip"><b>Comp</b> ${__u(b.comportamento)}</span>
+                        </div>
+                      </div>`;
+                });
+                cards.innerHTML = cbuf || `<div class="mcard" style="text-align:center;color:#64748b;">Nenhum aluno.</div>`;
+            }else{
+                if(cards) cards.style.display='none';
+                try{ if(table && visaoAtual==='lista') table.style.display='table'; }catch(_){}
+            }
         }
 
         function renderizarListaEntregas(){
-            const t = document.getElementById('tbodyEntregas');
+            const table = document.getElementById('tabelaEntregas');
+            const tbody = document.getElementById('tbodyEntregas');
+            const cards = document.getElementById('mobileEntregasCards');
+
+            const lista = getAlunosFiltrados();
+
             let htmlBuffer = '';
-            getAlunosFiltrados().forEach((a, idx)=>{
+            lista.forEach((a, idx)=>{
                 const b = a.bimestres[bimestreAtual];
                 const s = c => c ? '<i class="fas fa-check" style="color:green"></i>' : '<i class="fas fa-times" style="color:red"></i>';
                 htmlBuffer += `<tr><td>${idx+1}</td><td>${_escHTML(a.nome)}</td><td>${_escHTML(a.turma)}</td><td><input type="checkbox" ${b.entregas_red.r1?'checked':''} data-onchange="mEnt(${__u(a.id)},'r1',this.checked)"> ${s(b.entregas_red.r1)}</td><td><input type="checkbox" ${b.entregas_red.r2?'checked':''} data-onchange="mEnt(${__u(a.id)},'r2',this.checked)"> ${s(b.entregas_red.r2)}</td></tr>`;
             });
-            t.innerHTML = htmlBuffer;
-        }
+            if(tbody) tbody.innerHTML = htmlBuffer;
 
+            // Mobile: render as cards
+            if(__isMobileUI() && cards){
+                try{ if(table) table.style.display='none'; }catch(_){}
+                cards.style.display='block';
+                let cbuf = '';
+                lista.forEach((a, idx)=>{
+                    const b = a.bimestres[bimestreAtual];
+                    const s = c => c ? '<i class="fas fa-check" style="color:green"></i>' : '<i class="fas fa-times" style="color:red"></i>';
+                    cbuf += `
+                      <div class="mcard">
+                        <div class="mcard-head">
+                          <div>
+                            <div class="mcard-title">${idx+1}. ${_escHTML(a.nome)}</div>
+                            <div class="mcard-sub">${_escHTML(a.turma||'')}</div>
+                          </div>
+                        </div>
+                        <div class="mcard-grid">
+                          <label class="mcheck">
+                            <span class="lbl"><input type="checkbox" ${b.entregas_red.r1?'checked':''} data-onchange="mEnt(${__u(a.id)},'r1',this.checked)"> Redação 1</span>
+                            <span>${s(b.entregas_red.r1)}</span>
+                          </label>
+                          <label class="mcheck">
+                            <span class="lbl"><input type="checkbox" ${b.entregas_red.r2?'checked':''} data-onchange="mEnt(${__u(a.id)},'r2',this.checked)"> Redação 2</span>
+                            <span>${s(b.entregas_red.r2)}</span>
+                          </label>
+                        </div>
+                      </div>`;
+                });
+                cards.innerHTML = cbuf || `<div class="mcard" style="text-align:center;color:#64748b;">Nenhum aluno.</div>`;
+            }else{
+                if(cards) cards.style.display='none';
+                try{ if(table && visaoAtual==='entregas') table.style.display='table'; }catch(_){}
+            }
+        }
         function mEnt(id,k,v){alunos.find(a=>a.id===id).bimestres[bimestreAtual].entregas_red[k]=v;salvarDadosLocal();renderizarListaEntregas();}
         
         function renderizarTabelaAnual() {
@@ -6558,7 +6850,7 @@ function selTurma(n){
 
         function __initBloomUI(){
           try{ if(document.getElementById('inputBloomNivel')) onBloomNivelChangeCrono(); }catch(e){}
-          [1,2,3,4].forEach(n=>{
+          [1,2,3,4,5,6,7].forEach(n=>{
             try{ if(document.getElementById(`pl_aula${n}_bloomNivel`)) onBloomNivelChangePlano(n); }catch(e){}
           });
         }
@@ -7635,6 +7927,11 @@ function _escHTML(str){
 
 function __u(v){ return _escHTML(v); }
 
+function __j(v){
+  try{ return _escHTML(JSON.stringify(String(v))); }
+  catch(_){ return '&quot;&quot;'; }
+}
+
 
 // === SGP: Data Handlers (substitui onclick/onchange inline por listeners) ===
 (function __installDataHandlers(){
@@ -8186,7 +8483,7 @@ function _syncBimestreRefs(b){
 function _syncAllStudents(){
   alunos.forEach(a=>{
     if(!a.bimestres) return;
-    [1,2,3,4].forEach(i=>{
+    [1,2,3,4,5,6,7].forEach(i=>{
       const b=a.bimestres[i];
       if(!b) return;
 
@@ -8945,7 +9242,7 @@ function garantirEstruturaNova(){
     if(typeof a.elegivel==='undefined'){a.elegivel=false;a.laudo="";a.adaptacoes=[];a.pei_texto="";s=true;}
     if(!a.bimestres){
       a.bimestres={};
-      [1,2,3,4].forEach(i=>{
+      [1,2,3,4,5,6,7].forEach(i=>{
         const d1=getDiscById(config.slot1);
         const d2=getDiscById(config.slot2);
         const notas_disc = {};
@@ -8969,7 +9266,7 @@ function garantirEstruturaNova(){
       s=true;
     }
 
-    [1,2,3,4].forEach(i=>{
+    [1,2,3,4,5,6,7].forEach(i=>{
       const b=a.bimestres[i];
       if(!b) return;
 
@@ -9933,16 +10230,379 @@ function __wrapSafeGlobal(fnName){
 
 /* ============================
    Planos de Aula (Plano Semanal)
-   - 4 aulas/semana (LP)
+   - 7 aulas/semana (LP)
    - Gera consolidado agrupado por tipo (na ordem solicitada)
    ============================ */
 let __planoUIInited = false;
 const __PLANO_GERAL_KEY = "__PLANO_GERAL__";
 
+// ===== Plano Semanal: multi-disciplina + aulas dinâmicas + grupos =====
+let __planoQtdAulas = 7;
+let __planoMaxAulasDom = 7;
+let __planoDiscId = '';
+
+function __planoListDisciplinas(){
+  try{ return (config && Array.isArray(config.disciplinas)) ? config.disciplinas : []; }catch(e){ return []; }
+}
+function __planoDiscName(id){
+  const d = __planoListDisciplinas().find(x=>x && x.id===id);
+  return d ? (d.nome || id) : (id || '');
+}
+function __planoGetDefaultDiscId(){
+  const list = __planoListDisciplinas();
+  let last='';
+  try{ last = localStorage.getItem('sgp_plano_disc_last') || ''; }catch(_){ last=''; }
+  if(last && list.some(d=>d && d.id===last)) return last;
+  const slot1 = (config && config.slot1) ? String(config.slot1) : '';
+  if(slot1 && list.some(d=>d && d.id===slot1)) return slot1;
+  return (list[0] && list[0].id) ? String(list[0].id) : '';
+}
+function __planoGetSelectedDiscId(){
+  const sel = document.getElementById('planoDisciplina');
+  const v = sel ? String(sel.value||'') : '';
+  return v || (__planoDiscId || '');
+}
+function __planoPrefsKey(discId){ return 'sgp_plano_prefs_' + String(discId || '__none__'); }
+function __planoLoadPrefs(discId){
+  discId = discId || __planoGetSelectedDiscId();
+  try{
+    const raw = localStorage.getItem(__planoPrefsKey(discId));
+    return raw ? (JSON.parse(raw)||{}) : {};
+  }catch(_){ return {}; }
+}
+function __planoSavePrefs(discId, patch){
+  discId = discId || __planoGetSelectedDiscId();
+  const cur = __planoLoadPrefs(discId);
+  const next = Object.assign({}, cur, patch||{});
+  try{
+    if(typeof __safeLSSet==='function') __safeLSSet(__planoPrefsKey(discId), JSON.stringify(next));
+    else localStorage.setItem(__planoPrefsKey(discId), JSON.stringify(next));
+  }catch(_){
+    try{ localStorage.setItem(__planoPrefsKey(discId), JSON.stringify(next)); }catch(__){}
+  }
+  return next;
+}
+
+function __planoIndexExistingCards(){
+  let max=0;
+  for(let i=1;i<=50;i++){
+    const t=document.getElementById('pl_aula'+i+'_texto');
+    if(!t) break;
+    let card=null;
+    try{ card = t.closest('div[style*="padding:12px"], .plano-aula-card'); }catch(_){ card=null; }
+    if(card){
+      if(!card.id) card.id = 'pl_card_aula'+i;
+      card.classList.add('plano-aula-card');
+      card.dataset.aulaN = String(i);
+    }
+    max=i;
+  }
+  __planoMaxAulasDom = Math.max(__planoMaxAulasDom, max || 7);
+}
+
+function __planoBindAulaShortcut(n){
+  const t=document.getElementById('pl_aula'+n+'_texto');
+  if(!t || t.__plBound) return;
+  t.__plBound = true;
+  t.addEventListener('keydown', (e)=>{
+    if((e.ctrlKey||e.metaKey) && e.key==='Enter'){
+      e.preventDefault();
+      try{ extrairPlanoAula(n); }catch(_){}
+    }
+  });
+}
+
+function __planoAulaCardHTML(n){
+  const nn=String(n);
+  var html='';
+  html += '<div class="plano-aula-card" id="pl_card_aula'+nn+'" data-aula-n="'+nn+'" style="padding:12px; border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">';
+  html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+  html += '<h3 style="margin:0; font-size:14px; color:var(--text-main);">Aula '+nn+'</h3>';
+  html += '<button class="btn-tool" data-onclick="extrairPlanoAula('+nn+')" title="Extrair do texto"><i class="fas fa-wand-magic-sparkles"></i></button>';
+  html += '</div>';
+  html += '<textarea id="pl_aula'+nn+'_texto" class="inp" rows="3" placeholder="Cole o texto completo da Aula '+nn+' (opcional)"></textarea>';
+  html += '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">';
+  html += '<select id="pl_aula'+nn+'_bloomNivel" class="inp" style="width: 190px;" data-onchange="onBloomNivelChangePlano('+nn+')">';
+  html += '<option value="">Bloom (nível alvo)</option>';
+  html += '<option value="Lembrar">Lembrar</option><option value="Compreender">Compreender</option><option value="Aplicar">Aplicar</option><option value="Analisar">Analisar</option><option value="Avaliar">Avaliar</option><option value="Criar">Criar</option>';
+  html += '</select>';
+  html += '<input type="text" id="pl_aula'+nn+'_bloomVerbo" class="inp" placeholder="Verbo-alvo (Bloom)" style="flex:1; min-width: 200px;" list="dlBloomVerbosPlano'+nn+'">';
+  html += '<datalist id="dlBloomVerbosPlano'+nn+'"></datalist>';
+  html += '</div>';
+  html += '<div style="display:grid; grid-template-columns: 1fr; gap:6px; margin-top:8px;">';
+  html += '<textarea id="pl_aula'+nn+'_conteudo" class="inp" rows="2" placeholder="1. Conteúdo"></textarea>';
+  html += '<textarea id="pl_aula'+nn+'_habilidades" class="inp" rows="2" placeholder="2. Habilidades"></textarea>';
+  html += '<textarea id="pl_aula'+nn+'_objetivos" class="inp" rows="2" placeholder="3. Objetivos"></textarea>';
+  html += '<textarea id="pl_aula'+nn+'_sensibilizacao" class="inp" rows="2" placeholder="4. Sensibilização"></textarea>';
+  html += '<textarea id="pl_aula'+nn+'_desenvolvimento" class="inp" rows="2" placeholder="5. Desenvolvimento e estratégias da aula"></textarea>';
+  html += '<textarea id="pl_aula'+nn+'_recursos" class="inp" rows="2" placeholder="6. Recursos utilizados na aula"></textarea>';
+  html += '<textarea id="pl_aula'+nn+'_avaliacao" class="inp" rows="2" placeholder="7. Avaliação/Sistematização da aula"></textarea>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+function __planoEnsureCard(n){
+  if(document.getElementById('pl_aula'+n+'_texto')) return;
+  const body=document.getElementById('planoSemanalBody');
+  if(!body) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML=__planoAulaCardHTML(n);
+  const card=wrap.firstElementChild;
+  if(card) body.appendChild(card);
+  __planoBindAulaShortcut(n);
+  try{ if(typeof onBloomNivelChangePlano==='function') onBloomNivelChangePlano(n); }catch(_){}
+}
+
+function planoSetQtdAulas(qtd){
+  let n=parseInt(qtd,10);
+  if(!n||n<1) n=1;
+  if(n>50) n=50;
+  for(let i=1;i<=n;i++) __planoEnsureCard(i);
+  __planoMaxAulasDom = Math.max(__planoMaxAulasDom, n);
+  for(let i=1;i<=__planoMaxAulasDom;i++){
+    const card=document.getElementById('pl_card_aula'+i);
+    if(card) card.style.display = (i<=n)? '' : 'none';
+  }
+  __planoQtdAulas = n;
+  const inp=document.getElementById('planoQtdAulas');
+  if(inp) inp.value=String(n);
+  const span=document.getElementById('planoLoteMaxSpan');
+  if(span) span.textContent=String(n);
+  const discId=__planoGetSelectedDiscId();
+  if(discId) __planoSavePrefs(discId, {qtdAulas:n});
+}
+
+function planoAdjustAulas(delta){
+  const inp=document.getElementById('planoQtdAulas');
+  const cur=inp? parseInt(inp.value,10) : __planoQtdAulas;
+  planoSetQtdAulas((cur||1)+(delta||0));
+}
+
+function __planoRefreshDisciplinasUI(){
+  const sel=document.getElementById('planoDisciplina');
+  if(!sel) return;
+  const list=__planoListDisciplinas();
+  const current=sel.value || __planoDiscId || '';
+  let desired=current || __planoGetDefaultDiscId();
+  sel.innerHTML='';
+  list.forEach(d=>{
+    if(!d||!d.id) return;
+    const opt=document.createElement('option');
+    opt.value=String(d.id);
+    opt.textContent=d.nome || d.id;
+    sel.appendChild(opt);
+  });
+  if(desired && Array.from(sel.options).some(o=>o.value===desired)) sel.value=desired;
+  else if(sel.options.length) sel.value=sel.options[0].value;
+  __planoDiscId = sel.value || '';
+  try{ localStorage.setItem('sgp_plano_disc_last', __planoDiscId); }catch(_){}
+}
+
+function planoDisciplinaChanged(){
+  const sel=document.getElementById('planoDisciplina');
+  __planoDiscId = sel ? (sel.value||'') : '';
+  try{ localStorage.setItem('sgp_plano_disc_last', __planoDiscId); }catch(_){}
+
+  const prefs=__planoLoadPrefs(__planoDiscId);
+  if(prefs && prefs.qtdAulas) planoSetQtdAulas(prefs.qtdAulas);
+  const modo=document.getElementById('planoResumoModo');
+  if(modo && prefs && prefs.resumoModo) modo.value=prefs.resumoModo;
+  const g=document.getElementById('planoGruposDef');
+  if(g && prefs && typeof prefs.gruposDef==='string') g.value=prefs.gruposDef;
+  try{ planoResumoModoChanged(true); }catch(_){}
+
+  __renderListaPlanosSemana();
+  const selPlan=document.getElementById('planoSemanaLista');
+  if(selPlan) selPlan.value='';
+
+  const planos=__getPlanosTurma();
+  if(planos && planos.length){
+    const recent=planos.slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
+    if(recent){
+      if(selPlan) selPlan.value=recent.id;
+      __fillPlanoToUI(recent);
+      const r=document.getElementById('planoSemanalResumo');
+      if(r) r.value=recent.resumo||'';
+      return;
+    }
+  }
+  novoPlanoSemana();
+}
+
+function planoResumoModoChanged(silent){
+  const sel=document.getElementById('planoResumoModo');
+  const g=document.getElementById('planoGruposDef');
+  const mode = sel ? (sel.value||'por_aula') : 'por_aula';
+  if(g){
+    g.disabled = (mode !== 'por_grupo');
+    g.style.opacity = (mode !== 'por_grupo') ? '0.6' : '1';
+  }
+  const discId=__planoGetSelectedDiscId();
+  if(discId) __planoSavePrefs(discId, {resumoModo:mode, gruposDef: g ? (g.value||'') : ''});
+  if(!silent){
+    try{ showToast(mode==='por_grupo' ? 'Modo: Agrupar aulas (grupos).' : 'Modo: Padrão (por aula).', 'success'); }catch(_){}
+  }
+}
+
+function __planoWirePrefsAutoSave(){
+  const qtd=document.getElementById('planoQtdAulas');
+  if(qtd && !qtd.__plBound){
+    qtd.__plBound=true;
+    qtd.addEventListener('change', ()=> planoSetQtdAulas(qtd.value));
+  }
+  const g=document.getElementById('planoGruposDef');
+  if(g && !g.__plBound){
+    g.__plBound=true;
+    g.addEventListener('change', ()=>{
+      const discId=__planoGetSelectedDiscId();
+      if(discId) __planoSavePrefs(discId, {gruposDef:g.value||''});
+    });
+  }
+}
+
+function __planoNumsToRanges(nums){
+  const arr=(nums||[]).slice().sort((a,b)=>a-b);
+  if(!arr.length) return '';
+  const ranges=[];
+  let start=arr[0], prev=arr[0];
+  for(let i=1;i<arr.length;i++){
+    const n=arr[i];
+    if(n===prev+1){ prev=n; continue; }
+    ranges.push(start===prev? String(start) : (String(start)+'-'+String(prev)));
+    start=prev=n;
+  }
+  ranges.push(start===prev? String(start) : (String(start)+'-'+String(prev)));
+  return ranges.join(',');
+}
+
+function __planoParseGroups(defStr, maxN){
+  maxN = parseInt(maxN,10) || __planoQtdAulas || 7;
+  if(maxN<1) maxN=1;
+  if(maxN>50) maxN=50;
+  const s=String(defStr||'').replace(/\r/g,'').trim();
+  if(!s){
+    return [{label:'Aulas 1-'+maxN, nums:Array.from({length:maxN},(_,i)=>i+1)}];
+  }
+  const parts=s.split(/[\n;]/).map(x=>String(x||'').trim()).filter(Boolean);
+  const groups=[];
+  parts.forEach(part=>{
+    let label='';
+    let expr=part;
+    if(part.indexOf('=')>=0 || part.indexOf(':')>=0){
+      const sep = (part.indexOf('=')>=0) ? '=' : ':';
+      const idx = part.indexOf(sep);
+      label = part.slice(0, idx).trim();
+      expr = part.slice(idx+1).trim();
+    }
+    const nums=[];
+    expr.split(/[\s,]+/).map(t=>t.trim()).filter(Boolean).forEach(tok=>{
+      const m = tok.match(/^(\d{1,2})\s*[-–]\s*(\d{1,2})$/);
+      if(m){
+        let a=parseInt(m[1],10), b=parseInt(m[2],10);
+        if(!a||!b) return;
+        if(a>b){ const tmp=a; a=b; b=tmp; }
+        for(let k=a;k<=b;k++) nums.push(k);
+      }else{
+        const n=parseInt(tok,10);
+        if(n) nums.push(n);
+      }
+    });
+    const uniq=[];
+    const seen=new Set();
+    nums.forEach(n=>{
+      if(n>=1 && n<=maxN && !seen.has(n)){ seen.add(n); uniq.push(n); }
+    });
+    if(!uniq.length) return;
+    if(!label) label = 'Aulas ' + __planoNumsToRanges(uniq);
+    groups.push({label:label, nums:uniq});
+  });
+  if(!groups.length){
+    return [{label:'Aulas 1-'+maxN, nums:Array.from({length:maxN},(_,i)=>i+1)}];
+  }
+  return groups;
+}
+
+function __montarResumoPlanoPorGrupos(payload){
+  const inicio=payload.inicio, fim=payload.fim;
+  const aulas=payload.aulas||[];
+  const discId=payload.discId||__planoGetSelectedDiscId();
+  const grupos=payload.grupos||__planoParseGroups('', aulas.length||__planoQtdAulas);
+
+  const categorias=[
+    {n:1, titulo:'Conteúdo', key:'conteudo'},
+    {n:2, titulo:'Habilidades', key:'habilidades'},
+    {n:3, titulo:'Objetivos', key:'objetivos'},
+    {n:4, titulo:'Sensibilização', key:'sensibilizacao'},
+    {n:5, titulo:'Desenvolvimento e estratégias da aula', key:'desenvolvimento'},
+    {n:6, titulo:'Recursos utlizados na aula', key:'recursos'},
+    {n:7, titulo:'Avaliação/Sistematização da aula', key:'avaliacao'}
+  ];
+
+  let out='';
+  if(inicio && fim){
+    out += 'Semana: '+__formatDateBR(inicio)+' a '+__formatDateBR(fim)+'\n';
+  }
+  const discName=__planoDiscName(discId);
+  if(discName){
+    out += 'Disciplina: '+discName+'\n\n';
+  }else{
+    out += '\n';
+  }
+
+  grupos.forEach(g=>{
+    out += g.label+'\n\n';
+    categorias.forEach(cat=>{
+      out += cat.n+'. '+cat.titulo+':\n';
+      let any=false;
+      (g.nums||[]).forEach(n=>{
+        const a=aulas[n-1]||{};
+        let line=__limparTexto(a[cat.key]);
+        if(cat.key==='habilidades'){
+          const bl=__limparTexto(a.bloomNivel);
+          const vb=__limparTexto(a.bloomVerbo);
+          const parts=[];
+          if(bl) parts.push('Bloom: '+bl);
+          if(vb) parts.push('Verbo: '+vb);
+          if(parts.length){
+            if(line) line = line + ' — ' + parts.join(' | ');
+            else line = parts.join(' | ');
+          }
+        }
+        if(line){
+          any=true;
+          out += 'Aula '+n+': '+line+'\n';
+        }
+      });
+      if(!any) out += '—\n';
+      out += '\n';
+    });
+    out += '\n';
+  });
+
+  return String(out||'').trim();
+}
+
+function __planoBuildResumo(collected){
+  const modoEl=document.getElementById('planoResumoModo');
+  const modo = modoEl ? (modoEl.value||'por_aula') : 'por_aula';
+  const gEl=document.getElementById('planoGruposDef');
+  const gruposDef = gEl ? (gEl.value||'') : '';
+  if(modo==='por_grupo'){
+    const grupos=__planoParseGroups(gruposDef, (collected && collected.aulas ? collected.aulas.length : __planoQtdAulas));
+    return __montarResumoPlanoPorGrupos({inicio:collected.inicio, fim:collected.fim, aulas:collected.aulas, grupos:grupos, discId:collected.discId});
+  }
+  return __montarResumoPlano({inicio:collected.inicio, fim:collected.fim, aulas:collected.aulas});
+}
+
+
 function abrirPlanoSemanal(){
   // permite Plano Geral mesmo sem turma selecionada
   if(!__planoUIInited) initPlanoSemanalUI();
   abrirModal('modalPlanoSemanal');
+
+  __planoRefreshDisciplinasUI();
+  __planoWirePrefsAutoSave();
 
   const esc = document.getElementById('planoEscopo');
   if(esc){
@@ -9951,80 +10611,387 @@ function abrirPlanoSemanal(){
   }
   __syncPlanoEscopoUI();
 
+  // aplica prefs da disciplina
+  const discId = __planoGetSelectedDiscId() || __planoGetDefaultDiscId();
+  if(discId){
+    const prefs = __planoLoadPrefs(discId);
+    if(prefs && prefs.qtdAulas) planoSetQtdAulas(prefs.qtdAulas);
+    const modo=document.getElementById('planoResumoModo');
+    if(modo && prefs && prefs.resumoModo) modo.value=prefs.resumoModo;
+    const g=document.getElementById('planoGruposDef');
+    if(g && prefs && typeof prefs.gruposDef==='string' && !g.value) g.value=prefs.gruposDef;
+  }
+  planoResumoModoChanged(true);
+
   __renderListaPlanosSemana();
   const sel = document.getElementById('planoSemanaLista');
   if(sel && sel.value) carregarPlanoSemana(sel.value);
-  else novoPlanoSemana();
-  document.getElementById('planoSemanaStatus').innerText = "";
+  else{
+    const planos = __getPlanosTurma();
+    if(planos && planos.length){
+      const recent = planos.slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
+      if(recent){
+        if(sel) sel.value = recent.id;
+        __fillPlanoToUI(recent);
+      }else novoPlanoSemana();
+    }else novoPlanoSemana();
+  }
+  const st = document.getElementById('planoSemanaStatus');
+  if(st) st.innerText = '';
 }
+
 
 function initPlanoSemanalUI(){
   __planoUIInited = true;
+  __planoIndexExistingCards();
+
   const ini = document.getElementById('planoSemanaInicio');
   const fim = document.getElementById('planoSemanaFim');
   const sel = document.getElementById('planoSemanaLista');
 
   if(ini){
     ini.addEventListener('change', ()=>{
-      // auto preencher fim (+6 dias) se vazio
-      if(!fim.value && ini.value){
+      if(fim && !fim.value && ini.value){
         try{
-          const d = new Date(ini.value + "T00:00:00");
+          const d = new Date(ini.value + 'T00:00:00');
           d.setDate(d.getDate() + 6);
-          const iso = d.toISOString().slice(0,10);
-          fim.value = iso;
+          fim.value = d.toISOString().slice(0,10);
         }catch(e){}
       }
       __updatePlanoKeyPreview();
     });
   }
-  if(fim){
-    fim.addEventListener('change', __updatePlanoKeyPreview);
-  }
+  if(fim) fim.addEventListener('change', __updatePlanoKeyPreview);
   if(sel){
-    sel.addEventListener('change', ()=>{
-      if(sel.value) carregarPlanoSemana(sel.value);
-    });
+    sel.addEventListener('change', ()=>{ if(sel.value) carregarPlanoSemana(sel.value); });
   }
 
-  // Enter adiciona quebra linha nos campos, mas no texto da aula: Ctrl+Enter gera resumo
-  ['1','2','3','4'].forEach(n=>{
-    const t = document.getElementById(`pl_aula${n}_texto`);
-    if(t){
-      t.addEventListener('keydown', (e)=>{
-        if((e.ctrlKey||e.metaKey) && e.key === 'Enter'){
-          e.preventDefault();
-          extrairPlanoAula(parseInt(n,10));
-        }
-      });
-    }
-  });
+  // Ctrl+Enter no texto da aula
+  for(let i=1;i<=__planoMaxAulasDom;i++) __planoBindAulaShortcut(i);
 
   const esc = document.getElementById('planoEscopo');
   if(esc){
     esc.addEventListener('change', ()=>{
-      if(esc.value === 'turma' && filtroTurma === 'Todas'){
-        esc.value = 'geral';
-      }
+      if(esc.value === 'turma' && filtroTurma === 'Todas') esc.value = 'geral';
       __syncPlanoEscopoUI();
       __renderListaPlanosSemana();
       novoPlanoSemana();
     });
   }
 
-  __syncPlanoEscopoUI();
+  const discSel = document.getElementById('planoDisciplina');
+  if(discSel) discSel.addEventListener('change', planoDisciplinaChanged);
 
+  __planoWirePrefsAutoSave();
+  __syncPlanoEscopoUI();
 }
+
 
 function __getEscopoPlano(){
   return (document.getElementById('planoEscopo')?.value || 'turma');
 }
+
+
+function togglePlanoSemanalFullscreen(){
+  const box = document.getElementById('planoSemanalBox');
+  if(!box) return;
+  const on = !box.classList.contains('is-fullscreen');
+  if(on) box.classList.add('is-fullscreen'); else box.classList.remove('is-fullscreen');
+  const btn = document.getElementById('btnPlanoSemanalFullscreen');
+  if(btn){
+    const icon = btn.querySelector('i');
+    if(icon) icon.className = on ? 'fas fa-compress' : 'fas fa-expand';
+  }
+}
+
+function __planoParseLote(raw, maxN){
+  raw = String(raw||'').replace(/\r/g,'').trim();
+  maxN = parseInt(maxN,10) || __planoQtdAulas || 7;
+  if(maxN<1) maxN=1;
+  if(maxN>50) maxN=50;
+  const out = new Array(maxN).fill('');
+  if(!raw) return out;
+
+  const re = /(?:^|\n)\s*(?:Aula\s*)?(\d{1,2})\s*[:\-]\s*/gi;
+  const ms = [];
+  let m;
+  while((m = re.exec(raw))){
+    const n = parseInt(m[1],10);
+    if(!n || n<1 || n>maxN) continue;
+    ms.push({n, start:m.index, after: re.lastIndex});
+  }
+  if(ms.length >= 2){
+    ms.sort((a,b)=>a.start-b.start);
+    for(let i=0;i<ms.length;i++){
+      const cur = ms[i];
+      const next = ms[i+1];
+      const seg = raw.slice(cur.after, next ? next.start : raw.length).trim();
+      if(seg){
+        out[cur.n-1] = out[cur.n-1] ? (out[cur.n-1] + "\n\n" + seg) : seg;
+      }
+    }
+    return out;
+  }
+
+  let blocks = raw.split(/\n-{3,}\n/).map(s=>s.trim()).filter(Boolean);
+  if(blocks.length < 2){
+    blocks = raw.split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean);
+  }
+  if(blocks.length < 2){
+    blocks = raw.split(/\n/).map(s=>s.trim()).filter(Boolean);
+  }
+
+  for(let i=0;i<maxN;i++){
+    if(blocks[i]) out[i] = blocks[i];
+  }
+  return out;
+}
+
+
+function planoLoteDistribuir(){
+  const tx = (document.getElementById('planoLoteTexto')||{}).value || '';
+  const segs = __planoParseLote(tx, __planoQtdAulas||7);
+  let filled = 0;
+  for(let i=1;i<=__planoQtdAulas;i++){
+    const seg = (segs[i-1]||'').trim();
+    if(!seg) continue;
+    const el = document.getElementById('pl_aula'+i+'_texto');
+    if(el){ el.value = seg; filled++; }
+  }
+  if(filled===0) return showToast('Nada para distribuir (use títulos Aula 1: ... ou separe por blocos).', 'error');
+  showToast('Distribuído em '+filled+' aula(s).', 'success');
+}
+
+
+function __planoExtrairAulaSilent(n){
+  const el = document.getElementById(`pl_aula${n}_texto`);
+  const txt = el ? (el.value||'') : '';
+  if(!String(txt).trim()) return false;
+  const campos = __extrairCampos(txt);
+  if(!campos || Object.keys(campos).length===0) return false;
+
+  const set = (k,val)=>{ const e=document.getElementById(`pl_aula${n}_${k}`); if(e && val) e.value = val; };
+  set('conteudo', campos.conteudo);
+  set('habilidades', campos.habilidades);
+  set('objetivos', campos.objetivos);
+  set('sensibilizacao', campos.sensibilizacao);
+  set('desenvolvimento', campos.desenvolvimento);
+  set('recursos', campos.recursos);
+  set('avaliacao', campos.avaliacao);
+  return true;
+}
+
+function planoLoteDistribuirEExtrair(){
+  planoLoteDistribuir();
+  let ok = 0;
+  for(let i=1;i<=__planoQtdAulas;i++){
+    try{ if(__planoExtrairAulaSilent(i)) ok++; }catch(e){}
+  }
+  if(ok>0) showToast('Extração concluída em '+ok+' aula(s).', 'success');
+}
+
+
+function planoLoteLimpar(){
+  const t = document.getElementById('planoLoteTexto');
+  if(t) t.value = '';
+  showToast('Entrada em massa limpa.', 'success');
+}
+
+
+/* =============================================
+   PREENCHIMENTO RÁPIDO — campo-a-campo em lote
+   ============================================= */
+
+var __planoPreenchCampoAtual = 'conteudo';
+var __planoPreenchCampos = ['conteudo','habilidades','objetivos','sensibilizacao','desenvolvimento','recursos','avaliacao'];
+var __planoPreenchNomes = {
+  conteudo:'Conteúdo', habilidades:'Habilidades', objetivos:'Objetivos',
+  sensibilizacao:'Sensibilização', desenvolvimento:'Desenvolvimento e estratégias',
+  recursos:'Recursos utilizados', avaliacao:'Avaliação/Sistematização'
+};
+
+function planoPreenchTab(campo){
+  __planoPreenchCampoAtual = campo;
+  // Atualiza visual dos tabs
+  var tabs = document.querySelectorAll('#planoPreenchTabs .plano-pr-tab');
+  tabs.forEach(function(t){
+    var c = t.getAttribute('data-campo');
+    t.classList.remove('plano-pr-tab-active');
+    if(c === campo) t.classList.add('plano-pr-tab-active');
+  });
+  // Atualiza placeholder
+  var tx = document.getElementById('planoPreenchTexto');
+  if(tx){
+    var nome = __planoPreenchNomes[campo] || campo;
+    var maxN = __planoQtdAulas || 7;
+    var ph = '';
+    for(var i=1; i<=Math.min(maxN,5); i++) ph += 'Aula '+i+': ('+nome+' da aula '+i+')\n';
+    if(maxN > 5) ph += '...\n';
+    tx.placeholder = ph;
+    tx.value = '';
+  }
+  __planoPreenchUpdateProgress();
+}
+
+function __planoPreenchParseLinhas(raw, maxN){
+  raw = String(raw||'').replace(/\r/g,'').trim();
+  if(!raw) return [];
+  maxN = parseInt(maxN,10) || __planoQtdAulas || 7;
+
+  // Tenta formato "Aula N:" ou "N." ou "N:" ou "N -"
+  var reAula = /(?:^|\n)\s*(?:Aula\s*)?(\d{1,2})\s*[.:\-–]\s*/gi;
+  var matches = [], m;
+  while((m = reAula.exec(raw))){
+    var n = parseInt(m[1],10);
+    if(n >= 1 && n <= maxN) matches.push({n:n, start:m.index, after:reAula.lastIndex});
+  }
+  if(matches.length >= 2){
+    matches.sort(function(a,b){ return a.start - b.start; });
+    var out = new Array(maxN).fill('');
+    for(var i=0; i<matches.length; i++){
+      var cur = matches[i];
+      var next = matches[i+1];
+      var seg = raw.slice(cur.after, next ? next.start : raw.length).trim();
+      if(seg) out[cur.n - 1] = seg;
+    }
+    return out;
+  }
+
+  // Tenta separar por "---"
+  var blocks = raw.split(/\n-{3,}\n/).map(function(s){return s.trim();}).filter(Boolean);
+  if(blocks.length < 2){
+    // Cada linha = uma aula
+    blocks = raw.split(/\n/).map(function(s){return s.trim();}).filter(Boolean);
+  }
+  // Remove prefixos numéricos residuais
+  blocks = blocks.map(function(b){ return b.replace(/^\d{1,2}\s*[.:\-–]\s*/, '').trim(); });
+
+  var out = new Array(maxN).fill('');
+  for(var i=0; i<Math.min(blocks.length, maxN); i++) out[i] = blocks[i];
+  return out;
+}
+
+function planoPreenchAplicar(){
+  var campo = __planoPreenchCampoAtual;
+  var raw = (document.getElementById('planoPreenchTexto')||{}).value || '';
+  var maxN = __planoQtdAulas || 7;
+  if(!raw.trim()) return showToast('Cole o texto antes de aplicar.', 'error');
+
+  var items = __planoPreenchParseLinhas(raw, maxN);
+  var filled = 0;
+  for(var i=1; i<=maxN; i++){
+    var val = (items[i-1]||'').trim();
+    if(!val) continue;
+    var el = document.getElementById('pl_aula'+i+'_'+campo);
+    if(!el) continue;
+    el.value = val;
+    filled++;
+  }
+  if(filled === 0) return showToast('Nenhum conteúdo distribuído. Verifique o formato.', 'error');
+
+  var nome = __planoPreenchNomes[campo] || campo;
+  showToast(nome+' → '+filled+' aula(s) preenchida(s).', 'success');
+  __planoPreenchMarkDone(campo);
+  __planoPreenchUpdateProgress();
+
+  var st = document.getElementById('planoPreenchStatus');
+  if(st) st.textContent = '✓ '+nome+': '+filled+'/'+maxN;
+}
+
+function planoPreenchAplicarEProximo(){
+  var raw = (document.getElementById('planoPreenchTexto')||{}).value || '';
+  if(raw.trim()) planoPreenchAplicar();
+  // Avança para próximo campo
+  var idx = __planoPreenchCampos.indexOf(__planoPreenchCampoAtual);
+  var next = (idx + 1) % __planoPreenchCampos.length;
+  planoPreenchTab(__planoPreenchCampos[next]);
+}
+
+function planoPreenchLerCampo(){
+  var campo = __planoPreenchCampoAtual;
+  var maxN = __planoQtdAulas || 7;
+  var lines = [];
+  for(var i=1; i<=maxN; i++){
+    var el = document.getElementById('pl_aula'+i+'_'+campo);
+    var val = el ? (el.value||'').trim() : '';
+    lines.push('Aula '+i+': '+(val || '—'));
+  }
+  var tx = document.getElementById('planoPreenchTexto');
+  if(tx) tx.value = lines.join('\n');
+  showToast('Campos atuais exibidos.', 'success');
+}
+
+function __planoPreenchMarkDone(campo){
+  var tabs = document.querySelectorAll('#planoPreenchTabs .plano-pr-tab');
+  tabs.forEach(function(t){
+    if(t.getAttribute('data-campo') === campo){
+      t.classList.add('plano-pr-tab-done');
+    }
+  });
+}
+
+function __planoPreenchUpdateProgress(){
+  var el = document.getElementById('planoPreenchProgress');
+  if(!el) return;
+  var maxN = __planoQtdAulas || 7;
+  var done = 0;
+  __planoPreenchCampos.forEach(function(campo){
+    var has = false;
+    for(var i=1; i<=maxN; i++){
+      var e = document.getElementById('pl_aula'+i+'_'+campo);
+      if(e && e.value && e.value.trim()){ has = true; break; }
+    }
+    if(has) done++;
+  });
+  el.textContent = done+'/7 campos com dados';
+  // Atualiza visual done nos tabs
+  var tabs = document.querySelectorAll('#planoPreenchTabs .plano-pr-tab');
+  tabs.forEach(function(t){
+    var c = t.getAttribute('data-campo');
+    var has = false;
+    for(var i=1; i<=maxN; i++){
+      var e = document.getElementById('pl_aula'+i+'_'+c);
+      if(e && e.value && e.value.trim()){ has = true; break; }
+    }
+    if(has) t.classList.add('plano-pr-tab-done');
+    else t.classList.remove('plano-pr-tab-done');
+  });
+}
+
+// Inicializa progresso ao abrir
+var __origAbrirPlanoSemanal = typeof abrirPlanoSemanal === 'function' ? abrirPlanoSemanal : null;
+(function(){
+  var _patchInterval = setInterval(function(){
+    if(typeof abrirPlanoSemanal !== 'function') return;
+    var _orig = abrirPlanoSemanal;
+    if(_orig.__preenchPatched) return;
+    abrirPlanoSemanal = function(){
+      _orig.apply(this, arguments);
+      try{ __planoPreenchUpdateProgress(); }catch(e){}
+    };
+    abrirPlanoSemanal.__preenchPatched = true;
+    clearInterval(_patchInterval);
+  }, 200);
+})();
+
 
 function __getPlanoStoreKey(){
   const esc = __getEscopoPlano();
   if(esc === 'geral') return __PLANO_GERAL_KEY;
   return filtroTurma;
 }
+
+function __getPlanosTurma(){
+  const all = __getPlanosTurmaAll();
+  const disc = __planoGetSelectedDiscId() || __planoGetDefaultDiscId();
+  const defDisc = __planoGetDefaultDiscId();
+  return (all||[]).filter(p=>{
+    if(!p) return false;
+    const pid = p.discId ? String(p.discId) : defDisc;
+    return pid === disc;
+  });
+}
+
 
 function __getPlanosTurma(){
   if(!planosSemana) planosSemana = {};
@@ -10037,8 +11004,17 @@ function __getPlanosTurma(){
 function __setPlanosForKey(arr){
   const key = __getPlanoStoreKey();
   if(!key || key === 'Todas') return;
-  planosSemana[key] = arr;
+  const disc = __planoGetSelectedDiscId() || __planoGetDefaultDiscId();
+  const defDisc = __planoGetDefaultDiscId();
+  const all = (__getPlanosTurmaAll()||[]).slice();
+  const kept = all.filter(p=>{
+    if(!p) return false;
+    const pid = p.discId ? String(p.discId) : defDisc;
+    return pid !== disc;
+  });
+  planosSemana[key] = kept.concat(arr||[]);
 }
+
 
 function __syncPlanoEscopoUI(){
   const wrap = document.getElementById('planoGeralAplicarWrap');
@@ -10114,29 +11090,31 @@ function aplicarPlanoGeralNasTurmas(){
   const checked = box ? Array.from(box.querySelectorAll('input[type="checkbox"]:checked')).map(x=>x.value) : [];
   if(checked.length === 0) return showToast('Selecione ao menos uma turma.', 'error');
 
-  const {inicio,fim,aulas} = __collectPlanoFromUI();
+  const col = __collectPlanoFromUI();
+  const inicio = col.inicio, fim = col.fim, aulas = col.aulas;
   if(!inicio || !fim) return showToast('Preencha a semana (início e fim).', 'error');
 
-  const resumo = __montarResumoPlano({inicio,fim,aulas});
+  const resumo = __planoBuildResumo(col);
   document.getElementById('planoSemanalResumo').value = resumo;
 
   const now = Date.now();
-  const baseId = `AP_${inicio}_${fim}`;
+  const baseId = 'AP_' + (col.discId||'disc') + '_' + inicio + '_' + fim;
 
   checked.forEach(t=>{
     if(!planosSemana) planosSemana = {};
     if(!planosSemana[t]) planosSemana[t] = [];
     const planos = planosSemana[t];
-    const plano = {id: baseId, inicio, fim, aulas: JSON.parse(JSON.stringify(aulas)), resumo, updatedAt: now, origem: 'geral'};
+    const plano = {id: baseId, inicio, fim, aulas: JSON.parse(JSON.stringify(aulas)), resumo, discId: col.discId, qtdAulas: col.qtdAulas, resumoModo: col.resumoModo, gruposDef: col.gruposDef, updatedAt: now, origem: 'geral'};
     const idx = planos.findIndex(x=>x.id===baseId);
     if(idx>=0) planos[idx] = plano; else planos.push(plano);
     planosSemana[t] = planos;
   });
 
   salvarDadosLocal();
-  if(st) st.textContent = `Aplicado para ${__u(checked.length)} turma(s).`;
-  showToast(`Plano aplicado para ${__u(checked.length)} turma(s).`, 'success');
+  if(st) st.textContent = 'Aplicado para ' + __u(checked.length) + ' turma(s).';
+  showToast('Plano aplicado para ' + __u(checked.length) + ' turma(s).', 'success');
 }
+
 
 function __formatDateBR(iso){
   if(!iso) return "";
@@ -10185,59 +11163,106 @@ function __renderListaPlanosSemana(){
 }
 
 function __collectPlanoFromUI(){
-  const inicio = document.getElementById('planoSemanaInicio')?.value || '';
-  const fim = document.getElementById('planoSemanaFim')?.value || '';
-  const aulas = [1,2,3,4].map(i=>({
-    texto: document.getElementById(`pl_aula${i}_texto`)?.value || '',
-    conteudo: document.getElementById(`pl_aula${i}_conteudo`)?.value || '',
-    habilidades: document.getElementById(`pl_aula${i}_habilidades`)?.value || '',
-    objetivos: document.getElementById(`pl_aula${i}_objetivos`)?.value || '',
-    sensibilizacao: document.getElementById(`pl_aula${i}_sensibilizacao`)?.value || '',
-    desenvolvimento: document.getElementById(`pl_aula${i}_desenvolvimento`)?.value || '',
-    recursos: document.getElementById(`pl_aula${i}_recursos`)?.value || '',
-    avaliacao: document.getElementById(`pl_aula${i}_avaliacao`)?.value || '',
-  bloomNivel: document.getElementById(`pl_aula${i}_bloomNivel`)?.value || '',
-    bloomVerbo: document.getElementById(`pl_aula${i}_bloomVerbo`)?.value || '',
-  }));
-  return {inicio, fim, aulas};
+  const inicioEl = document.getElementById('planoSemanaInicio');
+  const fimEl = document.getElementById('planoSemanaFim');
+  const inicio = inicioEl ? (inicioEl.value || '') : '';
+  const fim = fimEl ? (fimEl.value || '') : '';
+
+  const qtdEl = document.getElementById('planoQtdAulas');
+  const qtdVal = qtdEl ? parseInt(qtdEl.value,10) : __planoQtdAulas;
+  if(qtdVal && qtdVal !== __planoQtdAulas) planoSetQtdAulas(qtdVal);
+
+  const aulas=[];
+  for(let i=1;i<=__planoQtdAulas;i++){
+    aulas.push({
+      texto: (document.getElementById('pl_aula'+i+'_texto')||{}).value || '',
+      conteudo: (document.getElementById('pl_aula'+i+'_conteudo')||{}).value || '',
+      habilidades: (document.getElementById('pl_aula'+i+'_habilidades')||{}).value || '',
+      objetivos: (document.getElementById('pl_aula'+i+'_objetivos')||{}).value || '',
+      sensibilizacao: (document.getElementById('pl_aula'+i+'_sensibilizacao')||{}).value || '',
+      desenvolvimento: (document.getElementById('pl_aula'+i+'_desenvolvimento')||{}).value || '',
+      recursos: (document.getElementById('pl_aula'+i+'_recursos')||{}).value || '',
+      avaliacao: (document.getElementById('pl_aula'+i+'_avaliacao')||{}).value || '',
+      bloomNivel: (document.getElementById('pl_aula'+i+'_bloomNivel')||{}).value || '',
+      bloomVerbo: (document.getElementById('pl_aula'+i+'_bloomVerbo')||{}).value || ''
+    });
+  }
+
+  const discId = __planoGetSelectedDiscId() || __planoGetDefaultDiscId();
+  const modoEl = document.getElementById('planoResumoModo');
+  const resumoModo = modoEl ? (modoEl.value || 'por_aula') : 'por_aula';
+  const gEl = document.getElementById('planoGruposDef');
+  const gruposDef = gEl ? (gEl.value || '') : '';
+
+  return {inicio, fim, aulas, discId, qtdAulas: __planoQtdAulas, resumoModo, gruposDef};
 }
+
 
 function __fillPlanoToUI(plano){
   if(!plano) return;
-  document.getElementById('planoSemanaInicio').value = plano.inicio || "";
-  document.getElementById('planoSemanaFim').value = plano.fim || "";
-  (plano.aulas||[]).forEach((a,idx)=>{
-    const i = idx+1;
-    const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.value = val||""; };
-    set(`pl_aula${i}_texto`, a.texto);
-    set(`pl_aula${i}_conteudo`, a.conteudo);
-    set(`pl_aula${i}_habilidades`, a.habilidades);
-    set(`pl_aula${i}_objetivos`, a.objetivos);
-    set(`pl_aula${i}_sensibilizacao`, a.sensibilizacao);
-    set(`pl_aula${i}_desenvolvimento`, a.desenvolvimento);
-    set(`pl_aula${i}_recursos`, a.recursos);
-    set(`pl_aula${i}_avaliacao`, a.avaliacao);
-  set(`pl_aula${i}_bloomNivel`, a.bloomNivel);
-    set(`pl_aula${i}_bloomVerbo`, a.bloomVerbo);
-    try{ onBloomNivelChangePlano(i); }catch(e){} 
-    });
+
+  const discSel = document.getElementById('planoDisciplina');
+  const defDisc = __planoGetDefaultDiscId();
+  const pid = plano.discId ? String(plano.discId) : defDisc;
+  if(discSel && pid && Array.from(discSel.options).some(o=>o.value===pid)) discSel.value = pid;
+  __planoDiscId = discSel ? (discSel.value||pid||'') : (pid||'');
+
+  const prefs = __planoLoadPrefs(__planoDiscId);
+  const qtd = plano.qtdAulas || (Array.isArray(plano.aulas)? plano.aulas.length : 0) || (prefs && prefs.qtdAulas) || 7;
+  planoSetQtdAulas(qtd);
+
+  document.getElementById('planoSemanaInicio').value = plano.inicio || '';
+  document.getElementById('planoSemanaFim').value = plano.fim || '';
+
+  const modoEl=document.getElementById('planoResumoModo');
+  if(modoEl) modoEl.value = plano.resumoModo || modoEl.value || 'por_aula';
+  const gEl=document.getElementById('planoGruposDef');
+  if(gEl) gEl.value = (typeof plano.gruposDef==='string') ? plano.gruposDef : (gEl.value||'');
+  planoResumoModoChanged(true);
+
+  const arr = (plano.aulas||[]);
+  for(let i=1;i<=__planoQtdAulas;i++){
+    const a = arr[i-1] || {};
+    const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.value = val||''; };
+    set('pl_aula'+i+'_texto', a.texto);
+    set('pl_aula'+i+'_conteudo', a.conteudo);
+    set('pl_aula'+i+'_habilidades', a.habilidades);
+    set('pl_aula'+i+'_objetivos', a.objetivos);
+    set('pl_aula'+i+'_sensibilizacao', a.sensibilizacao);
+    set('pl_aula'+i+'_desenvolvimento', a.desenvolvimento);
+    set('pl_aula'+i+'_recursos', a.recursos);
+    set('pl_aula'+i+'_avaliacao', a.avaliacao);
+    set('pl_aula'+i+'_bloomNivel', a.bloomNivel);
+    set('pl_aula'+i+'_bloomVerbo', a.bloomVerbo);
+    try{ onBloomNivelChangePlano(i); }catch(e){}
+  }
+
   __updatePlanoKeyPreview();
 }
 
+
 function novoPlanoSemana(){
-  document.getElementById('planoSemanaLista').value = "";
-  document.getElementById('planoSemanaInicio').value = "";
-  document.getElementById('planoSemanaFim').value = "";
-  [1,2,3,4].forEach(i=>{
+  document.getElementById('planoSemanaLista').value = '';
+  document.getElementById('planoSemanaInicio').value = '';
+  document.getElementById('planoSemanaFim').value = '';
+
+  const discId = __planoGetSelectedDiscId() || __planoGetDefaultDiscId();
+  if(discId){
+    const prefs = __planoLoadPrefs(discId);
+    if(prefs && prefs.qtdAulas) planoSetQtdAulas(prefs.qtdAulas);
+  }
+
+  for(let i=1;i<=__planoMaxAulasDom;i++){
     ['texto','conteudo','habilidades','objetivos','sensibilizacao','desenvolvimento','recursos','avaliacao','bloomNivel','bloomVerbo'].forEach(k=>{
-      const el = document.getElementById(`pl_aula${i}_${k}`);
-      if(el) el.value = "";
+      const el = document.getElementById('pl_aula'+i+'_'+k);
+      if(el) el.value = '';
     });
-  });
-  document.getElementById('planoSemanalResumo').value = "";
+  }
+  document.getElementById('planoSemanalResumo').value = '';
   __updatePlanoKeyPreview();
-  showToast("Plano semanal pronto para preencher.", "success");
+  showToast('Plano semanal pronto para preencher.', 'success');
 }
+
 
 function carregarPlanoSemana(id){
   const planos = __getPlanosTurma();
@@ -10249,20 +11274,21 @@ function carregarPlanoSemana(id){
 }
 
 function salvarPlanoSemana(){
-  const {inicio,fim,aulas} = __collectPlanoFromUI();
-  if(!inicio || !fim) return showToast("Preencha a semana (início e fim).", "error");
+  const col = __collectPlanoFromUI();
+  const inicio = col.inicio, fim = col.fim, aulas = col.aulas, discId = col.discId;
+  if(!inicio || !fim) return showToast('Preencha a semana (início e fim).', 'error');
   const sel = document.getElementById('planoSemanaLista');
   const planos = __getPlanosTurma();
 
-  const resumo = __montarResumoPlano({inicio,fim,aulas});
+  const resumo = __planoBuildResumo(col);
   document.getElementById('planoSemanalResumo').value = resumo;
 
   const now = Date.now();
   let id = sel.value;
   if(!id){
-    id = `${inicio}_${fim}_${now}`;
+    id = (discId||'disc') + '_' + inicio + '_' + fim + '_' + now;
   }
-  const plano = {id, inicio, fim, aulas, resumo, updatedAt: now};
+  const plano = {id, inicio, fim, aulas, resumo, discId, qtdAulas: col.qtdAulas, resumoModo: col.resumoModo, gruposDef: col.gruposDef, updatedAt: now};
   const idx = planos.findIndex(x=>x.id===id);
   if(idx>=0) planos[idx] = plano;
   else planos.push(plano);
@@ -10271,28 +11297,29 @@ function salvarPlanoSemana(){
   salvarDadosLocal();
   __renderListaPlanosSemana();
   sel.value = id;
-  showToast("Plano semanal salvo!", "success");
+  showToast('Plano semanal salvo!', 'success');
 }
+
 
 function duplicarPlanoSemana(){
   const sel = document.getElementById('planoSemanaLista');
   const planos = __getPlanosTurma().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-  if(planos.length === 0) return showToast("Não há plano anterior para duplicar.", "error");
+  if(planos.length === 0) return showToast('Não há plano anterior para duplicar.', 'error');
   const base = sel.value ? __getPlanosTurma().find(x=>x.id===sel.value) : planos[0];
-  if(!base) return showToast("Não há plano para duplicar.", "error");
+  if(!base) return showToast('Não há plano para duplicar.', 'error');
 
   const now = Date.now();
   const novo = JSON.parse(JSON.stringify(base));
-  novo.id = `${(base.inicio||'')}_${(base.fim||'')}_dup_${now}`;
+  novo.id = (base.discId||'disc') + '_' + (base.inicio||'') + '_' + (base.fim||'') + '_dup_' + now;
   novo.updatedAt = now;
-  // limpar semana para você setar nova
-  novo.inicio = "";
-  novo.fim = "";
+  novo.inicio = '';
+  novo.fim = '';
   __fillPlanoToUI(novo);
-  document.getElementById('planoSemanaLista').value = "";
-  document.getElementById('planoSemanalResumo').value = "";
-  showToast("Duplicado! Agora ajuste a semana e salve.", "success");
+  document.getElementById('planoSemanaLista').value = '';
+  document.getElementById('planoSemanalResumo').value = '';
+  showToast('Duplicado! Agora ajuste a semana e salve.', 'success');
 }
+
 
 function excluirPlanoSemana(){
   const sel = document.getElementById('planoSemanaLista');
@@ -10340,7 +11367,7 @@ function __montarResumoPlano({inicio,fim,aulas}){
   grupos.forEach(g=>{
     out += `${__u(g.titulo)}:\n\n`;
     aulas.forEach((a,idx)=>{
-      const n = idx+1;
+      const n = (a && a.__n != null) ? a.__n : (idx+1);
       let linha = __safeLine(a[g.key]);
       if(g.key === 'habilidades'){
         const bl = __limparTexto(a.bloomNivel);
@@ -10362,13 +11389,27 @@ function __montarResumoPlano({inicio,fim,aulas}){
   return out.trim();
 }
 
-function gerarResumoPlanoSemana(){
-  const {inicio,fim,aulas} = __collectPlanoFromUI();
-  if(!inicio || !fim) return showToast("Preencha a semana (início e fim).", "error");
-  const resumo = __montarResumoPlano({inicio,fim,aulas});
-  document.getElementById('planoSemanalResumo').value = resumo;
-  showToast("Plano consolidado gerado.", "success");
+function __planoParseRange(val){
+  val = String(val||'').trim();
+  const m = /^\s*(\d)\s*[-:]\s*(\d)\s*$/.exec(val);
+  if(!m) return {ini:1,fim:7};
+  let ini = parseInt(m[1],10), fim = parseInt(m[2],10);
+  if(!ini || !fim) return {ini:1,fim:7};
+  if(ini>fim){ const t=ini; ini=fim; fim=t; }
+  ini = Math.max(1, Math.min(7, ini));
+  fim = Math.max(1, Math.min(7, fim));
+  return {ini,fim};
 }
+
+function gerarResumoPlanoSemana(){
+  const col = __collectPlanoFromUI();
+  const inicio = col.inicio, fim = col.fim;
+  if(!inicio || !fim) return showToast('Preencha a semana (início e fim).', 'error');
+  const resumo = __planoBuildResumo(col);
+  document.getElementById('planoSemanalResumo').value = resumo;
+  showToast('Plano consolidado gerado.', 'success');
+}
+
 
 function copiarResumoPlanoSemana(){
   const t = document.getElementById('planoSemanalResumo').value || "";
@@ -10377,30 +11418,34 @@ function copiarResumoPlanoSemana(){
 }
 
 function exportarPlanoSemanaPDF(){
-  const {inicio,fim,aulas} = __collectPlanoFromUI();
-  if(!inicio || !fim) return showToast("Preencha a semana (início e fim).", "error");
-  const resumo = document.getElementById('planoSemanalResumo').value || __montarResumoPlano({inicio,fim,aulas});
+  const col = __collectPlanoFromUI();
+  const inicio = col.inicio, fim = col.fim;
+  if(!inicio || !fim) return showToast('Preencha a semana (início e fim).', 'error');
+  const resumo = document.getElementById('planoSemanalResumo').value || __planoBuildResumo(col);
   document.getElementById('planoSemanalResumo').value = resumo;
 
   const box = document.getElementById('planoSemanalPrint');
   const esc = __getEscopoPlano();
-  const turma = (esc === 'geral') ? 'Plano Geral' : (filtroTurma || "Turma");
-  box.innerHTML = `
-    <h2 style="margin:0 0 6px 0;">Plano Semanal</h2>
-    <div style="margin-bottom:12px; font-size:12px;">
-      <div><b>Turma:</b> ${turma}</div>
-      <div><b>Semana:</b> ${__formatDateBR(inicio)} a ${__formatDateBR(fim)}</div>
-    </div>
-    <pre style="white-space:pre-wrap; font-size:12px; line-height:1.35; border:1px solid #ddd; padding:12px; border-radius:8px;">${resumo.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
-  `;
+  const turma = (esc === 'geral') ? 'Plano Geral' : (filtroTurma || 'Turma');
+  const discName = __planoDiscName(col.discId || __planoGetSelectedDiscId());
 
-  const opt = { margin: 10, filename: `plano_semanal_${turma}_${inicio}_a_${fim}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+  box.innerHTML = '' +
+    '<h2 style="margin:0 0 6px 0;">Plano Semanal</h2>' +
+    '<div style="margin-bottom:12px; font-size:12px;">' +
+      '<div><b>Turma:</b> '+turma+'</div>' +
+      (discName ? '<div><b>Disciplina:</b> '+discName+'</div>' : '') +
+      '<div><b>Semana:</b> '+__formatDateBR(inicio)+' a '+__formatDateBR(fim)+'</div>' +
+    '</div>' +
+    '<pre style="white-space:pre-wrap; font-size:12px; line-height:1.35; border:1px solid #ddd; padding:12px; border-radius:8px;">'+resumo.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>';
+
+  const opt = { margin: 10, filename: 'plano_semanal_'+turma+'_'+(discName||'')+'_'+inicio+'_a_'+fim+'.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
   if(typeof html2pdf === 'function'){ html2pdf().set(opt).from(box).save(); }
   else {
     try{ __ensureHtml2pdfFallback(); html2pdf().set(opt).from(box).save(opt && opt.filename ? opt.filename : undefined); }
     catch(e){ try{ if(typeof showToast==='function') showToast('Exportar PDF indisponível.', 'error'); }catch(_){} }
   }
 }
+
 
 function __extrairCampos(txt){
   txt = __limparTexto(txt);
@@ -10466,7 +11511,7 @@ function extrairPlanoAula(n){
 }
 
 // Wrap safety for new functions (evita travar botões se der erro)
-['abrirPlanoSemanal','novoPlanoSemana','carregarPlanoSemana','salvarPlanoSemana','duplicarPlanoSemana','excluirPlanoSemana','gerarResumoPlanoSemana','copiarResumoPlanoSemana','exportarPlanoSemanaPDF','extrairPlanoAula','selecionarTodasTurmasPlano','limparSelecaoTurmasPlano','aplicarPlanoGeralNasTurmas','onBloomNivelChangeCrono','onBloomNivelChangePlano']
+['abrirPlanoSemanal','novoPlanoSemana','carregarPlanoSemana','salvarPlanoSemana','duplicarPlanoSemana','excluirPlanoSemana','gerarResumoPlanoSemana','copiarResumoPlanoSemana','exportarPlanoSemanaPDF','extrairPlanoAula','togglePlanoSemanalFullscreen','planoLoteDistribuir','planoLoteDistribuirEExtrair','planoLoteLimpar','planoPreenchTab','planoPreenchAplicar','planoPreenchAplicarEProximo','planoPreenchLerCampo','selecionarTodasTurmasPlano','limparSelecaoTurmasPlano','aplicarPlanoGeralNasTurmas','onBloomNivelChangeCrono','onBloomNivelChangePlano','planoAdjustAulas','planoDisciplinaChanged','planoResumoModoChanged','planoSetQtdAulas']
   .forEach(fn=>{ try{ if(typeof __wrapSafeGlobal === 'function') __wrapSafeGlobal(fn); }catch(e){} });
 
 
@@ -12918,6 +13963,55 @@ salvarDadosLocal = function(){
 // ===============================================
 // Data structure: window.__sgpFrequencia = { "turma|bimestre|date": { alunoId: "P"|"F"|"J" } }
 window.__sgpFrequencia = {};
+// v15.5: Frequência — alertas + performance/cache + trilha de eventos (mantém estrutura existente)
+try{ window.__sgpFreqVersion = parseInt(localStorage.getItem('sgp_freq_version')||'0')||0; }catch(_){ window.__sgpFreqVersion=0; }
+window.__sgpFreqAggCache = window.__sgpFreqAggCache || {version:-1, byBim:{}};
+window.__sgpFreqDatesCache = window.__sgpFreqDatesCache || {version:-1, byTB:{}};
+window.__sgpFreqEvents = window.__sgpFreqEvents || [];
+
+function __freqBumpVersion(){
+  try{
+    window.__sgpFreqVersion = (window.__sgpFreqVersion||0)+1;
+    __safeLSSet('sgp_freq_version', String(window.__sgpFreqVersion));
+    __safeLSSet('sgp_last_freq_save', String(Date.now()));
+  }catch(_){}
+  try{ if(window.__sgpFreqAggCache) window.__sgpFreqAggCache.version = -1; }catch(_){}
+  try{ if(window.__sgpFreqDatesCache) window.__sgpFreqDatesCache.version = -1; }catch(_){}
+}
+
+function __freqLoadEvents(){
+  try{
+    const raw = localStorage.getItem('sgp_freq_events');
+    if(raw) window.__sgpFreqEvents = JSON.parse(raw) || [];
+  }catch(_){ window.__sgpFreqEvents = []; }
+}
+function __freqSaveEvents(){
+  try{ __safeLSSet('sgp_freq_events', JSON.stringify(window.__sgpFreqEvents||[])); }catch(_){}
+}
+function __freqPruneEvents(){
+  try{
+    const ev = window.__sgpFreqEvents || [];
+    if(!ev.length) return;
+    const now = Date.now();
+    const maxAge = 1000*60*60*24*120; // 120 dias
+    let filtered = ev.filter(e => (now - (e.ts||now)) <= maxAge);
+    const maxLen = 2000;
+    if(filtered.length > maxLen) filtered = filtered.slice(filtered.length - maxLen);
+    window.__sgpFreqEvents = filtered;
+  }catch(_){}
+}
+function __freqLogEvent(e){
+  try{
+    if(!e) return;
+    e.ts = e.ts || Date.now();
+    window.__sgpFreqEvents = window.__sgpFreqEvents || [];
+    window.__sgpFreqEvents.push(e);
+    __freqPruneEvents();
+    __freqSaveEvents();
+  }catch(_){}
+}
+try{ __freqLoadEvents(); }catch(_){}
+
 
 function __loadFrequencia(){
   try{
@@ -12929,30 +14023,371 @@ function __saveFrequencia(){
   try{
     __safeLSSet('sgp_frequencia', JSON.stringify(window.__sgpFrequencia));
     try{ __idbSaveState(); }catch(_){}
+    try{ __freqBumpVersion(); }catch(_){}
   }catch(_){}
 }
 // Load on start
 try{ __loadFrequencia(); }catch(_){}
 
-function calcFreqAluno(alunoId, bim){
+function __freqEnsureAggForBim(bim){
+  const cache = window.__sgpFreqAggCache || (window.__sgpFreqAggCache={version:-1, byBim:{}});
+  const v = window.__sgpFreqVersion || 0;
+  if(cache.version===v && cache.byBim && cache.byBim[bim]) return cache.byBim[bim];
+
   const freq = window.__sgpFrequencia || {};
-  let total=0, presentes=0, faltas=0, justificadas=0;
+  const agg = {};
   Object.keys(freq).forEach(key=>{
     const parts = key.split('|');
     if(parseInt(parts[1])!==bim) return;
-    const registro = freq[key];
-    if(registro.hasOwnProperty(alunoId)){
-      const meta = registro._meta || {};
-      const qtd = Math.max(1, parseInt(meta.qtdAulas) || 1);
-      const v = registro[alunoId];
-      total += qtd;
-      if(v==='P') presentes += qtd;
-      else if(v==='F') faltas += qtd;
-      else if(v==='J'){ justificadas += qtd; presentes += qtd; }
-    }
+    const reg = freq[key] || {};
+    const meta = reg._meta || {};
+    const qtd = Math.max(1, parseInt(meta.qtdAulas)||1);
+    Object.keys(reg).forEach(k=>{
+      if(k==='_meta') return;
+      const val = reg[k];
+      if(!val) return;
+      const kk = String(k);
+      const a = agg[kk] || (agg[kk]={total:0, presentes:0, faltas:0, justificadas:0});
+      a.total += qtd;
+      if(val==='P') a.presentes += qtd;
+      else if(val==='F') a.faltas += qtd;
+      else if(val==='J'){ a.justificadas += qtd; a.presentes += qtd; }
+    });
   });
+
+  cache.version = v;
+  cache.byBim = cache.byBim || {};
+  cache.byBim[bim] = agg;
+  return agg;
+}
+
+function __freqEnsureDatesCache(){
+  const cache = window.__sgpFreqDatesCache || (window.__sgpFreqDatesCache={version:-1, byTB:{}});
+  const v = window.__sgpFreqVersion || 0;
+  if(cache.version===v && cache.byTB) return cache;
+
+  cache.version = v;
+  cache.byTB = {};
+  const freq = window.__sgpFrequencia || {};
+
+  Object.keys(freq).forEach(key=>{
+    const parts = key.split('|');
+    if(parts.length<3) return;
+    const turma = parts[0];
+    const bim = parseInt(parts[1])||0;
+    const dt = parts[2];
+    const reg = freq[key] || {};
+    let has=false;
+    for(const k in reg){
+      if(k==='_meta') continue;
+      if(reg[k]){ has=true; break; }
+    }
+    if(!has) return;
+    const tb = `${turma}|${bim}`;
+    (cache.byTB[tb]||(cache.byTB[tb]=[])).push(dt);
+  });
+
+  Object.keys(cache.byTB).forEach(tb=>{
+    cache.byTB[tb] = Array.from(new Set(cache.byTB[tb])).sort();
+  });
+  return cache;
+}
+
+function __freqGetDatesTurmaBim(turma, bim){
+  const cache = __freqEnsureDatesCache();
+  return cache.byTB?.[`${turma}|${bim}`] || [];
+}
+
+function calcFreqAluno(alunoId, bim){
+  const agg = __freqEnsureAggForBim(bim);
+  const id = String(alunoId);
+  const a = (agg && agg[id]) ? agg[id] : {total:0, presentes:0, faltas:0, justificadas:0};
+  const total = a.total||0, presentes = a.presentes||0, faltas = a.faltas||0, justificadas = a.justificadas||0;
   const pct = total>0 ? (presentes/total*100) : 100;
   return {total, presentes, faltas, justificadas, pct};
+}
+
+function __freqTodayStr(){ return new Date().toISOString().slice(0,10); }
+function __freqIsWeekend(dateStr){
+  const d = new Date((dateStr||__freqTodayStr())+'T00:00:00');
+  const w = d.getDay();
+  return (w===0 || w===6);
+}
+function __freqBusinessDaysBetween(fromStr, toStr){
+  try{
+    if(!fromStr || !toStr) return 0;
+    let from = new Date(fromStr+'T00:00:00'); from.setHours(0,0,0,0);
+    let to = new Date(toStr+'T00:00:00'); to.setHours(0,0,0,0);
+    if(to<=from) return 0;
+    let days=0;
+    const cur=new Date(from.getTime());
+    while(cur<to){
+      cur.setDate(cur.getDate()+1);
+      const w=cur.getDay();
+      if(w!==0 && w!==6) days++;
+      if(days>400) break;
+    }
+    return days;
+  }catch(_){ return 0; }
+}
+
+function __freqPendenciaHojeTurma(turma, bim){
+  const today = __freqTodayStr();
+  if(__freqIsWeekend(today)) return {skip:true, today};
+  const lista = alunos.filter(a=>a.turma===turma);
+  const total = lista.length;
+  const key = `${turma}|${bim}|${today}`;
+  const reg = (window.__sgpFrequencia||{})[key] || null;
+  if(!reg){
+    return {skip:false, today, total, missing:true, filled:0, incomplete:total, key};
+  }
+  let filled=0;
+  lista.forEach(a=>{ if(reg[a.id]) filled++; });
+  const incomplete = Math.max(0, total - filled);
+  return {skip:false, today, total, missing:false, filled, incomplete, key};
+}
+
+function __freqUltimoRegistroTurma(turma, bim){
+  const dates = __freqGetDatesTurmaBim(turma, bim);
+  return dates.length ? dates[dates.length-1] : '';
+}
+
+function __freqAlunosBaixaFreq(turma, bim, threshold){
+  const thr = (typeof threshold==='number') ? threshold : 75;
+  const lista = alunos.filter(a=>a.turma===turma).map(a=>{
+    const f = calcFreqAluno(a.id, bim);
+    return {id:a.id, nome:a.nome, pct:f.pct, faltas:f.faltas, total:f.total};
+  }).filter(x=>x.total>0 && x.pct < thr)
+    .sort((a,b)=>a.pct-b.pct);
+  return lista;
+}
+
+function __freqAlunosStreakF(turma, bim, streakLen){
+  const len = streakLen||3;
+  const dates = __freqGetDatesTurmaBim(turma, bim);
+  if(!dates.length) return [];
+  const freq = window.__sgpFrequencia||{};
+  const lista = alunos.filter(a=>a.turma===turma);
+  const out=[];
+  lista.forEach(a=>{
+    let streak=0;
+    for(let i=dates.length-1;i>=0;i--){
+      const key = `${turma}|${bim}|${dates[i]}`;
+      const reg = freq[key] || {};
+      const v = reg[a.id];
+      if(!v){ streak=0; break; }
+      if(v==='F'){
+        streak++;
+        if(streak>=len){
+          out.push({id:a.id, nome:a.nome, streak});
+          break;
+        }
+      }else{
+        break;
+      }
+    }
+  });
+  return out.sort((a,b)=>b.streak-a.streak || (a.nome||'').localeCompare(b.nome||''));
+}
+
+function renderFreqAlertsDashboard(){
+  try{
+    const bim = bimestreAtual;
+    const today = __freqTodayStr();
+    const turmasList = (turmas||[]).filter(t=>t && t!=='Todas');
+    if(!turmasList.length) return '';
+
+    if(filtroTurma && filtroTurma!=='Todas'){
+      const turma = filtroTurma;
+      const pend = __freqPendenciaHojeTurma(turma, bim);
+      const last = __freqUltimoRegistroTurma(turma, bim);
+      const diasSem = last ? __freqBusinessDaysBetween(last, today) : 0;
+      const baixa = __freqAlunosBaixaFreq(turma, bim, 75);
+      const streak = __freqAlunosStreakF(turma, bim, 3);
+
+      const pendTxt = pend.skip ? 'Hoje é fim de semana' : (pend.missing ? 'Chamada pendente' : (pend.incomplete>0 ? `Incompleta (${pend.incomplete} sem marcação)` : 'OK'));
+      const pendColor = pend.skip ? '#64748b' : (pend.missing || pend.incomplete>0 ? '#dc2626' : '#16a34a');
+
+      return `
+        <div class="dash-card wide" style="border:1px solid rgba(236,72,153,.18);">
+          <h3 style="margin:0 0 8px;"><i class="fas fa-user-check"></i> Frequência — Alertas (${escHTML(turma)} • ${bim}ºB)</h3>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:10px;">
+            <div style="padding:10px 12px; border:1px solid var(--border-color); border-radius:12px; background:rgba(236,72,153,.04);">
+              <div style="font-size:.72rem; color:#64748b; text-transform:uppercase; letter-spacing:.3px;">Chamada de hoje</div>
+              <div style="font-size:1rem; font-weight:800; color:${pendColor}; margin-top:6px;">${pendTxt}</div>
+              ${(!pend.skip && !pend.missing) ? `<div style="font-size:.78rem; color:#94a3b8; margin-top:4px;">Marcados: ${pend.filled}/${pend.total}</div>` : ''}
+            </div>
+            <div style="padding:10px 12px; border:1px solid var(--border-color); border-radius:12px;">
+              <div style="font-size:.72rem; color:#64748b; text-transform:uppercase; letter-spacing:.3px;">Baixa frequência (&lt;75%)</div>
+              <div style="font-size:1.2rem; font-weight:900; margin-top:6px;">${baixa.length}</div>
+              <div style="font-size:.78rem; color:#94a3b8; margin-top:4px;">com registros no bimestre</div>
+            </div>
+            <div style="padding:10px 12px; border:1px solid var(--border-color); border-radius:12px;">
+              <div style="font-size:.72rem; color:#64748b; text-transform:uppercase; letter-spacing:.3px;">Faltas seguidas (≥3)</div>
+              <div style="font-size:1.2rem; font-weight:900; margin-top:6px;">${streak.length}</div>
+              <div style="font-size:.78rem; color:#94a3b8; margin-top:4px;">nos últimos registros</div>
+            </div>
+            <div style="padding:10px 12px; border:1px solid var(--border-color); border-radius:12px;">
+              <div style="font-size:.72rem; color:#64748b; text-transform:uppercase; letter-spacing:.3px;">Último registro</div>
+              <div style="font-size:1rem; font-weight:800; margin-top:6px;">${last?escHTML(last):'—'}</div>
+              <div style="font-size:.78rem; color:#94a3b8; margin-top:4px;">${last ? `${diasSem} dia(s) útil(eis) sem registro` : 'Sem registros neste bimestre'}</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:10px;">
+            <button class="btn-primary" onclick="abrirFrequencia()"><i class="fas fa-clipboard-check"></i> Abrir chamada</button>
+            <button class="btn-secondary" onclick="abrirFreqAlertasDetalhes(${__j(turma)}, ${bim})"><i class="fas fa-list"></i> Ver detalhes</button>
+          </div>
+        </div>`;
+    }
+
+    let rows='';
+    turmasList.forEach(turma=>{
+      const pend = __freqPendenciaHojeTurma(turma, bim);
+      const last = __freqUltimoRegistroTurma(turma, bim);
+      const diasSem = last ? __freqBusinessDaysBetween(last, today) : 0;
+      const baixaCount = __freqAlunosBaixaFreq(turma, bim, 75).length;
+      const streakCount = __freqAlunosStreakF(turma, bim, 3).length;
+
+      const pendLbl = pend.skip ? '—' : (pend.missing ? 'Pendente' : (pend.incomplete>0 ? `Incompleta (${pend.incomplete})` : 'OK'));
+      const pendClr = pend.skip ? '#64748b' : (pend.missing || pend.incomplete>0 ? '#dc2626' : '#16a34a');
+
+      rows += `<tr>
+        <td style="padding:8px 10px; border-bottom:1px solid var(--border-color); text-align:left;">${escHTML(turma)}</td>
+        <td style="padding:8px 10px; border-bottom:1px solid var(--border-color); text-align:center; color:${pendClr}; font-weight:800;">${pendLbl}</td>
+        <td style="padding:8px 10px; border-bottom:1px solid var(--border-color); text-align:center;">${baixaCount}</td>
+        <td style="padding:8px 10px; border-bottom:1px solid var(--border-color); text-align:center;">${streakCount}</td>
+        <td style="padding:8px 10px; border-bottom:1px solid var(--border-color); text-align:center;">${last?escHTML(last):'—'}</td>
+        <td style="padding:8px 10px; border-bottom:1px solid var(--border-color); text-align:center;">${last?diasSem:'—'}</td>
+        <td style="padding:8px 10px; border-bottom:1px solid var(--border-color); text-align:right; white-space:nowrap;">
+          <button class="btn-secondary" onclick="selTurma(${__j(turma)}); mudarVisao('dash'); setTimeout(()=>{ try{abrirFrequencia();}catch(_){} }, 50);" title="Abrir chamada"><i class="fas fa-clipboard-check"></i></button>
+          <button class="btn-secondary" onclick="abrirFreqAlertasDetalhes(${__j(turma)}, ${bim})" title="Detalhes"><i class="fas fa-list"></i></button>
+        </td>
+      </tr>`;
+    });
+
+    return `
+      <div class="dash-card wide" style="border:1px solid rgba(236,72,153,.18);">
+        <h3 style="margin:0 0 10px;"><i class="fas fa-user-check"></i> Frequência — Comparar turmas (${bim}ºB)</h3>
+        <div style="overflow:auto; border:1px solid var(--border-color); border-radius:12px;">
+          <table style="width:100%; border-collapse:collapse; font-size:.85rem;">
+            <thead>
+              <tr style="background:rgba(236,72,153,.04);">
+                <th style="padding:10px; text-align:left; border-bottom:1px solid var(--border-color);">Turma</th>
+                <th style="padding:10px; text-align:center; border-bottom:1px solid var(--border-color);">Hoje</th>
+                <th style="padding:10px; text-align:center; border-bottom:1px solid var(--border-color);">&lt;75%</th>
+                <th style="padding:10px; text-align:center; border-bottom:1px solid var(--border-color);">≥3F seguidas</th>
+                <th style="padding:10px; text-align:center; border-bottom:1px solid var(--border-color);">Último</th>
+                <th style="padding:10px; text-align:center; border-bottom:1px solid var(--border-color);">Dias úteis</th>
+                <th style="padding:10px; text-align:right; border-bottom:1px solid var(--border-color);">Ações</th>
+              </tr>
+            </thead>
+            <tbody>${rows || `<tr><td colspan="7" style="padding:12px; text-align:center; color:#64748b;">Sem turmas cadastradas.</td></tr>`}</tbody>
+          </table>
+        </div>
+        <div style="font-size:.78rem; color:#94a3b8; margin-top:8px;">
+          * “Hoje” considera pendente/incompleta apenas em dias úteis. “Dias úteis” conta desde o último registro até hoje.
+        </div>
+      </div>`;
+  }catch(_){ return ''; }
+}
+
+function abrirFreqAlertasDetalhes(turma, bim){
+  try{
+    const today = __freqTodayStr();
+    const pend = __freqPendenciaHojeTurma(turma, bim);
+    const baixa = __freqAlunosBaixaFreq(turma, bim, 75);
+    const streak = __freqAlunosStreakF(turma, bim, 3);
+
+    let pendList = [];
+    if(!pend.skip){
+      const lista = alunos.filter(a=>a.turma===turma);
+      if(pend.missing){
+        pendList = lista.map(a=>({id:a.id, nome:a.nome}));
+      }else{
+        const reg = (window.__sgpFrequencia||{})[pend.key] || {};
+        pendList = lista.filter(a=>!reg[a.id]).map(a=>({id:a.id, nome:a.nome}));
+      }
+    }
+
+    let overlay = document.getElementById('freqAlertsOverlay');
+    if(overlay) overlay.remove();
+
+    overlay = document.createElement('div');
+    overlay.id='freqAlertsOverlay';
+    overlay.className='modal-overlay';
+    overlay.style.display='flex';
+    overlay.innerHTML = `
+      <div class="modal-box" style="max-width:980px; max-height:88vh; overflow:auto;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <h2 style="margin:0;"><i class="fas fa-user-check"></i> Detalhes de Frequência — ${escHTML(turma)} (${bim}ºB)</h2>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            <button class="btn-secondary" onclick="__sgpRemoveEl('freqAlertsOverlay');"><i class="fas fa-xmark"></i> Fechar</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+          <button class="btn-primary" onclick="selTurma(${__j(turma)}); __sgpRemoveEl('freqAlertsOverlay'); setTimeout(function(){ try{abrirFrequencia();}catch(_){} }, 50);">
+            <i class="fas fa-clipboard-check"></i> Abrir chamada
+          </button>
+        </div>
+
+        <div style="margin-top:14px; display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:12px;">
+          <div style="border:1px solid var(--border-color); border-radius:12px; padding:12px;">
+            <h3 style="margin:0 0 8px; font-size:.95rem;">Chamada de hoje (${escHTML(today)})</h3>
+            <div style="font-size:.82rem; color:#64748b; margin-bottom:8px;">
+              ${pend.skip ? 'Hoje é fim de semana — pendências não são contabilizadas.' : (pend.missing ? 'Registro ainda não criado.' : (pend.incomplete>0 ? `Faltam ${pend.incomplete} marcação(ões).` : 'Tudo lançado.'))}
+            </div>
+            <div style="max-height:240px; overflow:auto; border-top:1px dashed rgba(148,163,184,.35); padding-top:8px;">
+              ${pend.skip ? '<div style="color:#94a3b8;">—</div>' : (pendList.length ? pendList.slice(0,50).map(x=>`<div style="padding:6px 0; border-bottom:1px solid rgba(0,0,0,.04);">${escHTML(x.nome)}</div>`).join('') : '<div style="color:#94a3b8;">Nenhuma pendência.</div>')}
+            </div>
+          </div>
+
+          <div style="border:1px solid var(--border-color); border-radius:12px; padding:12px;">
+            <h3 style="margin:0 0 8px; font-size:.95rem;">Baixa frequência (&lt;75%)</h3>
+            <div style="font-size:.82rem; color:#64748b; margin-bottom:8px;">Total: <b>${baixa.length}</b></div>
+            <div style="max-height:240px; overflow:auto; border-top:1px dashed rgba(148,163,184,.35); padding-top:8px;">
+              ${baixa.length ? baixa.slice(0,60).map(x=>`<div style="display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid rgba(0,0,0,.04);"><span>${escHTML(x.nome)}</span><b style="color:#dc2626;">${x.pct.toFixed(0)}%</b></div>`).join('') : '<div style="color:#94a3b8;">Nenhum aluno abaixo do limite.</div>'}
+            </div>
+          </div>
+
+          <div style="border:1px solid var(--border-color); border-radius:12px; padding:12px;">
+            <h3 style="margin:0 0 8px; font-size:.95rem;">Faltas seguidas (≥3)</h3>
+            <div style="font-size:.82rem; color:#64748b; margin-bottom:8px;">Total: <b>${streak.length}</b></div>
+            <div style="max-height:240px; overflow:auto; border-top:1px dashed rgba(148,163,184,.35); padding-top:8px;">
+              ${streak.length ? streak.slice(0,60).map(x=>`<div style="display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid rgba(0,0,0,.04);"><span>${escHTML(x.nome)}</span><b style="color:#b45309;">${x.streak}F</b></div>`).join('') : '<div style="color:#94a3b8;">Nenhuma sequência detectada.</div>'}
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px; font-size:.78rem; color:#94a3b8;">
+          Observação: “Faltas seguidas” considera apenas dias com registro e exige que o aluno esteja marcado nesses dias (evita supor falta quando não foi lançado).
+        </div>
+      </div>
+    `;
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  }catch(_){ showToast("Não foi possível abrir os detalhes de frequência.", "error"); }
+}
+
+function __freqMaybeToastPendencia(){
+  try{
+    if(!filtroTurma || filtroTurma==='Todas') return;
+    const bim = bimestreAtual;
+    const today = __freqTodayStr();
+    if(__freqIsWeekend(today)) return;
+    const pend = __freqPendenciaHojeTurma(filtroTurma, bim);
+    if(pend.skip) return;
+
+    const key = `sgp_freq_toast_${filtroTurma}_${bim}_${today}`;
+    try{ if(sessionStorage.getItem(key)==='1') return; }catch(_){}
+
+    if(pend.missing){
+      showToast(`Chamada de hoje (${today}) pendente — ${filtroTurma}.`, "warn");
+      try{ sessionStorage.setItem(key,'1'); }catch(_){}
+    }else if(pend.incomplete>0){
+      showToast(`Chamada de hoje (${today}) incompleta — faltam ${pend.incomplete}.`, "warn");
+      try{ sessionStorage.setItem(key,'1'); }catch(_){}
+    }
+  }catch(_){}
 }
 
 function abrirFrequencia(){
@@ -13043,6 +14478,7 @@ function freqSaveMeta(){
     registroAula: txtRegistro ? txtRegistro.value : ''
   };
   __saveFrequencia();
+  try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
 }
 
 function freqToggleFullscreen(){
@@ -13067,8 +14503,10 @@ function setFreq(alunoId, value){
   } else {
     window.__sgpFrequencia[key][alunoId] = value;
   }
-  __saveFrequencia();
+  try{ __freqLogEvent({type:'set', turma:filtroTurma, bim:bimestreAtual, date:date, alunoId:alunoId, value:(window.__sgpFrequencia[key]||{})[alunoId]||''}); }catch(_){ }
+__saveFrequencia();
   renderFrequencia();
+  try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
 }
 
 function freqMarcarTodosP(){
@@ -13076,16 +14514,32 @@ function freqMarcarTodosP(){
   const key = `${filtroTurma}|${bimestreAtual}|${date}`;
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
   alunos.filter(a=>a.turma===filtroTurma).forEach(a=>{ window.__sgpFrequencia[key][a.id]='P'; });
+    try{ __freqLogEvent({type:'bulk', turma:filtroTurma, bim:bimestreAtual, date:date, value:'P', count:(alunos.filter(a=>a.turma===filtroTurma).length||0)}); }catch(_){}
   __saveFrequencia(); renderFrequencia();
+  try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
 }
 function freqMarcarTodosF(){
   const date = document.getElementById('freqDate')?.value || new Date().toISOString().slice(0,10);
   const key = `${filtroTurma}|${bimestreAtual}|${date}`;
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
   alunos.filter(a=>a.turma===filtroTurma).forEach(a=>{ window.__sgpFrequencia[key][a.id]='F'; });
+    try{ __freqLogEvent({type:'bulk', turma:filtroTurma, bim:bimestreAtual, date:date, value:'F', count:(alunos.filter(a=>a.turma===filtroTurma).length||0)}); }catch(_){}
   __saveFrequencia(); renderFrequencia();
+  try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
 }
 
+
+
+// Toast discreto para pendência de chamada ao trocar de turma
+try{
+  const __origSelTurmaFreq = selTurma;
+  if(typeof __origSelTurmaFreq==='function'){
+    selTurma = function(n){
+      __origSelTurmaFreq(n);
+      try{ __freqMaybeToastPendencia(); }catch(_){}
+    };
+  }
+}catch(_){}
 // ===============================================
 // V13 FEATURE 5: BOLETIM INDIVIDUAL
 // ===============================================
@@ -14812,7 +16266,7 @@ try{
       if(!dashEl) return;
 
       // Remove old V15 elements
-      dashEl.querySelectorAll('.v15-comp,.v15-evo').forEach(el=>el.remove());
+      dashEl.querySelectorAll('.v15-comp,.v15-evo,.v15-freqalerts').forEach(el=>el.remove());
 
       if(filtroTurma==='Todas'){
         // F8: Show comparativo
@@ -14833,7 +16287,17 @@ try{
           dashEl.appendChild(div);
           setTimeout(drawEvoTurmaChart, 50);
         }
+
       }
+
+// Frequência: alertas e pendências
+const freqHtml = renderFreqAlertsDashboard();
+if(freqHtml){
+  const div=document.createElement('div');
+  div.className='v15-freqalerts'; div.style.gridColumn='1/-1';
+  div.innerHTML=freqHtml;
+  dashEl.appendChild(div);
+}
     }catch(_){}
   };
 }catch(_){}
@@ -14940,7 +16404,7 @@ try{
 
 
 // ================================================================
-// MOBILE BOTTOM NAVIGATION BAR
+// MOBILE BOTTOM NAVIGATION BAR (Mobile-first)
 // ================================================================
 (function(){
   // Create mobile nav bar
@@ -14948,22 +16412,34 @@ try{
   nav.className='mobile-nav';
   nav.id='mobileNav';
   nav.innerHTML=`
-    <button onclick="mobileNavGo('cards')" id="mnCards" class="active"><i class="fas fa-th"></i>Alunos</button>
+    <button onclick="mobileNavGo('cards')" id="mnHome" class="active"><i class="fas fa-th"></i>Início</button>
+    <button onclick="toggleSidebar()" id="mnTurmas"><i class="fas fa-bars"></i>Turmas</button>
+    <button onclick="mobileNavGo('lista')" id="mnAlunos"><i class="fas fa-list"></i>Alunos</button>
     <button onclick="mobileNavGo('dash')" id="mnDash"><i class="fas fa-chart-pie"></i>Dashboard</button>
-    <button onclick="mobileNavGo('calendar')" id="mnCal"><i class="fas fa-calendar"></i>Calendário</button>
-    <button onclick="mobileNavGo('aulas')" id="mnAulas"><i class="fas fa-chalkboard"></i>Aulas</button>
-    <button onclick="toggleSidebar()" id="mnMenu"><i class="fas fa-ellipsis-h"></i>Mais</button>
+    <button onclick="mobileNavGo('mapa')" id="mnMapa"><i class="fas fa-border-all"></i>Mapa</button>
   `;
   document.body.appendChild(nav);
 
   window.mobileNavGo=function(view){
     mudarVisao(view);
     updateMobileNav(view);
+    // Close drawer when navigating
+    try{ if(window.innerWidth<=980) document.body.classList.remove('sidebar-open'); }catch(_){}
   };
 
   window.updateMobileNav=function(view){
     document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.remove('active'));
-    const map={cards:'mnCards',lista:'mnCards',massa:'mnCards',dash:'mnDash',calendar:'mnCal',aulas:'mnAulas',mapa:'mnCards',entregas:'mnCards'};
+    const map={
+      cards:'mnHome',
+      lista:'mnAlunos',
+      massa:'mnAlunos',
+      entregas:'mnAlunos',
+      anual:'mnAlunos',
+      dash:'mnDash',
+      mapa:'mnMapa',
+      calendar:'mnHome',
+      aulas:'mnHome'
+    };
     const btn=document.getElementById(map[view]||'');
     if(btn) btn.classList.add('active');
   };
@@ -14977,6 +16453,7 @@ try{
     };
   }catch(_){}
 })();
+
 
 
 
@@ -16351,6 +17828,84 @@ try{
     }
   };
 }catch(_){}
+
+
+// F11.5: Mobile gestures for map (pinch-to-zoom + pan with 2 fingers)
+(function(){
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  function dist(t1,t2){ const dx=t2.clientX-t1.clientX, dy=t2.clientY-t1.clientY; return Math.hypot(dx,dy); }
+  function mid(t1,t2){ return {x:(t1.clientX+t2.clientX)/2, y:(t1.clientY+t2.clientY)/2}; }
+
+  window.__sgpMapaTransform = window.__sgpMapaTransform || {x:0,y:0,scale:1};
+
+  function apply(){
+    const g=document.getElementById('salaGrid');
+    if(!g) return;
+    const st=window.__sgpMapaTransform;
+    g.style.transform = `translate(${st.x}px,${st.y}px) scale(${st.scale})`;
+  }
+
+  window.mapaResetZoom = function(){
+    window.__sgpMapaTransform = {x:0,y:0,scale:1};
+    apply();
+    try{ showToast("Zoom resetado."); }catch(_){}
+  };
+
+  window.__sgpMapaTouchInit = function(){
+    const wrap=document.querySelector('#viewMapa .sala-grid-wrap');
+    if(!wrap) return;
+    if(wrap.dataset.touchZoom==='1'){ apply(); return; }
+    wrap.dataset.touchZoom='1';
+
+    let pinching=false, startDist=0, startMid=null, startScale=1, startX=0, startY=0;
+
+    wrap.addEventListener('touchstart', function(e){
+      if(window.innerWidth>768) return;
+      if(e.touches && e.touches.length===2){
+        pinching=true;
+        startDist=dist(e.touches[0], e.touches[1]) || 1;
+        startMid=mid(e.touches[0], e.touches[1]);
+        const st=window.__sgpMapaTransform;
+        startScale=st.scale||1;
+        startX=st.x||0;
+        startY=st.y||0;
+      }
+    }, {passive:false});
+
+    wrap.addEventListener('touchmove', function(e){
+      if(!pinching || window.innerWidth>768) return;
+      if(e.touches && e.touches.length===2){
+        e.preventDefault();
+        const nd=dist(e.touches[0], e.touches[1]) || startDist;
+        const nm=mid(e.touches[0], e.touches[1]);
+        const st=window.__sgpMapaTransform;
+        st.scale = clamp(startScale * (nd / startDist), 0.6, 2.6);
+        st.x = startX + (nm.x - startMid.x);
+        st.y = startY + (nm.y - startMid.y);
+        apply();
+      }
+    }, {passive:false});
+
+    wrap.addEventListener('touchend', function(e){
+      if(!e.touches || e.touches.length<2) pinching=false;
+    }, {passive:true});
+
+    apply();
+  };
+
+  // Ensure gestures are initialized after map render (and only on mobile)
+  try{
+    if(!window.__sgpMapaTouchWrapped && typeof window.renderizarMapa==='function'){
+      window.__sgpMapaTouchWrapped = true;
+      const __orig = window.renderizarMapa;
+      window.renderizarMapa = function(){
+        __orig.apply(this, arguments);
+        if(window.innerWidth<=768) setTimeout(()=>window.__sgpMapaTouchInit(), 0);
+      };
+    }
+  }catch(_){}
+})();
+
 
 // F12: Print map
 function mapaImprimir(){
