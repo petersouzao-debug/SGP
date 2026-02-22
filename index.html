@@ -15227,6 +15227,11 @@ function abrirFrequencia(){
       </div>
       <div class="freq-header-row">
         <label>Data: <input type="date" id="freqDate" value="${new Date().toISOString().slice(0,10)}"></label>
+        <label>Disciplina:
+          <select id="freqDisciplina" onchange="freqSaveMeta()">
+            <option value="">— Selecione —</option>
+          </select>
+        </label>
         <label>Aulas:
           <select id="freqQtdAulas" onchange="freqSaveMeta()">
             <option value="1">1 aula</option>
@@ -15245,7 +15250,8 @@ function abrirFrequencia(){
         </label>
       </div>
       <div id="freqTableContainer"></div>
-      <div style="text-align:right;margin-top:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px;">
+        <button data-onclick="abrirHistoricoChamadas()" style="padding:8px 15px;border:1px solid var(--primary);background:transparent;color:var(--primary);border-radius:8px;cursor:pointer;font-size:.82rem;"><i class="fas fa-history"></i> Histórico de Chamadas</button>
         <button data-onclick="fecharModais()" style="padding:8px 15px;border:none;background:transparent;cursor:pointer;">Fechar</button>
       </div>
     </div>`;
@@ -15264,6 +15270,37 @@ function renderFrequencia(){
   const meta = registro._meta || {};
   const lista = alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   
+  // Populate discipline dropdown
+  const selDisc = document.getElementById('freqDisciplina');
+  if(selDisc){
+    const prevVal = selDisc.value;
+    const savedDisc = meta.disciplina || '';
+    selDisc.innerHTML = '<option value="">— Selecione —</option>';
+    try{
+      ensureConfigSchema();
+      (config.disciplinas||[]).forEach(d=>{
+        const o = document.createElement('option');
+        o.value = d.nome || d.id;
+        o.textContent = d.nome || d.id;
+        selDisc.appendChild(o);
+      });
+    }catch(_){}
+    // Restore saved value
+    if(savedDisc){
+      let found = false;
+      for(let i=0;i<selDisc.options.length;i++){
+        if(selDisc.options[i].value === savedDisc){ found=true; break; }
+      }
+      if(!found && savedDisc){
+        const o = document.createElement('option');
+        o.value = savedDisc;
+        o.textContent = savedDisc;
+        selDisc.appendChild(o);
+      }
+      selDisc.value = savedDisc;
+    }
+  }
+
   // Restore meta fields
   const selAulas = document.getElementById('freqQtdAulas');
   if(selAulas) selAulas.value = meta.qtdAulas || '1';
@@ -15296,9 +15333,11 @@ function freqSaveMeta(){
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
   const selAulas = document.getElementById('freqQtdAulas');
   const txtRegistro = document.getElementById('freqRegistroAula');
+  const selDisc = document.getElementById('freqDisciplina');
   window.__sgpFrequencia[key]._meta = {
     qtdAulas: selAulas ? selAulas.value : '1',
-    registroAula: txtRegistro ? txtRegistro.value : ''
+    registroAula: txtRegistro ? txtRegistro.value : '',
+    disciplina: selDisc ? selDisc.value : ''
   };
   __saveFrequencia();
   try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
@@ -15351,9 +15390,157 @@ function freqMarcarTodosF(){
   try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
 }
 
-
-
-// Toast discreto para pendência de chamada ao trocar de turma
+// ================================================================
+// HISTÓRICO DE CHAMADAS / FREQUÊNCIA
+// ================================================================
+function abrirHistoricoChamadas(){
+  if(filtroTurma==='Todas') return showToast("Selecione uma turma primeiro.", "error");
+  
+  const freq = window.__sgpFrequencia || {};
+  const lista = alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  
+  // Collect all records for this turma across all bimestres
+  const records = [];
+  Object.keys(freq).forEach(key => {
+    const parts = key.split('|');
+    if(parts[0] !== filtroTurma) return;
+    const bim = parseInt(parts[1]) || 0;
+    const date = parts[2];
+    const reg = freq[key] || {};
+    const meta = reg._meta || {};
+    
+    // Count P/F/J
+    let countP=0, countF=0, countJ=0, total=0;
+    lista.forEach(a => {
+      const s = reg[a.id];
+      if(s === 'P'){ countP++; total++; }
+      else if(s === 'F'){ countF++; total++; }
+      else if(s === 'J'){ countJ++; total++; }
+    });
+    
+    if(total > 0){
+      records.push({
+        key, date, bim,
+        disciplina: meta.disciplina || '',
+        qtdAulas: meta.qtdAulas || '1',
+        registroAula: meta.registroAula || '',
+        countP, countF, countJ, total
+      });
+    }
+  });
+  
+  // Sort by date descending
+  records.sort((a,b) => b.date.localeCompare(a.date));
+  
+  // Filter by selected bimestre or show all
+  let filterBim = bimestreAtual;
+  
+  let old = document.getElementById('modalHistChamadas');
+  if(old) old.remove();
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'modalHistChamadas';
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.onclick = function(e){ if(e.target===this) this.remove(); };
+  
+  function buildContent(filterBimVal){
+    const filtered = filterBimVal === 0 ? records : records.filter(r => r.bim === filterBimVal);
+    
+    let html = `<div class="modal-box" style="max-width:950px;max-height:88vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <h2 style="margin:0;"><i class="fas fa-history" style="color:var(--primary);"></i> Histórico de Chamadas — ${escHTML(filtroTurma)}</h2>
+        <button onclick="document.getElementById('modalHistChamadas').remove();" style="border:none;background:transparent;font-size:1.3rem;cursor:pointer;color:var(--text-muted);">&times;</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+        <span style="font-size:.82rem;font-weight:600;color:var(--text-muted);">Filtrar bimestre:</span>
+        <button class="freq-btn ${filterBimVal===0?'P':'none'}" onclick="window.__histChamadasRebuild(0)" style="width:auto;padding:4px 10px;">Todos</button>`;
+    for(let i=1;i<=4;i++){
+      html += `<button class="freq-btn ${filterBimVal===i?'P':'none'}" onclick="window.__histChamadasRebuild(${i})" style="width:auto;padding:4px 10px;">${i}ºB</button>`;
+    }
+    html += `</div>`;
+    
+    if(filtered.length === 0){
+      html += `<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-inbox" style="font-size:2rem;opacity:.4;display:block;margin-bottom:10px;"></i>Nenhum registro de chamada encontrado.</div>`;
+    } else {
+      // Summary stats
+      const totalDias = filtered.length;
+      const totalP = filtered.reduce((s,r)=>s+r.countP, 0);
+      const totalF = filtered.reduce((s,r)=>s+r.countF, 0);
+      const totalJ = filtered.reduce((s,r)=>s+r.countJ, 0);
+      const totalAulas = filtered.reduce((s,r)=>s+parseInt(r.qtdAulas||1), 0);
+      
+      html += `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="background:rgba(14,165,233,.08);padding:8px 14px;border-radius:8px;font-size:.82rem;">
+          <i class="fas fa-calendar-days"></i> <b>${totalDias}</b> dia(s) registrado(s)
+        </div>
+        <div style="background:rgba(14,165,233,.08);padding:8px 14px;border-radius:8px;font-size:.82rem;">
+          <i class="fas fa-book"></i> <b>${totalAulas}</b> aula(s)
+        </div>
+        <div style="background:#dcfce7;padding:8px 14px;border-radius:8px;font-size:.82rem;color:#166534;">
+          <b>${totalP}</b> presenças
+        </div>
+        <div style="background:#fee2e2;padding:8px 14px;border-radius:8px;font-size:.82rem;color:#991b1b;">
+          <b>${totalF}</b> faltas
+        </div>
+        <div style="background:#fef9c3;padding:8px 14px;border-radius:8px;font-size:.82rem;color:#854d0e;">
+          <b>${totalJ}</b> justificadas
+        </div>
+      </div>`;
+      
+      html += `<div style="display:flex;flex-direction:column;gap:8px;">`;
+      filtered.forEach(r => {
+        const dObj = new Date(r.date + 'T12:00:00');
+        const dataFmt = dObj.toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+        const pctPresenca = r.total > 0 ? Math.round(((r.countP + r.countJ) / r.total) * 100) : 0;
+        const pctColor = pctPresenca >= 75 ? '#16a34a' : (pctPresenca >= 50 ? '#f59e0b' : '#dc2626');
+        
+        html += `<div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(14,165,233,.04);flex-wrap:wrap;gap:6px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-weight:700;font-size:.88rem;">${dataFmt}</span>
+              <span style="font-size:.72rem;color:var(--text-muted);">${r.bim}ºB</span>
+              ${r.disciplina ? `<span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:700;"><i class="fas fa-book"></i> ${escHTML(r.disciplina)}</span>` : ''}
+              <span style="font-size:.72rem;color:var(--text-muted);">${r.qtdAulas} aula(s)</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-size:.75rem;color:#166534;font-weight:600;">${r.countP}P</span>
+              <span style="font-size:.75rem;color:#991b1b;font-weight:600;">${r.countF}F</span>
+              <span style="font-size:.75rem;color:#854d0e;font-weight:600;">${r.countJ}J</span>
+              <span style="font-size:.75rem;color:${pctColor};font-weight:700;">${pctPresenca}%</span>
+            </div>
+          </div>`;
+        
+        if(r.registroAula){
+          html += `<div style="padding:8px 14px;font-size:.82rem;color:var(--text-main);border-top:1px solid var(--border-color);background:var(--card-bg);">
+            <span style="font-weight:600;color:var(--text-muted);font-size:.72rem;text-transform:uppercase;"><i class="fas fa-pen"></i> Registro:</span>
+            <span style="margin-left:6px;">${escHTML(r.registroAula)}</span>
+          </div>`;
+        }
+        
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+    
+    html += `<div style="text-align:center;margin-top:14px;">
+      <button onclick="document.getElementById('modalHistChamadas').remove();" style="padding:8px 20px;border:none;background:#475569;color:#fff;border-radius:8px;cursor:pointer;">Fechar</button>
+    </div></div>`;
+    
+    return html;
+  }
+  
+  window.__histChamadasRebuild = function(bimVal){
+    const ov = document.getElementById('modalHistChamadas');
+    if(!ov) return;
+    ov.innerHTML = buildContent(bimVal);
+    if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
+  };
+  
+  overlay.innerHTML = buildContent(filterBim);
+  document.body.appendChild(overlay);
+  if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
+}
 try{
   const __origSelTurmaFreq = selTurma;
   if(typeof __origSelTurmaFreq==='function'){
@@ -15801,7 +15988,7 @@ function getRegistrosAulaPorData(turma, bimestre){
     if(parts[0]===turma && parseInt(parts[1])===bimestre){
       const meta=(window.__sgpFrequencia[key]||{})._meta;
       if(meta && meta.registroAula){
-        result[parts[2]]={registro:meta.registroAula, qtdAulas:meta.qtdAulas||'1'};
+        result[parts[2]]={registro:meta.registroAula, qtdAulas:meta.qtdAulas||'1', disciplina:meta.disciplina||''};
       }
     }
   });
@@ -16135,7 +16322,8 @@ function universalSearch(query){
     const meta=(window.__sgpFrequencia[key]||{})._meta;
     if(meta && meta.registroAula && meta.registroAula.toLowerCase().includes(q)){
       const parts=key.split('|');
-      results.push({type:'chamada', label:meta.registroAula.substring(0,60), sub:`${parts[0]} — ${parts[2]}`, action:`abrirFrequencia()`});
+      const discTag = meta.disciplina ? `[${meta.disciplina}] ` : '';
+      results.push({type:'chamada', label:discTag+meta.registroAula.substring(0,60), sub:`${parts[0]} — ${parts[2]}`, action:`abrirFrequencia()`});
     }
   });
 
@@ -16682,7 +16870,7 @@ function abrirDiarioClasse(){
 
     html+=`<div class="diario-entry">
       <div class="diario-entry-header">
-        <span>${dataFmt}</span>
+        <span>${dataFmt}${meta.disciplina ? ' — <span style="background:#e0f2fe;color:#0369a1;padding:1px 8px;border-radius:6px;font-size:.75rem;font-weight:700;"><i class="fas fa-book"></i> '+escHTML(meta.disciplina)+'</span>' : ''}</span>
         <span style="font-size:.78rem;color:#64748b;">${meta.qtdAulas||1} aula(s) | ${countP}P ${countF}F ${countJ}J</span>
       </div>
       <div class="diario-entry-body">
@@ -19733,6 +19921,92 @@ function _rankGetPontos(alunoId){
 
 function _rankTotal(p){ return (p.notas||0) + (p.comportamento||0) + (p.participacao||0) + (p.bonus||0); }
 
+// --- Auto-sync: Calculate auto-points from frequency and grades ---
+function _rankCalcAutoFreq(alunoId, turma, bim){
+    // Count all P marks for this student in this turma/bimestre
+    const freq = window.__sgpFrequencia || {};
+    let count = 0;
+    Object.keys(freq).forEach(key => {
+        const parts = key.split('|');
+        if(parts[0] === turma && parseInt(parts[1]) === bim){
+            const reg = freq[key] || {};
+            if(reg[alunoId] === 'P') count++;
+        }
+    });
+    return count;
+}
+
+function _rankCalcAutoGrades(alunoId, turma, bim){
+    // Sum all grades from all disciplines for this student
+    try{
+        const aluno = alunos.find(a => String(a.id) === String(alunoId) && a.turma === turma);
+        if(!aluno || !aluno.bimestres || !aluno.bimestres[bim]) return 0;
+        const b = aluno.bimestres[bim];
+        _syncBimestreRefs(b);
+        
+        let totalPts = 0;
+        const discs = config.disciplinas || [];
+        discs.forEach(disc => {
+            const notas = (b.notas_disc && b.notas_disc[disc.id]) ? b.notas_disc[disc.id] : {};
+            (disc.avaliacoes || []).forEach(av => {
+                const nota = parseFloat(notas[av.id]);
+                if(nota > 0 && !isNaN(nota)){
+                    totalPts += Math.round(nota);
+                }
+            });
+        });
+        return totalPts;
+    }catch(_){ return 0; }
+}
+
+// --- Sync auto-points into ranking data ---
+function _rankSyncAuto(){
+    try{
+        const turma = filtroTurma || 'Todas';
+        if(turma === 'Todas') return;
+        const bim = bimestreAtual || 1;
+        const { data } = _rankGetTurma();
+        if(!data[turma]) data[turma] = {};
+        if(!data[turma][bim]) data[turma][bim] = {};
+        const pontos = data[turma][bim];
+        
+        const lista = alunos.filter(a => a.turma === turma);
+        lista.forEach(a => {
+            const id = String(a.id);
+            if(!pontos[id]) pontos[id] = { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
+            
+            // Calculate auto points
+            const autoFreq = _rankCalcAutoFreq(id, turma, bim);
+            const autoGrades = _rankCalcAutoGrades(id, turma, bim);
+            
+            // Store auto-tracked values
+            pontos[id]._autoParticipacao = autoFreq;
+            pontos[id]._autoNotas = autoGrades;
+        });
+        
+        _rankSave(data);
+    }catch(_){}
+}
+
+// Override _rankGetPontos to include auto-points
+const __origRankGetPontos = _rankGetPontos;
+function _rankGetPontosWithAuto(alunoId){
+    const { pontos } = _rankGetTurma();
+    const p = pontos[String(alunoId)];
+    if(!p) return { notas:0, comportamento:0, participacao:0, bonus:0, historico:[], _autoParticipacao:0, _autoNotas:0 };
+    return {
+        notas: (p.notas||0) + (p._autoNotas||0),
+        comportamento: p.comportamento||0,
+        participacao: (p.participacao||0) + (p._autoParticipacao||0),
+        bonus: p.bonus||0,
+        historico: p.historico||[],
+        _autoParticipacao: p._autoParticipacao||0,
+        _autoNotas: p._autoNotas||0,
+        _manualNotas: p.notas||0,
+        _manualParticipacao: p.participacao||0
+    };
+}
+
 function _rankAddPontos(alunoId, categoria, valor, motivo){
     const { data, turma, bim, pontos } = _rankGetTurma();
     if(!pontos[alunoId]) pontos[alunoId] = { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
@@ -19760,11 +20034,14 @@ function _rankInitials(nome){
 
 // --- Ranking calculado ---
 function _rankBuild(categoria){
+    // Sync auto-points from frequency and grades before building
+    try{ _rankSyncAuto(); }catch(_){}
+    
     const lista = getAlunosFiltrados();
     const cat = categoria || 'total';
     
     const ranked = lista.map((a, idx) => {
-        const p = _rankGetPontos(a.id);
+        const p = _rankGetPontosWithAuto(a.id);
         const total = cat === 'total' ? _rankTotal(p) : (p[cat]||0);
         return { aluno: a, pontos: p, total, idx };
     });
@@ -19890,9 +20167,9 @@ function _renderList(ranked){
                 <div class="rank-bar-label">${pct}%</div>
             </div>
             <div style="display:flex;gap:4px;flex-wrap:wrap;">
-                <span style="font-size:0.68rem;color:var(--text-muted);" title="Notas">📝${p.notas||0}</span>
+                <span style="font-size:0.68rem;color:var(--text-muted);" title="Notas${p._autoNotas ? ' ('+p._manualNotas+' manual + '+p._autoNotas+' auto)' : ''}">📝${p.notas||0}</span>
                 <span style="font-size:0.68rem;color:var(--text-muted);" title="Comportamento">⭐${p.comportamento||0}</span>
-                <span style="font-size:0.68rem;color:var(--text-muted);" title="Participação">🙋${p.participacao||0}</span>
+                <span style="font-size:0.68rem;color:var(--text-muted);" title="Participação${p._autoParticipacao ? ' ('+p._manualParticipacao+' manual + '+p._autoParticipacao+' presenças)' : ''}">🙋${p.participacao||0}</span>
                 <span style="font-size:0.68rem;color:var(--text-muted);" title="Bônus">🎁${p.bonus||0}</span>
             </div>
             <div class="rank-total">${item.total}</div>
@@ -20178,7 +20455,7 @@ try{
 try{
   ['sortearAluno','sortLimparHistorico','mapaChangeGrid','mapaToggleDisable','mapaToggleSwap',
    'mapaAutoDistribuir','mapaImprimir','mapaMesaClick','gerarGrupos','grupoModoChanged',
-   'grpCopiarTexto','grpImprimir'].forEach(n=>{
+   'grpCopiarTexto','grpImprimir','abrirHistoricoChamadas'].forEach(n=>{
     if(typeof __wrapSafeGlobal==='function'&&typeof window[n]==='function') __wrapSafeGlobal(n);
   });
 }catch(_){}
