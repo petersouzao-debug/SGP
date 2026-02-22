@@ -2069,6 +2069,236 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
 /* --- fim --- */
 
 /* ==========================
+   RANKING VIEW
+   ========================== */
+.ranking-container {
+    display:none; flex-direction:column; gap:0;
+    background:var(--card-bg); border-radius:16px;
+    border:1px solid var(--border-color);
+    overflow:hidden;
+    box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);
+    max-height:calc(100vh - 200px);
+}
+.ranking-header-bar {
+    padding:20px 24px 16px;
+    background:linear-gradient(135deg, var(--card-bg) 0%, var(--bg-body) 100%);
+    border-bottom:1px solid var(--border-color);
+    flex-shrink:0;
+    position:sticky; top:0; z-index:2;
+}
+.ranking-scroll-body {
+    flex:1; overflow-y:auto; overflow-x:hidden;
+    scroll-behavior:smooth;
+    -webkit-overflow-scrolling:touch;
+}
+/* Custom scrollbar */
+.ranking-scroll-body::-webkit-scrollbar { width:6px; }
+.ranking-scroll-body::-webkit-scrollbar-track { background:transparent; }
+.ranking-scroll-body::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:3px; }
+.ranking-scroll-body::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
+
+/* Ranking — rolagem na tela principal + tela cheia */
+body.ranking-view:not(.ranking-is-fullscreen) #viewRanking{
+  max-height:none;
+  overflow:visible;
+}
+body.ranking-view:not(.ranking-is-fullscreen) #viewRanking .ranking-scroll-body{
+  overflow:visible;
+  flex:0 0 auto;
+}
+body.ranking-is-fullscreen #viewRanking{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  max-height:none !important;
+  border-radius:0 !important;
+  margin:0 !important;
+  z-index:10050;
+}
+body.ranking-is-fullscreen #viewRanking .ranking-scroll-body{
+  overflow-y:auto;
+  flex:1;
+}
+body.ranking-is-fullscreen main{ overflow:hidden !important; }
+
+.ranking-title-row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+.ranking-title { font-size:1.4rem; font-weight:900; color:var(--text-main); display:flex; align-items:center; gap:10px; }
+.ranking-title i { color:#f59e0b; font-size:1.5rem; }
+.ranking-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.ranking-select { width:auto; min-width:150px; padding:8px 12px; font-weight:700; font-size:0.85rem; }
+.ranking-badges-row { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+.ranking-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; font-size:0.78rem; font-weight:700; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); }
+.ranking-badge i { font-size:0.7rem; }
+.ranking-badge.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+/* === PODIUM === */
+.ranking-podium-section { padding:30px 24px 20px; display:flex; justify-content:center; align-items:flex-end; gap:0; min-height:280px; flex-shrink:0; }
+.ranking-divider { height:1px; background:linear-gradient(90deg, transparent, var(--border-color), transparent); margin:0 24px; flex-shrink:0; position:relative; }
+.ranking-scroll-hint {
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:8px 0; color:var(--text-muted); font-size:0.78rem; font-weight:600;
+    flex-shrink:0; cursor:pointer; transition:color 0.2s;
+}
+.ranking-scroll-hint:hover { color:var(--primary); }
+.ranking-scroll-hint i { animation:scrollHintPulse 1.5s ease-in-out infinite; }
+@keyframes scrollHintPulse { 0%,100%{transform:translateY(0);opacity:0.5;} 50%{transform:translateY(4px);opacity:1;} }
+.ranking-scroll-hint.hidden { display:none; }
+.podium-slot { display:flex; flex-direction:column; align-items:center; position:relative; }
+.podium-avatar {
+    width:72px; height:72px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.6rem; font-weight:900; color:#fff;
+    position:relative; z-index:2;
+    box-shadow:0 8px 20px rgba(0,0,0,0.15);
+    margin-bottom:-12px;
+}
+.podium-slot[data-pos="1"] .podium-avatar { width:88px; height:88px; font-size:2rem; margin-bottom:-16px; }
+
+.podium-medal {
+    position:absolute; top:-8px; right:-4px; z-index:3;
+    width:28px; height:28px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.75rem; font-weight:900; color:#fff;
+    box-shadow:0 2px 8px rgba(0,0,0,0.2);
+}
+.podium-slot[data-pos="1"] .podium-medal { background:linear-gradient(135deg,#f59e0b,#d97706); width:32px; height:32px; font-size:0.85rem; }
+.podium-slot[data-pos="2"] .podium-medal { background:linear-gradient(135deg,#94a3b8,#64748b); }
+.podium-slot[data-pos="3"] .podium-medal { background:linear-gradient(135deg,#d97706,#a16207); }
+
+.podium-name { font-weight:800; font-size:0.9rem; color:var(--text-main); text-align:center; margin-top:0; max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.podium-slot[data-pos="1"] .podium-name { font-size:1.05rem; max-width:140px; }
+.podium-points { font-weight:900; font-size:1.1rem; color:var(--primary); }
+.podium-slot[data-pos="1"] .podium-points { font-size:1.3rem; color:#f59e0b; }
+
+.podium-base {
+    width:130px; border-radius:12px 12px 0 0;
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:flex-start; padding:20px 8px 12px;
+    gap:4px; position:relative;
+}
+.podium-slot[data-pos="1"] .podium-base { width:150px; height:160px; background:linear-gradient(180deg,#fef3c7 0%,#fde68a 100%); border:2px solid #f59e0b; border-bottom:none; z-index:1; }
+.podium-slot[data-pos="2"] .podium-base { width:130px; height:120px; background:linear-gradient(180deg,#f1f5f9 0%,#e2e8f0 100%); border:2px solid #94a3b8; border-bottom:none; }
+.podium-slot[data-pos="3"] .podium-base { width:130px; height:90px; background:linear-gradient(180deg,#fef3c7 0%,#fed7aa 100%); border:2px solid #d97706; border-bottom:none; }
+
+body.dark-mode .podium-slot[data-pos="1"] .podium-base { background:linear-gradient(180deg,#422006 0%,#713f12 100%); border-color:#b45309; }
+body.dark-mode .podium-slot[data-pos="2"] .podium-base { background:linear-gradient(180deg,#1e293b 0%,#334155 100%); border-color:#475569; }
+body.dark-mode .podium-slot[data-pos="3"] .podium-base { background:linear-gradient(180deg,#451a03 0%,#7c2d12 100%); border-color:#9a3412; }
+
+.podium-crown {
+    position:absolute; top:-36px; left:50%; transform:translateX(-50%);
+    font-size:1.8rem; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    animation:crownBounce 2s ease-in-out infinite;
+}
+@keyframes crownBounce { 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(-6px);} }
+
+.podium-empty { opacity:0.3; }
+.podium-empty .podium-avatar { background:#cbd5e1 !important; }
+.podium-empty .podium-name { color:var(--text-muted); }
+
+/* === RANKING LIST === */
+.ranking-list-section { padding:0 24px 24px; }
+.ranking-list-header { display:grid; grid-template-columns:50px 1fr 100px 120px 60px; gap:12px; padding:10px 16px; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); border-bottom:2px solid var(--border-color); }
+
+.rank-row {
+    display:grid; grid-template-columns:50px 1fr 100px 120px 60px; gap:12px; align-items:center;
+    padding:12px 16px; border-bottom:1px solid var(--border-color);
+    transition:background 0.15s ease; border-radius:8px; margin:2px 0;
+}
+.rank-row:hover { background:rgba(37,99,235,0.04); }
+body.dark-mode .rank-row:hover { background:rgba(96,165,250,0.08); }
+
+.rank-pos { font-weight:900; font-size:1.1rem; color:var(--text-main); text-align:center; min-width:32px; }
+.rank-pos-badge { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; font-size:0.85rem; font-weight:900; }
+.rank-pos-badge.gold { background:linear-gradient(135deg,#fef3c7,#fde68a); color:#92400e; border:2px solid #f59e0b; }
+.rank-pos-badge.silver { background:linear-gradient(135deg,#f1f5f9,#e2e8f0); color:#475569; border:2px solid #94a3b8; }
+.rank-pos-badge.bronze { background:linear-gradient(135deg,#fed7aa,#fde68a); color:#7c2d12; border:2px solid #d97706; }
+
+.rank-student { display:flex; align-items:center; gap:10px; min-width:0; }
+.rank-student-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.85rem; font-weight:800; color:#fff; flex-shrink:0; }
+.rank-student-info { min-width:0; }
+.rank-student-name { font-weight:700; font-size:0.95rem; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rank-student-turma { font-size:0.72rem; color:var(--text-muted); }
+
+.rank-bar-wrap { position:relative; height:24px; background:var(--bg-body); border-radius:12px; overflow:hidden; border:1px solid var(--border-color); }
+.rank-bar { height:100%; border-radius:12px; transition:width 0.6s cubic-bezier(0.16,1,0.3,1); min-width:4px; }
+.rank-bar-label { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:0.7rem; font-weight:700; color:var(--text-main); }
+
+.rank-total { font-weight:900; font-size:1.1rem; color:var(--text-main); text-align:center; }
+
+.rank-add-btn {
+    border:none; background:var(--primary); color:#fff; width:28px; height:28px;
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:0.75rem; transition:transform 0.12s ease, box-shadow 0.2s ease;
+    box-shadow:0 2px 6px rgba(37,99,235,0.3);
+}
+.rank-add-btn:hover { transform:scale(1.15); box-shadow:0 4px 12px rgba(37,99,235,0.4); }
+
+/* Modal pontos */
+.rank-modal-body { display:flex; flex-direction:column; gap:12px; }
+.rank-label { font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:2px; }
+.rank-pts-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.rank-pts-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.rank-quick-btn {
+    border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main);
+    padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:800; font-size:0.85rem;
+    transition:all 0.12s ease;
+}
+.rank-quick-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+.rank-quick-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+/* Confetti burst */
+.confetti-burst { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:99999; }
+.confetti-piece {
+    position:absolute; width:10px; height:10px; opacity:0;
+    animation:confettiFall 1.5s ease-out forwards;
+}
+@keyframes confettiFall {
+    0% { opacity:1; transform:translateY(0) rotate(0deg) scale(1); }
+    100% { opacity:0; transform:translateY(100vh) rotate(720deg) scale(0.3); }
+}
+
+/* Empty ranking state */
+.ranking-empty {
+    text-align:center; padding:60px 20px; color:var(--text-muted);
+}
+.ranking-empty i { font-size:3.5rem; margin-bottom:16px; display:block; opacity:0.3; }
+.ranking-empty p { font-size:1rem; margin:4px 0; }
+
+/* Streak badge */
+.rank-streak { display:inline-flex; align-items:center; gap:3px; font-size:0.68rem; font-weight:700; padding:2px 6px; border-radius:4px; background:#fef3c7; color:#92400e; }
+body.dark-mode .rank-streak { background:#422006; color:#fde68a; }
+
+/* Responsive ranking */
+@media(max-width:768px){
+    .ranking-container { max-height:calc(100vh - 160px); border-radius:12px; }
+    .ranking-header-bar { padding:14px 16px 12px; }
+    .ranking-podium-section { gap:0; padding:20px 12px 16px; min-height:220px; }
+    .podium-base { width:100px !important; }
+    .podium-slot[data-pos="1"] .podium-base { width:110px !important; height:130px !important; }
+    .podium-slot[data-pos="2"] .podium-base { height:100px !important; }
+    .podium-slot[data-pos="3"] .podium-base { height:75px !important; }
+    .podium-avatar { width:56px !important; height:56px !important; font-size:1.2rem !important; }
+    .podium-slot[data-pos="1"] .podium-avatar { width:68px !important; height:68px !important; }
+    .podium-name { font-size:0.78rem !important; max-width:95px !important; }
+    .podium-points { font-size:0.9rem !important; }
+    .ranking-list-header, .rank-row { grid-template-columns:40px 1fr 80px 50px; }
+    .ranking-list-header > :nth-child(4), .rank-row > :nth-child(4) { display:none; }
+    .ranking-title { font-size:1.1rem; }
+    .rank-pts-grid { grid-template-columns:1fr; }
+    .ranking-scroll-body::-webkit-scrollbar { width:4px; }
+}
+@media(max-width:480px){
+    .ranking-container { max-height:calc(100vh - 140px); }
+    .ranking-podium-section { min-height:180px; padding:16px 8px 12px; }
+    .ranking-list-header, .rank-row { grid-template-columns:32px 1fr 50px; }
+    .ranking-list-header > :nth-child(3), .rank-row > :nth-child(3) { display:none; }
+    .ranking-list-header > :nth-child(4), .rank-row > :nth-child(4) { display:none; }
+    .podium-base { width:85px !important; }
+    .podium-slot[data-pos="1"] .podium-base { width:95px !important; }
+}
+
+/* ==========================
    PLANNER (v1) — Modal
    ========================== */
 .planner-headbar{
@@ -3568,12 +3798,17 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                     </div>
                 </div>
                 
-                <!-- Grupo: Mapa -->
+                <!-- Grupo: Mapa & Ranking -->
                 <div class="control-group">
                     <span class="control-label"><i class="fas fa-map"></i> Layout</span>
-                    <button id="btnViewMapa" class="btn-view" data-onclick="mudarVisao('mapa')" title="Mapa de Sala">
-                        <i class="fas fa-border-all"></i>
-                    </button>
+                    <div class="view-toggle">
+                        <button id="btnViewMapa" class="btn-view" data-onclick="mudarVisao('mapa')" title="Mapa de Sala">
+                            <i class="fas fa-border-all"></i>
+                        </button>
+                        <button id="btnViewRanking" class="btn-view" data-onclick="mudarVisao('ranking')" title="Ranking da Sala">
+                            <i class="fas fa-trophy"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Grupo: Ferramentas -->
@@ -3855,6 +4090,79 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                 <div id="mapaSwapMsg" style="display:none;padding:4px 10px;background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;font-size:.78rem;text-align:center;color:#92400e;">🔄 Modo troca: clique em 2 alunos para trocar de lugar. Clique ↻ para sair.</div>
                 <div class="lousa">LOUSA</div>
                 <div id="salaGrid" class="sala-grid"></div>
+            </div>
+        </div>
+
+        <!-- ===== RANKING VIEW ===== -->
+        <div id="viewRanking" class="ranking-container" style="display:none;">
+            <div class="ranking-header-bar">
+                <div class="ranking-title-row">
+                    <div class="ranking-title"><i class="fas fa-trophy"></i> Ranking da Sala</div>
+                    <div class="ranking-controls">
+                        <select id="rankCategoria" class="inp ranking-select" data-onchange="renderizarRanking()">
+                            <option value="total">Pontuação Total</option>
+                            <option value="notas">Notas</option>
+                            <option value="comportamento">Comportamento</option>
+                            <option value="participacao">Participação</option>
+                            <option value="bonus">Bônus</option>
+                        </select>
+                        <button class="btn-tool" data-onclick="rankAddPontosModal()" title="Adicionar pontos"><i class="fas fa-plus-circle"></i></button>
+                        <button class="btn-tool" data-onclick="rankExportarPDF()" title="Exportar ranking"><i class="fas fa-file-export"></i></button>
+                        <button class="btn-tool" data-onclick="rankResetar()" title="Resetar pontos"><i class="fas fa-rotate-left"></i></button>
+                        <button id="btnRankFullscreen" class="btn-tool" data-onclick="rankToggleFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i></button>
+                    </div>
+                </div>
+                <div class="ranking-badges-row" id="rankBadgesRow"></div>
+            </div>
+            <div class="ranking-scroll-body" id="rankScrollBody">
+                <div class="ranking-podium-section" id="rankPodium"></div>
+                <div class="ranking-scroll-hint" id="rankScrollHint" onclick="document.getElementById('rankList').scrollIntoView({behavior:'smooth'})">
+                    <i class="fas fa-chevron-down"></i> Ver ranking completo <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="ranking-divider"></div>
+                <div class="ranking-list-section" id="rankList"></div>
+            </div>
+        </div>
+
+        <!-- Modal: Adicionar Pontos -->
+        <div id="modalRankPontos" class="modal-overlay" style="display:none;">
+            <div class="modal-box" style="max-width:520px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h3 style="margin:0;color:var(--text-main);font-size:1.2rem;"><i class="fas fa-star" style="color:var(--warning);"></i> Adicionar Pontos</h3>
+                    <button data-onclick="fecharModalRankPontos()" style="border:none;background:transparent;font-size:1.3rem;cursor:pointer;color:var(--text-muted);">✕</button>
+                </div>
+                <div class="rank-modal-body">
+                    <label class="rank-label">Aluno(s)</label>
+                    <select id="rankPontosAluno" class="inp" multiple style="min-height:120px;">
+                    </select>
+                    <div class="rank-pts-grid">
+                        <div>
+                            <label class="rank-label">Categoria</label>
+                            <select id="rankPontosCategoria" class="inp">
+                                <option value="notas">Notas</option>
+                                <option value="comportamento">Comportamento</option>
+                                <option value="participacao">Participação</option>
+                                <option value="bonus">Bônus</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="rank-label">Pontos</label>
+                            <div class="rank-pts-row">
+                                <button class="rank-quick-btn" data-onclick="rankSetPontos(1)">+1</button>
+                                <button class="rank-quick-btn" data-onclick="rankSetPontos(2)">+2</button>
+                                <button class="rank-quick-btn" data-onclick="rankSetPontos(5)">+5</button>
+                                <button class="rank-quick-btn" data-onclick="rankSetPontos(10)">+10</button>
+                                <input type="number" id="rankPontosValor" class="inp" min="-50" max="100" value="1" style="width:60px;text-align:center;">
+                            </div>
+                        </div>
+                    </div>
+                    <label class="rank-label">Motivo (opcional)</label>
+                    <input type="text" id="rankPontosMotivo" class="inp" placeholder="Ex: Excelente apresentação...">
+                </div>
+                <div style="display:flex;gap:10px;margin-top:16px;">
+                    <button class="btn-primary" data-onclick="rankConfirmarPontos()" style="flex:1;"><i class="fas fa-check"></i> Confirmar</button>
+                    <button class="btn-tool" data-onclick="fecharModalRankPontos()" style="flex:0;">Cancelar</button>
+                </div>
             </div>
         </div>
     </main>
@@ -6695,9 +7003,13 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
         function mudarBimestre(n){bimestreAtual=n; document.querySelectorAll('.btn-bim').forEach(b=>b.classList.remove('active')); document.getElementById('btnBim'+n).classList.add('active'); renderizarVisao();}
         function mudarVisao(t){
             visaoAtual=t; 
-            ['btnViewCards','btnViewLista','btnViewMassa','btnViewEntregas','btnViewAulas','btnViewDash','btnViewMapa','btnViewCalendar','btnViewAnual'].forEach(id=>document.getElementById(id).classList.remove('active')); 
-            ['gridAlunos','tabelaFechamento','viewMassa','tabelaEntregas','viewAulas','viewDashboard','viewMapa','viewCalendar','viewAnual'].forEach(id=>document.getElementById(id).style.display='none'); 
-            document.getElementById('btnView'+(t.charAt(0).toUpperCase()+t.slice(1))).classList.add('active'); 
+            document.body.classList.remove('ranking-view');
+            if(t!=='ranking') document.body.classList.remove('ranking-is-fullscreen');
+
+            ['btnViewCards','btnViewLista','btnViewMassa','btnViewEntregas','btnViewAulas','btnViewDash','btnViewMapa','btnViewCalendar','btnViewAnual','btnViewRanking'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('active');}); 
+            ['gridAlunos','tabelaFechamento','viewMassa','tabelaEntregas','viewAulas','viewDashboard','viewMapa','viewCalendar','viewAnual','viewRanking'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';}); 
+            const btnEl=document.getElementById('btnView'+(t.charAt(0).toUpperCase()+t.slice(1)));
+            if(btnEl) btnEl.classList.add('active'); 
             
             if(t==='cards')document.getElementById('gridAlunos').style.display='grid';
             else if(t==='lista')document.getElementById('tabelaFechamento').style.display='table';
@@ -6708,6 +7020,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             else if(t==='calendar'){document.getElementById('viewCalendar').style.display='flex'; renderizarCalendario();}
             else if(t==='dash')document.getElementById('viewDashboard').style.display='grid';
             else if(t==='mapa'){document.getElementById('viewMapa').style.display='flex'; carregarSelectLayouts(); mapaUpdateFullscreenUI();}
+            else if(t==='ranking'){document.getElementById('viewRanking').style.display='flex'; document.body.classList.add('ranking-view'); if(typeof rankUpdateFullscreenUI==='function') rankUpdateFullscreenUI();}
             renderizarVisaoContent();
         }
         function renderizarVisaoContent(){ 
@@ -6718,7 +7031,8 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             else if(visaoAtual==='anual')renderizarTabelaAnual();
             else if(visaoAtual==='aulas')renderizarAulas(); 
             else if(visaoAtual==='dash')renderizarDashboard(); 
-            else if(visaoAtual==='mapa')renderizarMapa(); 
+            else if(visaoAtual==='mapa')renderizarMapa();
+            else if(visaoAtual==='ranking')renderizarRanking();
         }
 
         // --- MENU TURMAS: render robusto + clique confiável (event delegation) ---
@@ -19268,6 +19582,505 @@ function grpImprimir(){
   w.document.close();
   setTimeout(()=>w.print(),300);
 }
+
+// ================================================================
+// RANKING SYSTEM — Gamificação por Sala
+// ================================================================
+(function(){
+
+// --- Persistência ---
+const RANK_KEY = 'sgp_ranking_v1';
+function _rankLoad(){
+    try{ return JSON.parse(localStorage.getItem(RANK_KEY)) || {}; }catch(_){ return {}; }
+}
+function _rankSave(data){
+    try{ localStorage.setItem(RANK_KEY, JSON.stringify(data)); }catch(_){}
+}
+
+// Estrutura: { [turma]: { [bimestre]: { [alunoId]: { notas:N, comportamento:N, participacao:N, bonus:N, historico:[...] } } } }
+function _rankGetTurma(){
+    const data = _rankLoad();
+    const turma = filtroTurma || 'Todas';
+    const bim = bimestreAtual || 1;
+    if(!data[turma]) data[turma] = {};
+    if(!data[turma][bim]) data[turma][bim] = {};
+    return { data, turma, bim, pontos: data[turma][bim] };
+}
+
+function _rankGetPontos(alunoId){
+    const { pontos } = _rankGetTurma();
+    const p = pontos[alunoId];
+    if(!p) return { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
+    return { notas:p.notas||0, comportamento:p.comportamento||0, participacao:p.participacao||0, bonus:p.bonus||0, historico:p.historico||[] };
+}
+
+function _rankTotal(p){ return (p.notas||0) + (p.comportamento||0) + (p.participacao||0) + (p.bonus||0); }
+
+function _rankAddPontos(alunoId, categoria, valor, motivo){
+    const { data, turma, bim, pontos } = _rankGetTurma();
+    if(!pontos[alunoId]) pontos[alunoId] = { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
+    pontos[alunoId][categoria] = (pontos[alunoId][categoria]||0) + valor;
+    pontos[alunoId].historico.push({
+        cat: categoria,
+        val: valor,
+        motivo: motivo || '',
+        data: new Date().toLocaleDateString('pt-BR'),
+        ts: Date.now()
+    });
+    // Keep last 100 entries per student
+    if(pontos[alunoId].historico.length > 100) pontos[alunoId].historico = pontos[alunoId].historico.slice(-100);
+    _rankSave(data);
+}
+
+// --- Cores consistentes por aluno ---
+const RANK_AVATAR_COLORS = ['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#f97316','#6366f1','#14b8a6','#e11d48','#84cc16','#0ea5e9','#d946ef','#22c55e','#eab308'];
+function _rankAvatarColor(idx){ return RANK_AVATAR_COLORS[idx % RANK_AVATAR_COLORS.length]; }
+function _rankInitials(nome){ 
+    const parts = (nome||'').trim().split(/\s+/);
+    if(parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+    return (nome||'?')[0].toUpperCase();
+}
+
+// --- Ranking calculado ---
+function _rankBuild(categoria){
+    const lista = getAlunosFiltrados();
+    const cat = categoria || 'total';
+    
+    const ranked = lista.map((a, idx) => {
+        const p = _rankGetPontos(a.id);
+        const total = cat === 'total' ? _rankTotal(p) : (p[cat]||0);
+        return { aluno: a, pontos: p, total, idx };
+    });
+    
+    ranked.sort((a,b) => b.total - a.total || a.aluno.nome.localeCompare(b.aluno.nome));
+    return ranked;
+}
+
+// --- Confetti ---
+function _rankConfetti(){
+    const container = document.createElement('div');
+    container.className = 'confetti-burst';
+    document.body.appendChild(container);
+    const colors = ['#f59e0b','#ef4444','#3b82f6','#10b981','#8b5cf6','#ec4899','#06b6d4','#22c55e'];
+    for(let i=0; i<60; i++){
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random()*100 + '%';
+        piece.style.top = '-10px';
+        piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+        piece.style.borderRadius = Math.random()>0.5 ? '50%' : '2px';
+        piece.style.width = (6 + Math.random()*8) + 'px';
+        piece.style.height = (6 + Math.random()*8) + 'px';
+        piece.style.animationDelay = (Math.random()*0.5) + 's';
+        piece.style.animationDuration = (1 + Math.random()*1.5) + 's';
+        container.appendChild(piece);
+    }
+    setTimeout(()=>container.remove(), 3000);
+}
+
+// --- Renderizar Podium ---
+function _renderPodium(ranked){
+    const podium = document.getElementById('rankPodium');
+    if(!podium) return;
+    
+    const slots = [
+        ranked[1] || null, // 2nd place (left)
+        ranked[0] || null, // 1st place (center)
+        ranked[2] || null  // 3rd place (right)
+    ];
+    const positions = [2, 1, 3];
+    
+    let html = '';
+    slots.forEach((item, i) => {
+        const pos = positions[i];
+        if(!item || item.total <= 0){
+            html += `<div class="podium-slot podium-empty" data-pos="${pos}">
+                <div class="podium-avatar" style="background:#cbd5e1;">?</div>
+                <div class="podium-base">
+                    <div class="podium-name">—</div>
+                    <div class="podium-points">0 pts</div>
+                </div>
+            </div>`;
+            return;
+        }
+        const a = item.aluno;
+        const color = _rankAvatarColor(item.idx);
+        const initials = _rankInitials(a.nome);
+        const crown = pos === 1 ? '<div class="podium-crown">👑</div>' : '';
+        const medalLabel = pos === 1 ? '🥇' : (pos === 2 ? '🥈' : '🥉');
+        
+        html += `<div class="podium-slot" data-pos="${pos}">
+            ${crown}
+            <div class="podium-avatar" style="background:${color};">
+                ${initials}
+                <div class="podium-medal">${medalLabel}</div>
+            </div>
+            <div class="podium-base">
+                <div class="podium-name" title="${_escHTML(a.nome)}">${_escHTML(a.nome.split(' ')[0])}</div>
+                <div class="podium-points">${item.total} pts</div>
+            </div>
+        </div>`;
+    });
+    
+    podium.innerHTML = html;
+}
+
+// --- Renderizar Lista ---
+function _renderList(ranked){
+    const list = document.getElementById('rankList');
+    if(!list) return;
+    
+    if(ranked.length === 0){
+        list.innerHTML = `<div class="ranking-empty"><i class="fas fa-trophy"></i><p><b>Nenhum aluno encontrado</b></p><p>Selecione uma turma e comece a adicionar pontos!</p></div>`;
+        return;
+    }
+    
+    const maxPts = ranked[0] ? ranked[0].total : 1;
+    const remaining = ranked.slice(3); // Skip podium students
+    
+    let html = `<div class="ranking-list-header">
+        <span>#</span><span>Aluno</span><span>Progresso</span><span>Detalhes</span><span>Pts</span>
+    </div>`;
+    
+    remaining.forEach((item, i) => {
+        const pos = i + 4;
+        const a = item.aluno;
+        const p = item.pontos;
+        const color = _rankAvatarColor(item.idx);
+        const initials = _rankInitials(a.nome);
+        const pct = maxPts > 0 ? Math.round((item.total / maxPts)*100) : 0;
+        const streak = _rankGetStreak(p);
+        const streakHtml = streak >= 3 ? `<span class="rank-streak"><i class="fas fa-fire"></i> ${streak}x</span>` : '';
+        
+        html += `<div class="rank-row">
+            <div class="rank-pos">${pos}º</div>
+            <div class="rank-student">
+                <div class="rank-student-avatar" style="background:${color};">${initials}</div>
+                <div class="rank-student-info">
+                    <div class="rank-student-name" title="${_escHTML(a.nome)}">${_escHTML(a.nome)}</div>
+                    <div class="rank-student-turma">${_escHTML(a.turma)} ${streakHtml}</div>
+                </div>
+            </div>
+            <div class="rank-bar-wrap">
+                <div class="rank-bar" style="width:${pct}%;background:${color};opacity:0.7;"></div>
+                <div class="rank-bar-label">${pct}%</div>
+            </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <span style="font-size:0.68rem;color:var(--text-muted);" title="Notas">📝${p.notas||0}</span>
+                <span style="font-size:0.68rem;color:var(--text-muted);" title="Comportamento">⭐${p.comportamento||0}</span>
+                <span style="font-size:0.68rem;color:var(--text-muted);" title="Participação">🙋${p.participacao||0}</span>
+                <span style="font-size:0.68rem;color:var(--text-muted);" title="Bônus">🎁${p.bonus||0}</span>
+            </div>
+            <div class="rank-total">${item.total}</div>
+        </div>`;
+    });
+    
+    // Also show top 3 in list format for completeness
+    if(ranked.length > 0 && ranked.length <= 3){
+        // Show all in list if 3 or fewer
+        ranked.forEach((item, i) => {
+            if(item.total <= 0) return;
+            const pos = i + 1;
+            const a = item.aluno;
+            const p = item.pontos;
+            const color = _rankAvatarColor(item.idx);
+            const initials = _rankInitials(a.nome);
+            const pct = maxPts > 0 ? Math.round((item.total / maxPts)*100) : 0;
+            const posCls = pos===1?'gold':(pos===2?'silver':'bronze');
+            
+            html += `<div class="rank-row">
+                <div class="rank-pos"><span class="rank-pos-badge ${posCls}">${pos}</span></div>
+                <div class="rank-student">
+                    <div class="rank-student-avatar" style="background:${color};">${initials}</div>
+                    <div class="rank-student-info">
+                        <div class="rank-student-name">${_escHTML(a.nome)}</div>
+                        <div class="rank-student-turma">${_escHTML(a.turma)}</div>
+                    </div>
+                </div>
+                <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%;background:${color};opacity:0.7;"></div><div class="rank-bar-label">${pct}%</div></div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <span style="font-size:0.68rem;color:var(--text-muted);">📝${p.notas||0}</span>
+                    <span style="font-size:0.68rem;color:var(--text-muted);">⭐${p.comportamento||0}</span>
+                    <span style="font-size:0.68rem;color:var(--text-muted);">🙋${p.participacao||0}</span>
+                    <span style="font-size:0.68rem;color:var(--text-muted);">🎁${p.bonus||0}</span>
+                </div>
+                <div class="rank-total">${item.total}</div>
+            </div>`;
+        });
+    }
+    
+    list.innerHTML = html;
+}
+
+// --- Streak calculation ---
+function _rankGetStreak(p){
+    if(!p.historico || p.historico.length < 2) return 0;
+    const sorted = [...p.historico].sort((a,b)=>(b.ts||0)-(a.ts||0));
+    let streak = 0;
+    const seen = new Set();
+    for(const h of sorted){
+        if(h.val > 0 && !seen.has(h.data)){
+            streak++;
+            seen.add(h.data);
+        } else if(h.val <= 0) break;
+    }
+    return streak;
+}
+
+// --- Badges summary ---
+function _renderBadges(ranked){
+    const row = document.getElementById('rankBadgesRow');
+    if(!row) return;
+    const lista = getAlunosFiltrados();
+    const total = ranked.reduce((s,r)=>s+r.total, 0);
+    const avg = lista.length > 0 ? Math.round(total/lista.length) : 0;
+    const withPts = ranked.filter(r=>r.total>0).length;
+    
+    row.innerHTML = `
+        <span class="ranking-badge"><i class="fas fa-users"></i> ${lista.length} alunos</span>
+        <span class="ranking-badge"><i class="fas fa-star"></i> ${total} pts total</span>
+        <span class="ranking-badge"><i class="fas fa-chart-line"></i> Média: ${avg} pts</span>
+        <span class="ranking-badge"><i class="fas fa-medal"></i> ${withPts} com pontos</span>
+    `;
+}
+
+// --- Main render ---
+window.renderizarRanking = function(){
+    const cat = document.getElementById('rankCategoria')?.value || 'total';
+    const ranked = _rankBuild(cat);
+    _renderPodium(ranked);
+    _renderList(ranked);
+    _renderBadges(ranked);
+    _setupScrollHint();
+};
+
+// --- Scroll hint: hide when user scrolls past podium ---
+function _setupScrollHint(){
+    const body = document.getElementById('rankScrollBody');
+    const hint = document.getElementById('rankScrollHint');
+    if(!body || !hint) return;
+    // Se estiver usando a rolagem da tela principal (não fullscreen), o hint não faz sentido
+    if(document.body && document.body.classList && document.body.classList.contains('ranking-view') && !document.body.classList.contains('ranking-is-fullscreen') && !document.fullscreenElement){
+        hint.classList.add('hidden');
+        body.onscroll = null;
+        return;
+    }
+
+    // Show hint only if content overflows
+    if(body.scrollHeight <= body.clientHeight + 20){
+        hint.classList.add('hidden');
+    } else {
+        hint.classList.remove('hidden');
+    }
+    // Hide on scroll
+    body.onscroll = function(){
+        if(body.scrollTop > 40) hint.classList.add('hidden');
+        else hint.classList.remove('hidden');
+    };
+}
+
+// --- Modal: Adicionar Pontos ---
+window.rankAddPontosModal = function(){
+    const modal = document.getElementById('modalRankPontos');
+    const select = document.getElementById('rankPontosAluno');
+    if(!modal || !select) return;
+    
+    const lista = getAlunosFiltrados().sort((a,b)=>a.nome.localeCompare(b.nome));
+    select.innerHTML = lista.map(a => `<option value="${a.id}">${_escHTML(a.nome)}</option>`).join('');
+    
+    document.getElementById('rankPontosValor').value = 1;
+    document.getElementById('rankPontosMotivo').value = '';
+    document.getElementById('rankPontosCategoria').value = 'participacao';
+    
+    // Clear quick btn active states
+    document.querySelectorAll('.rank-quick-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelector('.rank-quick-btn')?.classList.add('active');
+    
+    modal.style.display = 'flex';
+};
+
+window.fecharModalRankPontos = function(){
+    const modal = document.getElementById('modalRankPontos');
+    if(modal) modal.style.display = 'none';
+};
+
+window.rankSetPontos = function(val){
+    document.getElementById('rankPontosValor').value = val;
+    document.querySelectorAll('.rank-quick-btn').forEach(b=>{
+        b.classList.toggle('active', b.textContent.trim() === '+'+val);
+    });
+};
+
+window.rankConfirmarPontos = function(){
+    const select = document.getElementById('rankPontosAluno');
+    const cat = document.getElementById('rankPontosCategoria').value;
+    const val = parseFloat(document.getElementById('rankPontosValor').value) || 0;
+    const motivo = document.getElementById('rankPontosMotivo').value.trim();
+    
+    if(val === 0){ showToast('Valor não pode ser zero', 'error'); return; }
+    
+    const selectedIds = Array.from(select.selectedOptions).map(o => parseFloat(o.value) || o.value);
+    if(selectedIds.length === 0){ showToast('Selecione ao menos um aluno', 'error'); return; }
+    
+    // Check previous #1 to detect change
+    const oldRanked = _rankBuild('total');
+    const oldFirst = oldRanked[0]?.aluno?.id;
+    
+    selectedIds.forEach(id => _rankAddPontos(id, cat, val, motivo));
+    
+    const catNames = { notas:'Notas', comportamento:'Comportamento', participacao:'Participação', bonus:'Bônus' };
+    const sign = val > 0 ? '+' : '';
+    showToast(`${sign}${val} pts (${catNames[cat]}) → ${selectedIds.length} aluno(s)`);
+    
+    // Check if #1 changed
+    const newRanked = _rankBuild('total');
+    const newFirst = newRanked[0]?.aluno?.id;
+    if(newFirst && newFirst !== oldFirst && newRanked[0]?.total > 0){
+        setTimeout(_rankConfetti, 300);
+    }
+    
+    fecharModalRankPontos();
+    renderizarRanking();
+};
+
+// --- Exportar ranking ---
+window.rankExportarPDF = function(){
+    const cat = document.getElementById('rankCategoria')?.value || 'total';
+    const ranked = _rankBuild(cat);
+    if(ranked.length===0){ showToast('Nenhum dado','error'); return; }
+    
+    const w = window.open('','_blank');
+    const turma = filtroTurma || 'Todas';
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ranking - ${_escHTML(turma)}</title>
+    <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;}
+    body{padding:30px;color:#1e293b;}
+    h1{text-align:center;margin-bottom:8px;font-size:1.8rem;}
+    .sub{text-align:center;color:#64748b;margin-bottom:24px;font-size:.9rem;}
+    .podium{display:flex;justify-content:center;align-items:flex-end;gap:0;margin:24px 0;}
+    .pod{text-align:center;padding:16px 24px 12px;border-radius:12px 12px 0 0;}
+    .pod.g{background:#fef3c7;border:2px solid #f59e0b;height:160px;width:150px;}
+    .pod.s{background:#f1f5f9;border:2px solid #94a3b8;height:120px;width:130px;}
+    .pod.b{background:#fed7aa;border:2px solid #d97706;height:90px;width:130px;}
+    .pod .medal{font-size:2rem;}
+    .pod .name{font-weight:800;font-size:1rem;margin-top:6px;}
+    .pod .pts{font-weight:900;font-size:1.2rem;color:#2563eb;}
+    table{width:100%;border-collapse:collapse;margin-top:20px;}
+    th{background:#f1f5f9;padding:10px;text-align:left;font-size:.8rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;}
+    td{padding:10px;border-bottom:1px solid #f1f5f9;}
+    tr:nth-child(even){background:#f8fafc;}
+    .pos{font-weight:900;text-align:center;width:40px;}
+    .total{font-weight:900;color:#2563eb;text-align:center;}
+    @media print{body{padding:15px;} .pod{height:auto!important;padding:12px!important;}}
+    </style></head><body>`);
+    
+    w.document.write(`<h1>🏆 Ranking da Sala</h1><div class="sub">${_escHTML(turma)} — Bimestre ${bimestreAtual} — ${new Date().toLocaleDateString('pt-BR')}</div>`);
+    
+    // Podium
+    const top3 = ranked.slice(0,3);
+    if(top3.length >= 1){
+        const slots = [top3[1]||null, top3[0], top3[2]||null];
+        const medals = ['🥈','🥇','🥉'];
+        const cls = ['s','g','b'];
+        w.document.write('<div class="podium">');
+        slots.forEach((s,i) => {
+            if(!s || s.total<=0){ w.document.write(`<div class="pod ${cls[i]}" style="opacity:0.3"><div class="medal">${medals[i]}</div><div class="name">—</div><div class="pts">0</div></div>`); return; }
+            w.document.write(`<div class="pod ${cls[i]}"><div class="medal">${medals[i]}</div><div class="name">${_escHTML(s.aluno.nome.split(' ')[0])}</div><div class="pts">${s.total} pts</div></div>`);
+        });
+        w.document.write('</div>');
+    }
+    
+    // Table
+    w.document.write('<table><thead><tr><th class="pos">#</th><th>Aluno</th><th>Notas</th><th>Comp.</th><th>Part.</th><th>Bônus</th><th class="total">Total</th></tr></thead><tbody>');
+    ranked.forEach((item,i)=>{
+        const p = item.pontos;
+        w.document.write(`<tr><td class="pos">${i+1}º</td><td>${_escHTML(item.aluno.nome)}</td><td>${p.notas||0}</td><td>${p.comportamento||0}</td><td>${p.participacao||0}</td><td>${p.bonus||0}</td><td class="total">${item.total}</td></tr>`);
+    });
+    w.document.write('</tbody></table></body></html>');
+    w.document.close();
+    setTimeout(()=>w.print(),400);
+};
+
+// --- Resetar pontos ---
+window.rankResetar = function(){
+    if(!confirm('Tem certeza que deseja resetar todos os pontos desta turma neste bimestre?\n\nEsta ação não pode ser desfeita.')) return;
+    const { data, turma, bim } = _rankGetTurma();
+    data[turma][bim] = {};
+    _rankSave(data);
+    showToast('Pontos resetados');
+    renderizarRanking();
+};
+
+// --- Quick add from cards (bonus integration) ---
+window.rankQuickAdd = function(alunoId, val, cat){
+    _rankAddPontos(alunoId, cat||'participacao', val||1, 'Ponto rápido');
+    if(visaoAtual === 'ranking') renderizarRanking();
+};
+
+// --- Whitelist functions ---
+try{
+  ['renderizarRanking','rankAddPontosModal','fecharModalRankPontos','rankSetPontos',
+   'rankConfirmarPontos','rankExportarPDF','rankResetar','rankQuickAdd'].forEach(n=>{
+    if(typeof __wrapSafeGlobal==='function'&&typeof window[n]==='function') __wrapSafeGlobal(n);
+  });
+}catch(_){}
+
+})();
+
+
+
+// ================================================================
+// RANKING — FULLSCREEN + UI
+// ================================================================
+function rankUpdateFullscreenUI(){
+  const btn = document.getElementById('btnRankFullscreen');
+  if(!btn) return;
+  const fsEl = document.fullscreenElement;
+  const isNativeFs = !!(fsEl && (fsEl.id === 'viewRanking' || (fsEl.closest && fsEl.closest('#viewRanking'))));
+  const isFallbackFs = document.body.classList.contains('ranking-is-fullscreen');
+  const isFs = isNativeFs || (!fsEl && isFallbackFs);
+  btn.innerHTML = isFs ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
+  btn.title = isFs ? 'Sair da tela cheia' : 'Tela cheia';
+  document.body.classList.toggle('ranking-is-fullscreen', isFs);
+}
+
+function rankToggleFullscreen(){
+  const box = document.getElementById('viewRanking');
+  if(!box) return;
+  try{
+    if(document.fullscreenElement){
+      const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+      if(exit) exit.call(document);
+      return;
+    }
+    const req = box.requestFullscreen || box.webkitRequestFullscreen || box.mozRequestFullScreen || box.msRequestFullscreen;
+    if(req){
+      try{ req.call(box, {navigationUI:'hide'}); }catch(_){ req.call(box); }
+    }else{
+      document.body.classList.toggle('ranking-is-fullscreen');
+      rankUpdateFullscreenUI();
+    }
+  }catch(e){
+    document.body.classList.toggle('ranking-is-fullscreen');
+    rankUpdateFullscreenUI();
+  }
+}
+
+// Mantém o ícone sincronizado quando o usuário sai com ESC
+document.addEventListener('fullscreenchange', rankUpdateFullscreenUI);
+document.addEventListener('webkitfullscreenchange', rankUpdateFullscreenUI);
+document.addEventListener('mozfullscreenchange', rankUpdateFullscreenUI);
+document.addEventListener('MSFullscreenChange', rankUpdateFullscreenUI);
+
+// Exporta para o HTML (data-onclick)
+window.rankToggleFullscreen = rankToggleFullscreen;
+window.rankUpdateFullscreenUI = rankUpdateFullscreenUI;
+
+try{
+  ['rankToggleFullscreen','rankUpdateFullscreenUI'].forEach(n=>{
+    if(typeof __wrapSafeGlobal==='function' && typeof window[n]==='function') __wrapSafeGlobal(n);
+  });
+}catch(_){ }
 
 // ================================================================
 // WHITELIST ALL NEW FUNCTIONS
