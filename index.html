@@ -1000,11 +1000,15 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             --farol-verde: #16a34a; --farol-amarelo: #f59e0b; --farol-vermelho: #dc2626;
             --inclusao: #9333ea;
             --danger: #ef4444; --warning: #f59e0b; --text-muted: #64748b; --text-sub: #475569;
+            --primary-accent: #8b5cf6;
         }
 
         /* CARD UTILITY CLASSES */
         .card-info-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
         .card-actions-row { display:flex; gap:8px; align-items:center; }
+        .card-header-left { flex:1; min-width:0; }
+        .aluno-nome-wrap { display:flex; align-items:center; gap:8px; min-width:0; }
+        .aluno-nome-wrap .aluno-nome { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; max-width:100%; }
         .blitz-box { background:var(--bg-body); padding:6px; border-radius:8px; border:1px solid var(--border-color); display:inline-flex; align-items:center; gap:4px; }
         .blitz-icon { color:var(--warning); font-size:0.8rem; }
         .btn-delete-card { border:none; background:transparent; color:var(--danger); cursor:pointer; padding:8px; border-radius:6px; transition:background 0.2s; }
@@ -1021,6 +1025,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         body.dark-mode {
             --bg-body: #0f172a; --bg-sidebar: #020617; --card-bg: #1e293b; --text-main: #e2e8f0;
             --border-color: #334155; --input-bg: #334155;
+            --text-muted: #94a3b8; --text-sub: #cbd5e1; --danger: #f87171; --warning: #fbbf24;
         }
         body.dark-mode .card-stats, body.dark-mode .tabela-dados th, body.dark-mode .modal-header-xl, 
         body.dark-mode .modal-footer-xl, body.dark-mode .cal-day, body.dark-mode .mapa-livres-header {
@@ -1441,7 +1446,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
             border: 2px solid var(--border-color);
             position: relative; 
-            transition: all 0.3s;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, opacity 0.3s ease;
             overflow: hidden;
         }
         .card-aluno::before {
@@ -1451,11 +1456,11 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             left: 0;
             width: 100%;
             height: 5px;
-            background: linear-gradient(90deg, var(--primary) 0%, #8b5cf6 100%);
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-accent, #8b5cf6) 100%);
         }
-        .card-aluno:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px -4px rgba(0,0,0,0.1), 0 8px 16px -4px rgba(0,0,0,0.06);
+        .card-aluno:focus-visible {
+            outline: 3px solid var(--primary);
+            outline-offset: 2px;
             border-color: var(--primary);
         }
         .card-header { 
@@ -1475,7 +1480,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.2s;
+            transition: color 0.2s ease;
         }
         .aluno-nome:hover { 
             color: var(--primary);
@@ -1490,8 +1495,9 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             border-radius: 8px;
             font-weight: 800;
             font-size: 0.85rem;
-            color: #475569;
+            color: var(--text-sub, #475569);
         }
+        body.dark-mode .aluno-numero { background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: #cbd5e1; }
         .aluno-turma { 
             font-size: 0.8rem; 
             color: #64748b; 
@@ -1529,7 +1535,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         }
         .stat-item > span {
             font-size: 0.75rem;
-            color: #64748b;
+            color: var(--text-muted, #64748b);
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -1541,7 +1547,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             font-weight: 800; 
             font-size: 1.3rem;
             padding: 6px 10px;
-            background: white;
+            background: var(--card-bg);
             border-radius: 8px;
             border: 2px solid var(--border-color);
         }
@@ -1549,6 +1555,9 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             font-size: 0.9rem;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
         }
+        .farol-badge i.fc-verde { color: var(--farol-verde); }
+        .farol-badge i.fc-amarelo { color: var(--farol-amarelo); }
+        .farol-badge i.fc-vermelho { color: var(--farol-vermelho); }
         .tabela-dados { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: none; }
         .tabela-dados th { background: #f8fafc; text-align: left; padding: 15px; font-weight: 600; color: #475569; border-bottom: 2px solid var(--border-color); }
         .tabela-dados td { padding: 15px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; }
@@ -1922,11 +1931,15 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         .card-aluno {
             opacity: 0;
             transform: translateY(16px);
-            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
         }
         .card-aluno.card-visible {
             opacity: 1;
             transform: translateY(0);
+        }
+        .card-aluno.card-visible:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -4px rgba(0,0,0,0.1), 0 8px 16px -4px rgba(0,0,0,0.06);
+            border-color: var(--primary);
         }
         
         .top-bar {
@@ -6772,6 +6785,7 @@ function selTurma(n){
         }
 
         function getCorFarol(m){m=parseFloat(m); if(m>=7)return'var(--farol-verde)'; if(m>=5)return'var(--farol-amarelo)'; return'var(--farol-vermelho)';}
+        function getFarolCls(m){m=parseFloat(m); if(m>=7)return'fc-verde'; if(m>=5)return'fc-amarelo'; return'fc-vermelho';}
 
         // Notas: parse + trava (0..10) + farol por cor diretamente no input
         function parseNota(v){
@@ -6807,6 +6821,7 @@ function selTurma(n){
         
         // Hook system for card rendering extensions
         const _cardRenderHooks = [];
+        const _sparkCache = new Map(); // Cache sparkline data to avoid double computation
         
         // IntersectionObserver for staggered card reveal animation
         let _cardRevealObserver = null;
@@ -6846,6 +6861,7 @@ function selTurma(n){
         function renderizarGrid(){
             const d = document.getElementById('gridAlunos');
             const l = getAlunosFiltrados();
+            _sparkCache.clear();
             
             if (l.length === 0) {
                 d.innerHTML = '<div class="empty-state" style="text-align:center; padding:60px; color:var(--text-muted,#94a3b8); font-size:1.1rem;"><i class="fas fa-inbox" style="font-size:3rem; display:block; margin-bottom:15px; opacity:0.5;"></i>Nenhum aluno encontrado</div>';
@@ -6890,11 +6906,12 @@ function selTurma(n){
             d.appendChild(fragment);
 
             // Draw sparklines on canvas elements (must be in DOM)
+            // Reuse cached sparkline data stored during _fillCardHTML via _sparkCache
             l.forEach(a => {
                 const cvs = d.querySelector(`.card-aluno[data-id="${a.id}"] .sparkline-canvas`);
                 if(cvs){
-                    const vals = _buildSparklineData(a);
-                    if(vals.length >= 2) drawSparkline(cvs, vals, 80, 28);
+                    const vals = _sparkCache.get(String(a.id));
+                    if(vals && vals.length >= 2) drawSparkline(cvs, vals, 80, 28);
                 }
             });
 
@@ -6910,6 +6927,15 @@ function selTurma(n){
             card.setAttribute('tabindex', '0');
             card.setAttribute('role', 'article');
             card.setAttribute('aria-label', 'Aluno ' + (a.nome || ''));
+            // Keyboard navigation: Enter/Space opens student details
+            card.addEventListener('keydown', function(e){
+                if(e.key === 'Enter' || e.key === ' '){
+                    // Don't trigger if focus is on a button inside the card
+                    if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+                    e.preventDefault();
+                    abrirDetalhes(a.id);
+                }
+            });
             _fillCardHTML(card, a, b, idx);
             return card;
         }
@@ -6929,8 +6955,9 @@ function selTurma(n){
             const bg = a.elegivel ? `<span class="badge-inclusao"><i class="fas fa-universal-access"></i> Elegivel</span>` : '';
             const compVal = parseFloat(b.comportamento) || 0;
             
-            // Build sparkline section
+            // Build sparkline section (single call, cached for canvas draw pass)
             const sparkVals = _buildSparklineData(a);
+            _sparkCache.set(String(a.id), sparkVals);
             const trend = _getSparklineTrend(sparkVals);
             const sparkHTML = sparkVals.length >= 2
                 ? `<div class="sparkline-box"><canvas class="sparkline-canvas" width="80" height="28"></canvas><span class="sparkline-trend ${trend.cls}">${trend.icon}</span></div>`
@@ -6939,10 +6966,12 @@ function selTurma(n){
             card.dataset.hash = `${idx}_${b.media_lp}_${b.media_red}_${b.comportamento}_${a.elegivel}`;
             card.innerHTML = `
                 <div class="card-header">
-                    <div style="flex:1">
+                    <div class="card-header-left">
                         <div class="card-info-row">
                             <span class="aluno-numero">${idx + 1}</span>
-                            <a class="aluno-nome" data-onclick="abrirDetalhes(${__u(a.id)})">${_escHTML(a.nome)}</a>
+                            <span class="aluno-nome-wrap">
+                                <a class="aluno-nome" data-onclick="abrirDetalhes(${__u(a.id)})" title="${_escHTML(a.nome)}">${_escHTML(a.nome)}</a>
+                            </span>
                             ${bg}
                         </div>
                         <span class="aluno-turma"><i class="fas fa-users"></i> ${_escHTML(a.turma)}</span>
@@ -6956,7 +6985,7 @@ function selTurma(n){
                         <button class="btn-boletim-card" data-onclick="abrirBoletim(${__u(a.id)})" title="Boletim" aria-label="Ver boletim">
                             <i class="fas fa-print"></i>
                         </button>
-                        <button class="btn-delete-card" data-onclick="delAluno(${__u(a.id)})" title="Remover aluno" aria-label="Remover aluno">
+                        <button class="btn-delete-card" data-onclick="confirmarDelAluno(${__u(a.id)})" title="Remover aluno" aria-label="Remover aluno">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -6966,21 +6995,21 @@ function selTurma(n){
                     <div class="stat-item">
                         <span><i class="fas fa-book"></i> ${_escHTML(config.materia1)}</span>
                         <div class="farol-badge">
-                            <i class="fas fa-circle" style="color:${getCorFarol(b.media_lp)}"></i>
+                            <i class="fas fa-circle ${getFarolCls(b.media_lp)}"></i>
                             <span>${__u(b.media_lp)}</span>
                         </div>
                     </div>
                     <div class="stat-item">
                         <span><i class="fas fa-pen"></i> ${_escHTML(config.materia2)}</span>
                         <div class="farol-badge">
-                            <i class="fas fa-circle" style="color:${getCorFarol(b.media_red)}"></i>
+                            <i class="fas fa-circle ${getFarolCls(b.media_red)}"></i>
                             <span>${__u(b.media_red)}</span>
                         </div>
                     </div>
                     <div class="stat-item">
                         <span><i class="fas fa-user-check"></i> Comportamento</span>
                         <div class="farol-badge">
-                            <i class="fas fa-circle" style="color:${getCorFarol(compVal)}"></i>
+                            <i class="fas fa-circle ${getFarolCls(compVal)}"></i>
                             <span>${__u(compVal)}</span>
                         </div>
                     </div>
@@ -8018,6 +8047,16 @@ function __cmpBinIndex(v){
         function abrirModalAluno(){if(turmas.length===0)return showToast("Crie Turma", "error"); const s=document.getElementById('selectTurmaAluno');s.innerHTML='';turmas.forEach(t=>s.innerHTML+=`<option value="${_escHTML(t)}">${_escHTML(t)}</option>`);if(filtroTurma!=='Todas')s.value=filtroTurma;abrirModal('modalNovoAluno');}
         function salvarAlunos(){const t=document.getElementById('selectTurmaAluno').value, ns=document.getElementById('inputNomes').value.split('\n'); const dL=()=>({a1:0,a2:0,a3:0,a4:0,a5:0,rec:0}); const dR=()=>({r1:0,r2:0,leit:0}); ns.forEach(n=>{if(n.trim())alunos.push({id:Date.now()+Math.random(),nome:n.trim(),turma:t,mesa:null,inteligencias:[],bimestres:{1:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:false,r2:false},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},2:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:false,r2:false},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},3:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:false,r2:false},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},4:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:false,r2:false},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""}}})});salvarDadosLocal();document.getElementById('inputNomes').value='';fecharModais();selTurma(t); showToast("Alunos cadastrados!");}
         function delAluno(id){if(confirm("Excluir?")){alunos=alunos.filter(a=>a.id!==id);salvarDadosLocal();renderizarVisaoContent();}}
+        function confirmarDelAluno(id){
+            const a = alunos.find(al => al.id === id);
+            const nomeCurto = a ? (a.nome || '').split(' ')[0] : 'este aluno';
+            if(confirm(`Tem certeza que deseja excluir "${nomeCurto}"?\n\nEsta ação não pode ser desfeita.`)){
+                alunos = alunos.filter(al => al.id !== id);
+                salvarDadosLocal();
+                showToast(`${nomeCurto} removido(a)`);
+                renderizarVisaoContent();
+            }
+        }
 
         function mudarAba(aba){['btnTabLP','btnTabRED','btnTabPAEE','btnTabEVO'].forEach(i=>document.getElementById(i).classList.remove('active')); ['tabLP','tabRED','tabPAEE','tabEVO'].forEach(i=>document.getElementById(i).classList.remove('active')); if(aba==='lp'){document.getElementById('btnTabLP').classList.add('active');document.getElementById('tabLP').classList.add('active');} else if(aba==='red'){document.getElementById('btnTabRED').classList.add('active');document.getElementById('tabRED').classList.add('active');} else if(aba==='paee'){document.getElementById('btnTabPAEE').classList.add('active');document.getElementById('tabPAEE').classList.add('active');} else {document.getElementById('btnTabEVO').classList.add('active');document.getElementById('tabEVO').classList.add('active'); renderizarGraficoEvolucao();}}
 
