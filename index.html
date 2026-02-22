@@ -8351,6 +8351,48 @@ function __cmpBinIndex(v){
 }
 
         // MAPA
+        function _mapaNomeCurto(nome){
+            nome = (nome||'').toString().trim();
+            if(!nome) return '';
+            const parts = nome.split(/\s+/).filter(Boolean);
+            if(parts.length===1) return parts[0];
+            const stop = new Set(['DE','DA','DO','DOS','DAS','E']);
+            let sobrenome = '';
+            for(let i=parts.length-1;i>=0;i--){
+                const p = parts[i] || '';
+                if(!stop.has(p.toUpperCase())) { sobrenome = p; break; }
+            }
+            if(!sobrenome) sobrenome = parts[parts.length-1] || '';
+            const ini = (sobrenome.trim()[0]||'').toUpperCase();
+            return ini ? `${parts[0]} ${ini}.` : parts[0];
+        }
+        function _mapaTotalMesas(){
+            try{
+                return (typeof mapaGridCols==='number' && typeof mapaGridRows==='number') ? (mapaGridCols*mapaGridRows) : 36;
+            }catch(_){ return 36; }
+        }
+        function _mapaSeatValida(i){
+            const total=_mapaTotalMesas();
+            const n=parseInt(i,10);
+            if(!Number.isFinite(n)) return false;
+            if(n<0 || n>=total) return false;
+            try{ if(typeof mapaDisabledDesks!=='undefined' && mapaDisabledDesks && mapaDisabledDesks.has(n)) return false; }catch(_){}
+            return true;
+        }
+        function _mapaMoverParaMesaSemConflito(aluno, destino){
+            const alvo=parseInt(destino,10);
+            if(!Number.isFinite(alvo)){ aluno.mesa=null; return; }
+
+            // Se já existe outro aluno na mesa destino, faz swap (ou manda o outro para "livres")
+            const outro = alunos.find(x=>x && x.id!==aluno.id && x.mesa===alvo);
+            if(outro){
+                if(_mapaSeatValida(aluno.mesa)) outro.mesa = aluno.mesa;
+                else outro.mesa = null;
+            }
+
+            aluno.mesa = _mapaSeatValida(alvo) ? alvo : null;
+        }
+
         function gerarMesas(){const g=document.getElementById('salaGrid');g.innerHTML='';for(let i=0;i<36;i++)g.innerHTML+=`<div id="mesa_${i}" class="mesa" ondrop="drop(event,${i})" ondragover="allowDrop(event)" data-onclick="touchSelectMesa(${i})"></div>`;}
         function renderizarMapa(){
             if(filtroTurma==='Todas')return; 
@@ -8362,7 +8404,7 @@ function __cmpBinIndex(v){
             
             ls.forEach(a=>{
                 const c=getCorFarol(a.bimestres[bimestreAtual].media_lp); 
-                const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${alunoSelecionadoParaMover===a.id ? 'mobile-selected' : ''}" draggable="true" ondragstart="drag(event)" data-onclick="touchSelectAluno(${__u(a.id)})" style="border-left-color:${c}">${_escHTML((a.nome||'').split(' ')[0])}</div>`; 
+                const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${alunoSelecionadoParaMover===a.id ? 'mobile-selected' : ''}" draggable="true" ondragstart="drag(event)" data-onclick="touchSelectAluno(${__u(a.id)})" style="border-left-color:${c}">${_escHTML(_mapaNomeCurto(a.nome))}</div>`; 
                 if(a.mesa!==null && a.mesa<36){
                     const m=document.getElementById('mesa_'+a.mesa); 
                     if(m){m.innerHTML=h;m.style.borderStyle='solid';}
@@ -8375,7 +8417,16 @@ function __cmpBinIndex(v){
                 });
             }
         }
-        function drag(ev){ev.dataTransfer.setData("id",ev.target.id);} function allowDrop(ev){ev.preventDefault();} function drop(ev,d){ev.preventDefault();let id=ev.dataTransfer.getData("id");let a=alunos.find(x=>x.id==id.replace('drag_',''));if(a){a.mesa=d;salvarDadosLocal();renderizarMapa();}} function dropLivre(ev){ev.preventDefault();let id=ev.dataTransfer.getData("id");let a=alunos.find(x=>x.id==id.replace('drag_',''));if(a){a.mesa=null;salvarDadosLocal();renderizarMapa();}}
+        function drag(ev){ev.dataTransfer.setData("id",ev.target.id);} function allowDrop(ev){ev.preventDefault();} function drop(ev,d){
+            ev.preventDefault();
+            let id=ev.dataTransfer.getData("id");
+            let a=alunos.find(x=>x.id==id.replace('drag_',''));
+            if(a){
+                _mapaMoverParaMesaSemConflito(a,d);
+                salvarDadosLocal();
+                renderizarMapa();
+            }
+        } function dropLivre(ev){ev.preventDefault();let id=ev.dataTransfer.getData("id");let a=alunos.find(x=>x.id==id.replace('drag_',''));if(a){a.mesa=null;salvarDadosLocal();renderizarMapa();}}
 
         function touchSelectAluno(id) {
             if(alunoSelecionadoParaMover === id) {
@@ -8389,7 +8440,7 @@ function __cmpBinIndex(v){
             if(alunoSelecionadoParaMover !== null) {
                 const a = alunos.find(x => x.id === alunoSelecionadoParaMover);
                 if(a) {
-                    a.mesa = index;
+                    _mapaMoverParaMesaSemConflito(a,index);
                     alunoSelecionadoParaMover = null;
                     salvarDadosLocal();
                     renderizarMapa();
@@ -19154,6 +19205,23 @@ try{
     g.innerHTML='';
     g.style.gridTemplateColumns=`repeat(${mapaGridCols}, 1fr)`;
     const total=mapaGridCols*mapaGridRows;
+
+    // sgp_mapa_dedupe: garante 1 aluno por mesa (evita duplicidade)
+    try{
+      const seen=new Set();
+      let changed=false;
+      ls.forEach(a=>{
+        if(a && a.mesa!==null && a.mesa!==undefined){
+          const m=parseInt(a.mesa,10);
+          if(!Number.isFinite(m) || m<0 || m>=total || (mapaDisabledDesks && mapaDisabledDesks.has(m))){
+            a.mesa=null; changed=true; return;
+          }
+          if(seen.has(m)){ a.mesa=null; changed=true; return; }
+          seen.add(m);
+        }
+      });
+      if(changed) salvarDadosLocal();
+    }catch(_){}
     for(let i=0;i<total;i++){
       g.innerHTML+=`<div id="mesa_${i}" class="mesa${mapaDisabledDesks.has(i)?' disabled':''}" ondrop="drop(event,${i})" ondragover="allowDrop(event)" data-onclick="mapaMesaClick(${i})"></div>`;
     }
@@ -19207,13 +19275,13 @@ window.mapaMesaClick=function(index){
     if(!alunoNaMesa) return;
     if(mapaSwapFirst===null){
       mapaSwapFirst=index; renderizarMapa();
-      showToast(`${alunoNaMesa.nome.split(' ')[0]} selecionado. Clique no segundo.`);
+      showToast(`${_mapaNomeCurto(alunoNaMesa.nome)} selecionado. Clique no segundo.`);
     } else {
       const a1=ls.find(a=>a.mesa===mapaSwapFirst);
       if(a1&&alunoNaMesa&&a1.id!==alunoNaMesa.id){
         const tmp=a1.mesa; a1.mesa=alunoNaMesa.mesa; alunoNaMesa.mesa=tmp;
         salvarDadosLocal();
-        showToast(`${a1.nome.split(' ')[0]} ↔ ${alunoNaMesa.nome.split(' ')[0]}`);
+        showToast(`${_mapaNomeCurto(a1.nome)} ↔ ${_mapaNomeCurto(alunoNaMesa.nome)}`);
       }
       mapaSwapFirst=null; renderizarMapa();
     }
@@ -19263,7 +19331,7 @@ try{
 
       const selected=alunoSelecionadoParaMover===a.id;
       const swapSel=mapaSwapMode&&mapaSwapFirst!==null&&a.mesa===mapaSwapFirst;
-      const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${selected?'mobile-selected':''}" draggable="true" ondragstart="drag(event)" data-onclick="${mapaSwapMode?'mapaMesaClick('+a.mesa+')':'touchSelectAluno('+__u(a.id)+')'}" style="border-left-color:${c};${swapSel?'box-shadow:0 0 10px #f59e0b;border-color:#f59e0b;':''}">${_escHTML((a.nome||'').split(' ')[0])}${badges}${tip}</div>`;
+      const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${selected?'mobile-selected':''}" draggable="true" ondragstart="drag(event)" data-onclick="${mapaSwapMode?'mapaMesaClick('+a.mesa+')':'touchSelectAluno('+__u(a.id)+')'}" style="border-left-color:${c};${swapSel?'box-shadow:0 0 10px #f59e0b;border-color:#f59e0b;':''}">${_escHTML(_mapaNomeCurto(a.nome))}${badges}${tip}</div>`;
 
       if(a.mesa!==null&&a.mesa<total&&!mapaDisabledDesks.has(a.mesa)){
         const m=document.getElementById('mesa_'+a.mesa);
@@ -19389,7 +19457,7 @@ function mapaImprimir(){
       w.document.write('<div class="mesa disabled">✕</div>');
     } else {
       const a=ls.find(x=>x.mesa===i);
-      w.document.write(a?`<div class="mesa occupied">${_escHTML(a.nome.split(' ')[0])}</div>`:'<div class="mesa empty"></div>');
+      w.document.write(a?`<div class="mesa occupied">${_escHTML(_mapaNomeCurto(a.nome))}</div>`:'<div class="mesa empty"></div>');
     }
   }
   w.document.write('</div><div class="profdesk"><div class="mesa-prof">MESA DO PROFESSOR</div></div></body></html>');
@@ -19760,7 +19828,7 @@ function _renderPodium(ranked){
                 <div class="podium-medal">${medalLabel}</div>
             </div>
             <div class="podium-base">
-                <div class="podium-name" title="${_escHTML(a.nome)}">${_escHTML(a.nome.split(' ')[0])}</div>
+                <div class="podium-name" title="${_escHTML(a.nome)}">${_escHTML(_mapaNomeCurto(a.nome))}</div>
                 <div class="podium-points">${item.total} pts</div>
             </div>
         </div>`;
