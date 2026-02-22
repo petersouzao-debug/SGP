@@ -6813,7 +6813,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v12.13",
+                version: "v15.9.10",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -6831,7 +6831,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 autobackups: (typeof __BACKUPS !== 'undefined') ? (__BACKUPS || []) : []
             };
 
-            return [
+            const files = [
                 ["manifest.json", JSON.stringify(meta, null, 2)],
                 ["sgp_core.json", JSON.stringify(core, null, 2)],
                 ["sgp_planner.json", JSON.stringify(planner, null, 2)],
@@ -6842,6 +6842,20 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 ["extras_audit.json", JSON.stringify(extras.audit, null, 2)],
                 ["extras_autobackups.json", JSON.stringify(extras.autobackups, null, 2)]
             ];
+
+            // === DADOS ADICIONAIS (V13+) ===
+            // Frequência / Chamada
+            try{ files.push(['sgp_frequencia.json', JSON.stringify(window.__sgpFrequencia||{}, null, 2)]); }catch(_){}
+            // Entregas
+            try{ files.push(['sgp_entregas.json', JSON.stringify(window.__sgpEntregas||{}, null, 2)]); }catch(_){}
+            // Ranking da Sala
+            try{ files.push(['sgp_ranking_v1.json', JSON.stringify(JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}'), null, 2)]); }catch(_){}
+            // Audit Log
+            try{ files.push(['sgp_audit_log.json', JSON.stringify(window.__sgpAuditLog||[], null, 2)]); }catch(_){}
+            // Frequency events log
+            try{ files.push(['sgp_freq_events.json', JSON.stringify(window.__sgpFreqEvents||[], null, 2)]); }catch(_){}
+
+            return files;
         }
 
         function baixarBackup() { 
@@ -6966,6 +6980,15 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                             if(Array.isArray(bkAuditLog)){
                                 window.__sgpAuditLog = bkAuditLog;
                                 __safeLSSet('sgp_audit_log', JSON.stringify(bkAuditLog));
+                            }
+                        }catch(_){}
+
+                        // Restore freq events from backup
+                        try{
+                            const bkFreqEvents = readJson('sgp_freq_events.json');
+                            if(Array.isArray(bkFreqEvents)){
+                                window.__sgpFreqEvents = bkFreqEvents;
+                                __safeLSSet('sgp_freq_events', JSON.stringify(bkFreqEvents));
                             }
                         }catch(_){}
 
@@ -14791,6 +14814,8 @@ function __idbSaveState(){
     store.put({key:'frequencia', value: window.__sgpFrequencia || {}});
     try{ store.put({key:'ranking', value: JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}')||{}}); }catch(_){}
     try{ store.put({key:'entregas', value: window.__sgpEntregas || {}}); }catch(_){}
+    try{ store.put({key:'freq_events', value: window.__sgpFreqEvents || []}); }catch(_){}
+    try{ store.put({key:'audit_log', value: window.__sgpAuditLog || []}); }catch(_){}
   }catch(e){
     console.warn('[SGP] IDB save error:', e);
   }
@@ -15944,17 +15969,7 @@ __loadExtras = function(){
   try{ __loadFrequencia(); }catch(_){}
 };
 
-// Include frequencia in backup files
-try{
-  const __origCollectBackup = __collectBackupFiles;
-  __collectBackupFiles = function(){
-    const files = __origCollectBackup();
-    try{
-      files.push(['sgp_frequencia.json', JSON.stringify(window.__sgpFrequencia||{}, null, 2)]);
-    }catch(_){}
-    return files;
-  };
-}catch(_){}
+// Include frequencia in backup files — now handled directly in __collectBackupFiles
 
 // ================================================================
 // V14 FEATURES — ALL NEW FUNCTIONALITY
@@ -16785,17 +16800,7 @@ try{
   salvarAlunos=function(){ __auditLog(`Cadastro de novos alunos em ${filtroTurma}`); __origSalvarAlunos(); };
 }catch(_){}
 
-// Include entregas and audit in backup
-try{
-  const __origCollectBackup2=__collectBackupFiles;
-  __collectBackupFiles=function(){
-    const files=__origCollectBackup2();
-    try{ files.push(['sgp_entregas.json', JSON.stringify(window.__sgpEntregas||{},null,2)]); }catch(_){}
-    try{ files.push(['sgp_audit_log.json', JSON.stringify(window.__sgpAuditLog||[],null,2)]); }catch(_){}
-    try{ files.push(['sgp_ranking_v1.json', JSON.stringify(JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}')||{},null,2)]); }catch(_){}
-    return files;
-  };
-}catch(_){}
+// Include entregas, audit, ranking in backup — now handled directly in __collectBackupFiles
 
 // Include entregas in __loadExtras
 try{
@@ -19937,7 +19942,8 @@ function _rankLoad(){
     try{ return JSON.parse(localStorage.getItem(RANK_KEY)) || {}; }catch(_){ return {}; }
 }
 function _rankSave(data){
-    try{ localStorage.setItem(RANK_KEY, JSON.stringify(data)); }catch(_){}
+    try{ __safeLSSet(RANK_KEY, JSON.stringify(data)); }catch(_){}
+    try{ __idbSaveState(); }catch(_){}
 }
 
 // Estrutura: { [turma]: { [bimestre]: { [alunoId]: { notas:N, comportamento:N, participacao:N, bonus:N, historico:[...] } } } }
