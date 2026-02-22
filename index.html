@@ -1762,6 +1762,11 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         /* Config (Disciplinas/Avaliações): rolagem para não "prender" edição */
         #modalConfig .modal-box { max-height: 90vh; overflow-y: auto; }
         #cfgDisciplinasList { max-height: 55vh; overflow-y: auto; padding-right: 6px; }
+        
+        /* Atividades/Games: modal maior + rolagem apenas no corpo (evita sobreposições no modo professor) */
+        #modalAtividades .modal-box.modal-xl{ overflow: visible; width: 1100px; max-width: 98%; height: 94vh; }
+        #modalAtividades .act-headbar{ flex-wrap: wrap; align-items: flex-start; }
+        #modalAtividades .act-body{ overflow-y: auto; }
 
         /* Gráficos (Chart.js) */
         #chartEvolucao { display: block; }
@@ -2934,6 +2939,74 @@ body.dark-mode #modalAtividades .fc-small{ color:#94a3b8; }
 .freq-meta-row label span{ font-weight:600; font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:.3px; }
 .freq-fullscreen-btn{ background:none; border:1px solid var(--border-color); border-radius:8px; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-color); transition:.15s; }
 .freq-fullscreen-btn:hover{ background:rgba(14,165,233,.12); border-color:#0ea5e9; color:#0ea5e9; }
+
+/* === NEW GAMES: Relacionar, Roleta, Caça-palavras, Cruzadinha === */
+.rel-board{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;min-height:200px;align-items:flex-start;}
+.rel-col{display:flex;flex-direction:column;gap:8px;min-width:140px;}
+.rel-item{padding:10px 16px;border-radius:10px;border:2px solid var(--border-color);cursor:pointer;font-size:.9rem;font-weight:600;transition:.2s;text-align:center;user-select:none;}
+.rel-item:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1);}
+.rel-item.selected{border-color:#7c3aed;background:rgba(124,58,237,.12);box-shadow:0 0 0 3px rgba(124,58,237,.2);}
+.rel-item.matched{border-color:#16a34a;background:rgba(22,163,74,.1);opacity:.7;cursor:default;}
+.rel-item.wrong{animation:relShake .4s;border-color:#dc2626;}
+@keyframes relShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+.rel-lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+
+/* Roleta */
+.roleta-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.roleta-canvas-wrap{position:relative;width:320px;height:320px;}
+.roleta-canvas-wrap canvas{width:100%;height:100%;}
+.roleta-pointer{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;z-index:2;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));}
+.roleta-result{font-size:1.4rem;font-weight:900;text-align:center;min-height:40px;color:var(--text-main);}
+@keyframes roletaPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+.roleta-result.show{animation:roletaPulse .5s ease;}
+
+/* Caça-palavras */
+.ws-grid{display:inline-grid;gap:0;border:2px solid var(--border-color);border-radius:8px;overflow:hidden;user-select:none;touch-action:none;}
+.ws-cell{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;cursor:pointer;transition:background .15s;border:1px solid rgba(0,0,0,.05);}
+.ws-cell:hover{background:rgba(124,58,237,.08);}
+.ws-cell.selecting{background:rgba(124,58,237,.25);color:#7c3aed;}
+.ws-cell.found{background:rgba(22,163,74,.18);color:#166534;font-weight:900;}
+.ws-wordlist{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.ws-wordlist span{padding:4px 10px;border-radius:6px;font-size:.78rem;font-weight:600;background:#f1f5f9;color:#475569;border:1px solid var(--border-color);}
+.ws-wordlist span.found{background:#dcfce7;color:#166534;text-decoration:line-through;border-color:#16a34a;}
+body.dark-mode .ws-cell{border-color:rgba(255,255,255,.06);}
+body.dark-mode .ws-wordlist span{background:#1e293b;color:#94a3b8;}
+
+/* Cruzadinha */
+.cw-grid{display:inline-grid;gap:0;border:2px solid var(--border-color);border-radius:6px;overflow:hidden;}
+.cw-cell{width:36px;height:36px;position:relative;}
+.cw-cell.black{background:#1e293b;}
+body.dark-mode .cw-cell.black{background:#0f172a;}
+.cw-cell input{width:100%;height:100%;border:1px solid var(--border-color);text-align:center;font-weight:700;font-size:.9rem;text-transform:uppercase;background:var(--card-bg);color:var(--text-main);padding:0;}
+.cw-cell input:focus{outline:2px solid #7c3aed;z-index:1;position:relative;}
+.cw-cell input.correct{background:rgba(22,163,74,.12);color:#166534;}
+.cw-cell input.wrong{background:rgba(220,38,38,.12);color:#991b1b;}
+.cw-cell .cw-num{position:absolute;top:1px;left:2px;font-size:.55rem;font-weight:700;color:#7c3aed;z-index:1;pointer-events:none;}
+.cw-clues{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;font-size:.82rem;}
+.cw-clues h4{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.3px;color:#7c3aed;}
+.cw-clues div{padding:2px 0;}
+.cw-clues .cw-clue-num{font-weight:700;color:#7c3aed;margin-right:4px;}
+
+/* Ranking */
+.ranking-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10001;display:flex;align-items:center;justify-content:center;}
+.ranking-box{background:var(--card-bg);color:var(--text-main);width:500px;max-width:95vw;max-height:85vh;overflow-y:auto;border-radius:14px;padding:20px;position:relative;}
+.ranking-list{margin-top:10px;}
+.ranking-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;margin:4px 0;transition:.2s;}
+.ranking-row:nth-child(-n+3){font-weight:700;}
+.ranking-row:nth-child(1){background:rgba(250,204,21,.15);font-size:1.05rem;}
+.ranking-row:nth-child(2){background:rgba(192,192,192,.12);}
+.ranking-row:nth-child(3){background:rgba(205,127,50,.1);}
+.ranking-pos{width:28px;text-align:center;font-weight:900;color:#7c3aed;}
+.ranking-name{flex:1;}
+.ranking-score{font-size:1.1rem;font-weight:900;color:var(--text-main);min-width:40px;text-align:center;}
+.ranking-btns button{border:none;width:28px;height:28px;border-radius:6px;cursor:pointer;font-weight:700;font-size:.85rem;}
+.ranking-btns .rk-plus{background:#dcfce7;color:#166534;}
+.ranking-btns .rk-minus{background:#fee2e2;color:#991b1b;}
+.ranking-btns .rk-plus:hover{background:#bbf7d0;} .ranking-btns .rk-minus:hover{background:#fecaca;}
+
+/* Sound toggle */
+.act-sound-toggle{cursor:pointer;font-size:.78rem;display:flex;align-items:center;gap:4px;color:#64748b;user-select:none;}
+.act-sound-toggle:hover{color:var(--text-main);}
 
 /* Boletim (Student Report) */
 .boletim-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:10000; display:flex; align-items:center; justify-content:center; }
@@ -4699,6 +4772,11 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                     <button id="actTabQuiz" class="act-tab" data-onclick="atividadesSetTab('quiz')"><i class="fas fa-list-ol"></i> Quiz</button>
                     <button id="actTabComp" class="act-tab" data-onclick="atividadesSetTab('comp')"><i class="fas fa-pen-nib"></i> Completar</button>
                     <button id="actTabOrd" class="act-tab" data-onclick="atividadesSetTab('ord')"><i class="fas fa-sort"></i> Ordenar</button>
+
+                    <button id="actTabRel" class="act-tab" data-onclick="atividadesSetTab('rel')"><i class="fas fa-arrows-left-right"></i> Relacionar</button>
+                    <button id="actTabRoleta" class="act-tab" data-onclick="atividadesSetTab('roleta')"><i class="fas fa-circle-notch"></i> Roleta</button>
+                    <button id="actTabWs" class="act-tab" data-onclick="atividadesSetTab('ws')"><i class="fas fa-magnifying-glass"></i> Caça-palavras</button>
+                    <button id="actTabCw" class="act-tab" data-onclick="atividadesSetTab('cw')"><i class="fas fa-hashtag"></i> Cruzadinha</button>
                 </div>
                 <div class="act-actions">
                     <button class="btn-planner" data-onclick="atividadesExportAll()"><i class="fas fa-file-arrow-down"></i> Exportar</button>
@@ -5143,6 +5221,125 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                     </div>
                 </div>
 
+
+                <!-- RELACIONAR COLUNAS -->
+                <div id="actViewRel" class="act-view" style="display:none;">
+                    <div class="act-grid">
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-arrows-left-right"></i> Banco (Relacionar)</div><div class="act-mini">Adicione pares para relacionar. Formato: <b>Item A | Item B</b></div></div>
+                            <div class="act-panel-body">
+                                <div class="form-group"><label>Item A (esquerda)</label><input id="relA" class="inp" placeholder="Ex: Brasil"></div>
+                                <div class="form-group"><label>Item B (direita)</label><input id="relB" class="inp" placeholder="Ex: Brasília"></div>
+                                <div class="actions" style="gap:10px;flex-wrap:wrap;">
+                                    <button class="btn-primary" data-onclick="relAdicionar()"><i class="fas fa-plus"></i> Adicionar</button>
+                                    <button class="btn-planner" data-onclick="actBulkOpen('rel')" style="background:#7c3aed22;border-color:#7c3aed;color:#7c3aed;"><i class="fas fa-paste"></i> Colar em Lote</button>
+                                    <button class="btn-planner" data-onclick="relIniciar()"><i class="fas fa-play"></i> Iniciar</button>
+                                    <button class="btn-planner danger" data-onclick="relLimparBanco()"><i class="fas fa-trash"></i> Limpar</button>
+                                </div>
+                                <div class="act-mini" style="margin-top:10px;"><i class="fas fa-database"></i> Pares (<span id="relCount">0</span>)</div>
+                                <div id="relList" class="act-list"></div>
+                            </div>
+                        </div>
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-gamepad"></i> Jogo</div><div class="act-mini">Clique em um item da esquerda, depois no correspondente da direita.</div></div>
+                            <div class="act-panel-body" style="position:relative;">
+                                <div id="relScorebar"></div>
+                                <div id="relBoard" class="rel-board" style="min-height:200px;"><div class="act-mini">Adicione pares e clique Iniciar.</div></div>
+                                <div class="actions" style="margin-top:12px;gap:10px;flex-wrap:wrap;">
+                                    <button class="btn-planner" data-onclick="relIniciar()"><i class="fas fa-play"></i> Reiniciar</button>
+                                </div>
+                                <div id="relMsg" class="act-mini" style="margin-top:10px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROLETA -->
+                <div id="actViewRoleta" class="act-view" style="display:none;">
+                    <div class="act-grid">
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-circle-notch"></i> Itens da Roleta</div><div class="act-mini">Adicione itens manualmente ou importe de outro banco.</div></div>
+                            <div class="act-panel-body">
+                                <div class="form-group"><label>Novo item</label><input id="roletaItem" class="inp" placeholder="Ex: Grupo 1"></div>
+                                <div class="actions" style="gap:10px;flex-wrap:wrap;">
+                                    <button class="btn-primary" data-onclick="roletaAdd()"><i class="fas fa-plus"></i> Adicionar</button>
+                                    <button class="btn-planner" data-onclick="roletaFromBank('forca')"><i class="fas fa-skull"></i> Da Forca</button>
+                                    <button class="btn-planner" data-onclick="roletaFromBank('vf')"><i class="fas fa-check-double"></i> Do V/F</button>
+                                    <button class="btn-planner" data-onclick="roletaFromBank('fc')"><i class="fas fa-id-card"></i> Dos Flashcards</button>
+                                    <button class="btn-planner" data-onclick="roletaFromAlunos()"><i class="fas fa-users"></i> Dos Alunos</button>
+                                    <button class="btn-planner danger" data-onclick="roletaLimpar()"><i class="fas fa-trash"></i> Limpar</button>
+                                </div>
+                                <div class="act-mini" style="margin-top:10px;"><i class="fas fa-list"></i> Itens (<span id="roletaCount">0</span>)</div>
+                                <div id="roletaList" class="act-list" style="max-height:200px;overflow-y:auto;"></div>
+                            </div>
+                        </div>
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-circle-notch"></i> Roleta</div></div>
+                            <div class="act-panel-body" style="text-align:center;">
+                                <div class="roleta-wrap">
+                                    <div class="roleta-canvas-wrap"><div class="roleta-pointer">▼</div><canvas id="roletaCanvas" width="640" height="640"></canvas></div>
+                                    <div id="roletaResult" class="roleta-result">Adicione itens e gire!</div>
+                                    <button class="btn-primary" data-onclick="roletaSpin()" style="font-size:1.1rem;padding:14px 32px;"><i class="fas fa-rotate"></i> Girar!</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CAÇA-PALAVRAS -->
+                <div id="actViewWs" class="act-view" style="display:none;">
+                    <div class="act-grid">
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-magnifying-glass"></i> Caça-palavras</div><div class="act-mini">Adicione palavras ou importe do banco da Forca.</div></div>
+                            <div class="act-panel-body">
+                                <div class="form-group"><label>Palavras (uma por linha)</label><textarea id="wsWords" class="inp" rows="5" placeholder="CASA&#10;ESCOLA&#10;PROFESSOR&#10;ALUNO"></textarea></div>
+                                <div class="form-row" style="gap:10px;">
+                                    <div class="form-group"><label>Grade</label><select id="wsSize" class="inp"><option value="10">10×10</option><option value="12">12×12</option><option value="15" selected>15×15</option><option value="18">18×18</option></select></div>
+                                </div>
+                                <div class="actions" style="gap:10px;flex-wrap:wrap;">
+                                    <button class="btn-primary" data-onclick="wsGerar()"><i class="fas fa-play"></i> Gerar</button>
+                                    <button class="btn-planner" data-onclick="wsFromForca()"><i class="fas fa-skull"></i> Da Forca</button>
+                                    <button class="btn-planner" data-onclick="wsRevelar()"><i class="fas fa-eye"></i> Revelar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-magnifying-glass"></i> Grade</div></div>
+                            <div class="act-panel-body" style="text-align:center;overflow-x:auto;">
+                                <div id="wsGrid" style="display:inline-block;"></div>
+                                <div id="wsWordList" class="ws-wordlist"></div>
+                                <div id="wsMsg" class="act-mini" style="margin-top:10px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CRUZADINHA -->
+                <div id="actViewCw" class="act-view" style="display:none;">
+                    <div class="act-grid">
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-hashtag"></i> Cruzadinha</div><div class="act-mini">Palavras + dicas. Use o banco da Forca ou digite.</div></div>
+                            <div class="act-panel-body">
+                                <div class="form-group"><label>Palavras e dicas (palavra | dica)</label><textarea id="cwInput" class="inp" rows="6" placeholder="CASA | Lugar onde moramos&#10;ESCOLA | Lugar de aprendizado&#10;ALUNO | Quem estuda"></textarea></div>
+                                <div class="actions" style="gap:10px;flex-wrap:wrap;">
+                                    <button class="btn-primary" data-onclick="cwGerar()"><i class="fas fa-play"></i> Gerar</button>
+                                    <button class="btn-planner" data-onclick="cwFromForca()"><i class="fas fa-skull"></i> Da Forca</button>
+                                    <button class="btn-planner" data-onclick="cwVerificar()"><i class="fas fa-check"></i> Verificar</button>
+                                    <button class="btn-planner" data-onclick="cwRevelar()"><i class="fas fa-eye"></i> Revelar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="act-panel">
+                            <div class="act-panel-header"><div class="act-title"><i class="fas fa-hashtag"></i> Grade</div></div>
+                            <div class="act-panel-body" style="text-align:center;overflow-x:auto;">
+                                <div id="cwGrid"></div>
+                                <div id="cwClues" class="cw-clues"></div>
+                                <div id="cwMsg" class="act-mini" style="margin-top:10px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Timer global config -->
@@ -5150,6 +5347,11 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                 <span class="act-timer-cfg"><i class="fas fa-clock"></i> Timer: <select id="actTimerCfg" data-onchange="actSetTimerCfg()"><option value="0">Sem limite</option><option value="30">30s</option><option value="60">60s</option><option value="90">90s</option></select></span>
                 <span style="color:#64748b;">|</span>
                 <span id="actGlobalScore" style="font-weight:600;color:#64748b;">Placar: —</span>
+                <span style="color:#64748b;">|</span>
+                <label class="act-sound-toggle" title="Efeitos sonoros"><input type="checkbox" id="actSoundToggle" checked onchange="actSoundEnabled=this.checked"> <i class="fas fa-volume-high"></i> Sons</label>
+                <span style="color:#64748b;">|</span>
+                <button style="padding:2px 10px;border:1px solid #cbd5e1;border-radius:6px;background:transparent;cursor:pointer;font-size:.72rem;color:#64748b;" data-onclick="actRankingOpen()"><i class="fas fa-trophy"></i> Ranking</button>
+                <button style="padding:2px 10px;border:1px solid #cbd5e1;border-radius:6px;background:transparent;cursor:pointer;font-size:.72rem;color:#64748b;" data-onclick="actQROpen()"><i class="fas fa-qrcode"></i> QR</button>
             </div>
 
             <div class="modal-footer-xl">
@@ -12320,7 +12522,9 @@ const ACT_STORAGE = {
   forca: 'sgp_atividades_forca_bank',
   vf:    'sgp_atividades_vf_bank',
   mem:   'sgp_atividades_mem_bank',
-  fc:    'sgp_atividades_fc_bank'
+  fc:    'sgp_atividades_fc_bank',
+  rel:   'sgp_atividades_rel_bank',
+  roleta:'sgp_atividades_roleta_bank'
 };
 
 let actTab = 'forca';
@@ -12370,6 +12574,8 @@ let forcaBank = [];
 let vfBank = [];
 let memBank = [];
 let fcBank = [];
+let relBank = [];
+let roletaBank = [];
 
 // Estado Forca
 let forcaState = {
@@ -12454,6 +12660,8 @@ function _actSaveAll(){
     __safeLSSet(ACT_STORAGE.vf, JSON.stringify(vfBank));
     __safeLSSet(ACT_STORAGE.mem, JSON.stringify(memBank));
     __safeLSSet(ACT_STORAGE.fc, JSON.stringify(fcBank));
+    __safeLSSet(ACT_STORAGE.rel, JSON.stringify(relBank));
+    __safeLSSet(ACT_STORAGE.roleta, JSON.stringify(roletaBank));
   }catch(_){}
 }
 
@@ -12491,6 +12699,12 @@ function initAtividades(){
     }))
     .filter(x => x.f && x.b);
 
+  relBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.rel, []))
+    .map(x => ({ a: String(x?.a||'').trim(), b: String(x?.b||'').trim() }))
+    .filter(x => x.a && x.b);
+  roletaBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.roleta, []))
+    .map(x => String(x||'').trim()).filter(Boolean);
+
   _actSaveAll(); // garante formato atual
 
   // UI inicial
@@ -12499,6 +12713,8 @@ function initAtividades(){
   vfRenderBank();
   memRenderBank();
   fcRenderBank();
+  try{relRenderBank();}catch(_){}
+  try{roletaRenderList();}catch(_){}
   atividadesSetTab('forca');
 
   // Sincroniza UI de tela cheia
@@ -12604,7 +12820,7 @@ function atividadesSetTab(tab){
   const modal = document.getElementById('modalAtividades');
   if(modal) modal.dataset.actTab = tab;
   atividadesUpdateTeacherBtn();
-  const map = { forca:['actTabForca','actViewForca'], vf:['actTabVF','actViewVF'], mem:['actTabMem','actViewMem'], fc:['actTabFC','actViewFC'], quiz:['actTabQuiz','actViewQuiz'], comp:['actTabComp','actViewComp'], ord:['actTabOrd','actViewOrd'] };
+  const map = { forca:['actTabForca','actViewForca'], vf:['actTabVF','actViewVF'], mem:['actTabMem','actViewMem'], fc:['actTabFC','actViewFC'], quiz:['actTabQuiz','actViewQuiz'], comp:['actTabComp','actViewComp'], ord:['actTabOrd','actViewOrd'], rel:['actTabRel','actViewRel'], roleta:['actTabRoleta','actViewRoleta'], ws:['actTabWs','actViewWs'], cw:['actTabCw','actViewCw'] };
   Object.keys(map).forEach(k=>{
     const [btnId, viewId] = map[k];
     const btn = document.getElementById(btnId);
@@ -12619,7 +12835,7 @@ function atividadesExportAll(){
   const payload = {
     version: 'sgp_atividades_v1',
     exportedAt: new Date().toISOString(),
-    forcaBank, vfBank, memBank, fcBank
+    forcaBank, vfBank, memBank, fcBank, relBank, roletaBank
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -12679,6 +12895,16 @@ function atividadesImportFile(input){
           const obj = { f:String(x?.f ?? x?.front ?? x?.frente ?? x?.pergunta ?? x?.q ?? '').trim(), b:String(x?.b ?? x?.back ?? x?.verso ?? x?.resposta ?? x?.a ?? '').trim(), g:String(x?.g ?? x?.tag ?? x?.tema ?? x?.categoria ?? '').trim() };
           if(obj.f && obj.b && !cSet.has(cKey(obj))){ fcBank.push(obj); cSet.add(cKey(obj)); }
         });
+      }
+
+      // Import new game banks
+      if(data.relBank && Array.isArray(data.relBank)){
+        data.relBank.forEach(function(x){ var o={a:String(x?.a||'').trim(),b:String(x?.b||'').trim()}; if(o.a&&o.b) relBank.push(o); });
+        try{relRenderBank();}catch(_){}
+      }
+      if(data.roletaBank && Array.isArray(data.roletaBank)){
+        data.roletaBank.forEach(function(x){ var s=String(x||'').trim(); if(s) roletaBank.push(s); });
+        try{roletaRenderList();}catch(_){}
       }
 
       _actSaveAll();
@@ -17207,6 +17433,751 @@ try{
     if(typeof __wrapSafeGlobal==='function' && typeof window[n]==='function') __wrapSafeGlobal(n);
   });
 }catch(_){}
+
+// ================================================================
+// SOUND EFFECTS (Web Audio API)
+// ================================================================
+let actSoundEnabled = true;
+let _actAudioCtx = null;
+function _actGetAudioCtx(){ if(!_actAudioCtx) try{ _actAudioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(_){} return _actAudioCtx; }
+
+function actPlaySound(type){
+  if(!actSoundEnabled) return;
+  var ctx = _actGetAudioCtx(); if(!ctx) return;
+  try{
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.22, ctx.currentTime);
+    if(type==='hit'){
+      osc.type='sine';
+      osc.frequency.setValueAtTime(523,ctx.currentTime);
+      osc.frequency.setValueAtTime(659,ctx.currentTime+0.08);
+      osc.frequency.setValueAtTime(784,ctx.currentTime+0.16);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.35);
+    } else if(type==='miss'){
+      osc.type='sawtooth';
+      osc.frequency.setValueAtTime(280,ctx.currentTime);
+      osc.frequency.setValueAtTime(180,ctx.currentTime+0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.35);
+    } else if(type==='tick'){
+      osc.type='sine'; osc.frequency.setValueAtTime(1200,ctx.currentTime);
+      gain.gain.setValueAtTime(0.08,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.03);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.04);
+    } else if(type==='win'){
+      osc.type='sine';
+      osc.frequency.setValueAtTime(523,ctx.currentTime);
+      osc.frequency.setValueAtTime(659,ctx.currentTime+0.12);
+      osc.frequency.setValueAtTime(784,ctx.currentTime+0.24);
+      osc.frequency.setValueAtTime(1047,ctx.currentTime+0.36);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.55);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.55);
+    }
+  }catch(_){}
+}
+
+// Patch actScoreHit to add sounds
+(function(){
+  var _origHit = actScoreHit;
+  actScoreHit = function(isCorrect){
+    _origHit(isCorrect);
+    try{ actPlaySound(isCorrect ? 'hit' : 'miss'); }catch(_){}
+  };
+})();
+
+// ================================================================
+// RANKING DE ALUNOS
+// ================================================================
+let actRankingData = {};
+function actRankingOpen(){
+  if(typeof filtroTurma==='undefined'||filtroTurma==='Todas'){
+    try{_actToast('Selecione uma turma primeiro.','error');}catch(_){try{showToast('Selecione uma turma primeiro.','error');}catch(_){}}
+    return;
+  }
+  var lista=(typeof alunos!=='undefined'?alunos:[]).filter(function(a){return a.turma===filtroTurma;}).sort(function(a,b){return(a.nome||'').localeCompare(b.nome||'');});
+  if(!lista.length) return _actToast('Nenhum aluno nesta turma.','error');
+  // Init scores
+  lista.forEach(function(a){ if(!actRankingData[a.id]) actRankingData[a.id]=0; });
+  _actRankingRender(lista);
+}
+function _actRankingRender(lista){
+  if(!lista){
+    lista=(typeof alunos!=='undefined'?alunos:[]).filter(function(a){return a.turma===filtroTurma;}).sort(function(a,b){return(a.nome||'').localeCompare(b.nome||'');});
+  }
+  var sorted=lista.slice().sort(function(a,b){ return (actRankingData[b.id]||0)-(actRankingData[a.id]||0); });
+  var old=document.getElementById('actRankingOverlay');
+  if(old) old.remove();
+  var ov=document.createElement('div');
+  ov.id='actRankingOverlay'; ov.className='ranking-overlay';
+  ov.onclick=function(e){if(e.target===ov)ov.remove();};
+  var medals=['🥇','🥈','🥉'];
+  var h='<div class="ranking-box"><div style="display:flex;justify-content:space-between;align-items:center;"><h2 style="margin:0;"><i class="fas fa-trophy" style="color:#f59e0b;"></i> Ranking — '+_escHTML(filtroTurma)+'</h2><button onclick="this.closest(\'.ranking-overlay\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b;">&times;</button></div>';
+  h+='<div class="ranking-list">';
+  sorted.forEach(function(a,i){
+    var pts=actRankingData[a.id]||0;
+    var medal=i<3?medals[i]:(i+1);
+    h+='<div class="ranking-row"><span class="ranking-pos">'+medal+'</span><span class="ranking-name">'+_escHTML(a.nome)+'</span><span class="ranking-btns"><button class="rk-minus" onclick="actRankingPt(\''+a.id+'\',-1)">−</button></span><span class="ranking-score">'+pts+'</span><span class="ranking-btns"><button class="rk-plus" onclick="actRankingPt(\''+a.id+'\',1)">+</button></span></div>';
+  });
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap;"><button class="btn-planner" onclick="actRankingReset()"><i class="fas fa-rotate"></i> Zerar</button><button class="btn-planner" onclick="actRankingCopy()"><i class="fas fa-copy"></i> Copiar</button></div></div>';
+  ov.innerHTML=h;
+  document.body.appendChild(ov);
+}
+function actRankingPt(id,pts){ actRankingData[id]=(actRankingData[id]||0)+pts; _actRankingRender(); }
+function actRankingReset(){ actRankingData={}; _actRankingRender(); _actToast('Ranking zerado.'); }
+function actRankingCopy(){
+  var lista=(typeof alunos!=='undefined'?alunos:[]).filter(function(a){return a.turma===filtroTurma;});
+  var sorted=lista.slice().sort(function(a,b){return(actRankingData[b.id]||0)-(actRankingData[a.id]||0);});
+  var t='🏆 Ranking — '+filtroTurma+'\n';
+  sorted.forEach(function(a,i){ t+=(i+1)+'º '+a.nome+': '+(actRankingData[a.id]||0)+' pts\n'; });
+  navigator.clipboard.writeText(t).then(function(){_actToast('Copiado!');}).catch(function(){_actToast('Erro ao copiar','error');});
+}
+
+// ================================================================
+// QR CODE (loads library from CDN, fallback to text)
+// ================================================================
+function actQROpen(){
+  var old=document.getElementById('actQROverlay');
+  if(old) old.remove();
+  var ov=document.createElement('div');
+  ov.id='actQROverlay'; ov.className='ranking-overlay';
+  ov.onclick=function(e){if(e.target===ov)ov.remove();};
+  var h='<div class="ranking-box" style="width:600px;text-align:center;">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><h2 style="margin:0;"><i class="fas fa-qrcode" style="color:#7c3aed;"></i> QR Code</h2><button onclick="this.closest(\'.ranking-overlay\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b;">&times;</button></div>';
+  h+='<div style="margin-bottom:12px;"><label style="font-size:.82rem;font-weight:600;">Texto/URL para QR</label><textarea id="actQRText" class="inp" rows="3" style="width:100%;" placeholder="Cole aqui o texto ou URL para gerar o QR Code...">'+window.location.href+'</textarea></div>';
+  h+='<button class="btn-primary" onclick="actQRGenerate()" style="margin-bottom:16px;"><i class="fas fa-qrcode"></i> Gerar QR</button>';
+  h+='<div id="actQRDisplay" style="display:flex;justify-content:center;padding:20px;background:#fff;border-radius:12px;min-height:100px;"></div>';
+  h+='<div style="font-size:.72rem;color:#64748b;margin-top:10px;">Projete na TV para os alunos escanearem.</div>';
+  h+='</div>';
+  ov.innerHTML=h;
+  document.body.appendChild(ov);
+  setTimeout(function(){ actQRGenerate(); },100);
+}
+
+function actQRGenerate(){
+  var text=(document.getElementById('actQRText')||{}).value||'';
+  if(!text.trim()) return;
+  var container=document.getElementById('actQRDisplay');
+  if(!container) return;
+  container.innerHTML='<div style="color:#64748b;">Gerando...</div>';
+  // Try QRCode library
+  if(window.QRCode){
+    container.innerHTML='';
+    new QRCode(container,{text:text,width:280,height:280,colorDark:'#1e293b',colorLight:'#ffffff'});
+    return;
+  }
+  // Load from CDN
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  s.onload=function(){
+    container.innerHTML='';
+    new QRCode(container,{text:text,width:280,height:280,colorDark:'#1e293b',colorLight:'#ffffff'});
+  };
+  s.onerror=function(){
+    container.innerHTML='<div style="padding:16px;"><div style="font-size:.9rem;color:#dc2626;margin-bottom:8px;">QR offline indisponível.</div><div style="padding:10px;background:#f1f5f9;border-radius:8px;word-break:break-all;font-size:.78rem;">'+_escHTML(text)+'</div><div style="margin-top:8px;font-size:.72rem;color:#64748b;">Copie o link acima e compartilhe com os alunos.</div></div>';
+  };
+  document.head.appendChild(s);
+}
+
+// ================================================================
+// RELACIONAR COLUNAS
+// ================================================================
+var relState={started:false,pairs:[],matched:0,selectedLeft:null};
+
+function relRenderBank(){
+  var el=document.getElementById('relCount'); if(el) el.textContent=relBank.length;
+  var list=document.getElementById('relList'); if(!list) return;
+  if(!relBank.length){list.innerHTML='<div class="act-mini">Nenhum par cadastrado.</div>';return;}
+  list.innerHTML=relBank.map(function(p,i){
+    return '<div class="act-list-item" style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;"><span>'+_escHTML(p.a)+' → '+_escHTML(p.b)+'</span><button class="btn-planner danger" style="padding:2px 8px;font-size:.7rem;" onclick="relBank.splice('+i+',1);_actSaveAll();relRenderBank();">✕</button></div>';
+  }).join('');
+}
+function relAdicionar(){
+  var a=(document.getElementById('relA')||{}).value||'';
+  var b=(document.getElementById('relB')||{}).value||'';
+  if(!a.trim()||!b.trim()) return _actToast('Preencha ambos os campos.','error');
+  relBank.push({a:a.trim(),b:b.trim()}); _actSaveAll(); relRenderBank();
+  document.getElementById('relA').value=''; document.getElementById('relB').value='';
+  _actToast('Par adicionado!');
+}
+function relLimparBanco(){ if(!confirm('Limpar banco?')) return; relBank=[]; _actSaveAll(); relRenderBank(); _actToast('Banco limpo.'); }
+function relIniciar(){
+  if(relBank.length<2) return _actToast('Adicione pelo menos 2 pares.','error');
+  actScoreReset();
+  var pairs=relBank.slice();
+  // Shuffle right side
+  var left=pairs.map(function(p,i){return{text:p.a,idx:i};});
+  var right=pairs.map(function(p,i){return{text:p.b,idx:i};});
+  // Shuffle both
+  for(var i=left.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=left[i];left[i]=left[j];left[j]=t;}
+  for(var i=right.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=right[i];right[i]=right[j];right[j]=t;}
+  relState={started:true,pairs:pairs,left:left,right:right,matched:0,selectedLeft:null,matchedSet:{}};
+  _relRender();
+}
+function _relRender(){
+  var board=document.getElementById('relBoard');
+  if(!board) return;
+  var s=relState;
+  var colors=['#7c3aed','#0ea5e9','#16a34a','#f59e0b','#ec4899','#dc2626','#0d9488','#6366f1','#ea580c','#84cc16'];
+  var h='<div class="rel-col">';
+  s.left.forEach(function(item,i){
+    var matched=s.matchedSet['L'+i];
+    var sel=s.selectedLeft===i&&!matched;
+    var cls='rel-item'+(sel?' selected':'')+(matched?' matched':'');
+    var style=matched?'border-color:'+colors[item.idx%colors.length]+';background:'+colors[item.idx%colors.length]+'22;':'';
+    h+='<div class="'+cls+'" style="'+style+'" onclick="relClickLeft('+i+')">'+_escHTML(item.text)+'</div>';
+  });
+  h+='</div><div class="rel-col">';
+  s.right.forEach(function(item,i){
+    var matched=s.matchedSet['R'+i];
+    var cls='rel-item'+(matched?' matched':'');
+    var style=matched?'border-color:'+colors[item.idx%colors.length]+';background:'+colors[item.idx%colors.length]+'22;':'';
+    h+='<div class="'+cls+'" style="'+style+'" onclick="relClickRight('+i+')">'+_escHTML(item.text)+'</div>';
+  });
+  h+='</div>';
+  board.innerHTML=h;
+  actRenderScorebar('relScorebar');
+  if(s.matched>=s.pairs.length){
+    actPlaySound('win');
+    actShowSummary('relMsg');
+  }
+}
+function relClickLeft(i){
+  if(relState.matchedSet['L'+i]) return;
+  relState.selectedLeft=i;
+  _relRender();
+}
+function relClickRight(i){
+  if(relState.selectedLeft===null||relState.matchedSet['R'+i]) return;
+  var li=relState.selectedLeft;
+  var correct=relState.left[li].idx===relState.right[i].idx;
+  actScoreHit(correct);
+  if(correct){
+    relState.matchedSet['L'+li]=true;
+    relState.matchedSet['R'+i]=true;
+    relState.matched++;
+  } else {
+    // Flash wrong
+    var board=document.getElementById('relBoard');
+    var rights=board.querySelectorAll('.rel-col:last-child .rel-item');
+    if(rights[i]) rights[i].classList.add('wrong');
+    setTimeout(function(){if(rights[i])rights[i].classList.remove('wrong');},400);
+  }
+  relState.selectedLeft=null;
+  _relRender();
+}
+
+// ================================================================
+// ROLETA
+// ================================================================
+var roletaSpinning=false;
+function roletaRenderList(){
+  var el=document.getElementById('roletaCount'); if(el) el.textContent=roletaBank.length;
+  var list=document.getElementById('roletaList'); if(!list) return;
+  if(!roletaBank.length){list.innerHTML='<div class="act-mini">Nenhum item.</div>';return;}
+  list.innerHTML=roletaBank.map(function(t,i){
+    return '<div style="display:flex;justify-content:space-between;padding:3px 6px;font-size:.82rem;"><span>'+_escHTML(t)+'</span><button class="btn-planner danger" style="padding:1px 6px;font-size:.65rem;" onclick="roletaBank.splice('+i+',1);_actSaveAll();roletaRenderList();roletaDraw();">✕</button></div>';
+  }).join('');
+  roletaDraw();
+}
+function roletaAdd(){
+  var v=(document.getElementById('roletaItem')||{}).value||'';
+  if(!v.trim()) return;
+  roletaBank.push(v.trim()); _actSaveAll(); roletaRenderList();
+  document.getElementById('roletaItem').value='';
+}
+function roletaFromBank(type){
+  var items=[];
+  if(type==='forca') items=forcaBank.map(function(x){return x.w;});
+  else if(type==='vf') items=vfBank.map(function(x){return x.t.substring(0,60);});
+  else if(type==='fc') items=fcBank.map(function(x){return x.f;});
+  if(!items.length) return _actToast('Banco vazio.','error');
+  roletaBank=items.slice(); _actSaveAll(); roletaRenderList();
+  _actToast(items.length+' itens importados!');
+}
+function roletaFromAlunos(){
+  if(typeof filtroTurma==='undefined'||filtroTurma==='Todas') return _actToast('Selecione uma turma.','error');
+  var lista=(typeof alunos!=='undefined'?alunos:[]).filter(function(a){return a.turma===filtroTurma;});
+  if(!lista.length) return _actToast('Nenhum aluno.','error');
+  roletaBank=lista.map(function(a){return a.nome;}); _actSaveAll(); roletaRenderList();
+  _actToast(lista.length+' alunos importados!');
+}
+function roletaLimpar(){ roletaBank=[]; _actSaveAll(); roletaRenderList(); }
+
+function roletaDraw(highlight){
+  var canvas=document.getElementById('roletaCanvas');
+  if(!canvas||!roletaBank.length) return;
+  var ctx=canvas.getContext('2d');
+  var W=640,H=640,cx=W/2,cy=H/2,r=280;
+  ctx.clearRect(0,0,W,H);
+  var n=roletaBank.length;
+  var colors=['#7c3aed','#0ea5e9','#16a34a','#f59e0b','#ec4899','#dc2626','#0d9488','#6366f1','#ea580c','#84cc16','#475569','#a855f7'];
+  var arc=2*Math.PI/n;
+  for(var i=0;i<n;i++){
+    var a0=arc*i-Math.PI/2;
+    var a1=a0+arc;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a0,a1); ctx.closePath();
+    ctx.fillStyle=colors[i%colors.length]; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    // Text
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(a0+arc/2);
+    ctx.textAlign='right'; ctx.fillStyle='#fff'; ctx.font='bold '+(n>12?'14':'18')+'px Arial';
+    var txt=roletaBank[i].length>18?roletaBank[i].substring(0,16)+'…':roletaBank[i];
+    ctx.fillText(txt,r-16,5);
+    ctx.restore();
+  }
+  // Center circle
+  ctx.beginPath(); ctx.arc(cx,cy,30,0,2*Math.PI); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=3; ctx.stroke();
+}
+
+var _roletaAngle=0;
+function roletaSpin(){
+  if(roletaSpinning||roletaBank.length<2) return _actToast('Adicione pelo menos 2 itens.','error');
+  roletaSpinning=true;
+  var n=roletaBank.length;
+  var totalSpin=2*Math.PI*(5+Math.random()*5); // 5-10 full rotations
+  var duration=3000+Math.random()*2000;
+  var start=performance.now();
+  var startAngle=_roletaAngle;
+  var canvas=document.getElementById('roletaCanvas');
+  var resultEl=document.getElementById('roletaResult');
+  if(resultEl) resultEl.className='roleta-result';
+
+  function easeOut(t){return 1-Math.pow(1-t,3);}
+  var lastTick=0;
+
+  function animate(now){
+    var elapsed=now-start;
+    var t=Math.min(elapsed/duration,1);
+    var ease=easeOut(t);
+    _roletaAngle=startAngle+totalSpin*ease;
+    // Rotate canvas
+    if(canvas){
+      canvas.style.transform='rotate('+_roletaAngle+'rad)';
+    }
+    // Tick sound at sector boundaries
+    var sectorIdx=Math.floor((_roletaAngle%(2*Math.PI))/(2*Math.PI)*n);
+    if(sectorIdx!==lastTick&&t<0.85){lastTick=sectorIdx;actPlaySound('tick');}
+
+    if(t<1){requestAnimationFrame(animate);}
+    else{
+      roletaSpinning=false;
+      // Determine winner
+      var finalAngle=((_roletaAngle%(2*Math.PI))+(2*Math.PI))%(2*Math.PI);
+      var winIdx=Math.floor(((2*Math.PI-finalAngle+Math.PI/2)%(2*Math.PI))/(2*Math.PI)*n)%n;
+      if(winIdx<0) winIdx=0;
+      if(resultEl){
+        resultEl.textContent='🎯 '+roletaBank[winIdx];
+        resultEl.className='roleta-result show';
+      }
+      actPlaySound('win');
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+// ================================================================
+// CAÇA-PALAVRAS
+// ================================================================
+var wsState={grid:[],words:[],placed:[],found:[],size:15};
+
+function wsFromForca(){
+  if(!forcaBank.length) return _actToast('Banco da Forca vazio.','error');
+  var words=forcaBank.map(function(x){return x.w;}).join('\n');
+  var el=document.getElementById('wsWords'); if(el) el.value=words;
+  _actToast(forcaBank.length+' palavras importadas!');
+}
+
+function wsGerar(){
+  var raw=(document.getElementById('wsWords')||{}).value||'';
+  var words=raw.split('\n').map(function(w){return w.trim().toUpperCase().replace(/[^A-ZÁÉÍÓÚÂÊÔÃÕÇ]/g,'');}).filter(function(w){return w.length>=2;});
+  if(!words.length) return _actToast('Adicione palavras.','error');
+  var size=parseInt((document.getElementById('wsSize')||{}).value)||15;
+  // Limit words that fit
+  words=words.filter(function(w){return w.length<=size;}).slice(0,20);
+  if(!words.length) return _actToast('Palavras muito longas para a grade.','error');
+
+  // Generate grid
+  var grid=[];
+  for(var r=0;r<size;r++){grid[r]=[];for(var c=0;c<size;c++) grid[r][c]='';}
+
+  var dirs=[[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1],[1,-1],[-1,1]]; // H,V,D...
+  var placed=[];
+
+  words.sort(function(a,b){return b.length-a.length;}); // longest first
+  words.forEach(function(word){
+    var attempts=0,ok=false;
+    while(attempts<100&&!ok){
+      var d=dirs[Math.floor(Math.random()*dirs.length)];
+      var dr=d[0],dc=d[1];
+      var maxR=dr>0?size-word.length:(dr<0?word.length-1:size-1);
+      var minR=dr>0?0:(dr<0?word.length-1:0);
+      var maxC=dc>0?size-word.length:(dc<0?word.length-1:size-1);
+      var minC=dc>0?0:(dc<0?word.length-1:0);
+      if(minR>maxR||minC>maxC){attempts++;continue;}
+      var sr=minR+Math.floor(Math.random()*(maxR-minR+1));
+      var sc=minC+Math.floor(Math.random()*(maxC-minC+1));
+      var canPlace=true;
+      for(var k=0;k<word.length;k++){
+        var nr=sr+dr*k,nc=sc+dc*k;
+        if(nr<0||nr>=size||nc<0||nc>=size){canPlace=false;break;}
+        if(grid[nr][nc]!==''&&grid[nr][nc]!==word[k]){canPlace=false;break;}
+      }
+      if(canPlace){
+        var cells=[];
+        for(var k=0;k<word.length;k++){
+          var nr=sr+dr*k,nc=sc+dc*k;
+          grid[nr][nc]=word[k];
+          cells.push([nr,nc]);
+        }
+        placed.push({word:word,cells:cells});
+        ok=true;
+      }
+      attempts++;
+    }
+  });
+
+  // Fill empty cells
+  var alpha='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for(var r=0;r<size;r++) for(var c=0;c<size;c++) if(!grid[r][c]) grid[r][c]=alpha[Math.floor(Math.random()*26)];
+
+  wsState={grid:grid,words:placed.map(function(p){return p.word;}),placed:placed,found:[],size:size,selStart:null,selCells:[]};
+  _wsRender();
+  _actToast(placed.length+' de '+words.length+' palavras colocadas.');
+}
+
+function _wsRender(){
+  var s=wsState;
+  var el=document.getElementById('wsGrid');
+  if(!el) return;
+  el.style.gridTemplateColumns='repeat('+s.size+',34px)';
+  el.classList.add('ws-grid');
+  var foundCells={};
+  s.found.forEach(function(fi){
+    var p=s.placed[fi]; if(!p) return;
+    p.cells.forEach(function(c){foundCells[c[0]+','+c[1]]=true;});
+  });
+  var selCells={};
+  (s.selCells||[]).forEach(function(c){selCells[c[0]+','+c[1]]=true;});
+  var h='';
+  for(var r=0;r<s.size;r++) for(var c=0;c<s.size;c++){
+    var cls='ws-cell';
+    if(foundCells[r+','+c]) cls+=' found';
+    else if(selCells[r+','+c]) cls+=' selecting';
+    h+='<div class="'+cls+'" data-r="'+r+'" data-c="'+c+'" onmousedown="wsStartSel('+r+','+c+')" onmouseenter="wsMoveSel('+r+','+c+')" onmouseup="wsEndSel()" ontouchstart="wsStartSel('+r+','+c+')" ontouchend="wsEndSel()">'+s.grid[r][c]+'</div>';
+  }
+  el.innerHTML=h;
+  // Word list
+  var wl=document.getElementById('wsWordList');
+  if(wl) wl.innerHTML=s.words.map(function(w,i){return '<span class="'+(s.found.indexOf(i)>=0?'found':'')+'">'+w+'</span>';}).join('');
+  if(s.found.length>=s.placed.length&&s.placed.length>0){
+    var msg=document.getElementById('wsMsg');
+    if(msg) msg.innerHTML='<b style="color:#16a34a;">🎉 Todas as palavras encontradas!</b>';
+    actPlaySound('win');
+  }
+}
+
+function wsStartSel(r,c){wsState.selStart=[r,c];wsState.selCells=[[r,c]];_wsRender();}
+function wsMoveSel(r,c){
+  if(!wsState.selStart) return;
+  var sr=wsState.selStart[0],sc=wsState.selStart[1];
+  var dr=r-sr,dc=c-sc;
+  var len=Math.max(Math.abs(dr),Math.abs(dc));
+  if(len===0){wsState.selCells=[[sr,sc]];_wsRender();return;}
+  var stepR=dr===0?0:(dr>0?1:-1);
+  var stepC=dc===0?0:(dc>0?1:-1);
+  // Must be straight line
+  if(Math.abs(dr)!==0&&Math.abs(dc)!==0&&Math.abs(dr)!==Math.abs(dc)) return;
+  var cells=[];
+  for(var i=0;i<=len;i++) cells.push([sr+stepR*i,sc+stepC*i]);
+  wsState.selCells=cells;
+  _wsRender();
+}
+function wsEndSel(){
+  if(!wsState.selStart||!wsState.selCells.length){wsState.selStart=null;return;}
+  var selected=wsState.selCells.map(function(c){return wsState.grid[c[0]][c[1]];}).join('');
+  var selectedRev=selected.split('').reverse().join('');
+  // Check against placed words
+  var foundIdx=-1;
+  wsState.placed.forEach(function(p,i){
+    if(wsState.found.indexOf(i)>=0) return;
+    if(p.word===selected||p.word===selectedRev) foundIdx=i;
+  });
+  if(foundIdx>=0){
+    wsState.found.push(foundIdx);
+    actPlaySound('hit');
+  }
+  wsState.selStart=null;wsState.selCells=[];
+  _wsRender();
+}
+function wsRevelar(){
+  wsState.found=wsState.placed.map(function(_,i){return i;});
+  _wsRender();
+  _actToast('Todas as palavras reveladas.');
+}
+
+// ================================================================
+// CRUZADINHA (Crossword)
+// ================================================================
+var cwState={grid:[],words:[],clues:[],size:0};
+
+function cwFromForca(){
+  if(!forcaBank.length) return _actToast('Banco da Forca vazio.','error');
+  var lines=forcaBank.map(function(x){return x.w+'|'+(x.h||'Descubra a palavra');}).join('\n');
+  var el=document.getElementById('cwInput'); if(el) el.value=lines;
+  _actToast(forcaBank.length+' palavras importadas!');
+}
+
+function cwGerar(){
+  var raw=(document.getElementById('cwInput')||{}).value||'';
+  var entries=raw.split('\n').map(function(l){
+    var parts=l.split('|').map(function(s){return s.trim();});
+    return{word:parts[0].toUpperCase().replace(/[^A-ZÁÉÍÓÚÂÊÔÃÕÇ]/g,''),clue:parts[1]||'?'};
+  }).filter(function(e){return e.word.length>=2;}).slice(0,15);
+  if(entries.length<2) return _actToast('Adicione pelo menos 2 palavras.','error');
+
+  // Sort by length desc
+  entries.sort(function(a,b){return b.word.length-a.word.length;});
+
+  // Simple crossword generator
+  var gridSize=Math.max(20,...entries.map(function(e){return e.word.length+4;}));
+  var grid=[];
+  for(var r=0;r<gridSize;r++){grid[r]=[];for(var c=0;c<gridSize;c++) grid[r][c]=null;}
+
+  var placed=[];
+  // Place first word horizontally in center
+  var first=entries[0];
+  var sr=Math.floor(gridSize/2);
+  var sc=Math.floor((gridSize-first.word.length)/2);
+  for(var k=0;k<first.word.length;k++) grid[sr][sc+k]=first.word[k];
+  placed.push({word:first.word,clue:first.clue,r:sr,c:sc,dir:'H'});
+
+  // Try to place remaining words
+  for(var ei=1;ei<entries.length;ei++){
+    var entry=entries[ei];
+    var bestScore=-1,bestPos=null;
+    // Try to intersect with placed words
+    for(var pi=0;pi<placed.length;pi++){
+      var pw=placed[pi];
+      for(var ki=0;ki<pw.word.length;ki++){
+        for(var kj=0;kj<entry.word.length;kj++){
+          if(pw.word[ki]!==entry.word[kj]) continue;
+          var newDir=pw.dir==='H'?'V':'H';
+          var nr,nc;
+          if(newDir==='H'){nr=pw.dir==='H'?pw.r:pw.r+ki;nc=pw.dir==='H'?pw.c+ki-kj:pw.c-kj;}
+          else{nr=pw.dir==='H'?pw.r-kj:pw.r+ki-kj;nc=pw.dir==='H'?pw.c+ki:pw.c;}
+          // Check if word fits
+          var canPlace=true;
+          for(var k=0;k<entry.word.length;k++){
+            var cr=newDir==='V'?nr+k:nr;
+            var cc=newDir==='H'?nc+k:nc;
+            if(cr<0||cr>=gridSize||cc<0||cc>=gridSize){canPlace=false;break;}
+            var existing=grid[cr][cc];
+            if(existing!==null&&existing!==entry.word[k]){canPlace=false;break;}
+            // Check adjacent cells (avoid parallel words touching)
+            if(existing===null){
+              if(newDir==='H'){
+                if((grid[cr-1]&&grid[cr-1][cc]!==null&&grid[cr-1][cc]!==undefined)||(grid[cr+1]&&grid[cr+1][cc]!==null&&grid[cr+1][cc]!==undefined)){
+                  // Check if this adjacency is from a crossing word
+                  var isFromCross=false;
+                  placed.forEach(function(p2){
+                    if(p2.dir==='V'){
+                      for(var m=0;m<p2.word.length;m++){
+                        if(p2.r+m===cr-1&&p2.c===cc) isFromCross=true;
+                        if(p2.r+m===cr+1&&p2.c===cc) isFromCross=true;
+                      }
+                    }
+                  });
+                  if(!isFromCross){canPlace=false;break;}
+                }
+              } else {
+                if(grid[cr]&&(grid[cr][cc-1]!==null&&grid[cr][cc-1]!==undefined)||(grid[cr][cc+1]!==null&&grid[cr][cc+1]!==undefined)){
+                  var isFromCross2=false;
+                  placed.forEach(function(p2){
+                    if(p2.dir==='H'){
+                      for(var m=0;m<p2.word.length;m++){
+                        if(p2.r===cr&&p2.c+m===cc-1) isFromCross2=true;
+                        if(p2.r===cr&&p2.c+m===cc+1) isFromCross2=true;
+                      }
+                    }
+                  });
+                  if(!isFromCross2){canPlace=false;break;}
+                }
+              }
+            }
+          }
+          // Check cells before and after word are empty
+          if(canPlace){
+            var br=newDir==='V'?nr-1:nr;
+            var bc=newDir==='H'?nc-1:nc;
+            var ar=newDir==='V'?nr+entry.word.length:nr;
+            var ac=newDir==='H'?nc+entry.word.length:nc;
+            if(br>=0&&br<gridSize&&bc>=0&&bc<gridSize&&grid[br][bc]!==null) canPlace=false;
+            if(ar>=0&&ar<gridSize&&ac>=0&&ac<gridSize&&grid[ar][ac]!==null) canPlace=false;
+          }
+          if(canPlace){
+            var score=1; // base score for intersection
+            if(score>bestScore){bestScore=score;bestPos={r:nr,c:nc,dir:newDir,kj:kj};}
+          }
+        }
+      }
+    }
+    if(bestPos){
+      for(var k=0;k<entry.word.length;k++){
+        var cr=bestPos.dir==='V'?bestPos.r+k:bestPos.r;
+        var cc=bestPos.dir==='H'?bestPos.c+k:bestPos.c;
+        grid[cr][cc]=entry.word[k];
+      }
+      placed.push({word:entry.word,clue:entry.clue,r:bestPos.r,c:bestPos.c,dir:bestPos.dir});
+    }
+  }
+
+  // Trim grid to content
+  var minR=gridSize,maxR=0,minC=gridSize,maxC=0;
+  for(var r=0;r<gridSize;r++) for(var c=0;c<gridSize;c++){
+    if(grid[r][c]!==null){minR=Math.min(minR,r);maxR=Math.max(maxR,r);minC=Math.min(minC,c);maxC=Math.max(maxC,c);}
+  }
+  var trimmed=[];
+  for(var r=minR;r<=maxR;r++){trimmed.push(grid[r].slice(minC,maxC+1));}
+  var newPlaced=placed.map(function(p){return{word:p.word,clue:p.clue,r:p.r-minR,c:p.c-minC,dir:p.dir};});
+
+  cwState={grid:trimmed,words:newPlaced,size:trimmed.length,cols:trimmed[0]?trimmed[0].length:0};
+
+  // Assign numbers
+  var numGrid={};
+  var num=1;
+  newPlaced.forEach(function(p){
+    var key=p.r+','+p.c;
+    if(!numGrid[key]) numGrid[key]=num++;
+    p.num=numGrid[key];
+  });
+
+  _cwRender();
+  _actToast(placed.length+' de '+entries.length+' palavras na cruzadinha.');
+}
+
+function _cwRender(){
+  var s=cwState;
+  var el=document.getElementById('cwGrid'); if(!el) return;
+  if(!s.grid.length){el.innerHTML='';return;}
+
+  // Build number map
+  var numMap={};
+  s.words.forEach(function(w){numMap[w.r+','+w.c]=w.num;});
+
+  el.style.display='inline-grid';
+  el.style.gridTemplateColumns='repeat('+s.cols+',36px)';
+  el.classList.add('cw-grid');
+
+  var h='';
+  for(var r=0;r<s.grid.length;r++){
+    for(var c=0;c<(s.grid[r]||[]).length;c++){
+      var val=s.grid[r][c];
+      if(val===null){
+        h+='<div class="cw-cell black"></div>';
+      } else {
+        var numLabel=numMap[r+','+c]?'<span class="cw-num">'+numMap[r+','+c]+'</span>':'';
+        h+='<div class="cw-cell">'+numLabel+'<input maxlength="1" data-r="'+r+'" data-c="'+c+'" data-answer="'+val+'" onkeyup="cwNav(event,'+r+','+c+')"></div>';
+      }
+    }
+  }
+  el.innerHTML=h;
+
+  // Clues
+  var cluesEl=document.getElementById('cwClues');
+  if(cluesEl){
+    var horiz=s.words.filter(function(w){return w.dir==='H';});
+    var vert=s.words.filter(function(w){return w.dir==='V';});
+    var ch='<div><h4>→ Horizontal</h4>';
+    horiz.forEach(function(w){ch+='<div><span class="cw-clue-num">'+w.num+'.</span>'+_escHTML(w.clue)+' ('+w.word.length+' letras)</div>';});
+    ch+='</div><div><h4>↓ Vertical</h4>';
+    vert.forEach(function(w){ch+='<div><span class="cw-clue-num">'+w.num+'.</span>'+_escHTML(w.clue)+' ('+w.word.length+' letras)</div>';});
+    ch+='</div>';
+    cluesEl.innerHTML=ch;
+  }
+}
+
+function cwNav(e,r,c){
+  if(e.key.length===1&&/[a-zA-ZÀ-ÿ]/.test(e.key)){
+    // Move to next cell
+    var next=document.querySelector('#cwGrid input[data-r="'+r+'"][data-c="'+(c+1)+'"]');
+    if(!next) next=document.querySelector('#cwGrid input[data-r="'+(r+1)+'"][data-c="'+c+'"]');
+    if(next) next.focus();
+  } else if(e.key==='Backspace'){
+    var prev=document.querySelector('#cwGrid input[data-r="'+r+'"][data-c="'+(c-1)+'"]');
+    if(!prev) prev=document.querySelector('#cwGrid input[data-r="'+(r-1)+'"][data-c="'+c+'"]');
+    if(prev) prev.focus();
+  }
+}
+function cwVerificar(){
+  var inputs=document.querySelectorAll('#cwGrid input');
+  var correct=0,total=0;
+  inputs.forEach(function(inp){
+    var answer=inp.dataset.answer;
+    var val=(inp.value||'').toUpperCase();
+    inp.classList.remove('correct','wrong');
+    total++;
+    if(val===answer){inp.classList.add('correct');correct++;}
+    else if(val) inp.classList.add('wrong');
+  });
+  if(correct===total){actPlaySound('win');_actToast('🎉 Cruzadinha completa!','success');}
+  else _actToast(correct+' de '+total+' corretas.');
+}
+function cwRevelar(){
+  document.querySelectorAll('#cwGrid input').forEach(function(inp){
+    inp.value=inp.dataset.answer;
+    inp.classList.add('correct');
+  });
+  _actToast('Respostas reveladas.');
+}
+
+// ================================================================
+// BULK IMPORT — Add configs for new games
+// ================================================================
+try{
+  if(typeof _actBulkConfigs!=='undefined'){
+    _actBulkConfigs.rel={
+      title:'Relacionar — Colar Pares em Lote',
+      hint:'<b>Formato:</b> Um par por linha: <code>Item A | Item B</code><br><br><b>Exemplos:</b><br><code>Brasil | Brasília</code><br><code>Átomo | Menor partícula</code>',
+      placeholder:'Brasil | Brasília\nArgentina | Buenos Aires\nChile | Santiago\nPeru | Lima\nColômbia | Bogotá',
+      parse:function(text){
+        return text.split('\n').map(function(l){
+          var sep=l.includes('|')?'|':';';
+          var p=l.split(sep).map(function(s){return s.trim();});
+          return(p[0]&&p[1])?{a:p[0],b:p[1]}:null;
+        }).filter(Boolean);
+      },
+      apply:function(items){
+        var added=0;
+        items.forEach(function(it){
+          if(it.a&&it.b&&!relBank.some(function(b){return b.a===it.a&&b.b===it.b;})){
+            relBank.push(it);added++;
+          }
+        });
+        _actSaveAll();relRenderBank();
+        return added;
+      }
+    };
+  }
+}catch(_){}
+
+// Whitelist new functions
+try{
+  ['relAdicionar','relLimparBanco','relIniciar','relClickLeft','relClickRight',
+   'roletaAdd','roletaFromBank','roletaFromAlunos','roletaLimpar','roletaSpin',
+   'wsGerar','wsFromForca','wsRevelar','wsStartSel','wsMoveSel','wsEndSel',
+   'cwGerar','cwFromForca','cwVerificar','cwRevelar','cwNav',
+   'actRankingOpen','actRankingPt','actRankingReset','actRankingCopy',
+   'actQROpen','actQRGenerate'
+  ].forEach(function(n){
+    if(typeof __wrapSafeGlobal==='function'&&typeof window[n]==='function') __wrapSafeGlobal(n);
+  });
+}catch(_){}
+
 
 
 
