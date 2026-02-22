@@ -1,5 +1,5 @@
-// SGP - Service Worker v15.9.7 (Mapa: trava duplicidade + inicial sobrenome)
-const CACHE_NAME = 'sgp-v15.9.7';
+// SGP - Service Worker v15.9.8 (Mapa: trava duplicidade + inicial sobrenome)
+const CACHE_NAME = 'sgp-v15.9.8';
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['./', './index.html', './SGP_Gestao_Final_v15.html']).catch(() => {})));
   self.skipWaiting();
