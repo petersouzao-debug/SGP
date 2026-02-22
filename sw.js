@@ -1,5 +1,5 @@
-// SGP - Service Worker v15.9.2 (Ranking: rolagem + fullscreen)
-const CACHE_NAME = 'sgp-v15.9.2';
+// SGP - Service Worker v15.9.5 (Mapa: mesa professor)
+const CACHE_NAME = 'sgp-v15.9.5';
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['./', './index.html', './SGP_Gestao_Final_v15.html']).catch(() => {})));
   self.skipWaiting();

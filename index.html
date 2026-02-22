@@ -1726,6 +1726,46 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         .lista-livres { padding: 15px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; background: var(--bg-body); }
         .sala-grid-wrap { flex: 1; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; align-items: center; overflow-y: auto;}
         .sala-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; width: 100%; max-width: 900px; }
+        /* Mesa do Professor (decorativa) */
+        .sala-grid-wrap{
+            position: relative;
+            --mesa-prof-w: 220px;
+            --mesa-prof-h: 64px;
+            padding-bottom: calc(var(--mesa-prof-h) + 32px);
+            padding-right: calc(var(--mesa-prof-w) + 32px);
+        }
+        @media (max-width: 720px){
+            .sala-grid-wrap{
+                --mesa-prof-w: 180px;
+                --mesa-prof-h: 56px;
+            }
+        }
+        .mesa-prof{
+            position:absolute;
+            right:16px;
+            bottom:16px;
+            width: var(--mesa-prof-w);
+            max-width: calc(100% - 32px);
+            height: var(--mesa-prof-h);
+            border:2px solid var(--border-color);
+            border-radius:12px;
+            background: var(--bg-body);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:10px;
+            font-weight:800;
+            font-size:.78rem;
+            color: var(--text-main);
+            box-shadow: 0 10px 18px rgba(0,0,0,.08);
+            opacity:.96;
+            pointer-events:none;
+            user-select:none;
+        
+            box-sizing:border-box;}
+        .mesa-prof i{ font-size:1.05rem; opacity:.9; }
+        .mesa-prof span{ padding:2px 10px; border-radius:999px; border:1px dashed var(--border-color); }
+
         .mesa { background: #f1f5f9; border: 2px dashed #cbd5e1; height: 70px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 5px; transition: 0.2s; position: relative;}
         .aluno-drag.mobile-selected { border: 3px solid var(--inclusao) !important; transform: scale(1.05); box-shadow: 0 0 10px rgba(147, 51, 234, 0.5); }
         .mesa.mobile-target { background: #dcfce7; border-color: #16a34a; cursor: pointer; animation: pulseMesa 1s infinite; }
@@ -4090,6 +4130,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                 <div id="mapaSwapMsg" style="display:none;padding:4px 10px;background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;font-size:.78rem;text-align:center;color:#92400e;">🔄 Modo troca: clique em 2 alunos para trocar de lugar. Clique ↻ para sair.</div>
                 <div class="lousa">LOUSA</div>
                 <div id="salaGrid" class="sala-grid"></div>
+                <div class="mesa-prof" aria-hidden="true"><i class="fas fa-user-tie"></i><span>Mesa do Professor</span></div>
             </div>
         </div>
 
@@ -19334,7 +19375,10 @@ function mapaImprimir(){
     .mesa.occupied{background:#eff6ff;border-style:solid;}
     .mesa.disabled{background:#f1f5f9;opacity:.3;}
     .mesa.empty{border-style:dashed;}
-  </style></head><body>
+  
+    .profdesk{max-width:800px;margin:12px auto 0;display:flex;justify-content:flex-end;}
+    .profdesk .mesa-prof{border:2px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:10px 14px;font-weight:bold;color:#334155;}
+</style></head><body>
   <h2>Mapa de Sala — ${_escHTML(filtroTurma)}</h2>
   <div class="lousa">LOUSA</div><div class="grid">`);
 
@@ -19348,7 +19392,7 @@ function mapaImprimir(){
       w.document.write(a?`<div class="mesa occupied">${_escHTML(a.nome.split(' ')[0])}</div>`:'<div class="mesa empty"></div>');
     }
   }
-  w.document.write('</div></body></html>');
+  w.document.write('</div><div class="profdesk"><div class="mesa-prof">MESA DO PROFESSOR</div></div></body></html>');
   w.document.close();
   setTimeout(()=>{w.print();},300);
 }
