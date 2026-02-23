@@ -15897,21 +15897,46 @@ function abrirHistoricoChamadas(){
   overlay.style.display = 'flex';
   overlay.onclick = function(e){ if(e.target===this) this.remove(); };
   
-  function buildContent(filterBimVal){
+  window.__histStatusFilter = 'all';
+  window.__histBimFilter = bimestreAtual;
+  window.__histExpandedKeys = new Set();
+
+  function buildContent(filterBimVal, statusFilter){
+    statusFilter = statusFilter || 'all';
     const filtered = filterBimVal === 0 ? records : records.filter(r => r.bim === filterBimVal);
+    const freq = window.__sgpFrequencia || {};
+
+    // -- status filter button style helper --
+    function sfBtn(val, label, icon, bgOn, colorOn){
+      const isOn = statusFilter === val;
+      const bg = isOn ? bgOn : 'transparent';
+      const color = isOn ? colorOn : 'var(--text-muted)';
+      const border = isOn ? bgOn : '#cbd5e1';
+      const fw = isOn ? '700' : '500';
+      return `<button onclick="window.__histSetStatus('${val}')" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:2px solid ${border};background:${bg};color:${color};font-weight:${fw};font-size:.78rem;cursor:pointer;transition:all .2s;"><i class="fas ${icon}"></i> ${label}</button>`;
+    }
     
     let html = `<div class="modal-box" style="max-width:950px;max-height:88vh;overflow-y:auto;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <h2 style="margin:0;"><i class="fas fa-history" style="color:var(--primary);"></i> Histórico de Chamadas — ${escHTML(filtroTurma)}</h2>
         <button onclick="document.getElementById('modalHistChamadas').remove();" style="border:none;background:transparent;font-size:1.3rem;cursor:pointer;color:var(--text-muted);">&times;</button>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
-        <span style="font-size:.82rem;font-weight:600;color:var(--text-muted);">Filtrar bimestre:</span>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <span style="font-size:.82rem;font-weight:600;color:var(--text-muted);">Bimestre:</span>
         <button class="freq-btn ${filterBimVal===0?'P':'none'}" onclick="window.__histChamadasRebuild(0)" style="width:auto;padding:4px 10px;">Todos</button>`;
     for(let i=1;i<=4;i++){
       html += `<button class="freq-btn ${filterBimVal===i?'P':'none'}" onclick="window.__histChamadasRebuild(${i})" style="width:auto;padding:4px 10px;">${i}ºB</button>`;
     }
     html += `</div>`;
+
+    // Status filter bar
+    html += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-size:.82rem;font-weight:600;color:var(--text-muted);"><i class="fas fa-filter"></i> Filtro rápido:</span>
+      ${sfBtn('all','Todos','fa-users','#e0f2fe','#0369a1')}
+      ${sfBtn('F','Faltas','fa-times-circle','#fee2e2','#991b1b')}
+      ${sfBtn('P','Presenças','fa-check-circle','#dcfce7','#166534')}
+      ${sfBtn('J','Justificadas','fa-exclamation-circle','#fef9c3','#854d0e')}
+    </div>`;
     
     if(filtered.length === 0){
       html += `<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-inbox" style="font-size:2rem;opacity:.4;display:block;margin-bottom:10px;"></i>Nenhum registro de chamada encontrado.</div>`;
@@ -15942,15 +15967,19 @@ function abrirHistoricoChamadas(){
       </div>`;
       
       html += `<div style="display:flex;flex-direction:column;gap:8px;">`;
-      filtered.forEach(r => {
+      filtered.forEach((r, rIdx) => {
         const dObj = new Date(r.date + 'T12:00:00');
         const dataFmt = dObj.toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
         const pctPresenca = r.total > 0 ? Math.round(((r.countP + r.countJ) / r.total) * 100) : 0;
         const pctColor = pctPresenca >= 75 ? '#16a34a' : (pctPresenca >= 50 ? '#f59e0b' : '#dc2626');
+
+        const isExpanded = window.__histExpandedKeys.has(r.key);
+        const chevron = isExpanded ? 'fa-chevron-up' : 'fa-chevron-down';
         
         html += `<div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(14,165,233,.04);flex-wrap:wrap;gap:6px;">
+          <div onclick="window.__histToggleCard('${r.key.replace(/'/g,"\\'")}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(14,165,233,.04);flex-wrap:wrap;gap:6px;cursor:pointer;user-select:none;transition:background .15s;" onmouseover="this.style.background='rgba(14,165,233,.10)'" onmouseout="this.style.background='rgba(14,165,233,.04)'">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <i class="fas ${chevron}" style="font-size:.7rem;color:var(--text-muted);width:14px;text-align:center;transition:transform .2s;"></i>
               <span style="font-weight:700;font-size:.88rem;">${dataFmt}</span>
               <span style="font-size:.72rem;color:var(--text-muted);">${r.bim}ºB</span>
               ${r.disciplina ? `<span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:700;"><i class="fas fa-book"></i> ${escHTML(r.disciplina)}</span>` : ''}
@@ -15970,6 +15999,40 @@ function abrirHistoricoChamadas(){
             <span style="margin-left:6px;">${escHTML(r.registroAula)}</span>
           </div>`;
         }
+
+        // Expandable student list
+        if(isExpanded){
+          const reg = freq[r.key] || {};
+          const statusMap = {
+            'P': {label:'Presente', icon:'fa-check-circle', bg:'#dcfce7', color:'#166534', border:'#bbf7d0'},
+            'F': {label:'Falta',    icon:'fa-times-circle', bg:'#fee2e2', color:'#991b1b', border:'#fecaca'},
+            'J': {label:'Justificada', icon:'fa-exclamation-circle', bg:'#fef9c3', color:'#854d0e', border:'#fde68a'}
+          };
+
+          let studentItems = [];
+          lista.forEach(a => {
+            const s = reg[a.id];
+            if(!s || !statusMap[s]) return;
+            if(statusFilter !== 'all' && s !== statusFilter) return;
+            studentItems.push({nome: a.nome || 'Sem nome', status: s});
+          });
+
+          html += `<div style="border-top:1px solid var(--border-color);padding:10px 14px;background:var(--card-bg);">`;
+
+          if(studentItems.length === 0){
+            html += `<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:.82rem;"><i class="fas fa-filter"></i> Nenhum aluno com esse status nesta chamada.</div>`;
+          } else {
+            html += `<div style="display:flex;flex-wrap:wrap;gap:6px;">`;
+            studentItems.forEach(item => {
+              const sm = statusMap[item.status];
+              html += `<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:${sm.bg};border:1px solid ${sm.border};font-size:.78rem;color:${sm.color};font-weight:600;transition:transform .15s,box-shadow .15s;cursor:default;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                <i class="fas ${sm.icon}" style="font-size:.72rem;"></i> ${escHTML(item.nome)}
+              </div>`;
+            });
+            html += `</div>`;
+          }
+          html += `</div>`;
+        }
         
         html += `</div>`;
       });
@@ -15982,15 +16045,34 @@ function abrirHistoricoChamadas(){
     
     return html;
   }
-  
-  window.__histChamadasRebuild = function(bimVal){
+
+  function __histRebuildCurrent(){
     const ov = document.getElementById('modalHistChamadas');
     if(!ov) return;
-    ov.innerHTML = buildContent(bimVal);
+    ov.innerHTML = buildContent(window.__histBimFilter, window.__histStatusFilter);
+    if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
+  }
+
+  window.__histToggleCard = function(key){
+    if(window.__histExpandedKeys.has(key)) window.__histExpandedKeys.delete(key);
+    else window.__histExpandedKeys.add(key);
+    __histRebuildCurrent();
+  };
+
+  window.__histSetStatus = function(val){
+    window.__histStatusFilter = val;
+    __histRebuildCurrent();
+  };
+  
+  window.__histChamadasRebuild = function(bimVal){
+    window.__histBimFilter = bimVal;
+    const ov = document.getElementById('modalHistChamadas');
+    if(!ov) return;
+    ov.innerHTML = buildContent(bimVal, window.__histStatusFilter);
     if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
   };
   
-  overlay.innerHTML = buildContent(filterBim);
+  overlay.innerHTML = buildContent(filterBim, 'all');
   document.body.appendChild(overlay);
   if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
 }
