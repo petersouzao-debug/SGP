@@ -2326,6 +2326,73 @@ body.dark-mode .rank-row:hover { background:rgba(96,165,250,0.08); }
 .rank-streak { display:inline-flex; align-items:center; gap:3px; font-size:0.68rem; font-weight:700; padding:2px 6px; border-radius:4px; background:#fef3c7; color:#92400e; }
 body.dark-mode .rank-streak { background:#422006; color:#fde68a; }
 
+/* === WEEKLY HISTORY === */
+.rank-hist-modal .modal-box {
+    width:900px; max-width:98vw; max-height:92vh; overflow:hidden; display:flex; flex-direction:column;
+}
+.rank-hist-header { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+.rank-hist-header h3 { margin:0; color:var(--text-main); font-size:1.2rem; }
+.rank-hist-config { display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:12px 16px; background:var(--bg-body); border-radius:10px; margin-bottom:16px; }
+.rank-hist-config label { font-size:0.8rem; font-weight:700; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
+.rank-hist-config select, .rank-hist-config input[type="date"] { padding:6px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-size:0.82rem; font-weight:600; }
+.rank-hist-body { flex:1; overflow-y:auto; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.rank-hist-body::-webkit-scrollbar { width:6px; height:6px; }
+.rank-hist-body::-webkit-scrollbar-track { background:transparent; }
+.rank-hist-body::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:3px; }
+
+.rank-hist-week-card { background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; margin-bottom:12px; overflow:hidden; transition:box-shadow 0.2s; }
+.rank-hist-week-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+.rank-hist-week-header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; cursor:pointer; user-select:none; background:var(--bg-body); border-bottom:1px solid transparent; transition:background 0.2s; }
+.rank-hist-week-header:hover { background:var(--border-color); }
+.rank-hist-week-header.open { border-bottom-color:var(--border-color); }
+.rank-hist-week-title { font-weight:800; font-size:0.92rem; color:var(--text-main); display:flex; align-items:center; gap:8px; }
+.rank-hist-week-title i { color:var(--primary); font-size:0.8rem; transition:transform 0.2s; }
+.rank-hist-week-header.open .rank-hist-week-title i.fa-chevron-right { transform:rotate(90deg); }
+.rank-hist-week-meta { display:flex; gap:12px; align-items:center; font-size:0.78rem; color:var(--text-muted); font-weight:600; }
+.rank-hist-week-meta span { display:inline-flex; align-items:center; gap:4px; }
+
+.rank-hist-week-body { display:none; padding:0; }
+.rank-hist-week-body.open { display:block; }
+
+.rank-hist-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+.rank-hist-table thead th { padding:8px 12px; text-align:left; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); background:var(--bg-body); border-bottom:1px solid var(--border-color); position:sticky; top:0; z-index:1; }
+.rank-hist-table tbody td { padding:8px 12px; border-bottom:1px solid var(--border-color); color:var(--text-main); }
+.rank-hist-table tbody tr:last-child td { border-bottom:none; }
+.rank-hist-table tbody tr:hover { background:rgba(99,102,241,0.04); }
+.rank-hist-table .hist-pos { font-weight:900; text-align:center; width:40px; color:var(--primary); }
+.rank-hist-table .hist-pts { font-weight:900; text-align:center; min-width:50px; }
+.rank-hist-table .hist-pts.positive { color:#16a34a; }
+.rank-hist-table .hist-pts.negative { color:#dc2626; }
+.rank-hist-table .hist-pts.zero { color:var(--text-muted); }
+.rank-hist-table .hist-detail { font-size:0.7rem; color:var(--text-muted); display:flex; gap:6px; }
+.rank-hist-table .hist-name { font-weight:600; }
+.rank-hist-trend { display:inline-flex; align-items:center; gap:2px; font-size:0.72rem; font-weight:700; }
+.rank-hist-trend.up { color:#16a34a; }
+.rank-hist-trend.down { color:#dc2626; }
+.rank-hist-trend.same { color:var(--text-muted); }
+
+.rank-hist-empty { text-align:center; padding:40px 20px; color:var(--text-muted); }
+.rank-hist-empty i { font-size:2.5rem; opacity:0.3; display:block; margin-bottom:12px; }
+
+.rank-hist-summary { display:flex; gap:8px; flex-wrap:wrap; padding:12px 16px; }
+.rank-hist-summary-card { flex:1; min-width:120px; padding:10px 14px; border-radius:10px; background:var(--bg-body); border:1px solid var(--border-color); text-align:center; }
+.rank-hist-summary-card .val { font-size:1.3rem; font-weight:900; color:var(--primary); }
+.rank-hist-summary-card .lbl { font-size:0.7rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; margin-top:2px; }
+
+.rank-hist-tabs { display:flex; gap:4px; margin-bottom:12px; }
+.rank-hist-tab { padding:6px 14px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-muted); font-size:0.8rem; font-weight:700; cursor:pointer; transition:all 0.2s; }
+.rank-hist-tab:hover { border-color:var(--primary); color:var(--primary); }
+.rank-hist-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+@media(max-width:640px){
+    .rank-hist-config { flex-direction:column; gap:8px; }
+    .rank-hist-week-header { flex-direction:column; gap:6px; align-items:flex-start; }
+    .rank-hist-table .hist-detail { display:none; }
+    .rank-hist-table thead th:nth-child(4),
+    .rank-hist-table tbody td:nth-child(4) { display:none; }
+    .rank-hist-summary { flex-direction:column; }
+}
+
 /* Responsive ranking */
 @media(max-width:768px){
     .ranking-container { max-height:calc(100vh - 160px); border-radius:12px; }
@@ -4164,6 +4231,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                             <option value="bonus">Bônus</option>
                         </select>
                         <button class="btn-tool" data-onclick="rankAddPontosModal()" title="Adicionar pontos"><i class="fas fa-plus-circle"></i></button>
+                        <button class="btn-tool" data-onclick="rankHistoricoSemanalAbrir()" title="Histórico Semanal"><i class="fas fa-calendar-week"></i></button>
                         <button class="btn-tool" data-onclick="rankExportarPDF()" title="Exportar ranking"><i class="fas fa-file-export"></i></button>
                         <button class="btn-tool" data-onclick="rankResetar()" title="Resetar pontos"><i class="fas fa-rotate-left"></i></button>
                         <button id="btnRankFullscreen" class="btn-tool" data-onclick="rankToggleFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i></button>
@@ -4219,6 +4287,48 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                 <div style="display:flex;gap:10px;margin-top:16px;">
                     <button class="btn-primary" data-onclick="rankConfirmarPontos()" style="flex:1;"><i class="fas fa-check"></i> Confirmar</button>
                     <button class="btn-tool" data-onclick="fecharModalRankPontos()" style="flex:0;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Histórico Semanal do Ranking -->
+        <div id="modalRankHistorico" class="modal-overlay rank-hist-modal" style="display:none;">
+            <div class="modal-box">
+                <div class="rank-hist-header">
+                    <h3><i class="fas fa-calendar-week" style="color:#6366f1;"></i> Histórico Semanal</h3>
+                    <button data-onclick="rankHistoricoSemanalFechar()" style="border:none;background:transparent;font-size:1.3rem;cursor:pointer;color:var(--text-muted);">✕</button>
+                </div>
+                <div class="rank-hist-config">
+                    <label>
+                        <i class="fas fa-play"></i> Início da semana:
+                        <select id="rankHistDiaInicio" class="inp" data-onchange="rankHistoricoRenderizar()">
+                            <option value="0">Domingo</option>
+                            <option value="1">Segunda</option>
+                            <option value="2">Terça</option>
+                            <option value="3">Quarta</option>
+                            <option value="4">Quinta</option>
+                            <option value="5" selected>Sexta</option>
+                            <option value="6">Sábado</option>
+                        </select>
+                    </label>
+                    <label>
+                        <i class="fas fa-stop"></i> Fim da semana:
+                        <span id="rankHistDiaFim" style="font-weight:800;color:var(--text-main);">Quinta</span>
+                    </label>
+                    <label>
+                        <i class="fas fa-calendar"></i> A partir de:
+                        <input type="date" id="rankHistDataInicio" class="inp" data-onchange="rankHistoricoRenderizar()">
+                    </label>
+                    <label>
+                        <i class="fas fa-calendar-check"></i> Até:
+                        <input type="date" id="rankHistDataFim" class="inp" data-onchange="rankHistoricoRenderizar()">
+                    </label>
+                </div>
+                <div class="rank-hist-tabs">
+                    <button class="rank-hist-tab active" data-onclick="rankHistSetView('semanal')">📊 Por Semana</button>
+                    <button class="rank-hist-tab" data-onclick="rankHistSetView('evolucao')">📈 Evolução</button>
+                </div>
+                <div class="rank-hist-body" id="rankHistBody">
                 </div>
             </div>
         </div>
@@ -6849,7 +6959,9 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 forca: (typeof forcaBank !== 'undefined') ? (forcaBank || []) : [],
                 vf: (typeof vfBank !== 'undefined') ? (vfBank || []) : [],
                 memoria: (typeof memBank !== 'undefined') ? (memBank || []) : [],
-                flashcards: (typeof fcBank !== 'undefined') ? (fcBank || []) : []
+                flashcards: (typeof fcBank !== 'undefined') ? (fcBank || []) : [],
+                relacoes: (typeof relBank !== 'undefined') ? (relBank || []) : [],
+                roleta: (typeof roletaBank !== 'undefined') ? (roletaBank || []) : []
             };
 
             const extras = {
@@ -6865,6 +6977,8 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 ["atividades_vf.json", JSON.stringify(acts.vf, null, 2)],
                 ["atividades_memoria.json", JSON.stringify(acts.memoria, null, 2)],
                 ["atividades_flashcards.json", JSON.stringify(acts.flashcards, null, 2)],
+                ["atividades_relacoes.json", JSON.stringify(acts.relacoes, null, 2)],
+                ["atividades_roleta.json", JSON.stringify(acts.roleta, null, 2)],
                 ["extras_audit.json", JSON.stringify(extras.audit, null, 2)],
                 ["extras_autobackups.json", JSON.stringify(extras.autobackups, null, 2)]
             ];
@@ -6876,6 +6990,14 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ files.push(['sgp_entregas.json', JSON.stringify(window.__sgpEntregas||{}, null, 2)]); }catch(_){}
             // Ranking da Sala
             try{ files.push(['sgp_ranking_v1.json', JSON.stringify(JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}'), null, 2)]); }catch(_){}
+            // Ranking: histórico semanal config
+            try{ files.push(['sgp_rank_hist_cfg.json', JSON.stringify(JSON.parse(localStorage.getItem('sgp_rank_hist_cfg')||'{}'), null, 2)]); }catch(_){}
+            // Quiz (atividades)
+            try{ files.push(['atividades_quiz.json', JSON.stringify((typeof quizBank!=='undefined') ? (quizBank||[]) : JSON.parse(localStorage.getItem('sgp_atividades_quiz_bank')||'[]'), null, 2)]); }catch(_){}
+            // Completar (atividades)
+            try{ files.push(['atividades_completar.json', JSON.stringify((typeof compBank!=='undefined') ? (compBank||[]) : JSON.parse(localStorage.getItem('sgp_atividades_comp_bank')||'[]'), null, 2)]); }catch(_){}
+            // Ordenar (atividades)
+            try{ files.push(['atividades_ordenar.json', JSON.stringify((typeof ordBank!=='undefined') ? (ordBank||[]) : JSON.parse(localStorage.getItem('sgp_atividades_ord_bank')||'[]'), null, 2)]); }catch(_){}
             // Audit Log
             try{ files.push(['sgp_audit_log.json', JSON.stringify(window.__sgpAuditLog||[], null, 2)]); }catch(_){}
             // Frequency events log
@@ -6943,11 +7065,15 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                         const bkVf = readJson('atividades_vf.json');
                         const bkMem = readJson('atividades_memoria.json');
                         const bkFc = readJson('atividades_flashcards.json');
+                        const bkRel = readJson('atividades_relacoes.json');
+                        const bkRoleta = readJson('atividades_roleta.json');
 
                         if(typeof forcaBank !== 'undefined' && Array.isArray(bkForca)) forcaBank = bkForca;
                         if(typeof vfBank !== 'undefined' && Array.isArray(bkVf)) vfBank = bkVf;
                         if(typeof memBank !== 'undefined' && Array.isArray(bkMem)) memBank = bkMem;
                         if(typeof fcBank !== 'undefined' && Array.isArray(bkFc)) fcBank = bkFc;
+                        if(typeof relBank !== 'undefined' && Array.isArray(bkRel)) relBank = bkRel;
+                        if(typeof roletaBank !== 'undefined' && Array.isArray(bkRoleta)) roletaBank = bkRoleta;
 
                         // Extras (opcional)
                         const exAudit = readJson('extras_audit.json');
@@ -6969,8 +7095,33 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                                 if(typeof bkVf !== 'undefined' && bkVf) __safeLSSet(ACT_STORAGE.vf, JSON.stringify(vfBank||[]));
                                 if(typeof bkMem !== 'undefined' && bkMem) __safeLSSet(ACT_STORAGE.mem, JSON.stringify(memBank||[]));
                                 if(typeof bkFc !== 'undefined' && bkFc) __safeLSSet(ACT_STORAGE.fc, JSON.stringify(fcBank||[]));
+                                if(typeof bkRel !== 'undefined' && bkRel) __safeLSSet(ACT_STORAGE.rel, JSON.stringify(relBank||[]));
+                                if(typeof bkRoleta !== 'undefined' && bkRoleta) __safeLSSet(ACT_STORAGE.roleta, JSON.stringify(roletaBank||[]));
                             }
                         }catch(e){}
+
+                        // Restore quiz/completar/ordenar banks
+                        try{
+                            const bkQuiz = readJson('atividades_quiz.json');
+                            if(Array.isArray(bkQuiz)){
+                                if(typeof quizBank !== 'undefined') quizBank = bkQuiz;
+                                __safeLSSet('sgp_atividades_quiz_bank', JSON.stringify(bkQuiz));
+                            }
+                        }catch(_){}
+                        try{
+                            const bkComp = readJson('atividades_completar.json');
+                            if(Array.isArray(bkComp)){
+                                if(typeof compBank !== 'undefined') compBank = bkComp;
+                                __safeLSSet('sgp_atividades_comp_bank', JSON.stringify(bkComp));
+                            }
+                        }catch(_){}
+                        try{
+                            const bkOrd = readJson('atividades_ordenar.json');
+                            if(Array.isArray(bkOrd)){
+                                if(typeof ordBank !== 'undefined') ordBank = bkOrd;
+                                __safeLSSet('sgp_atividades_ord_bank', JSON.stringify(bkOrd));
+                            }
+                        }catch(_){}
 
                         try{ if(typeof __saveExtras === 'function') __saveExtras(); }catch(e){}
 
@@ -7000,6 +7151,14 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                             }
                         }catch(_){}
 
+                        // Restore ranking hist config from backup
+                        try{
+                            const bkHistCfg = readJson('sgp_rank_hist_cfg.json');
+                            if(bkHistCfg && typeof bkHistCfg === 'object'){
+                                __safeLSSet('sgp_rank_hist_cfg', JSON.stringify(bkHistCfg));
+                            }
+                        }catch(_){}
+
                         // Restore audit log from backup
                         try{
                             const bkAuditLog = readJson('sgp_audit_log.json');
@@ -7026,6 +7185,10 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                         renderizarVisaoContent();
                         if(typeof initAtividades === 'function') initAtividades();
                         if(typeof initPlanner === 'function') initPlanner();
+                        // Reload quiz/comp/ord banks (not covered by initAtividades)
+                        try{ if(typeof quizLoad==='function'){ quizLoad(); quizRenderBank(); } }catch(_){}
+                        try{ if(typeof compLoad==='function'){ compLoad(); compRenderBank(); } }catch(_){}
+                        try{ if(typeof ordLoad==='function'){ ordLoad(); ordRenderBank(); } }catch(_){}
                         showToast("Backup ZIP carregado!");
                     }catch(err){
                         console.error(err);
@@ -20666,10 +20829,556 @@ window.rankQuickAdd = function(alunoId, val, cat){
     if(visaoAtual === 'ranking') renderizarRanking();
 };
 
+// ======================================================
+// HISTÓRICO SEMANAL DO RANKING
+// ======================================================
+const RANK_HIST_CFG_KEY = 'sgp_rank_hist_cfg';
+let __rankHistView = 'semanal';
+
+const DIAS_SEMANA = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+function _rankHistLoadCfg(){
+    try{ return JSON.parse(localStorage.getItem(RANK_HIST_CFG_KEY)) || {}; }catch(_){ return {}; }
+}
+function _rankHistSaveCfg(cfg){
+    try{ __safeLSSet(RANK_HIST_CFG_KEY, JSON.stringify(cfg)); }catch(_){}
+}
+
+function _rankHistGetDiaFim(diaInicio){
+    // End day is always start - 1 (wrapping around)
+    return (parseInt(diaInicio) + 6) % 7;
+}
+
+function _rankHistUpdateDiaFim(){
+    const sel = document.getElementById('rankHistDiaInicio');
+    const lbl = document.getElementById('rankHistDiaFim');
+    if(!sel || !lbl) return;
+    const diaFim = _rankHistGetDiaFim(sel.value);
+    lbl.textContent = DIAS_SEMANA[diaFim];
+}
+
+// Get the start of the week containing a given date
+function _rankHistWeekStart(date, diaInicio){
+    const d = new Date(date);
+    d.setHours(0,0,0,0);
+    const diff = (d.getDay() - diaInicio + 7) % 7;
+    d.setDate(d.getDate() - diff);
+    return d;
+}
+
+// Get week end (6 days after start)
+function _rankHistWeekEnd(weekStart){
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + 6);
+    d.setHours(23,59,59,999);
+    return d;
+}
+
+// Format date as dd/mm/yyyy
+function _rankHistFmtDate(d){
+    return d.toLocaleDateString('pt-BR');
+}
+
+// Format date as dd/mm
+function _rankHistFmtShort(d){
+    return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+// Build all weeks from historico data
+function _rankHistBuildWeeks(){
+    const diaInicio = parseInt(document.getElementById('rankHistDiaInicio')?.value ?? 5);
+    const dataInicioStr = document.getElementById('rankHistDataInicio')?.value;
+    const dataFimStr = document.getElementById('rankHistDataFim')?.value;
+    const dataInicioFilter = dataInicioStr ? new Date(dataInicioStr + 'T00:00:00') : null;
+    const dataFimFilter = dataFimStr ? new Date(dataFimStr + 'T23:59:59') : null;
+
+    // CRITICAL: sync auto-points before reading (same as _rankBuild does)
+    try{ _rankSyncAuto(); }catch(_){}
+
+    const { pontos } = _rankGetTurma();
+    const lista = getAlunosFiltrados();
+    const CATS = ['notas','comportamento','participacao','bonus'];
+
+    // Pre-compute the FULL ranking totals (with auto) for each student
+    // This uses the SAME logic as the main ranking (_rankBuild → _rankGetPontosWithAuto)
+    const rankingTotals = {};
+    lista.forEach(a => {
+        const id = String(a.id);
+        const p = _rankGetPontosWithAuto(a.id);
+        rankingTotals[id] = {
+            total: _rankTotal(p),
+            notas: p.notas||0,
+            comportamento: p.comportamento||0,
+            participacao: p.participacao||0,
+            bonus: p.bonus||0,
+            _autoNotas: p._autoNotas||0,
+            _autoParticipacao: p._autoParticipacao||0,
+            _manualNotas: p._manualNotas||0,
+            _manualParticipacao: p._manualParticipacao||0
+        };
+    });
+
+    // Also compute the stored manual running totals (pontos[id].cat)
+    // These are the TRUE manual totals (historico may be truncated at 100 entries)
+    const manualTotals = {};
+    lista.forEach(a => {
+        const id = String(a.id);
+        const p = pontos[id];
+        if(!p) { manualTotals[id] = { notas:0, comportamento:0, participacao:0, bonus:0, total:0 }; return; }
+        const mt = { notas: p.notas||0, comportamento: p.comportamento||0, participacao: p.participacao||0, bonus: p.bonus||0 };
+        mt.total = mt.notas + mt.comportamento + mt.participacao + mt.bonus;
+        manualTotals[id] = mt;
+    });
+
+    // Collect all historico entries with their timestamps
+    let allEntries = [];
+    let minTs = Infinity, maxTs = 0;
+    
+    lista.forEach(a => {
+        const id = String(a.id);
+        const p = pontos[id];
+        if(!p || !p.historico) return;
+        p.historico.forEach(h => {
+            if(!h.ts) return;
+            const ts = h.ts;
+            if(dataInicioFilter && ts < dataInicioFilter.getTime()) return;
+            if(dataFimFilter && ts > dataFimFilter.getTime()) return;
+            allEntries.push({ ...h, alunoId: id, alunoNome: a.nome });
+            if(ts < minTs) minTs = ts;
+            if(ts > maxTs) maxTs = ts;
+        });
+    });
+
+    if(allEntries.length === 0) return { weeks: [], rankingTotals, manualTotals };
+
+    // Generate week ranges
+    const firstWeekStart = _rankHistWeekStart(new Date(minTs), diaInicio);
+    const lastWeekStart = _rankHistWeekStart(new Date(maxTs), diaInicio);
+    
+    const weeks = [];
+    let ws = new Date(firstWeekStart);
+    while(ws <= lastWeekStart){
+        const we = _rankHistWeekEnd(ws);
+        weeks.push({ start: new Date(ws), end: new Date(we), entries: [] });
+        ws.setDate(ws.getDate() + 7);
+    }
+
+    // Assign entries to weeks
+    allEntries.forEach(e => {
+        const entryDate = new Date(e.ts);
+        for(const week of weeks){
+            if(entryDate >= week.start && entryDate <= week.end){
+                week.entries.push(e);
+                break;
+            }
+        }
+    });
+
+    // Build per-student stats for each week
+    weeks.forEach((week, wi) => {
+        const studentMap = {};
+        week.entries.forEach(e => {
+            if(!studentMap[e.alunoId]){
+                studentMap[e.alunoId] = { id: e.alunoId, nome: e.alunoNome, notas:0, comportamento:0, participacao:0, bonus:0, total:0 };
+            }
+            const s = studentMap[e.alunoId];
+            const cat = e.cat;
+            const val = e.val||0;
+            if(cat && CATS.includes(cat)){
+                s[cat] += val;
+            }
+            // total = sum of category values only (not unknown cats)
+            s.total = s.notas + s.comportamento + s.participacao + s.bonus;
+        });
+        
+        // Sort by total points earned in the week
+        week.students = Object.values(studentMap).sort((a,b) => b.total - a.total || a.nome.localeCompare(b.nome));
+        week.totalPts = week.students.reduce((s,st) => s + st.total, 0);
+        week.idx = wi;
+    });
+
+    // Reverse so newest week is first
+    weeks.reverse();
+    return { weeks, rankingTotals, manualTotals };
+}
+
+// Compute cumulative totals up to each week (for evolution view)
+function _rankHistBuildEvolution(){
+    const result = _rankHistBuildWeeks();
+    const weeks = (result.weeks || []).slice().reverse(); // oldest first
+    const rankingTotals = result.rankingTotals || {};
+    const manualTotals = result.manualTotals || {};
+    
+    if(weeks.length === 0) return { weeks:[], students:[], rankingTotals, manualTotals };
+
+    const lista = getAlunosFiltrados();
+
+    // Track cumulative manual totals per student per week
+    const studentsEvol = [];
+    lista.forEach(a => {
+        const id = String(a.id);
+        const rt = rankingTotals[id] || { total:0 };
+        const mt = manualTotals[id] || { total:0 };
+        let cumulative = 0;
+        const weeklyData = weeks.map(w => {
+            const found = w.students?.find(s => s.id === id);
+            const weekPts = found ? found.total : 0;
+            cumulative += weekPts;
+            return { weekPts, cumulative };
+        });
+        studentsEvol.push({ id, nome: a.nome, weeklyData, finalTotal: cumulative, rankTotal: rt.total, manualTotal: mt.total });
+    });
+
+    // Sort by ranking total (the real total)
+    studentsEvol.sort((a,b) => b.rankTotal - a.rankTotal || a.nome.localeCompare(b.nome));
+    
+    return { weeks, students: studentsEvol, rankingTotals, manualTotals };
+}
+
+// Render weekly view
+function _rankHistRenderSemanal(){
+    const body = document.getElementById('rankHistBody');
+    if(!body) return;
+
+    const result = _rankHistBuildWeeks();
+    const weeks = result.weeks || [];
+    const rankingTotals = result.rankingTotals || {};
+    const manualTotals = result.manualTotals || {};
+    
+    if(weeks.length === 0){
+        // Even with no manual entries, show auto points if they exist
+        const lista = getAlunosFiltrados();
+        let hasAutoPoints = false;
+        lista.forEach(a => {
+            const rt = rankingTotals[String(a.id)];
+            if(rt && rt.total > 0) hasAutoPoints = true;
+        });
+        if(hasAutoPoints){
+            let html = `<div style="padding:16px;">
+                <div style="text-align:center;padding:16px;color:var(--text-muted);margin-bottom:16px;">
+                    <i class="fas fa-robot" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:8px;"></i>
+                    <p><b>Sem registros manuais</b></p>
+                    <p style="font-size:0.85rem;">Nenhum ponto foi adicionado manualmente, mas existem pontos automáticos (notas e presenças).</p>
+                </div>
+                <table class="rank-hist-table"><thead><tr>
+                    <th style="text-align:center;">#</th><th>Aluno</th>
+                    <th style="text-align:center;" title="Total no ranking (inclui automáticos)">Total Ranking</th>
+                    <th>Auto</th>
+                </tr></thead><tbody>`;
+            const sorted = lista.map(a => ({ id: String(a.id), nome: a.nome, rt: rankingTotals[String(a.id)] || {total:0} }))
+                .filter(s => s.rt.total > 0)
+                .sort((a,b) => b.rt.total - a.rt.total);
+            sorted.forEach((s, i) => {
+                const autoN = s.rt._autoNotas||0;
+                const autoP = s.rt._autoParticipacao||0;
+                html += `<tr>
+                    <td class="hist-pos">${i+1}º</td>
+                    <td class="hist-name">${_escHTML(s.nome)}</td>
+                    <td class="hist-pts positive" style="text-align:center;">${s.rt.total}</td>
+                    <td class="hist-detail">
+                        ${autoN ? '<span title="Notas automáticas (avaliações)">📝auto:'+autoN+'</span>' : ''}
+                        ${autoP ? '<span title="Participação automática (presenças)">🙋auto:'+autoP+'</span>' : ''}
+                    </td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>`;
+            body.innerHTML = html;
+        } else {
+            body.innerHTML = `<div class="rank-hist-empty"><i class="fas fa-calendar-xmark"></i><p><b>Nenhum registro encontrado</b></p><p>Adicione pontos aos alunos para ver o histórico semanal.</p></div>`;
+        }
+        return;
+    }
+
+    // Compute global ranking total (with auto) for summary
+    const lista = getAlunosFiltrados();
+    let rankTotalGeral = 0;
+    let autoTotal = 0;
+    let manualTotalGeral = 0;
+    lista.forEach(a => {
+        const id = String(a.id);
+        const rt = rankingTotals[id];
+        const mt = manualTotals[id];
+        if(rt){
+            rankTotalGeral += rt.total;
+            autoTotal += (rt._autoNotas||0) + (rt._autoParticipacao||0);
+        }
+        if(mt) manualTotalGeral += mt.total;
+    });
+
+    // Summary
+    const totalWeeks = weeks.length;
+    const totalEntries = weeks.reduce((s,w) => s + w.entries.length, 0);
+
+    let html = `<div class="rank-hist-summary">
+        <div class="rank-hist-summary-card"><div class="val">${totalWeeks}</div><div class="lbl">Semanas</div></div>
+        <div class="rank-hist-summary-card"><div class="val">${rankTotalGeral}</div><div class="lbl">Total Ranking</div></div>
+        <div class="rank-hist-summary-card"><div class="val">${manualTotalGeral}</div><div class="lbl">Pts Manuais</div></div>
+        <div class="rank-hist-summary-card"><div class="val">${autoTotal}</div><div class="lbl">Pts Automáticos</div></div>
+        <div class="rank-hist-summary-card"><div class="val">${totalEntries}</div><div class="lbl">Registros</div></div>
+    </div>`;
+
+    if(autoTotal > 0){
+        html += `<div style="padding:4px 16px 8px;font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> Pts Automáticos = notas das avaliações + presenças. Aparecem no Total Ranking mas não se distribuem por semana.</div>`;
+    }
+
+    weeks.forEach((week, wi) => {
+        const isFirst = wi === 0;
+        const dateLabel = _rankHistFmtShort(week.start) + ' a ' + _rankHistFmtShort(week.end);
+        const yearLabel = week.start.getFullYear();
+        const entriesCount = week.entries.length;
+        const studentsWithPts = week.students.filter(s => s.total !== 0).length;
+
+        // Check if this is the current week
+        const now = new Date();
+        const isCurrent = now >= week.start && now <= week.end;
+        const weekLabel = isCurrent ? 'Semana Atual' : `Semana ${_rankHistFmtShort(week.start)}`;
+        
+        html += `<div class="rank-hist-week-card">
+            <div class="rank-hist-week-header${isFirst ? ' open' : ''}" data-onclick="rankHistToggleWeek(this)">
+                <div class="rank-hist-week-title">
+                    <i class="fas fa-chevron-right"></i>
+                    ${isCurrent ? '<span style="color:#16a34a;">●</span>' : ''}
+                    ${weekLabel} <span style="font-weight:400;color:var(--text-muted);font-size:0.82rem;">(${dateLabel}/${yearLabel})</span>
+                </div>
+                <div class="rank-hist-week-meta">
+                    <span><i class="fas fa-star"></i> ${week.totalPts} pts</span>
+                    <span><i class="fas fa-users"></i> ${studentsWithPts} alunos</span>
+                    <span><i class="fas fa-list"></i> ${entriesCount} reg.</span>
+                </div>
+            </div>
+            <div class="rank-hist-week-body${isFirst ? ' open' : ''}">`;
+
+        if(week.students.length === 0){
+            html += `<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:0.85rem;">Sem registros manuais nesta semana</div>`;
+        } else {
+            html += `<table class="rank-hist-table"><thead><tr>
+                <th style="text-align:center;">#</th><th>Aluno</th><th style="text-align:center;">Pts Semana</th>
+                <th>Detalhes</th><th style="text-align:center;" title="Total geral no ranking (inclui automáticos)">Total Ranking</th><th style="text-align:center;">Posição</th>
+            </tr></thead><tbody>`;
+
+            // Get previous week for trend comparison
+            const prevWeek = wi < weeks.length - 1 ? weeks[wi+1] : null;
+
+            week.students.forEach((s, si) => {
+                const pos = si + 1;
+                const ptsClass = s.total > 0 ? 'positive' : (s.total < 0 ? 'negative' : 'zero');
+                const sign = s.total > 0 ? '+' : '';
+                
+                // Get ranking total for this student
+                const rt = rankingTotals[s.id] || { total: 0 };
+
+                // Trend: compare position with previous week
+                let trendHtml = '';
+                if(prevWeek){
+                    const prevIdx = prevWeek.students.findIndex(ps => ps.id === s.id);
+                    if(prevIdx === -1){
+                        trendHtml = `<span class="rank-hist-trend up" title="Novo"><i class="fas fa-star"></i> Novo</span>`;
+                    } else {
+                        const prevPos = prevIdx + 1;
+                        const diff = prevPos - pos;
+                        if(diff > 0) trendHtml = `<span class="rank-hist-trend up" title="Subiu ${diff}"><i class="fas fa-arrow-up"></i> +${diff}</span>`;
+                        else if(diff < 0) trendHtml = `<span class="rank-hist-trend down" title="Desceu ${Math.abs(diff)}"><i class="fas fa-arrow-down"></i> ${diff}</span>`;
+                        else trendHtml = `<span class="rank-hist-trend same" title="Manteve">● =</span>`;
+                    }
+                }
+
+                html += `<tr>
+                    <td class="hist-pos">${pos}º</td>
+                    <td class="hist-name">${_escHTML(s.nome)}</td>
+                    <td class="hist-pts ${ptsClass}">${sign}${s.total}</td>
+                    <td class="hist-detail">
+                        <span title="Notas">📝${s.notas||0}</span>
+                        <span title="Comportamento">⭐${s.comportamento||0}</span>
+                        <span title="Participação">🙋${s.participacao||0}</span>
+                        <span title="Bônus">🎁${s.bonus||0}</span>
+                    </td>
+                    <td class="hist-pts" style="text-align:center;color:var(--primary);font-weight:800;" title="Total geral no ranking">${rt.total}</td>
+                    <td style="text-align:center;">${trendHtml}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+        }
+
+        html += `</div></div>`;
+    });
+
+    body.innerHTML = html;
+}
+
+// Render evolution view (table with weeks as columns)
+function _rankHistRenderEvolucao(){
+    const body = document.getElementById('rankHistBody');
+    if(!body) return;
+
+    const { weeks, students, rankingTotals } = _rankHistBuildEvolution();
+    
+    if(weeks.length === 0 || students.length === 0){
+        body.innerHTML = `<div class="rank-hist-empty"><i class="fas fa-chart-line"></i><p><b>Nenhum registro encontrado</b></p><p>Adicione pontos aos alunos para ver a evolução.</p></div>`;
+        return;
+    }
+
+    // Show students with any ranking total (including auto)
+    const activeStudents = students.filter(s => s.rankTotal !== 0);
+    if(activeStudents.length === 0){
+        body.innerHTML = `<div class="rank-hist-empty"><i class="fas fa-chart-line"></i><p><b>Nenhum aluno com pontos no período</b></p></div>`;
+        return;
+    }
+
+    let html = `<div style="overflow-x:auto;">
+    <table class="rank-hist-table">
+    <thead><tr>
+        <th style="position:sticky;left:0;z-index:2;background:var(--bg-body);">#</th>
+        <th style="position:sticky;left:40px;z-index:2;background:var(--bg-body);min-width:120px;">Aluno</th>`;
+    
+    weeks.forEach(w => {
+        const isCurrent = new Date() >= w.start && new Date() <= w.end;
+        const label = _rankHistFmtShort(w.start);
+        html += `<th style="text-align:center;min-width:80px;${isCurrent ? 'color:#16a34a;font-weight:900;' : ''}" title="${_rankHistFmtDate(w.start)} a ${_rankHistFmtDate(w.end)}">${label}${isCurrent ? ' ●' : ''}</th>`;
+    });
+    
+    html += `<th style="text-align:center;font-weight:900;min-width:70px;" title="Soma pontos manuais">Manual</th>`;
+    html += `<th style="text-align:center;font-weight:900;min-width:70px;" title="Total real no ranking (manual + automático)">Ranking</th></tr></thead><tbody>`;
+
+    activeStudents.forEach((s, si) => {
+        const rt = (rankingTotals || {})[s.id] || { total:0, _autoNotas:0, _autoParticipacao:0 };
+        const autoTot = (rt._autoNotas||0) + (rt._autoParticipacao||0);
+
+        html += `<tr>
+            <td class="hist-pos" style="position:sticky;left:0;z-index:1;background:var(--card-bg);">${si+1}º</td>
+            <td class="hist-name" style="position:sticky;left:40px;z-index:1;background:var(--card-bg);">${_escHTML(s.nome)}</td>`;
+        
+        s.weeklyData.forEach((wd, wi) => {
+            const pts = wd.weekPts;
+            const cls = pts > 0 ? 'positive' : (pts < 0 ? 'negative' : 'zero');
+            const sign = pts > 0 ? '+' : '';
+            const cumTip = `Acumulado manual: ${wd.cumulative} pts`;
+            html += `<td class="hist-pts ${cls}" style="text-align:center;" title="${cumTip}">${pts !== 0 ? sign+pts : '—'}</td>`;
+        });
+        
+        html += `<td class="hist-pts" style="text-align:center;font-weight:800;color:var(--text-muted);" title="Total manual armazenado">${s.manualTotal}</td>`;
+        html += `<td class="hist-pts" style="text-align:center;font-weight:900;color:var(--primary);" title="Manual: ${s.manualTotal} + Auto: ${autoTot}">${s.rankTotal}</td></tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+
+    // Add a visual bar chart summary for top 10 using RANKING totals
+    const top10 = activeStudents.slice(0, 10);
+    const maxTotal = top10[0]?.rankTotal || 1;
+    
+    html += `<div style="padding:16px;">
+        <h4 style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;font-weight:700;">Total Ranking — Top ${Math.min(10, top10.length)}</h4>`;
+    
+    top10.forEach(s => {
+        const rt = (rankingTotals || {})[s.id] || { total:0, _autoNotas:0, _autoParticipacao:0 };
+        const autoTot = (rt._autoNotas||0) + (rt._autoParticipacao||0);
+        const manualVal = s.manualTotal || s.finalTotal;
+        const manualPct = maxTotal > 0 ? Math.round((manualVal / maxTotal) * 100) : 0;
+        const autoPct = maxTotal > 0 ? Math.round((autoTot / maxTotal) * 100) : 0;
+        const color = _rankAvatarColor(parseInt(s.id) || 0);
+        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="width:100px;font-size:0.78rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_escHTML(s.nome)}">${_escHTML(s.nome.split(' ')[0])}</span>
+            <div style="flex:1;height:20px;background:var(--bg-body);border-radius:6px;overflow:hidden;display:flex;">
+                <div style="height:100%;width:${manualPct}%;background:${color};opacity:0.8;transition:width 0.3s;" title="Manual: ${manualVal}"></div>
+                <div style="height:100%;width:${autoPct}%;background:${color};opacity:0.35;transition:width 0.3s;" title="Auto: ${autoTot}"></div>
+            </div>
+            <span style="font-size:0.78rem;font-weight:900;min-width:40px;text-align:right;">${s.rankTotal}</span>
+        </div>`;
+    });
+    
+    if(top10.some(s => { const rt = (rankingTotals||{})[s.id]||{}; return (rt._autoNotas||0)+(rt._autoParticipacao||0) > 0; })){
+        html += `<div style="display:flex;gap:12px;margin-top:8px;font-size:0.7rem;color:var(--text-muted);">
+            <span>■ Manual</span> <span style="opacity:0.5;">■ Automático (notas + presenças)</span>
+        </div>`;
+    }
+    
+    html += `</div>`;
+
+    body.innerHTML = html;
+}
+
+// Toggle week accordion
+window.rankHistToggleWeek = function(header){
+    header.classList.toggle('open');
+    const body = header.nextElementSibling;
+    if(body) body.classList.toggle('open');
+};
+
+// Switch views
+window.rankHistSetView = function(view){
+    __rankHistView = view;
+    document.querySelectorAll('.rank-hist-tab').forEach(t => {
+        t.classList.toggle('active', (view === 'semanal' && t.textContent.includes('Semana')) || (view === 'evolucao' && t.textContent.includes('Evolução')));
+    });
+    rankHistoricoRenderizar();
+};
+
+// Main render
+window.rankHistoricoRenderizar = function(){
+    _rankHistUpdateDiaFim();
+    
+    // Save config
+    const cfg = {
+        diaInicio: document.getElementById('rankHistDiaInicio')?.value || '5',
+        dataInicio: document.getElementById('rankHistDataInicio')?.value || '',
+        dataFim: document.getElementById('rankHistDataFim')?.value || ''
+    };
+    _rankHistSaveCfg(cfg);
+
+    if(__rankHistView === 'evolucao'){
+        _rankHistRenderEvolucao();
+    } else {
+        _rankHistRenderSemanal();
+    }
+};
+
+// Open modal
+window.rankHistoricoSemanalAbrir = function(){
+    const modal = document.getElementById('modalRankHistorico');
+    if(!modal) return;
+
+    if(filtroTurma === 'Todas' || !filtroTurma){
+        showToast('Selecione uma turma primeiro.', 'error');
+        return;
+    }
+
+    // Load saved config
+    const cfg = _rankHistLoadCfg();
+    const selDia = document.getElementById('rankHistDiaInicio');
+    const inpDataIni = document.getElementById('rankHistDataInicio');
+    const inpDataFim = document.getElementById('rankHistDataFim');
+    
+    if(selDia && cfg.diaInicio !== undefined) selDia.value = cfg.diaInicio;
+    if(inpDataIni && cfg.dataInicio) inpDataIni.value = cfg.dataInicio;
+    if(inpDataFim && cfg.dataFim) inpDataFim.value = cfg.dataFim;
+
+    _rankHistUpdateDiaFim();
+    
+    // Reset view
+    __rankHistView = 'semanal';
+    document.querySelectorAll('.rank-hist-tab').forEach(t => {
+        t.classList.toggle('active', t.textContent.includes('Semana'));
+    });
+
+    modal.style.display = 'flex';
+    
+    // Sync auto points and render
+    try{ _rankSyncAuto(); }catch(_){}
+    rankHistoricoRenderizar();
+};
+
+// Close modal
+window.rankHistoricoSemanalFechar = function(){
+    const modal = document.getElementById('modalRankHistorico');
+    if(modal) modal.style.display = 'none';
+};
+
 // --- Whitelist functions ---
 try{
   ['renderizarRanking','rankAddPontosModal','fecharModalRankPontos','rankSetPontos',
-   'rankConfirmarPontos','rankExportarPDF','rankResetar','rankQuickAdd'].forEach(n=>{
+   'rankConfirmarPontos','rankExportarPDF','rankResetar','rankQuickAdd',
+   'rankHistoricoSemanalAbrir','rankHistoricoSemanalFechar','rankHistoricoRenderizar',
+   'rankHistSetView','rankHistToggleWeek'].forEach(n=>{
     if(typeof __wrapSafeGlobal==='function'&&typeof window[n]==='function') __wrapSafeGlobal(n);
   });
 }catch(_){}
