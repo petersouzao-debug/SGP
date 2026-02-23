@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (v15.9.12 — Sorteador por turma)</title>
+    <title>SGP - Gestão Final (v15.9.12.10 — Backup/UI prefs)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -5970,6 +5970,116 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                 return false;
             }
         }
+        // === IDs numéricos seguros (evita colisões de Date.now()+Math.random por perda de precisão) ===
+        function __idSeqNext(){
+            try{
+                const K = 'sgp_id_seq';
+                let v = parseInt(localStorage.getItem(K) || '0', 10);
+                if(!isFinite(v) || v < 0) v = 0;
+                v = (v + 1) % 1000; // 0..999
+                __safeLSSet(K, String(v));
+                return v;
+            }catch(_){
+                return Math.floor(Math.random()*1000);
+            }
+        }
+        function __newId(){
+            // Safe integer: (ms * 1000) + seq (0..999)
+            return (Date.now() * 1000) + __idSeqNext();
+        }
+        function __dedupeAlunoIds(){
+            try{
+                if(!Array.isArray(alunos) || alunos.length < 2) return;
+                const seen = new Map();
+                const dupes = [];
+                for(let i=0;i<alunos.length;i++){
+                    const a = alunos[i];
+                    const k = (a && (a.id!==undefined && a.id!==null)) ? String(a.id) : '';
+                    if(!k) continue;
+                    if(seen.has(k)) dupes.push({idx:i, old:k});
+                    else seen.set(k, i);
+                }
+                if(!dupes.length) return;
+
+                const remaps = [];
+                for(const d of dupes){
+                    let nid = __newId();
+                    let guard = 0;
+                    while(seen.has(String(nid)) && guard < 6){ nid = __newId(); guard++; }
+                    alunos[d.idx].id = nid;
+                    remaps.push({old:d.old, neu:String(nid)});
+                    seen.set(String(nid), d.idx);
+                }
+
+                // Aplica remapeamentos em dados que usam alunoId como chave
+                for(const r of remaps){
+                    const oldK = r.old, newK = r.neu;
+
+                    // Entregas
+                    try{
+                        const E = window.__sgpEntregas;
+                        if(E && typeof E === 'object'){
+                            Object.keys(E).forEach(k=>{
+                                const blk = E[k];
+                                if(blk && blk.entregas && typeof blk.entregas === 'object'){
+                                    if(blk.entregas[oldK] !== undefined && blk.entregas[newK] === undefined){
+                                        try{ blk.entregas[newK] = JSON.parse(JSON.stringify(blk.entregas[oldK])); }
+                                        catch(_){ blk.entregas[newK] = blk.entregas[oldK]; }
+                                    }
+                                }
+                            });
+                            __safeLSSet('sgp_entregas', JSON.stringify(E));
+                        }
+                    }catch(_){}
+
+                    // Frequência
+                    try{
+                        const F = window.__sgpFrequencia;
+                        if(F && typeof F === 'object'){
+                            Object.keys(F).forEach(k=>{
+                                const reg = F[k];
+                                if(reg && typeof reg === 'object'){
+                                    if(reg[oldK] !== undefined && reg[newK] === undefined){
+                                        reg[newK] = reg[oldK];
+                                    }
+                                }
+                            });
+                            __safeLSSet('sgp_frequencia', JSON.stringify(F));
+                        }
+                    }catch(_){}
+
+                    // Ranking
+                    try{
+                        const R = JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}');
+                        if(R && typeof R === 'object'){
+                            Object.keys(R).forEach(turma=>{
+                                const byB = R[turma];
+                                if(!byB || typeof byB !== 'object') return;
+                                Object.keys(byB).forEach(bim=>{
+                                    const byId = byB[bim];
+                                    if(byId && typeof byId === 'object'){
+                                        if(byId[oldK] !== undefined && byId[newK] === undefined){
+                                            try{ byId[newK] = JSON.parse(JSON.stringify(byId[oldK])); }
+                                            catch(_){ byId[newK] = byId[oldK]; }
+                                        }
+                                    }
+                                });
+                            });
+                            __safeLSSet('sgp_ranking_v1', JSON.stringify(R));
+                        }
+                    }catch(_){}
+                }
+
+                try{ if(typeof salvarDadosLocal === 'function') salvarDadosLocal(); }catch(_){}
+                try{ if(typeof showToast === 'function') showToast('IDs de alunos corrigidos (colisão detectada).', 'warning'); }catch(_){}
+            }catch(e){
+                try{ if(typeof __diagCapture==='function') __diagCapture(e, '__dedupeAlunoIds'); }catch(_){}
+            }
+        }
+
+
+
+
 
 
         // === Helper DOM: remover elemento com segurança (evita optional chaining em handlers inline) ===
@@ -6068,80 +6178,20 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
         }
 
         function __downloadBlob(blob, filename){
-            const a = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            a.href = url;
-            a.download = filename || 'arquivo';
-            a.style.display = 'none';
-            try{ (document.body || document.documentElement).appendChild(a); }catch(_){}
-            try{ a.click(); }catch(_){ 
-              try{ a.dispatchEvent(new MouseEvent('click', {bubbles:true,cancelable:true,view:window})); }catch(__){}
-            }
-            setTimeout(()=>{
-              try{ URL.revokeObjectURL(url); }catch(_){}
-              try{ a.remove(); }catch(_){ try{ a.parentNode && a.parentNode.removeChild(a); }catch(__){} }
-            }, 2500);
-        }
-
-        // Delegação para data-onclick/data-onchange/data-onkeydown
-        // (evita depender de handlers inline e garante que botões funcionem em modo offline/file://)
-        function __installDataActionDelegates(){
             try{
-                if(window.__SGP_DATA_ACTIONS_BOUND) return;
-                window.__SGP_DATA_ACTIONS_BOUND = true;
-
-                const __run = (expr, elem, event)=>{
-                    if(!expr) return;
-                    // suporta múltiplas instruções; preserva "this" como o elemento
-                    try{
-                        const fn = new Function('event','elem', 'with(window){ return (function(){ ' + expr + ' }).call(elem); }');
-                        return fn.call(elem, event, elem);
-                    }catch(e){
-                        try{ console.error(e); }catch(_){}
-                        try{ if(typeof __diagCapture==='function') __diagCapture(e, 'data-action', { expr: String(expr).slice(0, 240) }); }catch(_){}
-                    }
-                };
-
-                document.addEventListener('click', function(event){
-                    const el = event.target && event.target.closest ? event.target.closest('[data-onclick]') : null;
-                    if(!el) return;
-                    if(el.disabled) return;
-                    const expr = el.getAttribute('data-onclick');
-                    const ret = __run(expr, el, event);
-                    if(ret === false){
-                        try{ event.preventDefault(); }catch(_){}
-                        try{ event.stopPropagation(); }catch(_){}
-                    }
-                }, true);
-
-                document.addEventListener('change', function(event){
-                    const el = event.target && event.target.closest ? event.target.closest('[data-onchange]') : null;
-                    if(!el) return;
-                    if(el.disabled) return;
-                    const expr = el.getAttribute('data-onchange');
-                    const ret = __run(expr, el, event);
-                    if(ret === false){
-                        try{ event.preventDefault(); }catch(_){}
-                        try{ event.stopPropagation(); }catch(_){}
-                    }
-                }, true);
-
-                document.addEventListener('keydown', function(event){
-                    const el = event.target && event.target.closest ? event.target.closest('[data-onkeydown]') : null;
-                    if(!el) return;
-                    if(el.disabled) return;
-                    const expr = el.getAttribute('data-onkeydown');
-                    const ret = __run(expr, el, event);
-                    if(ret === false){
-                        try{ event.preventDefault(); }catch(_){}
-                        try{ event.stopPropagation(); }catch(_){}
-                    }
-                }, true);
-            }catch(_){}
+                const a = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                a.href = url;
+                a.download = filename || 'arquivo';
+                // Alguns navegadores exigem que o link esteja no DOM
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(()=>{ try{ URL.revokeObjectURL(url); }catch(_){ } }, 2500);
+            }catch(e){
+                try{ console.error(e); }catch(_){}
+            }
         }
-
-        try{ __installDataActionDelegates(); }catch(_){}
-
 
         function __exportState(){
             const out = {
@@ -6512,6 +6562,13 @@ function __sgpMainOnLoad(){
         }
 
         function showToast(msg, type='success') {
+            try{
+                const now = Date.now();
+                const k = String(type)+'|'+String(msg);
+                if(window.__sgpLastToastKey === k && (now - (window.__sgpLastToastAt||0)) < 350) return;
+                window.__sgpLastToastKey = k;
+                window.__sgpLastToastAt = now;
+            }catch(_){ }
             const c = document.getElementById('toastContainer');
             const t = document.createElement('div');
             t.className = `toast ${type}`;
@@ -6656,7 +6713,7 @@ function __sgpMainOnLoad(){
             const aulasOrigem = aulas.filter(a => a.turma === origem && a.bimestre === bimestreAtual);
             if(aulasOrigem.length === 0) return showToast("Nenhuma aula encontrada na origem.", "error");
             if(confirm(`Copiar ${__u(aulasOrigem.length)} aulas de ${origem} para ${filtroTurma}?`)) {
-                aulasOrigem.forEach(a => { aulas.push({ id: Date.now() + Math.random(), turma: filtroTurma, bimestre: bimestreAtual, tema: a.tema, bncc: a.bncc || '', status: false, data: "" }); });
+                aulasOrigem.forEach(a => { aulas.push({ id: __newId(), turma: filtroTurma, bimestre: bimestreAtual, tema: a.tema, bncc: a.bncc || '', status: false, data: "" }); });
                 salvarDadosLocal(); renderizarAulas(); renderizarCalendario();
                 showToast("Aulas copiadas!");
             }
@@ -6805,6 +6862,8 @@ function carregarDados() {
   }
 
   try{ if(typeof __loadExtras === 'function') __loadExtras(); }catch(_){}
+  try{ if(typeof __dedupeAlunoIds === 'function') __dedupeAlunoIds(); }catch(_){}
+
 }
 
 
@@ -7043,19 +7102,29 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.12",
+                version: "v15.9.12.10",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
             const planner = plannerTasks || [];
 
+            // Preferências de interface (UI) — tema/cor/fonte/sidebar/grid
+            const uiPrefs = {};
+            try{
+                ['sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid','sgp_plano_disc_last'].forEach(k=>{
+                    const v = localStorage.getItem(k);
+                    if(v !== null && typeof v !== 'undefined') uiPrefs[k] = v;
+                });
+            }catch(_){ }
+
+            const _lsArr = (k)=>{ try{ const r=localStorage.getItem(k); const v=r?JSON.parse(r):null; return Array.isArray(v)?v:[]; }catch(_){ return []; } };
             const acts = {
-                forca: (typeof forcaBank !== 'undefined') ? (forcaBank || []) : [],
-                vf: (typeof vfBank !== 'undefined') ? (vfBank || []) : [],
-                memoria: (typeof memBank !== 'undefined') ? (memBank || []) : [],
-                flashcards: (typeof fcBank !== 'undefined') ? (fcBank || []) : [],
-                relacoes: (typeof relBank !== 'undefined') ? (relBank || []) : [],
-                roleta: (typeof roletaBank !== 'undefined') ? (roletaBank || []) : []
+                forca: (typeof forcaBank !== 'undefined' && Array.isArray(forcaBank)) ? (forcaBank || []) : _lsArr('sgp_atividades_forca_bank'),
+                vf: (typeof vfBank !== 'undefined' && Array.isArray(vfBank)) ? (vfBank || []) : _lsArr('sgp_atividades_vf_bank'),
+                memoria: (typeof memBank !== 'undefined' && Array.isArray(memBank)) ? (memBank || []) : _lsArr('sgp_atividades_mem_bank'),
+                flashcards: (typeof fcBank !== 'undefined' && Array.isArray(fcBank)) ? (fcBank || []) : _lsArr('sgp_atividades_fc_bank'),
+                relacoes: (typeof relBank !== 'undefined' && Array.isArray(relBank)) ? (relBank || []) : _lsArr('sgp_atividades_rel_bank'),
+                roleta: (typeof roletaBank !== 'undefined' && Array.isArray(roletaBank)) ? (roletaBank || []) : _lsArr('sgp_atividades_roleta_bank')
             };
 
             const extras = {
@@ -7067,6 +7136,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 ["manifest.json", JSON.stringify(meta, null, 2)],
                 ["sgp_core.json", JSON.stringify(core, null, 2)],
                 ["sgp_planner.json", JSON.stringify(planner, null, 2)],
+                ["sgp_ui_prefs.json", JSON.stringify(uiPrefs, null, 2)],
                 ["atividades_forca.json", JSON.stringify(acts.forca, null, 2)],
                 ["atividades_vf.json", JSON.stringify(acts.vf, null, 2)],
                 ["atividades_memoria.json", JSON.stringify(acts.memoria, null, 2)],
@@ -7079,9 +7149,9 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
 
             // === DADOS ADICIONAIS (V13+) ===
             // Frequência / Chamada
-            try{ files.push(['sgp_frequencia.json', JSON.stringify(window.__sgpFrequencia||{}, null, 2)]); }catch(_){}
+            try{ files.push(['sgp_frequencia.json', JSON.stringify((window.__sgpFrequencia && typeof window.__sgpFrequencia==='object') ? window.__sgpFrequencia : (JSON.parse(localStorage.getItem('sgp_frequencia')||'{}')), null, 2)]); }catch(_){}
             // Entregas
-            try{ files.push(['sgp_entregas.json', JSON.stringify(window.__sgpEntregas||{}, null, 2)]); }catch(_){}
+            try{ files.push(['sgp_entregas.json', JSON.stringify((window.__sgpEntregas && typeof window.__sgpEntregas==='object') ? window.__sgpEntregas : (JSON.parse(localStorage.getItem('sgp_entregas')||'{}')), null, 2)]); }catch(_){}
             // Ranking da Sala
             try{ files.push(['sgp_ranking_v1.json', JSON.stringify(JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}'), null, 2)]); }catch(_){}
             // Ranking: histórico semanal config
@@ -7104,8 +7174,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{
                 const zipBlob = __zipStore(__collectBackupFiles());
                 __downloadBlob(zipBlob, __backupFileName());
-
-                __safeLSSet('sgp_last_backup', Date.now()); 
+__safeLSSet('sgp_last_backup', Date.now()); 
                 try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){ }
                 try{ __safeLSSet('sgp_last_core_save', localStorage.getItem('sgp_last_core_save') || Date.now()); }catch(_){ }
                 checkBackupStatus();
@@ -7175,6 +7244,21 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                             // Core é salvo de forma atômica via salvarDadosLocal() mais abaixo (evita duplicação de chaves)
                             __safeLSSet('sgp_planner', JSON.stringify(plannerTasks || []));
                         }catch(e){} 
+
+                        // UI prefs (tema/cor/fonte/sidebar/grid)
+                        try{
+                            const ui = readJson('sgp_ui_prefs.json');
+                            if(ui && typeof ui === 'object'){
+                                Object.keys(ui).forEach(k=>{
+                                    try{ if(k && String(k).startsWith('sgp_')) __safeLSSet(k, String(ui[k])); }catch(_){}
+                                });
+                                try{ if(localStorage.getItem('sgp_darkmode')==='1') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }catch(_){}
+                                try{ const a=localStorage.getItem('sgp_accent'); if(a) document.documentElement.style.setProperty('--primary', a); }catch(_){}
+                                try{ const fs=localStorage.getItem('sgp_fontsize'); if(fs) document.documentElement.style.fontSize=fs+'px'; }catch(_){}
+                                try{ if(typeof initSidebarMobile==='function') initSidebarMobile(); }catch(_){}
+                            }
+                        }catch(_){}
+
 
 
 // Atividades storages
@@ -7278,22 +7362,11 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                         try{ if(typeof quizLoad==='function'){ quizLoad(); quizRenderBank(); } }catch(_){}
                         try{ if(typeof compLoad==='function'){ compLoad(); compRenderBank(); } }catch(_){}
                         try{ if(typeof ordLoad==='function'){ ordLoad(); ordRenderBank(); } }catch(_){}
-                        // Ajusta status de backup após restauração (evita alerta pendente logo após importar)
-                        try{
-                            const man = readJson('manifest.json') || {};
-                            let ts = Date.now();
-                            try{
-                                if(man && man.exportedAt){
-                                    const parsed = Date.parse(man.exportedAt);
-                                    if(!isNaN(parsed)) ts = parsed;
-                                }
-                            }catch(_){}
-                            __safeLSSet('sgp_last_backup', ts);
-                            __safeLSSet('sgp_last_core_save', ts);
-                            __safeLSSet('sgp_backup_pending', '0');
-                            if(typeof checkBackupStatus==='function') checkBackupStatus();
-                            dadosNaoSalvosEmArquivo = false;
-                        }catch(_){}
+                        try{ __safeLSSet('sgp_last_backup', Date.now()); }catch(_){}
+                        try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){}
+                        try{ __safeLSSet('sgp_last_core_save', localStorage.getItem('sgp_last_core_save') || Date.now()); }catch(_){}
+                        try{ checkBackupStatus(); }catch(_){}
+                        try{ dadosNaoSalvosEmArquivo = false; }catch(_){}
                         showToast("Backup ZIP carregado!");
                     }catch(err){
                         console.error(err);
@@ -7327,16 +7400,11 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                         renderizarMenu();
                         renderizarVisao();
                         atualizarLabelsConfig();
-                        // Ajusta status de backup após restauração (modo JSON legado)
-                        try{
-                            const ts = Date.now();
-                            __safeLSSet('sgp_last_backup', ts);
-                            __safeLSSet('sgp_last_core_save', ts);
-                            __safeLSSet('sgp_backup_pending', '0');
-                            if(typeof checkBackupStatus==='function') checkBackupStatus();
-                            dadosNaoSalvosEmArquivo = false;
-                        }catch(_){}
                         showToast("Backup carregado!");
+                        try{ __safeLSSet('sgp_last_backup', Date.now()); }catch(_){ }
+                        try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){ }
+                        try{ checkBackupStatus(); }catch(_){ }
+                        try{ dadosNaoSalvosEmArquivo = false; }catch(_){ }
                     }
                 }catch(e){
                     showToast("Erro ao carregar.", "error");
@@ -8144,7 +8212,7 @@ function addAulaIndividual(){
                 if(!sel || sel.length === 0) return showToast("Selecione Turma", "error");
 
                 sel.forEach(tr => {
-                    aulas.push({id:Date.now()+Math.random(),turma:tr,bimestre:bimestreAtual,tema:t, bncc:b, bloomNivel:bloomNivel, bloomVerbo:bloomVerbo, status:false,data:"", tipo:'aula'});
+                    aulas.push({id:__newId(),turma:tr,bimestre:bimestreAtual,tema:t, bncc:b, bloomNivel:bloomNivel, bloomVerbo:bloomVerbo, status:false,data:"", tipo:'aula'});
                 });
 
                 salvarDadosLocal();
@@ -8156,7 +8224,7 @@ function addAulaIndividual(){
 
             // Modo tradicional: somente turma selecionada no filtro
             if(filtroTurma!=='Todas'){
-                aulas.push({id:Date.now()+Math.random(),turma:filtroTurma,bimestre:bimestreAtual,tema:t, bncc:b, bloomNivel:bloomNivel, bloomVerbo:bloomVerbo, status:false,data:"", tipo:'aula'});
+                aulas.push({id:__newId(),turma:filtroTurma,bimestre:bimestreAtual,tema:t, bncc:b, bloomNivel:bloomNivel, bloomVerbo:bloomVerbo, status:false,data:"", tipo:'aula'});
                 salvarDadosLocal();
                 renderizarAulas();
                 document.getElementById('inputNovaAula').value='';
@@ -8179,7 +8247,7 @@ function addAulaIndividual(){
 
                 sel.forEach(tr => {
                     linhas.forEach(l => {
-                        aulas.push({id:Date.now()+Math.random(),turma:tr,bimestre:bimestreAtual,tema:l, bncc:'', status:false,data:"", tipo:'aula'});
+                        aulas.push({id:__newId(),turma:tr,bimestre:bimestreAtual,tema:l, bncc:'', status:false,data:"", tipo:'aula'});
                     });
                 });
 
@@ -8192,7 +8260,7 @@ function addAulaIndividual(){
             // Modo tradicional: somente turma selecionada no filtro
             if(filtroTurma!=='Todas'){
                 linhas.forEach(l => {
-                    aulas.push({id:Date.now()+Math.random(),turma:filtroTurma,bimestre:bimestreAtual,tema:l, bncc:'', status:false,data:"", tipo:'aula'});
+                    aulas.push({id:__newId(),turma:filtroTurma,bimestre:bimestreAtual,tema:l, bncc:'', status:false,data:"", tipo:'aula'});
                 });
                 salvarDadosLocal();
                 fecharModais();
@@ -8880,7 +8948,7 @@ function __cmpBinIndex(v){
         function salvarTurma(){const n=document.getElementById('inputNomeTurma').value;if(n&&!turmas.includes(n)){turmas.push(n);salvarDadosLocal();document.getElementById('inputNomeTurma').value='';fecharModais();selTurma(n); showToast("Turma criada!");}}
         function delTurma(n,e){e.stopPropagation();if(confirm("Excluir?")){turmas=turmas.filter(t=>t!==n);alunos=alunos.filter(a=>a.turma!==n);filtroTurma='Todas';salvarDadosLocal();renderizarMenu();renderizarVisaoContent(); showToast("Turma excluída.");}}
         function abrirModalAluno(){if(turmas.length===0)return showToast("Crie Turma", "error"); const s=document.getElementById('selectTurmaAluno');s.innerHTML='';turmas.forEach(t=>s.innerHTML+=`<option value="${_escHTML(t)}">${_escHTML(t)}</option>`);if(filtroTurma!=='Todas')s.value=filtroTurma;abrirModal('modalNovoAluno');}
-        function salvarAlunos(){const t=document.getElementById('selectTurmaAluno').value, ns=document.getElementById('inputNomes').value.split('\n'); const dL=()=>({a1:0,a2:0,a3:0,a4:0,a5:0,rec:0}); const dR=()=>({r1:0,r2:0,leit:0}); ns.forEach(n=>{if(n.trim())alunos.push({id:Date.now()+Math.random(),nome:n.trim(),turma:t,mesa:null,inteligencias:[],bimestres:{1:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},2:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},3:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},4:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""}}})});salvarDadosLocal();document.getElementById('inputNomes').value='';fecharModais();selTurma(t); showToast("Alunos cadastrados!");}
+        function salvarAlunos(){const t=document.getElementById('selectTurmaAluno').value, ns=document.getElementById('inputNomes').value.split('\n'); const dL=()=>({a1:0,a2:0,a3:0,a4:0,a5:0,rec:0}); const dR=()=>({r1:0,r2:0,leit:0}); ns.forEach(n=>{if(n.trim())alunos.push({id:__newId(),nome:n.trim(),turma:t,mesa:null,inteligencias:[],bimestres:{1:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},2:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},3:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},4:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""}}})});salvarDadosLocal();document.getElementById('inputNomes').value='';fecharModais();selTurma(t); showToast("Alunos cadastrados!");}
         function delAluno(id){if(confirm("Excluir?")){alunos=alunos.filter(a=>a.id!==id);salvarDadosLocal();renderizarVisaoContent();}}
         function confirmarDelAluno(id){
             const a = alunos.find(al => al.id === id);
@@ -15293,7 +15361,7 @@ function confirmarImportCSV(){
   rows.forEach(r=>{
     if(!turmas.includes(r.turma)){ turmas.push(r.turma); }
     alunos.push({
-      id: Date.now()+Math.random(),
+      id: __newId(),
       nome: r.nome, turma: r.turma, mesa:null, inteligencias:[],
       bimestres:{1:makeBim(),2:makeBim(),3:makeBim(),4:makeBim()}
     });
