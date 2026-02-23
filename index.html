@@ -9379,6 +9379,11 @@ function __j(v){
       const scope = root && root.querySelectorAll ? root : document;
       EVT.forEach(function(evt){
         const attr = 'data-on'+evt;
+        // Also check the root element itself (querySelectorAll only searches descendants)
+        if(scope !== document && scope.matches && scope.matches('['+attr+']')){
+          const code = scope.getAttribute(attr);
+          if(code) _bindOne(scope, evt, code);
+        }
         const nodes = scope.querySelectorAll('['+attr+']');
         nodes.forEach(function(el){
           const code = el.getAttribute(attr);
