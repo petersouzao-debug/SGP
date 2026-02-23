@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (v15.0 — Diário + Mobile)</title>
+    <title>SGP - Gestão Final (v15.9.12 — Sorteador por turma)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -1837,6 +1837,17 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         #modalAtividades .modal-box.modal-xl{ overflow: visible; width: 1100px; max-width: 98%; height: 94vh; }
         #modalAtividades .act-headbar{ flex-wrap: wrap; align-items: flex-start; }
         #modalAtividades .act-body{ overflow-y: auto; }
+
+        /* Atividades/Games: Sorteador de alunos (usa a turma selecionada no menu) */
+        #modalAtividades .act-sorteador{ display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border-color); border-radius:12px; background: rgba(15,23,42,.03); min-width: 260px; }
+        body.dark-mode #modalAtividades .act-sorteador{ background: rgba(255,255,255,.05); }
+        #modalAtividades .act-sorteio-out{ min-width: 180px; max-width: 360px; padding:8px 10px; border-radius:10px; border:1px dashed rgba(100,116,139,.6); font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; user-select:none; }
+        #modalAtividades .act-sorteio-out.has-name{ border-style:solid; border-color: rgba(14,165,233,.55); background: rgba(14,165,233,.10); }
+        #modalAtividades .act-sorteio-meta{ font-size:.72rem; color: var(--text-muted,#64748b); white-space:nowrap; }
+        @media (max-width: 980px){
+          #modalAtividades .act-sorteador{ width:100%; justify-content:space-between; }
+          #modalAtividades .act-sorteio-out{ max-width: 240px; }
+        }
 
         /* Gráficos (Chart.js) */
         #chartEvolucao { display: block; }
@@ -5167,6 +5178,21 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                     <button id="actTabWs" class="act-tab" data-onclick="atividadesSetTab('ws')"><i class="fas fa-magnifying-glass"></i> Caça-palavras</button>
                     <button id="actTabCw" class="act-tab" data-onclick="atividadesSetTab('cw')"><i class="fas fa-hashtag"></i> Cruzadinha</button>
                 </div>
+
+                <div id="actSorteadorWrap" class="act-sorteador" title="Sorteador de alunos (escolha a turma aqui)">
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <button id="actBtnSorteioAluno" class="btn-planner" data-onclick="actSorteioAluno()" title="Sortear um aluno da turma selecionada"><i class="fas fa-dice"></i> Sortear aluno</button>
+                        <button id="actBtnSorteioReset" class="btn-planner" data-onclick="actSorteioReset()" title="Reiniciar sorteio (sem repetir)"><i class="fas fa-rotate"></i></button>
+                        <select id="actSorteioTurmaSel" class="inp" data-onchange="actSorteioSetTurma(this.value)" title="Escolha a turma do sorteio" style="max-width:220px; padding:8px 10px; border-radius:10px;">
+                            <option value="Todas">Todas as turmas</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
+                        <div id="actSorteioOut" class="act-sorteio-out" data-onclick="actSorteioCopiar()" aria-live="polite">—</div>
+                        <div id="actSorteioMeta" class="act-sorteio-meta"></div>
+                    </div>
+                </div>
+
                 <div class="act-actions">
                     <button class="btn-planner" data-onclick="atividadesExportAll()"><i class="fas fa-file-arrow-down"></i> Exportar</button>
                     <button class="btn-planner" data-onclick="document.getElementById('actImportFile').click()"><i class="fas fa-file-arrow-up"></i> Importar</button>
@@ -6813,7 +6839,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.10",
+                version: "v15.9.12",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -13188,6 +13214,199 @@ let actPresent = false;
 
 let actLocked = true;
 
+// Sorteador de alunos (Atividades/Games) — não repete até esgotar a turma
+const ACT_SORTEIO_TURMA_STORAGE = 'sgp_atividades_sorteio_turma';
+let __actSorteio = { turmaKey:'', pool:[], total:0, last:null };
+
+function _actSorteioGetTurmaPref(){
+  try{ return String(localStorage.getItem(ACT_SORTEIO_TURMA_STORAGE) || '').trim(); }catch(_){ return ''; }
+}
+
+function _actSorteioGetTurmasDisponiveis(){
+  let arr = [];
+  try{
+    if(Array.isArray(turmas) && turmas.length){
+      arr = turmas.map(t => String(t).trim()).filter(Boolean);
+    }
+  }catch(_){}
+  if(!arr.length){
+    try{
+      const set = new Set();
+      (Array.isArray(alunos) ? alunos : []).forEach(a=>{
+        const t = a && (a.turma || a.turmaNome || a.classe || a.class);
+        if(t) set.add(String(t).trim());
+      });
+      arr = Array.from(set);
+    }catch(_){}
+  }
+  arr = arr.map(s=>String(s).trim()).filter(Boolean);
+  arr = Array.from(new Set(arr));
+  try{ arr.sort((a,b)=>a.localeCompare(b,'pt-BR',{numeric:true,sensitivity:'base'})); }catch(_){ arr.sort(); }
+  return arr;
+}
+
+function _actSorteioSyncTurmaUI(){
+  const sel = document.getElementById('actSorteioTurmaSel');
+  if(!sel) return;
+
+  const turmasList = _actSorteioGetTurmasDisponiveis();
+  const pref = _actSorteioGetTurmaPref();
+
+  // Reconstrói opções
+  sel.innerHTML = '';
+  const oAll = document.createElement('option');
+  oAll.value = 'Todas';
+  oAll.textContent = 'Todas as turmas';
+  sel.appendChild(oAll);
+
+  turmasList.forEach(t=>{
+    const o = document.createElement('option');
+    o.value = t;
+    o.textContent = t;
+    sel.appendChild(o);
+  });
+
+  // Define valor inicial: preferência salva > turma do menu (se não for "Todas") > "Todas"
+  let val = pref || '';
+  try{
+    if(!val && typeof filtroTurma !== 'undefined' && filtroTurma && String(filtroTurma) !== 'Todas'){
+      val = String(filtroTurma);
+    }
+  }catch(_){}
+  if(!val) val = 'Todas';
+
+  const exists = Array.from(sel.options).some(o=>o.value === val);
+  sel.value = exists ? val : 'Todas';
+
+  // Garante persistência
+  try{ localStorage.setItem(ACT_SORTEIO_TURMA_STORAGE, sel.value); }catch(_){}
+}
+
+function actSorteioSetTurma(v){
+  try{
+    const val = String(v || 'Todas');
+    try{ localStorage.setItem(ACT_SORTEIO_TURMA_STORAGE, val); }catch(_){}
+    __actSorteio.last = null;
+    _actSorteioBuildPool();
+    _actSorteioRender();
+  }catch(_){}
+}
+
+function _actSorteioTurmaKey(){
+  // Prioridade: seletor do modal (turma do sorteio) -> preferência salva -> turma do menu -> "Todas"
+  try{
+    const v = String(document.getElementById('actSorteioTurmaSel')?.value || '').trim();
+    if(v) return v;
+  }catch(_){}
+  try{
+    const pref = _actSorteioGetTurmaPref();
+    if(pref) return pref;
+  }catch(_){}
+  try{
+    const t = (typeof filtroTurma !== 'undefined' && filtroTurma) ? String(filtroTurma) : '';
+    if(t) return t;
+  }catch(_){}
+  return 'Todas';
+}
+
+function _actSorteioList(){
+
+  const turma = _actSorteioTurmaKey() || 'Todas';
+  let list = Array.isArray(alunos) ? alunos : [];
+  if(turma && turma !== 'Todas') list = list.filter(a => (a && a.turma === turma));
+  list = list.filter(a => a && a.nome).map(a => ({ id: a.id, nome: String(a.nome), turma: a.turma || turma }));
+  return {turma, list};
+}
+
+function _actSorteioShuffle(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
+function _actSorteioBuildPool(){
+  const {turma, list} = _actSorteioList();
+  __actSorteio.turmaKey = String(turma || 'Todas');
+  __actSorteio.total = list.length;
+  __actSorteio.pool = _actSorteioShuffle(list.slice());
+}
+
+function _actSorteioEnsurePool(){
+  const key = String(_actSorteioTurmaKey() || 'Todas');
+  if(__actSorteio.turmaKey !== key){
+    __actSorteio.last = null;
+    _actSorteioBuildPool();
+  }
+  if(!Array.isArray(__actSorteio.pool)) __actSorteio.pool = [];
+  if(!Number.isFinite(__actSorteio.total)) __actSorteio.total = 0;
+  if(__actSorteio.total === 0){
+    // (re)calcula caso a turma tenha sido criada depois
+    _actSorteioBuildPool();
+  }
+}
+
+function _actSorteioRender(){
+  const out = document.getElementById('actSorteioOut');
+  const meta = document.getElementById('actSorteioMeta');
+  const turma = String(__actSorteio.turmaKey || (_actSorteioTurmaKey() || 'Todas'));
+  const total = Number(__actSorteio.total || 0);
+  const rest = Array.isArray(__actSorteio.pool) ? __actSorteio.pool.length : 0;
+
+  if(out){
+    const nm = (__actSorteio.last && __actSorteio.last.nome) ? __actSorteio.last.nome : '—';
+    out.textContent = nm;
+    out.classList.toggle('has-name', nm !== '—');
+    out.title = (nm !== '—') ? 'Clique para copiar o nome' : '—';
+  }
+  if(meta){
+    meta.textContent = total ? `Turma: ${turma} · Restam: ${rest}/${total} · (sem repetir)` : `Turma: ${turma}`;
+  }
+}
+
+function actSorteioAluno(){
+  _actSorteioEnsurePool();
+  if((__actSorteio.total || 0) <= 0){
+    try{ _actToast('Nenhum aluno cadastrado nesta turma.', 'error'); }catch(_){ try{ if(showToast) showToast('Nenhum aluno cadastrado nesta turma.', 'error'); }catch(__){} }
+    _actSorteioRender();
+    return;
+  }
+  if(__actSorteio.pool.length === 0){
+    _actSorteioBuildPool();
+    try{ _actToast('Todos já foram sorteados. Reiniciando lista.', 'warn'); }catch(_){ }
+  }
+  const picked = __actSorteio.pool.pop();
+  __actSorteio.last = picked || null;
+  _actSorteioRender();
+  try{ if(picked && picked.nome) _actToast('Sorteado: ' + picked.nome); }catch(_){ }
+}
+
+function actSorteioReset(silent=false){
+  _actSorteioBuildPool();
+  __actSorteio.last = null;
+  _actSorteioRender();
+  if(!silent){
+    try{ _actToast('Sorteio reiniciado!'); }catch(_){ }
+  }
+}
+
+function actSorteioCopiar(){
+  try{
+    const nm = (__actSorteio.last && __actSorteio.last.nome) ? String(__actSorteio.last.nome) : '';
+    if(!nm) return;
+
+    // Clipboard pode falhar em file:// ou sem permissão; fallback para prompt
+    if(navigator.clipboard && location.protocol !== 'file:'){
+      navigator.clipboard.writeText(nm).then(()=>{
+        try{ _actToast('Nome copiado!'); }catch(_){ }
+      }).catch(()=>{ try{ prompt('Copie o nome:', nm); }catch(_){ } });
+    }else{
+      try{ prompt('Copie o nome:', nm); }catch(_){ }
+    }
+  }catch(_){ }
+}
+
 function atividadesUpdateTeacherBtn(){
   const b = document.getElementById('actBtnTeacher');
   if(!b) return;
@@ -13372,6 +13591,9 @@ function initAtividades(){
   try{roletaRenderList();}catch(_){}
   atividadesSetTab('forca');
 
+  // Sorteador (sincroniza estado/UI)
+  try{ _actSorteioSyncTurmaUI(); _actSorteioEnsurePool(); _actSorteioRender(); }catch(_){ }
+
   // Sincroniza UI de tela cheia
   try{
     if(!window.__ACT_FS_LISTENER){
@@ -13409,6 +13631,7 @@ function abrirAtividades(){
   if(b) b.innerHTML = '<i class="fas fa-tv"></i> Apresentar';
 
   atividadesSetTab(actTab || 'forca');
+  try{ _actSorteioSyncTurmaUI(); _actSorteioEnsurePool(); _actSorteioRender(); }catch(_){ }
 }
 
 

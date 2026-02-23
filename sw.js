@@ -1,5 +1,5 @@
-// SGP - Service Worker v15.9.10 (Backup: ranking+freq+entregas restore + IDB sync + perf cache)
-const CACHE_NAME = 'sgp-v15.9.10';
+// SGP - Service Worker v15.9.12 (Backup: ranking+freq+entregas restore + IDB sync + perf cache)
+const CACHE_NAME = 'sgp-v15.9.12';
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['./', './index.html', './SGP_Gestao_Final_v15.html']).catch(() => {})));
   self.skipWaiting();
