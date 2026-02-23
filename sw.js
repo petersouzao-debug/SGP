@@ -1,10 +1,10 @@
-// SGP - Service Worker v15.9.12 (Sorteador por turma)
+// SGP - Service Worker v15.9.12.5 (Sorteador por turma)
 // Correções estruturais:
 //  - Offline mais confiável para navegação (fallback do app shell)
 //  - Evita cache indiscriminado (reduz risco de crescimento infinito do cache)
 //  - Estratégia Stale-While-Revalidate para recursos same-origin
 
-const CACHE_NAME = 'sgp-v15.9.12.4';
+const CACHE_NAME = 'sgp-v15.9.12.5';
 const APP_SHELL = [
   './',
   './index.html',

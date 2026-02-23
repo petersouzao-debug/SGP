@@ -6072,9 +6072,76 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
             const url = URL.createObjectURL(blob);
             a.href = url;
             a.download = filename || 'arquivo';
-            a.click();
-            setTimeout(()=>URL.revokeObjectURL(url), 2500);
+            a.style.display = 'none';
+            try{ (document.body || document.documentElement).appendChild(a); }catch(_){}
+            try{ a.click(); }catch(_){ 
+              try{ a.dispatchEvent(new MouseEvent('click', {bubbles:true,cancelable:true,view:window})); }catch(__){}
+            }
+            setTimeout(()=>{
+              try{ URL.revokeObjectURL(url); }catch(_){}
+              try{ a.remove(); }catch(_){ try{ a.parentNode && a.parentNode.removeChild(a); }catch(__){} }
+            }, 2500);
         }
+
+        // Delegação para data-onclick/data-onchange/data-onkeydown
+        // (evita depender de handlers inline e garante que botões funcionem em modo offline/file://)
+        function __installDataActionDelegates(){
+            try{
+                if(window.__SGP_DATA_ACTIONS_BOUND) return;
+                window.__SGP_DATA_ACTIONS_BOUND = true;
+
+                const __run = (expr, elem, event)=>{
+                    if(!expr) return;
+                    // suporta múltiplas instruções; preserva "this" como o elemento
+                    try{
+                        const fn = new Function('event','elem', 'with(window){ return (function(){ ' + expr + ' }).call(elem); }');
+                        return fn.call(elem, event, elem);
+                    }catch(e){
+                        try{ console.error(e); }catch(_){}
+                        try{ if(typeof __diagCapture==='function') __diagCapture(e, 'data-action', { expr: String(expr).slice(0, 240) }); }catch(_){}
+                    }
+                };
+
+                document.addEventListener('click', function(event){
+                    const el = event.target && event.target.closest ? event.target.closest('[data-onclick]') : null;
+                    if(!el) return;
+                    if(el.disabled) return;
+                    const expr = el.getAttribute('data-onclick');
+                    const ret = __run(expr, el, event);
+                    if(ret === false){
+                        try{ event.preventDefault(); }catch(_){}
+                        try{ event.stopPropagation(); }catch(_){}
+                    }
+                }, true);
+
+                document.addEventListener('change', function(event){
+                    const el = event.target && event.target.closest ? event.target.closest('[data-onchange]') : null;
+                    if(!el) return;
+                    if(el.disabled) return;
+                    const expr = el.getAttribute('data-onchange');
+                    const ret = __run(expr, el, event);
+                    if(ret === false){
+                        try{ event.preventDefault(); }catch(_){}
+                        try{ event.stopPropagation(); }catch(_){}
+                    }
+                }, true);
+
+                document.addEventListener('keydown', function(event){
+                    const el = event.target && event.target.closest ? event.target.closest('[data-onkeydown]') : null;
+                    if(!el) return;
+                    if(el.disabled) return;
+                    const expr = el.getAttribute('data-onkeydown');
+                    const ret = __run(expr, el, event);
+                    if(ret === false){
+                        try{ event.preventDefault(); }catch(_){}
+                        try{ event.stopPropagation(); }catch(_){}
+                    }
+                }, true);
+            }catch(_){}
+        }
+
+        try{ __installDataActionDelegates(); }catch(_){}
+
 
         function __exportState(){
             const out = {
@@ -7036,12 +7103,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
         function baixarBackup() { 
             try{
                 const zipBlob = __zipStore(__collectBackupFiles());
-                const a=document.createElement('a');
-                const url = URL.createObjectURL(zipBlob);
-                a.href=url;
-                a.download=__backupFileName();
-                a.click();
-                setTimeout(()=>URL.revokeObjectURL(url), 2500);
+                __downloadBlob(zipBlob, __backupFileName());
 
                 __safeLSSet('sgp_last_backup', Date.now()); 
                 try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){ }
@@ -7216,6 +7278,22 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                         try{ if(typeof quizLoad==='function'){ quizLoad(); quizRenderBank(); } }catch(_){}
                         try{ if(typeof compLoad==='function'){ compLoad(); compRenderBank(); } }catch(_){}
                         try{ if(typeof ordLoad==='function'){ ordLoad(); ordRenderBank(); } }catch(_){}
+                        // Ajusta status de backup após restauração (evita alerta pendente logo após importar)
+                        try{
+                            const man = readJson('manifest.json') || {};
+                            let ts = Date.now();
+                            try{
+                                if(man && man.exportedAt){
+                                    const parsed = Date.parse(man.exportedAt);
+                                    if(!isNaN(parsed)) ts = parsed;
+                                }
+                            }catch(_){}
+                            __safeLSSet('sgp_last_backup', ts);
+                            __safeLSSet('sgp_last_core_save', ts);
+                            __safeLSSet('sgp_backup_pending', '0');
+                            if(typeof checkBackupStatus==='function') checkBackupStatus();
+                            dadosNaoSalvosEmArquivo = false;
+                        }catch(_){}
                         showToast("Backup ZIP carregado!");
                     }catch(err){
                         console.error(err);
@@ -7249,6 +7327,15 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                         renderizarMenu();
                         renderizarVisao();
                         atualizarLabelsConfig();
+                        // Ajusta status de backup após restauração (modo JSON legado)
+                        try{
+                            const ts = Date.now();
+                            __safeLSSet('sgp_last_backup', ts);
+                            __safeLSSet('sgp_last_core_save', ts);
+                            __safeLSSet('sgp_backup_pending', '0');
+                            if(typeof checkBackupStatus==='function') checkBackupStatus();
+                            dadosNaoSalvosEmArquivo = false;
+                        }catch(_){}
                         showToast("Backup carregado!");
                     }
                 }catch(e){
