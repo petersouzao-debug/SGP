@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (v15.9.12.12 — Fix data local frequência)</title>
+    <title>SGP - Gestão Final (v15.9.12.13 — Histórico semanal de ausências)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -7131,7 +7131,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.12.12",
+                version: "v15.9.12.13",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -15691,6 +15691,32 @@ function __localISODate(d){
   return `${y}-${m}-${day}`;
 }
 function __freqTodayStr(){ return __localISODate(new Date()); }
+// Helpers de semana (base local) — usados para relatórios semanais de ausências
+function __freqAddDaysISO(dateStr, days){
+  try{
+    const d = new Date((dateStr||__freqTodayStr())+'T12:00:00');
+    d.setDate(d.getDate() + (parseInt(days,10)||0));
+    return __localISODate(d);
+  }catch(_){ return dateStr||__freqTodayStr(); }
+}
+function __freqWeekStartISO(dateStr){
+  try{
+    const d = new Date((dateStr||__freqTodayStr())+'T12:00:00');
+    const wd = d.getDay(); // 0 dom ... 6 sáb
+    const diff = (wd===0 ? -6 : (1 - wd)); // segunda-feira
+    d.setDate(d.getDate() + diff);
+    return __localISODate(d);
+  }catch(_){ return __freqTodayStr(); }
+}
+function __freqWeekLabel(startStr){
+  try{
+    const endStr = __freqAddDaysISO(startStr, 6);
+    const a = new Date(startStr+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    const b = new Date(endStr+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    return `${a}–${b}`;
+  }catch(_){ return startStr||''; }
+}
+
 function __freqIsWeekend(dateStr){
   const d = new Date((dateStr||__freqTodayStr())+'T00:00:00');
   const w = d.getDay();
@@ -16016,7 +16042,11 @@ function abrirFrequencia(){
       </div>
     </div>`;
     document.body.appendChild(overlay);
-    if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
+  try{
+    const sel = overlay.querySelector('select[onchange*=\"__histSetDisc\"]');
+    if(sel) sel.value = (window.__histDiscFilter||'all');
+  }catch(_){ }
+  if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
     document.getElementById('freqDate').addEventListener('change', renderFrequencia);
   }
   overlay.style.display='flex';
@@ -16207,11 +16237,27 @@ function abrirHistoricoChamadas(){
   window.__histStatusFilter = 'all';
   window.__histBimFilter = bimestreAtual;
   window.__histExpandedKeys = new Set();
+  window.__histViewMode = window.__histViewMode || 'dia';
+  window.__histDiscFilter = window.__histDiscFilter || 'all';
+  window.__histWeekStart = window.__histWeekStart || __freqWeekStartISO(__freqTodayStr());
 
   function buildContent(filterBimVal, statusFilter){
     statusFilter = statusFilter || 'all';
-    const filtered = filterBimVal === 0 ? records : records.filter(r => r.bim === filterBimVal);
+    const viewMode = window.__histViewMode || 'dia';
+    const discFilter = window.__histDiscFilter || 'all';
+    let filtered = filterBimVal === 0 ? records : records.filter(r => r.bim === filterBimVal);
     const freq = window.__sgpFrequencia || {};
+
+    // Lista de disciplinas (config + registros)
+    let hasNoneDisc = false;
+    const discSet = new Set();
+    try{ ensureConfigSchema(); (config.disciplinas||[]).forEach(d=>{ const v = (d&& (d.nome||d.id)) ? String(d.nome||d.id) : ''; if(v) discSet.add(v); }); }catch(_){ }
+    try{ records.forEach(r=>{ if(r && r.disciplina) discSet.add(String(r.disciplina)); else hasNoneDisc = true; }); }catch(_){ }
+    const discList = Array.from(discSet).filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+
+    // Aplica filtro de disciplina aos registros
+    if(discFilter==='__none__') filtered = filtered.filter(r => !r.disciplina);
+    else if(discFilter!=='all') filtered = filtered.filter(r => String(r.disciplina||'') === String(discFilter));
 
     // -- status filter button style helper --
     function sfBtn(val, label, icon, bgOn, colorOn){
@@ -16235,6 +16281,140 @@ function abrirHistoricoChamadas(){
       html += `<button class="freq-btn ${filterBimVal===i?'P':'none'}" onclick="window.__histChamadasRebuild(${i})" style="width:auto;padding:4px 10px;">${i}ºB</button>`;
     }
     html += `</div>`;
+
+    // Status filter bar
+// Visualização + disciplina
+const __viewBtn = (mode, label, icon)=>`<button class="freq-btn ${viewMode===mode?'P':'none'}" onclick="window.__histSetView('${mode}')" style="width:auto;padding:4px 10px;"><i class="fas ${icon}"></i> ${label}</button>`;
+let discOptions = `<option value="all">Todas</option>`;
+if(hasNoneDisc) discOptions += `<option value="__none__">Sem disciplina</option>`;
+discList.forEach(d=>{ discOptions += `<option value="${escHTML(d)}">${escHTML(d)}</option>`; });
+
+html += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+  <span style="font-size:.82rem;font-weight:600;color:var(--text-muted);">Visualização:</span>
+  ${__viewBtn('dia','Por dia','fa-calendar-day')}
+  ${__viewBtn('semana','Por semana','fa-calendar-week')}
+  <span style="font-size:.82rem;font-weight:600;color:var(--text-muted);margin-left:4px;">Disciplina:</span>
+  <select onchange="window.__histSetDisc(this.value)" style="padding:6px 10px;border-radius:10px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);font-size:.82rem;">
+    ${discOptions}
+  </select>
+</div>`;
+
+// Se estiver em modo semanal, renderiza relatório semanal e encerra
+if(viewMode==='semana'){
+  const weekMap = {};
+  filtered.forEach(r=>{
+    const ws = __freqWeekStartISO(r.date);
+    (weekMap[ws]||(weekMap[ws]=[])).push(r);
+  });
+  const weeks = Object.keys(weekMap).sort().reverse();
+  let selected = window.__histWeekStart || __freqWeekStartISO(__freqTodayStr());
+  if(!weekMap[selected]){
+    const cur = __freqWeekStartISO(__freqTodayStr());
+    selected = weekMap[cur] ? cur : (weeks[0] || cur);
+    window.__histWeekStart = selected;
+  }
+
+  let weekRecs = weekMap[selected] || [];
+
+  // Monta métricas por aluno
+  const rows = lista.map(a=>{
+    let total=0, faltas=0, marcadosDias=0, pendentesDias=0;
+    weekRecs.forEach(r=>{
+      const reg = freq[r.key] || {};
+      const meta = (reg && reg._meta) ? reg._meta : {};
+      const qtd = Math.max(1, parseInt(meta.qtdAulas || r.qtdAulas || 1, 10) || 1);
+      const s = reg[a.id];
+      if(s==='P' || s==='F' || s==='J'){
+        marcadosDias++;
+        total += qtd;
+        if(s==='F') faltas += qtd;
+      }else{
+        pendentesDias++;
+      }
+    });
+    const pctAus = total>0 ? (faltas/total*100) : 0;
+    return {id:a.id, nome:a.nome||'Sem nome', total, faltas, pctAus, marcadosDias, pendentesDias};
+  }).sort((x,y)=> (y.faltas-x.faltas) || (x.nome||'').localeCompare(y.nome||'', 'pt-BR'));
+
+  const totalFaltas = rows.reduce((s,r)=>s+(r.faltas||0),0);
+  const totalAulasMarcadas = rows.reduce((s,r)=>s+(r.total||0),0);
+  const pctTurma = totalAulasMarcadas>0 ? Math.round((totalFaltas/totalAulasMarcadas)*100) : 0;
+  const alunosPend = rows.filter(r=>r.pendentesDias>0).length;
+
+  // Resumo por dia (na semana)
+  const dayRows = weekRecs.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(r=>{
+    const reg = freq[r.key] || {};
+    const meta = reg._meta || {};
+    const qtd = Math.max(1, parseInt(meta.qtdAulas || r.qtdAulas || 1, 10) || 1);
+    let cF=0, cM=0;
+    lista.forEach(a=>{ const s=reg[a.id]; if(s==='F') cF++; if(s==='P'||s==='F'||s==='J') cM++; });
+    const dObj = new Date(r.date+'T12:00:00');
+    const dFmt = dObj.toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit', month:'2-digit'});
+    const discLbl = (r.disciplina||'').trim() ? escHTML(r.disciplina) : 'Sem disciplina';
+    return `<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);">
+      <div style="min-width:180px;"><b>${dFmt}</b> <span style="color:var(--text-muted);font-size:.75rem;">(${qtd} aula(s))</span> <span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:700;margin-left:6px;"><i class="fas fa-book"></i> ${discLbl}</span></div>
+      <div style="white-space:nowrap;"><span style="color:#991b1b;font-weight:700;">${cF}</span> F &nbsp; <span style="color:var(--text-muted);font-size:.78rem;">(${cM}/${lista.length} marcados)</span></div>
+    </div>`;
+  }).join('') || `<div style="color:var(--text-muted);padding:6px 0;">Nenhum registro na semana.</div>`;
+
+  html += `<div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;margin-bottom:12px;background:rgba(14,165,233,.04);">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-weight:700;"><i class="fas fa-calendar-week"></i> Semana</span>
+        <select onchange="window.__histSetWeek(this.value)" style="padding:6px 10px;border-radius:10px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);font-size:.82rem;">
+          ${weeks.map(ws=>`<option value="${ws}" ${ws===selected?'selected':''}>${ws} (${__freqWeekLabel(ws)})</option>`).join('')}
+        </select>
+      </div>
+      <div style="font-size:.82rem;color:var(--text-muted);">
+        Índice de ausências (turma): <b style="color:#991b1b;">${pctTurma}%</b> &nbsp;|&nbsp; Alunos com pendências: <b>${alunosPend}</b>
+      </div>
+    </div>
+  </div>`;
+
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:12px;">
+    <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+      <div style="font-weight:700;margin-bottom:6px;"><i class="fas fa-user-xmark" style="color:#991b1b;"></i> Ausências por aluno (semana)</div>
+      <div style="max-height:340px;overflow:auto;">
+        <table class="freq-table" style="margin-top:6px;">
+          <thead><tr><th>#</th><th style="text-align:left;">Aluno</th><th>Faltas</th><th>% Aus.</th><th>Marc.</th></tr></thead>
+          <tbody>
+            ${rows.map((r,i)=>{
+              const pct = (r.total>0) ? Math.round(r.pctAus) : 0;
+              const pctColor = pct>=30 ? '#dc2626' : (pct>=15 ? '#f59e0b' : '#16a34a');
+              return `<tr>
+                <td>${i+1}</td>
+                <td style="text-align:left;">${escHTML(r.nome)}</td>
+                <td style="font-weight:700;color:#991b1b;">${r.faltas}</td>
+                <td style="font-weight:700;color:${pctColor};">${pct}%</td>
+                <td style="font-size:.78rem;color:var(--text-muted);">${r.marcadosDias}/${weekRecs.length}${r.pendentesDias?` <span title="Dias sem marcação" style="color:#b45309;font-weight:700;">(+${r.pendentesDias} pend.)</span>`:''}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:8px;font-size:.76rem;color:var(--text-muted);">
+        Observação: o cálculo usa apenas dias em que o aluno foi marcado (P/F/J). Dias sem marcação aparecem como “pend.”.
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--border-color);border-radius:12px;padding:12px;">
+      <div style="font-weight:700;margin-bottom:6px;"><i class="fas fa-list" style="color:var(--primary);"></i> Registros na semana</div>
+      <div style="max-height:340px;overflow:auto;border-top:1px dashed rgba(148,163,184,.35);padding-top:6px;">
+        ${dayRows}
+      </div>
+      <div style="margin-top:8px;font-size:.76rem;color:var(--text-muted);">
+        Dica: para ver os <b>nomes</b> das faltas em um dia, troque para “Por dia”, clique na data e use o filtro “Faltas”.
+      </div>
+    </div>
+  </div>`;
+
+  html += `<div style="text-align:center;margin-top:14px;">
+    <button onclick="document.getElementById('modalHistChamadas').remove();" style="padding:8px 20px;border:none;background:#475569;color:#fff;border-radius:8px;cursor:pointer;">Fechar</button>
+  </div></div>`;
+
+  return html;
+}
+
 
     // Status filter bar
     html += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
@@ -16273,6 +16453,31 @@ function abrirHistoricoChamadas(){
         </div>
       </div>`;
       
+      
+// Resumo rápido: faltas por disciplina (no filtro atual)
+try{
+  const aggDisc = {};
+  filtered.forEach(r=>{
+    const d = (r.disciplina||'').trim() ? r.disciplina : 'Sem disciplina';
+    const qtd = Math.max(1, parseInt(r.qtdAulas||1,10)||1);
+    aggDisc[d] = (aggDisc[d]||0) + ((r.countF||0) * qtd);
+  });
+  const items = Object.keys(aggDisc).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).map(k=>{
+    return `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid rgba(148,163,184,.35);background:rgba(15,23,42,.02);font-size:.78rem;">
+      <span style="font-weight:700;color:#991b1b;">${aggDisc[k]}</span>
+      <span style="color:var(--text-muted);">F</span>
+      <span style="font-weight:700;">${escHTML(k)}</span>
+    </span>`;
+  }).join('');
+  if(items){
+    html += `<div style="margin:-6px 0 14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+      <span style="font-size:.82rem;font-weight:600;color:var(--text-muted);"><i class="fas fa-book"></i> Faltas por disciplina:</span>
+      ${items}
+    </div>`;
+  }
+}catch(_){}
+
+
       html += `<div style="display:flex;flex-direction:column;gap:8px;">`;
       filtered.forEach((r, rIdx) => {
         const dObj = new Date(r.date + 'T12:00:00');
@@ -16357,6 +16562,10 @@ function abrirHistoricoChamadas(){
     const ov = document.getElementById('modalHistChamadas');
     if(!ov) return;
     ov.innerHTML = buildContent(window.__histBimFilter, window.__histStatusFilter);
+    try{
+      const sel = ov.querySelector('select[onchange*="__histSetDisc"]');
+      if(sel) sel.value = (window.__histDiscFilter||'all');
+    }catch(_){}
     if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
   }
 
@@ -16370,17 +16579,39 @@ function abrirHistoricoChamadas(){
     window.__histStatusFilter = val;
     __histRebuildCurrent();
   };
+
+window.__histSetView = function(mode){
+  window.__histViewMode = mode || 'dia';
+  __histRebuildCurrent();
+};
+window.__histSetDisc = function(val){
+  window.__histDiscFilter = (typeof val==='string') ? val : 'all';
+  __histRebuildCurrent();
+};
+window.__histSetWeek = function(weekStart){
+  window.__histWeekStart = weekStart || __freqWeekStartISO(__freqTodayStr());
+  __histRebuildCurrent();
+};
+
   
   window.__histChamadasRebuild = function(bimVal){
     window.__histBimFilter = bimVal;
     const ov = document.getElementById('modalHistChamadas');
     if(!ov) return;
     ov.innerHTML = buildContent(bimVal, window.__histStatusFilter);
+    try{
+      const sel = ov.querySelector('select[onchange*="__histSetDisc"]');
+      if(sel) sel.value = (window.__histDiscFilter||'all');
+    }catch(_){}
     if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
   };
   
   overlay.innerHTML = buildContent(filterBim, 'all');
   document.body.appendChild(overlay);
+  try{
+    const sel = overlay.querySelector('select[onchange*="__histSetDisc"]');
+    if(sel) sel.value = (window.__histDiscFilter||'all');
+  }catch(_){ }
   if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
 }
 try{
