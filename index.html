@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (v15.9.12.11 — Fix data local frequência)</title>
+    <title>SGP - Gestão Final (v15.9.12.12 — Fix data local frequência)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -4308,8 +4308,8 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                             </div>
                         </div>
                     </div>
-                    <label class="rank-label">Motivo (opcional)</label>
-                    <input type="text" id="rankPontosMotivo" class="inp" placeholder="Ex: Excelente apresentação...">
+                    <label class="rank-label">Motivo / Atividade (opcional)</label>
+                    <input type="text" id="rankPontosMotivo" class="inp" placeholder="Ex: Quiz Frações (Aula 3)...">
                 </div>
                 <div style="display:flex;gap:10px;margin-top:16px;">
                     <button class="btn-primary" data-onclick="rankConfirmarPontos()" style="flex:1;"><i class="fas fa-check"></i> Confirmar</button>
@@ -4317,6 +4317,35 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                 </div>
             </div>
         </div>
+
+        <!-- Modal: Histórico de Pontos (Aluno) -->
+<div id="modalRankAlunoHist" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width:820px; max-height:92vh; overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 id="rankAlunoHistTitle" style="margin:0;color:var(--text-main);font-size:1.15rem;">
+                <i class="fas fa-clipboard-list" style="color:#0ea5e9;"></i> Histórico de Pontos
+            </h3>
+            <button data-onclick="rankAlunoHistFechar()" style="border:none;background:transparent;font-size:1.3rem;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+            <input type="text" id="rankAlunoHistBusca" class="inp" placeholder="Buscar por atividade/motivo..." oninput="rankAlunoHistRender()" style="flex:1;min-width:220px;">
+            <select id="rankAlunoHistCat" class="inp" style="width:190px;" data-onchange="rankAlunoHistRender()">
+                <option value="">Todas categorias</option>
+                <option value="notas">Notas</option>
+                <option value="comportamento">Comportamento</option>
+                <option value="participacao">Participação</option>
+                <option value="bonus">Bônus</option>
+            </select>
+        </div>
+        <div id="rankAlunoHistBody" style="overflow:auto;max-height:70vh;border:1px solid var(--border-color);border-radius:12px;background:var(--card-bg);padding:10px;"></div>
+        <div style="margin-top:8px;font-size:0.78rem;color:var(--text-muted);">
+            Dica: ao adicionar pontos, escreva o nome da atividade em <b>Motivo / Atividade</b>.
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px;">
+            <button class="btn-tool" data-onclick="rankAlunoHistFechar()">Fechar</button>
+        </div>
+    </div>
+</div>
 
         <!-- Modal: Histórico Semanal do Ranking -->
         <div id="modalRankHistorico" class="modal-overlay rank-hist-modal" style="display:none;">
@@ -7102,7 +7131,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.12.11",
+                version: "v15.9.12.12",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -20976,11 +21005,13 @@ function _renderList(ranked){
                 <div class="rank-bar" style="width:${pct}%;background:${color};opacity:0.7;"></div>
                 <div class="rank-bar-label">${pct}%</div>
             </div>
-            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                 <span style="font-size:0.68rem;color:var(--text-muted);" title="Notas${p._autoNotas ? ' ('+p._manualNotas+' manual + '+p._autoNotas+' auto)' : ''}">📝${p.notas||0}</span>
                 <span style="font-size:0.68rem;color:var(--text-muted);" title="Comportamento">⭐${p.comportamento||0}</span>
                 <span style="font-size:0.68rem;color:var(--text-muted);" title="Participação${p._autoParticipacao ? ' ('+p._manualParticipacao+' manual + '+p._autoParticipacao+' presenças)' : ''}">🙋${p.participacao||0}</span>
                 <span style="font-size:0.68rem;color:var(--text-muted);" title="Bônus">🎁${p.bonus||0}</span>
+            
+                <button data-onclick="rankAbrirHistoricoAluno(${JSON.stringify(a.id)})" title="Histórico de pontos" style="border:none;background:transparent;cursor:pointer;font-size:0.78rem;line-height:1;padding:2px 6px;border-radius:8px;color:var(--text-muted);">📜</button>
             </div>
             <div class="rank-total">${item.total}</div>
         </div>`;
@@ -21118,6 +21149,108 @@ window.rankConfirmarPontos = function(){
     
     fecharModalRankPontos();
     renderizarRanking();
+};
+
+
+// --- Histórico de Pontos (Aluno) ---
+window.rankAbrirHistoricoAluno = function(alunoId){
+    try{
+        window.__rankAlunoHistCtx = { alunoId: alunoId };
+        const aluno = (Array.isArray(alunos) ? alunos : []).find(a=>String(a.id)===String(alunoId))
+                   || (typeof getAlunosFiltrados==='function' ? getAlunosFiltrados().find(a=>String(a.id)===String(alunoId)) : null);
+        const nome = aluno ? aluno.nome : ('Aluno ' + alunoId);
+        const title = document.getElementById('rankAlunoHistTitle');
+        if(title) title.innerHTML = `<i class="fas fa-clipboard-list" style="color:#0ea5e9;"></i> Histórico de Pontos — ${_escHTML(nome)}`;
+
+        const inp = document.getElementById('rankAlunoHistBusca');
+        if(inp) inp.value = '';
+        const sel = document.getElementById('rankAlunoHistCat');
+        if(sel) sel.value = '';
+
+        const modal = document.getElementById('modalRankAlunoHist');
+        if(modal) modal.style.display = 'flex';
+        rankAlunoHistRender();
+    }catch(e){
+        console.error(e);
+        showToast('Erro ao abrir histórico de pontos', 'error');
+    }
+};
+
+window.rankAlunoHistFechar = function(){
+    const modal = document.getElementById('modalRankAlunoHist');
+    if(modal) modal.style.display = 'none';
+};
+
+window.rankAlunoHistRender = function(){
+    const ctx = window.__rankAlunoHistCtx || {};
+    const alunoId = ctx.alunoId;
+    const body = document.getElementById('rankAlunoHistBody');
+    if(!body || alunoId === null || typeof alunoId === 'undefined') return;
+
+    const q = (document.getElementById('rankAlunoHistBusca')?.value || '').trim().toLowerCase();
+    const catFilter = document.getElementById('rankAlunoHistCat')?.value || '';
+
+    const { pontos } = _rankGetTurma();
+    const p = pontos[String(alunoId)] || pontos[alunoId] || null;
+    const hist = (p && Array.isArray(p.historico)) ? p.historico.slice() : [];
+    hist.sort((a,b)=>(b.ts||0)-(a.ts||0));
+
+    const catNames = { notas:'Notas', comportamento:'Comportamento', participacao:'Participação', bonus:'Bônus' };
+    const catIcons = { notas:'📝', comportamento:'⭐', participacao:'🙋', bonus:'🎁' };
+
+    let rows = hist.filter(h=>{
+        if(catFilter && String(h.cat||'') !== String(catFilter)) return false;
+        if(q){
+            const m = (h.motivo||'').toLowerCase();
+            if(!m.includes(q) && !String(h.val||'').includes(q) && !String(h.data||'').includes(q)) return false;
+        }
+        return true;
+    });
+
+    // Resumo de pontos automáticos (derivados de chamada/notas)
+    let autoInfo = '';
+    try{
+        if(typeof _rankGetPontosWithAuto === 'function'){
+            const pa = _rankGetPontosWithAuto(alunoId);
+            const autoNotas = pa? (pa._autoNotas||0) : 0;
+            const autoPart  = pa? (pa._autoParticipacao||0) : 0;
+            if(autoNotas || autoPart){
+                const signN = autoNotas>0?'+':'';
+                const signP = autoPart>0?'+':'';
+                autoInfo = `<div style="padding:10px;border:1px dashed var(--border-color);border-radius:12px;margin-bottom:10px;background:var(--card-bg);">
+                    <div style="font-weight:800;margin-bottom:4px;">Pontos automáticos (derivados de registros)</div>
+                    <div style="color:var(--text-muted);font-size:0.9rem;">📝 ${signN}${autoNotas} (Notas) &nbsp;&nbsp; 🙋 ${signP}${autoPart} (Presenças)</div>
+                </div>`;
+            }
+        }
+    }catch(_){}
+
+    if(rows.length === 0){
+        body.innerHTML = autoInfo + `<div style="padding:14px;color:var(--text-muted);"><b>Nenhum registro manual encontrado.</b><div style="margin-top:6px;font-size:0.9em;">Adicione pontos e preencha <b>Motivo / Atividade</b> para registrar o nome da atividade.</div></div>`;
+        return;
+    }
+
+    let html = `<div style="display:flex;flex-direction:column;gap:8px;">`;
+    rows.forEach(h=>{
+        const dt = h.ts ? new Date(h.ts).toLocaleString('pt-BR') : (h.data||'');
+        const val = (typeof h.val === 'number') ? h.val : (parseFloat(h.val)||0);
+        const sign = val > 0 ? '+' : '';
+        const motivo = (h.motivo||'').trim();
+        const motivoHtml = motivo ? _escHTML(motivo) : `<span style="color:var(--text-muted);">(sem motivo/atividade)</span>`;
+        const c = h.cat || '';
+        html += `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--border-color);border-radius:12px;background:var(--card-bg);">
+            <div style="min-width:170px;font-size:0.8rem;color:var(--text-muted);">${_escHTML(dt)}</div>
+            <div style="flex:1;">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <span style="font-weight:800;">${catIcons[c]||'🏷️'} ${_escHTML(catNames[c]||c||'')}</span>
+                    <span style="font-weight:900;color:var(--primary);">${sign}${val} pts</span>
+                </div>
+                <div style="margin-top:4px;">${motivoHtml}</div>
+            </div>
+        </div>`;
+    });
+    html += `</div>`;
+    body.innerHTML = autoInfo + html;
 };
 
 // --- Exportar ranking ---
@@ -21800,7 +21933,7 @@ window.rankToggleFullscreen = rankToggleFullscreen;
 window.rankUpdateFullscreenUI = rankUpdateFullscreenUI;
 
 try{
-  ['rankToggleFullscreen','rankUpdateFullscreenUI'].forEach(n=>{
+  ['rankToggleFullscreen','rankUpdateFullscreenUI','rankAbrirHistoricoAluno','rankAlunoHistFechar','rankAlunoHistRender'].forEach(n=>{
     if(typeof __wrapSafeGlobal==='function' && typeof window[n]==='function') __wrapSafeGlobal(n);
   });
 }catch(_){ }
