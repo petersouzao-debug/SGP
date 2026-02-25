@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (v15.9.12.13 — Histórico semanal de ausências)</title>
+    <title>SGP - Gestão Final (v15.9.12.14 — Histórico semanal de ausências)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -7131,7 +7131,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.12.13",
+                version: "v15.9.12.14",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -7205,7 +7205,11 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 __downloadBlob(zipBlob, __backupFileName());
 __safeLSSet('sgp_last_backup', Date.now()); 
                 try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){ }
-                try{ __safeLSSet('sgp_last_core_save', localStorage.getItem('sgp_last_core_save') || Date.now()); }catch(_){ }
+                try{ try{
+                const cur = parseInt(localStorage.getItem('sgp_last_core_save')||'0', 10);
+                const now = Date.now();
+                __safeLSSet('sgp_last_core_save', String((!isNaN(cur) && cur>0) ? cur : now));
+            }catch(_){ } }catch(_){ }
                 checkBackupStatus();
                 dadosNaoSalvosEmArquivo = false;
                 showToast("Backup ZIP baixado!");
@@ -7393,7 +7397,11 @@ __safeLSSet('sgp_last_backup', Date.now());
                         try{ if(typeof ordLoad==='function'){ ordLoad(); ordRenderBank(); } }catch(_){}
                         try{ __safeLSSet('sgp_last_backup', Date.now()); }catch(_){}
                         try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){}
-                        try{ __safeLSSet('sgp_last_core_save', localStorage.getItem('sgp_last_core_save') || Date.now()); }catch(_){}
+                        try{ try{
+                const cur = parseInt(localStorage.getItem('sgp_last_core_save')||'0', 10);
+                const now = Date.now();
+                __safeLSSet('sgp_last_core_save', String((!isNaN(cur) && cur>0) ? cur : now));
+            }catch(_){ } }catch(_){}
                         try{ checkBackupStatus(); }catch(_){}
                         try{ dadosNaoSalvosEmArquivo = false; }catch(_){}
                         showToast("Backup ZIP carregado!");
