@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (v15.9.12.10 — Backup/UI prefs)</title>
+    <title>SGP - Gestão Final (v15.9.12.11 — Fix data local frequência)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -7102,7 +7102,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.12.10",
+                version: "v15.9.12.11",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -15653,7 +15653,15 @@ function calcFreqAluno(alunoId, bim){
   return {total, presentes, faltas, justificadas, pct};
 }
 
-function __freqTodayStr(){ return new Date().toISOString().slice(0,10); }
+// Data local (YYYY-MM-DD) — evita bug de fuso (ex.: Brasil UTC-3) quando usar toISOString()
+function __localISODate(d){
+  const dt = (d instanceof Date) ? d : new Date(d);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth()+1).padStart(2,'0');
+  const day = String(dt.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function __freqTodayStr(){ return __localISODate(new Date()); }
 function __freqIsWeekend(dateStr){
   const d = new Date((dateStr||__freqTodayStr())+'T00:00:00');
   const w = d.getDay();
@@ -15949,7 +15957,7 @@ function abrirFrequencia(){
         <button class="freq-fullscreen-btn" id="freqFullscreenBtn" onclick="freqToggleFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i></button>
       </div>
       <div class="freq-header-row">
-        <label>Data: <input type="date" id="freqDate" value="${new Date().toISOString().slice(0,10)}"></label>
+        <label>Data: <input type="date" id="freqDate" value="${__freqTodayStr()}"></label>
         <label>Disciplina:
           <select id="freqDisciplina" onchange="freqSaveMeta()">
             <option value="">— Selecione —</option>
@@ -15987,7 +15995,7 @@ function abrirFrequencia(){
 }
 
 function renderFrequencia(){
-  const date = document.getElementById('freqDate')?.value || new Date().toISOString().slice(0,10);
+  const date = document.getElementById('freqDate')?.value || __freqTodayStr();
   const key = `${filtroTurma}|${bimestreAtual}|${date}`;
   const registro = window.__sgpFrequencia[key] || {};
   const meta = registro._meta || {};
@@ -16051,7 +16059,7 @@ function renderFrequencia(){
 }
 
 function freqSaveMeta(){
-  const date = document.getElementById('freqDate')?.value || new Date().toISOString().slice(0,10);
+  const date = document.getElementById('freqDate')?.value || __freqTodayStr();
   const key = `${filtroTurma}|${bimestreAtual}|${date}`;
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
   const selAulas = document.getElementById('freqQtdAulas');
@@ -16079,7 +16087,7 @@ function freqToggleFullscreen(){
 }
 
 function setFreq(alunoId, value){
-  const date = document.getElementById('freqDate')?.value || new Date().toISOString().slice(0,10);
+  const date = document.getElementById('freqDate')?.value || __freqTodayStr();
   const key = `${filtroTurma}|${bimestreAtual}|${date}`;
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
   const current = window.__sgpFrequencia[key][alunoId];
@@ -16095,7 +16103,7 @@ __saveFrequencia();
 }
 
 function freqMarcarTodosP(){
-  const date = document.getElementById('freqDate')?.value || new Date().toISOString().slice(0,10);
+  const date = document.getElementById('freqDate')?.value || __freqTodayStr();
   const key = `${filtroTurma}|${bimestreAtual}|${date}`;
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
   alunos.filter(a=>a.turma===filtroTurma).forEach(a=>{ window.__sgpFrequencia[key][a.id]='P'; });
@@ -16104,7 +16112,7 @@ function freqMarcarTodosP(){
   try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
 }
 function freqMarcarTodosF(){
-  const date = document.getElementById('freqDate')?.value || new Date().toISOString().slice(0,10);
+  const date = document.getElementById('freqDate')?.value || __freqTodayStr();
   const key = `${filtroTurma}|${bimestreAtual}|${date}`;
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
   alunos.filter(a=>a.turma===filtroTurma).forEach(a=>{ window.__sgpFrequencia[key][a.id]='F'; });
