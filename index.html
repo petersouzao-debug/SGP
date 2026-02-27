@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (v15.9.12.15.9 — Histórico semanal de ausências)</title>
+    <title>SGP - Gestão Final (v15.9.12.15.11 — Histórico semanal de ausências)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -2366,6 +2366,24 @@ body.dark-mode .rank-row:hover { background:rgba(96,165,250,0.08); }
 .rank-bar-label { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:0.7rem; font-weight:700; color:var(--text-main); }
 
 .rank-total { font-weight:900; font-size:1.1rem; color:var(--text-main); text-align:center; }
+
+
+
+.rank-mini-btn{
+    border:none;
+    background:rgba(148,163,184,.18);
+    cursor:pointer;
+    font-size:0.78rem;
+    line-height:1;
+    padding:4px 8px;
+    border-radius:10px;
+    color:var(--text-main);
+    transition:transform .08s ease, filter .15s ease;
+}
+.rank-mini-btn:hover{ filter:brightness(1.05); }
+.rank-mini-btn:active{ transform:translateY(1px) scale(.98); }
+.rank-mini-btn.minus{ background:rgba(239,68,68,.14); color:#b91c1c; }
+.rank-mini-btn.plus{ background:rgba(34,197,94,.16); color:#15803d; }
 
 .rank-add-btn {
     border:none; background:var(--primary); color:#fff; width:28px; height:28px;
@@ -7089,6 +7107,22 @@ function corComputeStats(prova, turma){
   return { N, perQ, perRef };
 }
 
+
+// Paleta simples para gráficos de barras: uma cor por barra (HSLA)
+function corBarColors(labels, alpha){
+  try{
+    const arr = Array.isArray(labels) ? labels : [];
+    const n = Math.max(1, arr.length || 1);
+    const a = (alpha==null)?0.75:alpha;
+    return (arr.length?arr:['—']).map((_,i)=>{
+      const hue = Math.round((i * 360) / n);
+      return `hsla(${hue}, 85%, 55%, ${a})`;
+    });
+  }catch(_){
+    return ['rgba(37,99,235,0.75)'];
+  }
+}
+
 function corRenderStats(){
   const turma = corGetTurmaSelecionada();
   const prova = corGetSelectedProva();
@@ -7118,12 +7152,25 @@ function corRenderStats(){
     const c1 = document.getElementById('corChartQuestoes');
     if(c1 && c1.getContext){
       if(__corChartQ) __corChartQ.destroy();
-      __corChartQ = new Chart(c1.getContext('2d'), {
-        type: 'bar',
-        data: { labels: Array.from({length:10}).map((_,i)=>String(i+1)), datasets: [{ label: '% Acerto (Questão)', data: stats.perQ.map(q=>q.pct) }]},
-        options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
-      });
-    }
+      
+const qLabels = Array.from({length:10}).map((_,i)=>String(i+1));
+const qColors = corBarColors(qLabels, 0.75);
+const qBorders = corBarColors(qLabels, 1);
+__corChartQ = new Chart(c1.getContext('2d'), {
+  type: 'bar',
+  data: { 
+    labels: qLabels, 
+    datasets: [{
+      label: '% Acerto (Questão)', 
+      data: stats.perQ.map(q=>q.pct),
+      backgroundColor: qColors,
+      borderColor: qBorders,
+      borderWidth: 1
+    }]
+  },
+  options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
+});
+}
   }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'corChartQ',{}); }catch(_){} }
 
   try{
@@ -7132,12 +7179,26 @@ function corRenderStats(){
       const labels = Object.entries(stats.perRef).map(([k])=>k);
       const data = Object.entries(stats.perRef).map(([,o])=>o.pct);
       if(__corChartB) __corChartB.destroy();
-      __corChartB = new Chart(c2.getContext('2d'), {
-        type: 'bar',
-        data: { labels: labels.length? labels : ['—'], datasets: [{ label: '% Acerto (BNCC/Aula)', data: data.length? data : [0] }]},
-        options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
-      });
-    }
+      
+const bLabels = labels.length ? labels : ['—'];
+const bData = data.length ? data : [0];
+const bColors = corBarColors(bLabels, 0.75);
+const bBorders = corBarColors(bLabels, 1);
+__corChartB = new Chart(c2.getContext('2d'), {
+  type: 'bar',
+  data: { 
+    labels: bLabels, 
+    datasets: [{
+      label: '% Acerto (BNCC/Aula)', 
+      data: bData,
+      backgroundColor: bColors,
+      borderColor: bBorders,
+      borderWidth: 1
+    }]
+  },
+  options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
+});
+}
   }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'corChartB',{}); }catch(_){} }
 }
 
@@ -7523,9 +7584,9 @@ function carregarDados() {
       planosSemana = __safe(p, {}, 'sgp_planos_semanais');
       if(!planosSemana || typeof planosSemana !== 'object' || Array.isArray(planosSemana)) planosSemana = {};
 
-
       correcaoProvas = __safe(cp, {}, 'sgp_correcao_provas');
       if(!correcaoProvas || typeof correcaoProvas !== 'object' || Array.isArray(correcaoProvas)) correcaoProvas = {};
+
       const cfg = __safe(c, null, 'sgp_config');
       if(cfg && typeof cfg === 'object' && !Array.isArray(cfg)) config = cfg;
 
@@ -7790,7 +7851,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.12.15",
+                version: "v15.9.12.15.11",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -7835,14 +7896,13 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 ["extras_autobackups.json", JSON.stringify(extras.autobackups, null, 2)]
             ];
 
-
             // Correção (Provas/Atividades)
             try{
                 const cp = (typeof correcaoProvas !== 'undefined' && correcaoProvas && typeof correcaoProvas==='object')
                   ? correcaoProvas
                   : JSON.parse(localStorage.getItem('sgp_correcao_provas')||'{}');
                 files.push(['sgp_correcao_provas.json', JSON.stringify(cp || {}, null, 2)]);
-            }catch(_){ }
+            }catch(_){}
 
             // === DADOS ADICIONAIS (V13+) ===
             // Frequência / Chamada
@@ -7918,16 +7978,6 @@ __safeLSSet('sgp_last_backup', Date.now());
                         const pl = readJson('sgp_planner.json');
                         plannerTasks = Array.isArray(pl) ? pl : (pl && pl.tasks ? pl.tasks : []);
                         try{ plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
-
-                        
-                        // Correção (Provas/Atividades)
-                        try{
-                            const bkCor = readJson('sgp_correcao_provas.json');
-                            if(bkCor && typeof bkCor === 'object'){
-                                correcaoProvas = bkCor;
-                                __safeLSSet('sgp_correcao_provas', JSON.stringify(bkCor));
-                            }
-                        }catch(_){}
 // Atividades (bancos)
                         const bkForca = readJson('atividades_forca.json');
                         const bkVf = readJson('atividades_vf.json');
@@ -8060,6 +8110,15 @@ __safeLSSet('sgp_last_backup', Date.now());
                             }
                         }catch(_){}
 
+                        // Restore correção de provas (sgp_correcao_provas)
+                        try{
+                            const bkCor = readJson('sgp_correcao_provas.json');
+                            if(bkCor && typeof bkCor === 'object'){
+                                correcaoProvas = bkCor;
+                                try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_correcao_provas', JSON.stringify(bkCor)); else localStorage.setItem('sgp_correcao_provas', JSON.stringify(bkCor)); }catch(__){}
+                            }
+                        }catch(_){ }
+
                         garantirEstruturaNova();
                         salvarDadosLocal();
                         renderizarMenu(); 
@@ -8105,6 +8164,14 @@ __safeLSSet('sgp_last_backup', Date.now());
                         planosSemana=d.planosSemana||d.planos_semanais||planosSemana||{}; 
                         config=d.config||config; 
                         layouts=d.layouts||{};
+                        // Correção (Provas/Atividades)
+                        try{
+                          const dcp = d.correcaoProvas || d.sgp_correcao_provas || d.sgp_correcao_provas_v1 || null;
+                          if(dcp && typeof dcp === 'object'){
+                            correcaoProvas = dcp;
+                            try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_correcao_provas', JSON.stringify(correcaoProvas||{})); else localStorage.setItem('sgp_correcao_provas', JSON.stringify(correcaoProvas||{})); }catch(_){ }
+                          }
+                        }catch(_){ }
                         // Planner (v1)
                         if(typeof d.planner !== 'undefined') plannerTasks = Array.isArray(d.planner) ? d.planner : (d.planner?.tasks || []);
                         else if(typeof d.plannerTasks !== 'undefined') plannerTasks = Array.isArray(d.plannerTasks) ? d.plannerTasks : [];
@@ -21936,6 +22003,8 @@ function _renderList(ranked){
                 <span style="font-size:0.68rem;color:var(--text-muted);" title="Bônus">🎁${p.bonus||0}</span>
             
                 <button data-onclick="rankAbrirHistoricoAluno(${JSON.stringify(a.id)})" title="Histórico de pontos" style="border:none;background:transparent;cursor:pointer;font-size:0.78rem;line-height:1;padding:2px 6px;border-radius:8px;color:var(--text-muted);">📜</button>
+                <button class="rank-mini-btn minus" data-onclick="rankAjusteRapido(${JSON.stringify(a.id)}, -1)" title="-1 ponto" aria-label="Tirar ponto"><i class="fas fa-minus"></i></button>
+                <button class="rank-mini-btn plus" data-onclick="rankAjusteRapido(${JSON.stringify(a.id)}, 1)" title="+1 ponto" aria-label="Adicionar ponto"><i class="fas fa-plus"></i></button>
             </div>
             <div class="rank-total">${item.total}</div>
         </div>`;
@@ -22073,6 +22142,38 @@ window.rankConfirmarPontos = function(){
     
     fecharModalRankPontos();
     renderizarRanking();
+};
+
+
+// --- Ajuste rápido (+/-) por aluno ---
+window.rankAjusteRapido = function(alunoId, delta){
+    try{
+        const sel = document.getElementById('rankCategoria');
+        const selected = sel ? sel.value : 'participacao';
+        const catNames = { notas:'Notas', comportamento:'Comportamento', participacao:'Participação', bonus:'Bônus' };
+        const cat = (selected === 'total') ? 'bonus' : selected;
+        const val = (typeof delta === 'number') ? delta : (parseFloat(delta)||0);
+        if(!val){ return; }
+
+        const oldRanked = _rankBuild('total');
+        const oldFirst = oldRanked[0]?.aluno?.id;
+
+        _rankAddPontos(alunoId, cat, val, 'Ajuste rápido');
+
+        const sign = val > 0 ? '+' : '';
+        showToast(`${sign}${val} pt (${catNames[cat]||cat})`);
+
+        const newRanked = _rankBuild('total');
+        const newFirst = newRanked[0]?.aluno?.id;
+        if(newFirst && newFirst !== oldFirst && newRanked[0]?.total > 0){
+            setTimeout(_rankConfetti, 200);
+        }
+
+        renderizarRanking();
+    }catch(err){
+        console.error('rankAjusteRapido', err);
+        try{ showToast('Falha ao ajustar pontos', 'error'); }catch(_){}
+    }
 };
 
 
@@ -22857,7 +22958,7 @@ window.rankToggleFullscreen = rankToggleFullscreen;
 window.rankUpdateFullscreenUI = rankUpdateFullscreenUI;
 
 try{
-  ['rankToggleFullscreen','rankUpdateFullscreenUI','rankAbrirHistoricoAluno','rankAlunoHistFechar','rankAlunoHistRender'].forEach(n=>{
+  ['rankToggleFullscreen','rankUpdateFullscreenUI','rankAbrirHistoricoAluno','rankAlunoHistFechar','rankAlunoHistRender','rankAjusteRapido'].forEach(n=>{
     if(typeof __wrapSafeGlobal==='function' && typeof window[n]==='function') __wrapSafeGlobal(n);
   });
 }catch(_){ }
