@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (v15.9.12.15.11 — Histórico semanal de ausências)</title>
+    <title>SGP - Gestão Final (v15.9.12.18 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -3414,11 +3414,13 @@ body.dark-mode #modalAtividades .fc-small{ color:#94a3b8; }
 .freq-header-row select,.freq-header-row input[type="number"]{ padding:6px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); }
 
 /* Fullscreen frequency */
-#modalFrequencia.freq-fullscreen{ background:var(--bg-color,#0f172a); align-items:stretch; }
+#modalFrequencia.freq-fullscreen{ background:var(--bg-color,#fff); align-items:stretch; padding:0; }
 #modalFrequencia.freq-fullscreen>.modal-box{
-  max-width:100%; width:100%; max-height:100vh; height:100vh;
-  border-radius:0; margin:0; padding:16px 24px;
-  overflow-y:auto;
+  max-width:100%!important; width:100%!important; max-height:100vh!important; height:100vh!important;
+  border-radius:0!important; margin:0!important; padding:16px 24px!important;
+  overflow-y:auto!important; box-shadow:none!important;
+  position:fixed!important; inset:0!important; z-index:10000!important;
+  background:var(--card-bg,#fff)!important;
 }
 .freq-registro-aula{
   width:100%; padding:8px 12px; border-radius:8px; border:1px solid var(--border-color);
@@ -3430,6 +3432,46 @@ body.dark-mode #modalAtividades .fc-small{ color:#94a3b8; }
 .freq-meta-row label span{ font-weight:600; font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:.3px; }
 .freq-fullscreen-btn{ background:none; border:1px solid var(--border-color); border-radius:8px; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-color); transition:.15s; }
 .freq-fullscreen-btn:hover{ background:rgba(14,165,233,.12); border-color:#0ea5e9; color:#0ea5e9; }
+
+/* === V17: Enhanced Frequency/Attendance === */
+.freq-btn.saved{animation:freqSavedPulse .5s ease-out;}
+@keyframes freqSavedPulse{0%{box-shadow:0 0 0 0 rgba(22,163,74,.5);}100%{box-shadow:0 0 0 14px rgba(22,163,74,0);}}
+.freq-undo-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 18px;border-radius:10px;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:10px;z-index:100001;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:freqUndoIn .3s ease-out;}
+@keyframes freqUndoIn{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+.freq-undo-toast button{background:#0ea5e9;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:700;cursor:pointer;}
+.freq-undo-toast button:hover{background:#0284c7;}
+
+.freq-cal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100000;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s;}
+.freq-cal-box{background:var(--card-bg,#fff);border-radius:16px;padding:20px 24px;max-width:600px;width:95%;max-height:85vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.2);}
+.freq-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:10px 0;}
+.freq-cal-cell{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;cursor:default;transition:.15s;}
+.freq-cal-cell:hover{filter:brightness(1.1);transform:scale(1.08);}
+.freq-cal-cell.hdr{background:transparent;color:#64748b;font-size:.65rem;font-weight:600;}
+.freq-cal-cell.empty{background:transparent;}
+.freq-cal-cell.P{background:#dcfce7;color:#166534;} .freq-cal-cell.F{background:#fee2e2;color:#991b1b;}
+.freq-cal-cell.J{background:#fef9c3;color:#854d0e;} .freq-cal-cell.none{background:#f1f5f9;color:#cbd5e1;}
+.freq-cal-cell.today{box-shadow:inset 0 0 0 2px #0ea5e9;}
+
+.freq-pattern-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:.72rem;font-weight:600;border:1px solid;}
+.freq-pattern-chip.warn{background:#fef3c7;color:#92400e;border-color:#fde68a;}
+.freq-pattern-chip.danger{background:#fee2e2;color:#991b1b;border-color:#fecaca;}
+.freq-pattern-chip.info{background:#e0f2fe;color:#0c4a6e;border-color:#bae6fd;}
+
+.freq-monthly-table{border-collapse:collapse;font-size:.68rem;width:100%;}
+.freq-monthly-table th,.freq-monthly-table td{padding:3px 4px;border:1px solid var(--border-color);text-align:center;min-width:24px;}
+.freq-monthly-table th{background:rgba(14,165,233,.08);font-weight:700;position:sticky;top:0;z-index:2;}
+.freq-monthly-table td.P{background:#dcfce7;color:#166534;font-weight:700;}
+.freq-monthly-table td.F{background:#fee2e2;color:#991b1b;font-weight:700;}
+.freq-monthly-table td.J{background:#fef9c3;color:#854d0e;font-weight:700;}
+.freq-monthly-table td.name-col{text-align:left;position:sticky;left:0;background:var(--card-bg);z-index:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;font-weight:500;}
+.freq-monthly-table tr:hover td{filter:brightness(.97);}
+.freq-monthly-table td.weekend{background:rgba(148,163,184,.08);}
+.freq-monthly-table tfoot td{font-weight:800;background:rgba(14,165,233,.05);border-top:2px solid var(--border-color);}
+
+.freq-trend-canvas{width:100%;height:180px;}
+
+@media print{.freq-cal-overlay,.freq-undo-toast{display:none!important;}}
+@media(max-width:600px){.freq-monthly-table{font-size:.6rem;}.freq-monthly-table th,.freq-monthly-table td{padding:2px;min-width:18px;}}
 
 /* === NEW GAMES: Relacionar, Roleta, Caça-palavras, Cruzadinha === */
 .rel-board{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;min-height:200px;align-items:flex-start;}
@@ -3829,6 +3871,94 @@ body.sidebar-hidden main{margin-left:0;}
 .comp-turmas-bar{height:8px;border-radius:4px;background:#e2e8f0;overflow:hidden;min-width:60px;}
 .comp-turmas-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
 .dash-evo-chart{margin:12px 0;padding:12px;background:var(--card-bg);border:1px solid var(--border-color);border-radius:12px;}
+
+/* === V16: Enhanced Dashboard Stats === */
+.dash-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;grid-column:1/-1;margin-bottom:2px;}
+.dash-kpi{background:var(--card-bg);border:1px solid var(--border-color);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden;transition:box-shadow .2s,transform .15s;}
+.dash-kpi:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px);}
+.dash-kpi-icon{position:absolute;top:12px;right:14px;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;opacity:.85;}
+.dash-kpi-label{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.4px;font-weight:600;}
+.dash-kpi-value{font-size:1.85rem;font-weight:900;margin:4px 0 2px;line-height:1.1;}
+.dash-kpi-sub{font-size:.72rem;color:#94a3b8;}
+.dash-kpi-delta{display:inline-flex;align-items:center;gap:3px;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:6px;margin-left:4px;}
+.dash-kpi-delta.up{background:rgba(22,163,74,.1);color:#16a34a;}
+.dash-kpi-delta.down{background:rgba(220,38,38,.1);color:#dc2626;}
+.dash-kpi-delta.neutral{background:rgba(100,116,139,.1);color:#64748b;}
+
+.dash-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;}
+.dash-stat-item{text-align:center;padding:12px 8px;border-radius:10px;background:rgba(14,165,233,.04);border:1px solid rgba(14,165,233,.1);}
+.dash-stat-item .stat-val{font-size:1.35rem;font-weight:800;color:var(--primary);}
+.dash-stat-item .stat-lbl{font-size:.68rem;color:#64748b;margin-top:2px;text-transform:uppercase;letter-spacing:.3px;}
+
+.dash-rank-list{list-style:none;padding:0;margin:0;}
+.dash-rank-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;margin-bottom:4px;font-size:.82rem;transition:background .15s;}
+.dash-rank-item:hover{background:rgba(14,165,233,.06);}
+.dash-rank-pos{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#fff;flex-shrink:0;}
+.dash-rank-pos.gold{background:linear-gradient(135deg,#f59e0b,#d97706);}
+.dash-rank-pos.silver{background:linear-gradient(135deg,#94a3b8,#64748b);}
+.dash-rank-pos.bronze{background:linear-gradient(135deg,#d97706,#92400e);}
+.dash-rank-pos.normal{background:#cbd5e1;color:#475569;}
+.dash-rank-pos.danger{background:#fca5a5;color:#991b1b;}
+.dash-rank-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);}
+.dash-rank-score{font-weight:800;font-size:.85rem;min-width:36px;text-align:right;}
+.dash-rank-bar{flex:0 0 80px;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;}
+.dash-rank-bar>div{height:100%;border-radius:3px;transition:width .4s;}
+
+.dash-scatter-wrap{position:relative;width:100%;height:260px;}
+.dash-scatter-wrap canvas{width:100%!important;height:100%!important;}
+
+.dash-comp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(60px,1fr));gap:6px;}
+.dash-comp-col{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.dash-comp-bar-v{width:28px;border-radius:4px 4px 0 0;transition:height .4s;min-height:2px;}
+.dash-comp-lbl{font-size:.65rem;color:#64748b;text-align:center;}
+.dash-comp-val{font-size:.68rem;font-weight:700;}
+
+@media(max-width:900px){.dash-kpi-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:500px){.dash-kpi-row{grid-template-columns:1fr;}.dash-kpi-value{font-size:1.4rem;}}
+
+/* === V16B: Trajetória, Heatmap, BoxPlot, Voláteis, PDF === */
+.dash-traj-list{list-style:none;padding:0;margin:0;max-height:380px;overflow-y:auto;}
+.dash-traj-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:3px;font-size:.8rem;transition:background .15s;}
+.dash-traj-item:hover{background:rgba(14,165,233,.05);}
+.dash-traj-arrow{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:900;flex-shrink:0;}
+.dash-traj-arrow.up{background:rgba(22,163,74,.12);color:#16a34a;}
+.dash-traj-arrow.down{background:rgba(220,38,38,.12);color:#dc2626;}
+.dash-traj-arrow.stable{background:rgba(100,116,139,.1);color:#64748b;}
+.dash-traj-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);font-weight:500;}
+.dash-traj-vals{display:flex;align-items:center;gap:4px;font-size:.78rem;font-variant-numeric:tabular-nums;}
+.dash-traj-old{color:#94a3b8;text-decoration:line-through;}
+.dash-traj-new{font-weight:800;}
+.dash-traj-delta{font-size:.7rem;font-weight:700;padding:1px 6px;border-radius:4px;}
+.dash-traj-delta.pos{background:rgba(22,163,74,.1);color:#16a34a;}
+.dash-traj-delta.neg{background:rgba(220,38,38,.1);color:#dc2626;}
+
+.dash-heatmap-wrap{overflow-x:auto;overflow-y:auto;max-height:420px;border:1px solid var(--border-color);border-radius:10px;}
+.dash-heatmap{border-collapse:collapse;font-size:.72rem;width:100%;}
+.dash-heatmap th{position:sticky;top:0;background:var(--card-bg);padding:7px 6px;border-bottom:2px solid var(--border-color);font-weight:700;white-space:nowrap;z-index:2;font-size:.68rem;text-transform:uppercase;letter-spacing:.3px;color:#64748b;}
+.dash-heatmap th:first-child{position:sticky;left:0;z-index:3;min-width:120px;}
+.dash-heatmap td{padding:5px 6px;text-align:center;border-bottom:1px solid var(--border-color);font-weight:600;transition:all .15s;cursor:default;}
+.dash-heatmap td:first-child{position:sticky;left:0;background:var(--card-bg);z-index:1;text-align:left;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+.dash-heatmap tr:hover td{filter:brightness(1.05);}
+
+.dash-boxplot-wrap{position:relative;width:100%;height:220px;}
+.dash-boxplot-wrap canvas{width:100%!important;height:100%!important;}
+
+.dash-volatil-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;margin-bottom:3px;font-size:.8rem;}
+.dash-volatil-item:hover{background:rgba(245,158,11,.05);}
+.dash-volatil-bar{flex:0 0 100px;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;}
+.dash-volatil-bar>div{height:100%;border-radius:4px;transition:width .4s;}
+
+.dash-pdf-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(124,58,237,.25);}
+.dash-pdf-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,58,237,.35);}
+
+@media print{
+  .v16-enhanced,.v16b-enhanced{break-inside:avoid;page-break-inside:avoid;}
+  .dash-pdf-btn,.v15-freqalerts,.diagFab,#diagFab,.sidebar,.topbar,.dash-kpi:hover{box-shadow:none!important;transform:none!important;}
+}
+@media(max-width:700px){
+  .dash-heatmap-wrap{max-height:300px;}
+  .dash-traj-list{max-height:280px;}
+}
 
 /* ===== V15 GAME ENHANCEMENTS CSS ===== */
 
@@ -16892,9 +17022,18 @@ function freqToggleFullscreen(){
   const overlay = document.getElementById('modalFrequencia');
   if(!overlay) return;
   overlay.classList.toggle('freq-fullscreen');
+  const isFS = overlay.classList.contains('freq-fullscreen');
+  const box = overlay.querySelector('.modal-box');
+  if(box){
+    if(isFS){
+      box.dataset.origStyle = box.getAttribute('style') || '';
+      box.style.cssText = 'max-width:100%!important;width:100%!important;max-height:100vh!important;height:100vh!important;border-radius:0!important;margin:0!important;padding:16px 24px!important;overflow-y:auto!important;box-shadow:none!important;position:fixed!important;inset:0!important;z-index:10000!important;background:var(--card-bg,#fff)!important;';
+    } else {
+      box.style.cssText = box.dataset.origStyle || 'max-width:900px;max-height:85vh;overflow-y:auto;';
+    }
+  }
   const btn = document.getElementById('freqFullscreenBtn');
   if(btn){
-    const isFS = overlay.classList.contains('freq-fullscreen');
     btn.innerHTML = isFS ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
     btn.title = isFS ? 'Sair da tela cheia' : 'Tela cheia';
   }
@@ -17378,6 +17517,644 @@ try{
     };
   }
 }catch(_){}
+
+// ================================================================
+// V17: ENHANCED FREQUENCY — 8 NEW FEATURES
+// ================================================================
+
+// === F1: COPIAR AUSENTES PARA WHATSAPP ===
+function freqCopiarAusentesWA(){
+  try{
+    const date=document.getElementById('freqDate')?.value||__freqTodayStr();
+    const key=`${filtroTurma}|${bimestreAtual}|${date}`;
+    const reg=window.__sgpFrequencia[key]||{};
+    const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+    const ausentes=lista.filter(a=>reg[a.id]==='F').map(a=>a.nome||'Sem nome');
+    const justificados=lista.filter(a=>reg[a.id]==='J').map(a=>a.nome||'Sem nome');
+    const dObj=new Date(date+'T12:00:00');
+    const dataFmt=dObj.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+
+    let txt=`📋 *Chamada — ${filtroTurma}*\n📅 ${dataFmt}\n\n`;
+    if(ausentes.length){
+      txt+=`❌ *Faltas (${ausentes.length}):*\n`;
+      ausentes.forEach((n,i)=>{txt+=`  ${i+1}. ${n}\n`;});
+    } else { txt+=`✅ *Nenhuma falta registrada!*\n`; }
+    if(justificados.length){
+      txt+=`\n⚠️ *Justificadas (${justificados.length}):*\n`;
+      justificados.forEach((n,i)=>{txt+=`  ${i+1}. ${n}\n`;});
+    }
+    const total=lista.length;
+    const presentes=lista.filter(a=>reg[a.id]==='P').length;
+    txt+=`\n📊 *Resumo:* ${presentes}/${total} presentes (${total>0?Math.round(presentes/total*100):0}%)`;
+
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(()=>showToast('Lista copiada para a área de transferência!','success'));
+    }else{
+      const ta=document.createElement('textarea');
+      ta.value=txt;ta.style.cssText='position:fixed;opacity:0;';
+      document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+      showToast('Lista copiada!','success');
+    }
+  }catch(e){showToast('Erro ao copiar: '+e.message,'error');}
+}
+
+// === F2: RELATÓRIO MENSAL EXPORTÁVEL (PDF/IMPRESSÃO) ===
+function freqAbrirRelatorioMensal(){
+  if(filtroTurma==='Todas') return showToast('Selecione uma turma.','error');
+  const bim=bimestreAtual;
+  const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  if(!lista.length) return showToast('Nenhum aluno na turma.','error');
+
+  // Get all dates for this turma/bim
+  const dates=__freqGetDatesTurmaBim(filtroTurma,bim).sort();
+  if(!dates.length) return showToast('Nenhum registro de chamada neste bimestre.','error');
+  const freq=window.__sgpFrequencia||{};
+
+  // Group by month
+  const months={};
+  dates.forEach(d=>{
+    const m=d.substring(0,7); // YYYY-MM
+    if(!months[m]) months[m]=[];
+    months[m].push(d);
+  });
+
+  let old=document.getElementById('freqRelatorioOverlay');if(old)old.remove();
+  const overlay=document.createElement('div');
+  overlay.id='freqRelatorioOverlay';
+  overlay.className='freq-cal-overlay';
+  overlay.onclick=function(e){if(e.target===this)this.remove();};
+
+  let html=`<div class="freq-cal-box" style="max-width:95vw;width:auto;min-width:700px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h2 style="margin:0;font-size:1.1rem;"><i class="fas fa-calendar-check"></i> Relatório Mensal — ${escHTML(filtroTurma)} (${bim}ºB)</h2>
+      <div style="display:flex;gap:6px;">
+        <button onclick="window.print()" style="padding:6px 14px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;"><i class="fas fa-print"></i> Imprimir</button>
+        <button onclick="this.closest('.freq-cal-overlay').remove()" style="border:none;background:transparent;font-size:1.3rem;cursor:pointer;color:#64748b;">&times;</button>
+      </div>
+    </div>`;
+
+  Object.keys(months).sort().forEach(monthKey=>{
+    const monthDates=months[monthKey];
+    const mObj=new Date(monthKey+'-15T12:00:00');
+    const monthName=mObj.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+    html+=`<h3 style="margin:14px 0 6px;font-size:.88rem;text-transform:capitalize;">${monthName}</h3>
+    <div style="overflow-x:auto;border:1px solid var(--border-color);border-radius:10px;margin-bottom:12px;">
+    <table class="freq-monthly-table"><thead><tr><th style="text-align:left;min-width:120px;">Aluno</th>`;
+
+    monthDates.forEach(d=>{
+      const dayNum=parseInt(d.substring(8,10));
+      const dObj=new Date(d+'T12:00:00');
+      const wd=dObj.getDay();
+      const wdNames=['D','S','T','Q','Q','S','S'];
+      const isWE=wd===0||wd===6;
+      html+=`<th title="${d}" style="${isWE?'color:#94a3b8;':''}">${dayNum}<br><span style="font-size:.55rem;font-weight:400;">${wdNames[wd]}</span></th>`;
+    });
+    html+=`<th style="min-width:30px;">P</th><th style="min-width:30px;">F</th><th style="min-width:30px;">J</th><th style="min-width:40px;">%</th></tr></thead><tbody>`;
+
+    // Day totals
+    const dayTotals=monthDates.map(()=>({P:0,F:0,J:0}));
+
+    lista.forEach(a=>{
+      let cP=0,cF=0,cJ=0;
+      html+=`<tr><td class="name-col" title="${escHTML(a.nome)}">${escHTML(a.nome)}</td>`;
+      monthDates.forEach((d,di)=>{
+        const key=`${filtroTurma}|${bim}|${d}`;
+        const reg=freq[key]||{};
+        const s=reg[a.id]||'';
+        const dObj=new Date(d+'T12:00:00');
+        const isWE=dObj.getDay()===0||dObj.getDay()===6;
+        const cls=s?(s==='P'?'P':(s==='F'?'F':'J')):'';
+        if(s==='P'){cP++;dayTotals[di].P++;}
+        if(s==='F'){cF++;dayTotals[di].F++;}
+        if(s==='J'){cJ++;dayTotals[di].J++;}
+        html+=`<td class="${cls}${isWE?' weekend':''}">${s||'—'}</td>`;
+      });
+      const total=cP+cF+cJ;
+      const pct=total>0?Math.round(cP/total*100):0;
+      const pctColor=pct>=75?'#16a34a':(pct>=50?'#f59e0b':'#dc2626');
+      html+=`<td style="font-weight:700;color:#166534;">${cP}</td>
+             <td style="font-weight:700;color:#991b1b;">${cF}</td>
+             <td style="font-weight:700;color:#854d0e;">${cJ}</td>
+             <td style="font-weight:800;color:${pctColor};">${pct}%</td></tr>`;
+    });
+
+    // Footer with day totals
+    html+=`</tbody><tfoot><tr><td style="text-align:left;font-weight:700;">Total dia</td>`;
+    monthDates.forEach((d,di)=>{
+      const t=dayTotals[di];
+      html+=`<td title="P:${t.P} F:${t.F} J:${t.J}" style="font-size:.6rem;">${t.F>0?`<span style="color:#991b1b;">${t.F}F</span>`:'✓'}</td>`;
+    });
+    html+=`<td></td><td></td><td></td><td></td></tr></tfoot></table></div>`;
+  });
+
+  html+=`</div>`;
+  overlay.innerHTML=html;
+  document.body.appendChild(overlay);
+}
+
+// === F3: CALENDÁRIO VISUAL DE PRESENÇA INDIVIDUAL ===
+function freqAbrirCalendarioAluno(alunoId){
+  const a=alunos.find(al=>al.id===alunoId);
+  if(!a) return showToast('Aluno não encontrado.','error');
+  const bim=bimestreAtual;
+  const dates=__freqGetDatesTurmaBim(a.turma,bim).sort();
+  const freq=window.__sgpFrequencia||{};
+  const today=__freqTodayStr();
+
+  // Collect all months involved
+  const monthSet=new Set();
+  dates.forEach(d=>monthSet.add(d.substring(0,7)));
+  const monthsList=[...monthSet].sort();
+
+  let old=document.getElementById('freqCalAluno');if(old)old.remove();
+  const overlay=document.createElement('div');
+  overlay.id='freqCalAluno';
+  overlay.className='freq-cal-overlay';
+  overlay.onclick=function(e){if(e.target===this)this.remove();};
+
+  const fAluno=calcFreqAluno(alunoId,bim);
+
+  // Day-of-week analysis
+  const dowCount={0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+  const dowFaltas={0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+  dates.forEach(d=>{
+    const key=`${a.turma}|${bim}|${d}`;
+    const reg=freq[key]||{};
+    const s=reg[alunoId]||'';
+    const wd=new Date(d+'T12:00:00').getDay();
+    if(s) dowCount[wd]++;
+    if(s==='F') dowFaltas[wd]++;
+  });
+  const dowNames=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+  // Pattern detection
+  const patterns=[];
+  [1,2,3,4,5].forEach(wd=>{
+    if(dowCount[wd]>=2 && dowFaltas[wd]>=2){
+      const pct=Math.round(dowFaltas[wd]/dowCount[wd]*100);
+      if(pct>=50) patterns.push({type:'dow',wd,pct,label:`Falta ${pct}% das ${dowNames[wd]}s (${dowFaltas[wd]}/${dowCount[wd]})`});
+    }
+  });
+
+  // Streak detection
+  let maxStreak=0,curStreak=0;
+  dates.forEach(d=>{
+    const key=`${a.turma}|${bim}|${d}`;
+    const s=(freq[key]||{})[alunoId]||'';
+    if(s==='F'){curStreak++;maxStreak=Math.max(maxStreak,curStreak);}
+    else curStreak=0;
+  });
+  if(maxStreak>=3) patterns.push({type:'streak',label:`Maior sequência de faltas: ${maxStreak} dias consecutivos`});
+
+  // Trend (last 5 registros vs first 5)
+  if(dates.length>=10){
+    const first5=dates.slice(0,5);
+    const last5=dates.slice(-5);
+    const fFirst=first5.filter(d=>(freq[`${a.turma}|${bim}|${d}`]||{})[alunoId]==='F').length;
+    const fLast=last5.filter(d=>(freq[`${a.turma}|${bim}|${d}`]||{})[alunoId]==='F').length;
+    if(fLast>fFirst+1) patterns.push({type:'trend_down',label:`Tendência de piora: ${fFirst} faltas nos primeiros registros → ${fLast} nos últimos`});
+    else if(fFirst>fLast+1) patterns.push({type:'trend_up',label:`Tendência de melhora: ${fFirst} faltas no início → ${fLast} no final`});
+  }
+
+  let html=`<div class="freq-cal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h2 style="margin:0;font-size:1.05rem;"><i class="fas fa-calendar"></i> ${escHTML(a.nome)}</h2>
+      <button onclick="this.closest('.freq-cal-overlay').remove()" style="border:none;background:transparent;font-size:1.3rem;cursor:pointer;color:#64748b;">&times;</button>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+      <div style="padding:8px 14px;border-radius:8px;background:rgba(14,165,233,.08);font-size:.82rem;">
+        <b>${fAluno.presentes}</b> presenças
+      </div>
+      <div style="padding:8px 14px;border-radius:8px;background:#fee2e2;font-size:.82rem;color:#991b1b;">
+        <b>${fAluno.faltas}</b> faltas
+      </div>
+      <div style="padding:8px 14px;border-radius:8px;background:#fef9c3;font-size:.82rem;color:#854d0e;">
+        <b>${fAluno.justificadas}</b> justificadas
+      </div>
+      <div style="padding:8px 14px;border-radius:8px;font-size:.82rem;font-weight:800;color:${fAluno.pct>=75?'#16a34a':(fAluno.pct>=50?'#f59e0b':'#dc2626')};">
+        ${fAluno.pct.toFixed(0)}% frequência
+      </div>
+    </div>`;
+
+  if(patterns.length){
+    html+=`<div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap;">`;
+    patterns.forEach(p=>{
+      const cls=p.type==='trend_up'?'info':(p.type==='dow'||p.type==='streak'?'danger':'warn');
+      const icon=p.type==='dow'?'fa-calendar-day':(p.type==='streak'?'fa-fire':'fa-chart-line');
+      html+=`<span class="freq-pattern-chip ${cls}"><i class="fas ${icon}"></i> ${escHTML(p.label)}</span>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Render month calendars
+  monthsList.forEach(mk=>{
+    const mObj=new Date(mk+'-15T12:00:00');
+    const monthName=mObj.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const year=parseInt(mk.substring(0,4)),month=parseInt(mk.substring(5,7))-1;
+    const firstDay=new Date(year,month,1).getDay();
+    const daysInMonth=new Date(year,month+1,0).getDate();
+
+    html+=`<div style="margin-bottom:12px;">
+      <div style="font-weight:700;font-size:.82rem;text-transform:capitalize;margin-bottom:4px;">${monthName}</div>
+      <div class="freq-cal-grid">`;
+    ['D','S','T','Q','Q','S','S'].forEach(d=>{html+=`<div class="freq-cal-cell hdr">${d}</div>`;});
+    for(let i=0;i<firstDay;i++) html+=`<div class="freq-cal-cell empty"></div>`;
+    for(let day=1;day<=daysInMonth;day++){
+      const dStr=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const key=`${a.turma}|${bim}|${dStr}`;
+      const reg=freq[key]||{};
+      const s=reg[alunoId]||'';
+      const cls=s?(s==='P'?'P':(s==='F'?'F':'J')):'none';
+      const isToday=dStr===today?'today':'';
+      const title=s?`${dStr}: ${s==='P'?'Presente':(s==='F'?'Falta':'Justificada')}`:(dates.includes(dStr)?`${dStr}: Sem marcação`:`${dStr}`);
+      html+=`<div class="freq-cal-cell ${cls} ${isToday}" title="${title}">${day}</div>`;
+    }
+    html+=`</div></div>`;
+  });
+
+  // Day-of-week breakdown
+  html+=`<div style="margin-top:8px;padding:10px;border-radius:10px;border:1px solid var(--border-color);">
+    <div style="font-weight:700;font-size:.78rem;margin-bottom:6px;color:#64748b;">Faltas por dia da semana</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">`;
+  [1,2,3,4,5].forEach(wd=>{
+    const pct=dowCount[wd]>0?Math.round(dowFaltas[wd]/dowCount[wd]*100):0;
+    const cor=pct>=50?'#dc2626':(pct>=25?'#f59e0b':'#16a34a');
+    html+=`<div style="text-align:center;min-width:50px;">
+      <div style="font-size:.65rem;color:#64748b;">${dowNames[wd]}</div>
+      <div style="font-size:.85rem;font-weight:800;color:${cor};">${dowFaltas[wd]}/${dowCount[wd]}</div>
+      <div style="font-size:.6rem;color:${cor};">${pct}%</div>
+    </div>`;
+  });
+  html+=`</div></div></div>`;
+
+  overlay.innerHTML=html;
+  document.body.appendChild(overlay);
+}
+
+// === F4: RELATÓRIO MENSAL CONSOLIDADO (alias, used by F2) ===
+// (Implemented in F2 — freqAbrirRelatorioMensal)
+
+// === F5: GRÁFICO DE TENDÊNCIA DE FREQUÊNCIA DA TURMA ===
+function freqRenderTrendChart(containerId){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  const bim=bimestreAtual;
+  const dates=__freqGetDatesTurmaBim(filtroTurma,bim).sort();
+  if(dates.length<2){container.innerHTML='<div style="color:#94a3b8;font-size:.8rem;text-align:center;padding:12px;">Poucos registros para gerar tendência.</div>';return;}
+  const freq=window.__sgpFrequencia||{};
+  const lista=alunos.filter(a=>a.turma===filtroTurma);
+
+  const dataPoints=dates.map(d=>{
+    const key=`${filtroTurma}|${bim}|${d}`;
+    const reg=freq[key]||{};
+    let p=0,total=0;
+    lista.forEach(a=>{
+      const s=reg[a.id];
+      if(s==='P'||s==='F'||s==='J'){total++;if(s==='P'||s==='J')p++;}
+    });
+    return {date:d,pct:total>0?p/total*100:0};
+  });
+
+  const canvasId='freqTrendCanvas_'+Date.now();
+  container.innerHTML=`<canvas id="${canvasId}" class="freq-trend-canvas"></canvas>`;
+
+  setTimeout(()=>{
+    const canvas=document.getElementById(canvasId);
+    if(!canvas) return;
+    const W=canvas.width=canvas.offsetWidth*2,H=canvas.height=360;
+    const c=canvas.getContext('2d');
+    const pad={t:20,b:40,l:50,r:20};
+    const pW=W-pad.l-pad.r,pH=H-pad.t-pad.b;
+    c.clearRect(0,0,W,H);
+
+    // Grid
+    c.strokeStyle='rgba(148,163,184,.12)';c.lineWidth=1;
+    [0,25,50,75,100].forEach(v=>{
+      const y=pad.t+pH-(v/100)*pH;
+      c.beginPath();c.moveTo(pad.l,y);c.lineTo(W-pad.r,y);c.stroke();
+      c.fillStyle='#94a3b8';c.font='16px sans-serif';c.textAlign='right';
+      c.fillText(v+'%',pad.l-6,y+5);
+    });
+
+    // 75% reference
+    c.strokeStyle='rgba(22,163,74,.25)';c.lineWidth=2;c.setLineDash([6,4]);
+    const y75=pad.t+pH-(75/100)*pH;
+    c.beginPath();c.moveTo(pad.l,y75);c.lineTo(W-pad.r,y75);c.stroke();
+    c.setLineDash([]);
+
+    const step=dataPoints.length>1?pW/(dataPoints.length-1):pW;
+    const points=dataPoints.map((d,i)=>({x:pad.l+i*step,y:pad.t+pH-(d.pct/100)*pH,pct:d.pct,date:d.date}));
+
+    // Gradient fill
+    const grad=c.createLinearGradient(0,pad.t,0,H-pad.b);
+    grad.addColorStop(0,'rgba(14,165,233,.15)');grad.addColorStop(1,'rgba(14,165,233,0)');
+    c.beginPath();c.moveTo(points[0].x,H-pad.b);
+    points.forEach(p=>c.lineTo(p.x,p.y));
+    c.lineTo(points[points.length-1].x,H-pad.b);c.closePath();
+    c.fillStyle=grad;c.fill();
+
+    // Line
+    c.beginPath();c.strokeStyle='#0ea5e9';c.lineWidth=3;c.lineJoin='round';
+    points.forEach((p,i)=>{if(i===0)c.moveTo(p.x,p.y);else c.lineTo(p.x,p.y);});
+    c.stroke();
+
+    // Dots
+    points.forEach(p=>{
+      const cor=p.pct>=75?'#16a34a':(p.pct>=50?'#f59e0b':'#dc2626');
+      c.beginPath();c.arc(p.x,p.y,5,0,Math.PI*2);c.fillStyle=cor;c.fill();
+    });
+
+    // X labels (show some dates)
+    const labelStep=Math.max(1,Math.floor(points.length/8));
+    points.forEach((p,i)=>{
+      if(i%labelStep===0||i===points.length-1){
+        const dObj=new Date(p.date+'T12:00:00');
+        const lbl=dObj.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+        c.fillStyle='#64748b';c.font='14px sans-serif';c.textAlign='center';
+        c.save();c.translate(p.x,H-pad.b+14);c.rotate(-0.4);c.fillText(lbl,0,0);c.restore();
+      }
+    });
+
+    // Average line
+    const avg=dataPoints.reduce((s,d)=>s+d.pct,0)/dataPoints.length;
+    const yAvg=pad.t+pH-(avg/100)*pH;
+    c.strokeStyle='rgba(124,58,237,.4)';c.lineWidth=2;c.setLineDash([4,4]);
+    c.beginPath();c.moveTo(pad.l,yAvg);c.lineTo(W-pad.r,yAvg);c.stroke();
+    c.setLineDash([]);
+    c.fillStyle='#7c3aed';c.font='bold 14px sans-serif';c.textAlign='left';
+    c.fillText(`Média: ${avg.toFixed(0)}%`,pad.l+6,yAvg-6);
+  },50);
+}
+
+// === F6: CONFIRMAÇÃO VISUAL AO SALVAR ===
+const __origSetFreq=setFreq;
+setFreq=function(alunoId,value){
+  __origSetFreq(alunoId,value);
+  // Animate the button
+  try{
+    const date=document.getElementById('freqDate')?.value||__freqTodayStr();
+    const key=`${filtroTurma}|${bimestreAtual}|${date}`;
+    const current=(window.__sgpFrequencia[key]||{})[alunoId]||'';
+    const container=document.getElementById('freqTableContainer');
+    if(!container) return;
+    const btns=container.querySelectorAll('.freq-btn');
+    btns.forEach(btn=>{
+      if(btn.getAttribute('onclick')&&btn.getAttribute('onclick').includes(`'${alunoId}'`)){
+        if((current===value&&btn.textContent.trim()===value)||(current&&btn.textContent.trim()===current)){
+          btn.classList.add('saved');
+          setTimeout(()=>btn.classList.remove('saved'),600);
+        }
+      }
+    });
+  }catch(_){}
+};
+
+// === F7: DESFAZER ÚLTIMA MARCAÇÃO (Ctrl+Z) ===
+window.__freqUndoStack=[];
+
+const __origSetFreq2=setFreq;
+setFreq=function(alunoId,value){
+  try{
+    const date=document.getElementById('freqDate')?.value||__freqTodayStr();
+    const key=`${filtroTurma}|${bimestreAtual}|${date}`;
+    const prev=(window.__sgpFrequencia[key]||{})[alunoId]||'';
+    window.__freqUndoStack.push({key,alunoId,prev,turma:filtroTurma,bim:bimestreAtual,date});
+    if(window.__freqUndoStack.length>50) window.__freqUndoStack.shift();
+  }catch(_){}
+  __origSetFreq2(alunoId,value);
+  __freqShowUndoToast();
+};
+
+function __freqShowUndoToast(){
+  let toast=document.getElementById('freqUndoToast');
+  if(toast) toast.remove();
+  if(!window.__freqUndoStack.length) return;
+  const last=window.__freqUndoStack[window.__freqUndoStack.length-1];
+  const nome=alunos.find(a=>a.id===last.alunoId)?.nome||'Aluno';
+  toast=document.createElement('div');
+  toast.id='freqUndoToast';
+  toast.className='freq-undo-toast';
+  toast.innerHTML=`<span>✓ Marcação salva — ${escHTML(nome)}</span><button onclick="freqUndo()"><i class="fas fa-undo"></i> Desfazer</button>`;
+  document.body.appendChild(toast);
+  clearTimeout(window.__freqUndoTimer);
+  window.__freqUndoTimer=setTimeout(()=>{const t=document.getElementById('freqUndoToast');if(t)t.remove();},4000);
+}
+
+function freqUndo(){
+  if(!window.__freqUndoStack.length) return;
+  const last=window.__freqUndoStack.pop();
+  if(last.prev){
+    if(!window.__sgpFrequencia[last.key]) window.__sgpFrequencia[last.key]={};
+    window.__sgpFrequencia[last.key][last.alunoId]=last.prev;
+  }else{
+    if(window.__sgpFrequencia[last.key]) delete window.__sgpFrequencia[last.key][last.alunoId];
+  }
+  __saveFrequencia();
+  renderFrequencia();
+  const t=document.getElementById('freqUndoToast');if(t)t.remove();
+  showToast('Marcação desfeita!','success');
+}
+
+// Ctrl+Z handler
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){
+    const modal=document.getElementById('modalFrequencia');
+    if(modal&&modal.style.display!=='none'&&window.__freqUndoStack.length){
+      e.preventDefault();
+      freqUndo();
+    }
+  }
+});
+
+// === F8: ALERTA INTELIGENTE DE PADRÃO ===
+function __freqDetectarPadroes(turma,bim){
+  const dates=__freqGetDatesTurmaBim(turma,bim).sort();
+  if(dates.length<5) return [];
+  const freq=window.__sgpFrequencia||{};
+  const lista=alunos.filter(a=>a.turma===turma);
+  const dowNames=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const insights=[];
+
+  // Per-student patterns
+  lista.forEach(a=>{
+    const dowCount={},dowFaltas={};
+    for(let w=0;w<7;w++){dowCount[w]=0;dowFaltas[w]=0;}
+    let totalF=0,totalRegs=0;
+    dates.forEach(d=>{
+      const key=`${turma}|${bim}|${d}`;
+      const s=(freq[key]||{})[a.id]||'';
+      if(!s) return;
+      const wd=new Date(d+'T12:00:00').getDay();
+      dowCount[wd]++;totalRegs++;
+      if(s==='F'){dowFaltas[wd]++;totalF++;}
+    });
+
+    // Day-of-week pattern
+    [1,2,3,4,5].forEach(wd=>{
+      if(dowCount[wd]>=3 && dowFaltas[wd]>=2){
+        const pct=Math.round(dowFaltas[wd]/dowCount[wd]*100);
+        if(pct>=60) insights.push({
+          severity:'danger',
+          icon:'fa-calendar-day',
+          text:`${escHTML(a.nome||'Aluno')} falta ${pct}% das ${dowNames[wd]}s (${dowFaltas[wd]}/${dowCount[wd]})`,
+          alunoId:a.id
+        });
+      }
+    });
+
+    // Increasing trend
+    if(dates.length>=8){
+      const half=Math.floor(dates.length/2);
+      const first=dates.slice(0,half);
+      const second=dates.slice(half);
+      const fFirst=first.filter(d=>(freq[`${turma}|${bim}|${d}`]||{})[a.id]==='F').length;
+      const fSecond=second.filter(d=>(freq[`${turma}|${bim}|${d}`]||{})[a.id]==='F').length;
+      if(fSecond>=fFirst+2 && fSecond>=3) insights.push({
+        severity:'warn',
+        icon:'fa-chart-line',
+        text:`${escHTML(a.nome||'Aluno')}: faltas aumentando (${fFirst} → ${fSecond} na segunda metade)`,
+        alunoId:a.id
+      });
+    }
+
+    // Long streak
+    let streak=0,maxS=0;
+    dates.forEach(d=>{
+      const s=(freq[`${turma}|${bim}|${d}`]||{})[a.id]||'';
+      if(s==='F'){streak++;maxS=Math.max(maxS,streak);}else streak=0;
+    });
+    if(maxS>=5) insights.push({
+      severity:'danger',
+      icon:'fa-fire',
+      text:`${escHTML(a.nome||'Aluno')}: sequência de ${maxS} faltas consecutivas`,
+      alunoId:a.id
+    });
+  });
+
+  // Turma-level: days with many absences
+  dates.forEach(d=>{
+    const key=`${turma}|${bim}|${d}`;
+    const reg=freq[key]||{};
+    let fCount=0,total=0;
+    lista.forEach(a=>{const s=reg[a.id];if(s){total++;if(s==='F')fCount++;}});
+    if(total>=5 && fCount/total>=0.3){
+      const dObj=new Date(d+'T12:00:00');
+      const dFmt=dObj.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
+      insights.push({
+        severity:'info',
+        icon:'fa-users',
+        text:`${dFmt}: ${Math.round(fCount/total*100)}% de faltas na turma (${fCount}/${total})`,
+        date:d
+      });
+    }
+  });
+
+  // Limit insights
+  insights.sort((a,b)=>{const s={danger:0,warn:1,info:2};return (s[a.severity]||9)-(s[b.severity]||9);});
+  return insights.slice(0,12);
+}
+
+function renderFreqPatternsHTML(turma,bim){
+  const patterns=__freqDetectarPadroes(turma,bim);
+  if(!patterns.length) return '';
+  let html=`<div class="dash-card wide v17-freq-patterns" style="border:1px solid rgba(245,158,11,.2);">
+    <h3 style="margin:0 0 8px;"><i class="fas fa-lightbulb" style="color:#f59e0b;"></i> Insights de Frequência — ${escHTML(turma)} (${bim}ºB)</h3>
+    <div style="display:flex;flex-direction:column;gap:4px;">`;
+  patterns.forEach(p=>{
+    const clickAttr=p.alunoId?` style="cursor:pointer;" onclick="freqAbrirCalendarioAluno('${p.alunoId}')" title="Ver calendário do aluno"`:'';
+    html+=`<div class="freq-pattern-chip ${p.severity}"${clickAttr}><i class="fas ${p.icon}"></i> ${p.text}</div>`;
+  });
+  html+=`</div></div>`;
+  return html;
+}
+
+// === INJECT BUTTONS INTO CHAMADA MODAL ===
+try{
+  const __origRenderFreq=renderFrequencia;
+  renderFrequencia=function(){
+    __origRenderFreq();
+    // Inject extra buttons if not present
+    try{
+      const container=document.getElementById('freqTableContainer');
+      if(!container) return;
+	      // Evita duplicação dos botões ao abrir/fechar o modal (o bloco é anexado fora do container)
+	      try{
+	        const all = document.querySelectorAll('#freqExtraButtons');
+	        if(all && all.length>1) all.forEach((el,i)=>{ if(i>0) el.remove(); });
+	      }catch(_){ }
+	      if(document.getElementById('freqExtraButtons')) return;
+      const btnsDiv=document.createElement('div');
+      btnsDiv.id='freqExtraButtons';
+      btnsDiv.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color);';
+      btnsDiv.innerHTML=`
+        <button onclick="freqCopiarAusentesWA()" style="padding:6px 14px;background:#25D366;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fab fa-whatsapp"></i> Copiar Ausentes</button>
+        <button onclick="freqAbrirRelatorioMensal()" style="padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fas fa-file-pdf"></i> Relatório Mensal</button>
+        <button onclick="__freqAbrirTendencia()" style="padding:6px 14px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fas fa-chart-line"></i> Tendência</button>
+      `;
+      container.parentElement.appendChild(btnsDiv);
+    }catch(_){}
+
+    // Make student names clickable for calendar
+    try{
+      const container=document.getElementById('freqTableContainer');
+      if(!container) return;
+      const rows=container.querySelectorAll('tbody tr');
+      const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+      rows.forEach((tr,i)=>{
+        if(!lista[i]) return;
+        const td=tr.querySelector('td:nth-child(2)');
+        if(!td||td.dataset.clickable) return;
+        td.dataset.clickable='1';
+        td.style.cssText='text-align:left;cursor:pointer;color:var(--primary);text-decoration:underline;text-decoration-style:dotted;';
+        td.title='Clique para ver calendário de presença';
+        td.onclick=function(){freqAbrirCalendarioAluno(lista[i].id);};
+      });
+    }catch(_){}
+  };
+}catch(_){}
+
+// Tendência popup
+function __freqAbrirTendencia(){
+  let old=document.getElementById('freqTrendOverlay');if(old)old.remove();
+  const overlay=document.createElement('div');
+  overlay.id='freqTrendOverlay';
+  overlay.className='freq-cal-overlay';
+  overlay.onclick=function(e){if(e.target===this)this.remove();};
+  overlay.innerHTML=`<div class="freq-cal-box" style="max-width:700px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h2 style="margin:0;font-size:1.05rem;"><i class="fas fa-chart-line"></i> Tendência de Frequência — ${escHTML(filtroTurma)}</h2>
+      <button onclick="this.closest('.freq-cal-overlay').remove()" style="border:none;background:transparent;font-size:1.3rem;cursor:pointer;color:#64748b;">&times;</button>
+    </div>
+    <div id="freqTrendContainer"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(()=>freqRenderTrendChart('freqTrendContainer'),50);
+}
+
+// === INJECT PATTERNS INTO DASHBOARD ===
+try{
+  const __origRenderDash3=renderizarDashboard;
+  renderizarDashboard=function(){
+    __origRenderDash3();
+    try{
+      const dashEl=document.getElementById('viewDashboard');
+      if(!dashEl) return;
+      dashEl.querySelectorAll('.v17-freq-patterns').forEach(el=>el.remove());
+      if(filtroTurma&&filtroTurma!=='Todas'){
+        const pHtml=renderFreqPatternsHTML(filtroTurma,bimestreAtual);
+        if(pHtml){
+          const div=document.createElement('div');
+          div.className='v17-freq-patterns';div.style.gridColumn='1/-1';
+          div.innerHTML=pHtml;
+          dashEl.appendChild(div);
+        }
+      }
+    }catch(_){}
+  };
+}catch(_){}
+
+
 // ===============================================
 // V13 FEATURE 5: BOLETIM INDIVIDUAL
 // ===============================================
@@ -19022,7 +19799,939 @@ function drawEvoTurmaChart(){
   });
 }
 
-// Hook into dashboard rendering
+// ================================================================
+// V16: ENHANCED DASHBOARD STATISTICS
+// ================================================================
+
+function __v16CalcStats(lista, slotId, notasKey, bim){
+  const vals=[];
+  lista.forEach(a=>{
+    const b=a?.bimestres?.[bim]; if(!b) return;
+    _syncBimestreRefs(b);
+    vals.push(clampNota(calcularMediaDisc(slotId, b[notasKey])));
+  });
+  if(!vals.length) return null;
+  const sorted=[...vals].sort((a,b)=>a-b);
+  const n=sorted.length;
+  const sum=sorted.reduce((a,b)=>a+b,0);
+  const mean=sum/n;
+  const variance=sorted.reduce((a,v)=>a+Math.pow(v-mean,2),0)/n;
+  const stdDev=Math.sqrt(variance);
+  const median=n%2===0?(sorted[n/2-1]+sorted[n/2])/2:sorted[Math.floor(n/2)];
+  const min=sorted[0], max=sorted[n-1];
+  const cv=mean>0?(stdDev/mean*100):0;
+  const abaixo5=sorted.filter(v=>v<5).length;
+  const acima7=sorted.filter(v=>v>=7).length;
+  const acima9=sorted.filter(v=>v>=9).length;
+  return {vals,sorted,n,sum,mean,stdDev,median,min,max,cv,abaixo5,acima7,acima9,variance};
+}
+
+function __v16DeltaHTML(current, previous, suffix, invert){
+  if(previous===null||previous===undefined||current===null||current===undefined) return '';
+  const diff=current-previous;
+  const absDiff=Math.abs(diff);
+  if(absDiff<0.05) return `<span class="dash-kpi-delta neutral">= ${suffix||''}</span>`;
+  const isGood=invert?(diff<0):(diff>0);
+  const cls=isGood?'up':'down';
+  const arrow=isGood?'▲':'▼';
+  return `<span class="dash-kpi-delta ${cls}">${arrow} ${absDiff.toFixed(1)}${suffix||''}</span>`;
+}
+
+function renderV16EnhancedDashboard(){
+  const dashEl=document.getElementById('viewDashboard');
+  if(!dashEl) return;
+
+  // Remove previous v16 elements
+  dashEl.querySelectorAll('.v16-enhanced').forEach(el=>el.remove());
+
+  const lista=getAlunosFiltrados();
+  if(!lista.length) return;
+
+  const bim=bimestreAtual;
+  const prevBim=bim>1?bim-1:null;
+
+  // Calculate stats for both subjects
+  const s1=__v16CalcStats(lista, config.slot1, 'notas_lp', bim);
+  const s2=__v16CalcStats(lista, config.slot2, 'notas_red', bim);
+  const ps1=prevBim?__v16CalcStats(lista, config.slot1, 'notas_lp', prevBim):null;
+  const ps2=prevBim?__v16CalcStats(lista, config.slot2, 'notas_red', prevBim):null;
+
+  if(!s1 && !s2) return;
+
+  const mediaGeral=((s1?s1.mean:0)+(s2?s2.mean:0))/((s1?1:0)+(s2?1:0));
+  const prevMediaGeral=ps1||ps2?((ps1?ps1.mean:0)+(ps2?ps2.mean:0))/((ps1?1:0)+(ps2?1:0)):null;
+
+  // Frequência média
+  let freqSum=0, freqN=0;
+  lista.forEach(a=>{
+    const f=calcFreqAluno(a.id,bim);
+    if(f.total>0){ freqSum+=f.pct; freqN++; }
+  });
+  const avgFreq=freqN>0?freqSum/freqN:null;
+  let prevFreqSum=0, prevFreqN=0;
+  if(prevBim){
+    lista.forEach(a=>{
+      const f=calcFreqAluno(a.id,prevBim);
+      if(f.total>0){ prevFreqSum+=f.pct; prevFreqN++; }
+    });
+  }
+  const prevAvgFreq=prevFreqN>0?prevFreqSum/prevFreqN:null;
+
+  // Em risco (média < 5 em qualquer matéria)
+  let emRisco=0;
+  lista.forEach(a=>{
+    const b=a?.bimestres?.[bim]; if(!b) return;
+    _syncBimestreRefs(b);
+    const m1=clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+    const m2=clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+    if(m1<5||m2<5) emRisco++;
+  });
+  const pctRisco=lista.length?(emRisco/lista.length*100):0;
+  let prevRisco=0;
+  if(prevBim){
+    lista.forEach(a=>{
+      const b=a?.bimestres?.[prevBim]; if(!b) return;
+      _syncBimestreRefs(b);
+      const m1=clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+      const m2=clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+      if(m1<5||m2<5) prevRisco++;
+    });
+  }
+  const prevPctRisco=prevBim&&lista.length?(prevRisco/lista.length*100):null;
+
+  // Comportamento médio
+  let compSum=0, compN=0;
+  lista.forEach(a=>{
+    const b=a?.bimestres?.[bim]; if(!b) return;
+    const c=parseFloat(b.comportamento)||0;
+    if(c>0||b.comportamento==='0'||b.comportamento===0){ compSum+=c; compN++; }
+  });
+  const avgComp=compN>0?compSum/compN:null;
+  let prevCompSum=0, prevCompN=0;
+  if(prevBim){
+    lista.forEach(a=>{
+      const b=a?.bimestres?.[prevBim]; if(!b) return;
+      const c=parseFloat(b.comportamento)||0;
+      if(c>0||b.comportamento==='0'||b.comportamento===0){ prevCompSum+=c; prevCompN++; }
+    });
+  }
+  const prevAvgComp=prevCompN>0?prevCompSum/prevCompN:null;
+
+  // ===== 1. KPI SUMMARY ROW =====
+  const mediaColor=mediaGeral>=7?'#16a34a':(mediaGeral>=5?'#f59e0b':'#dc2626');
+  const freqColor=avgFreq!==null?(avgFreq>=75?'#16a34a':(avgFreq>=50?'#f59e0b':'#dc2626')):'#64748b';
+  const riscoColor=pctRisco<=10?'#16a34a':(pctRisco<=30?'#f59e0b':'#dc2626');
+  const compColor=avgComp!==null?(avgComp>=7?'#16a34a':(avgComp>=5?'#f59e0b':'#dc2626')):'#64748b';
+
+  let kpiHtml=`<div class="dash-kpi-row v16-enhanced">
+    <div class="dash-kpi">
+      <div class="dash-kpi-icon" style="background:${mediaColor}15;color:${mediaColor};"><i class="fas fa-chart-line"></i></div>
+      <div class="dash-kpi-label">Média Geral</div>
+      <div class="dash-kpi-value" style="color:${mediaColor};">${mediaGeral.toFixed(1)}</div>
+      <div class="dash-kpi-sub">${bim}º Bimestre ${__v16DeltaHTML(mediaGeral, prevMediaGeral, '')}</div>
+    </div>
+    <div class="dash-kpi">
+      <div class="dash-kpi-icon" style="background:${freqColor}15;color:${freqColor};"><i class="fas fa-clipboard-check"></i></div>
+      <div class="dash-kpi-label">Frequência Média</div>
+      <div class="dash-kpi-value" style="color:${freqColor};">${avgFreq!==null?avgFreq.toFixed(0)+'%':'—'}</div>
+      <div class="dash-kpi-sub">${freqN} aluno(s) com registro ${__v16DeltaHTML(avgFreq, prevAvgFreq, '%')}</div>
+    </div>
+    <div class="dash-kpi">
+      <div class="dash-kpi-icon" style="background:${riscoColor}15;color:${riscoColor};"><i class="fas fa-triangle-exclamation"></i></div>
+      <div class="dash-kpi-label">Em Risco (&lt;5)</div>
+      <div class="dash-kpi-value" style="color:${riscoColor};">${emRisco} <span style="font-size:.9rem;font-weight:600;">(${pctRisco.toFixed(0)}%)</span></div>
+      <div class="dash-kpi-sub">de ${lista.length} alunos ${__v16DeltaHTML(pctRisco, prevPctRisco, '%', true)}</div>
+    </div>
+    <div class="dash-kpi">
+      <div class="dash-kpi-icon" style="background:${compColor}15;color:${compColor};"><i class="fas fa-star"></i></div>
+      <div class="dash-kpi-label">Comportamento Médio</div>
+      <div class="dash-kpi-value" style="color:${compColor};">${avgComp!==null?avgComp.toFixed(1):'—'}</div>
+      <div class="dash-kpi-sub">${compN} aluno(s) avaliado(s) ${__v16DeltaHTML(avgComp, prevAvgComp, '')}</div>
+    </div>
+  </div>`;
+
+  // Inject KPI row as first child
+  const kpiDiv=document.createElement('div');
+  kpiDiv.className='v16-enhanced'; kpiDiv.style.gridColumn='1/-1'; kpiDiv.style.order='-10';
+  kpiDiv.innerHTML=kpiHtml;
+  dashEl.insertBefore(kpiDiv, dashEl.firstChild);
+
+  // ===== 2. ADVANCED STATISTICS CARD =====
+  const d1Name=getDiscById(config.slot1)?.nome||'Matéria 1';
+  const d2Name=getDiscById(config.slot2)?.nome||'Matéria 2';
+
+  let statsHtml=`<div class="dash-card wide v16-enhanced" style="order:5;">
+    <h3><i class="fas fa-calculator"></i> Estatísticas Descritivas — ${bim}º Bimestre</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px;">`;
+
+  [['s1',s1,d1Name,config.slot1],['s2',s2,d2Name,config.slot2]].forEach(([key,stats,name])=>{
+    if(!stats) return;
+    statsHtml+=`<div>
+      <div style="font-weight:700;font-size:.82rem;margin-bottom:8px;color:var(--text-main);">${escHTML(name)}</div>
+      <div class="dash-stats-grid">
+        <div class="dash-stat-item"><div class="stat-val">${stats.median.toFixed(1)}</div><div class="stat-lbl">Mediana</div></div>
+        <div class="dash-stat-item"><div class="stat-val">${stats.stdDev.toFixed(2)}</div><div class="stat-lbl">Desvio Padrão</div></div>
+        <div class="dash-stat-item"><div class="stat-val">${stats.min.toFixed(1)}</div><div class="stat-lbl">Nota Mín</div></div>
+        <div class="dash-stat-item"><div class="stat-val">${stats.max.toFixed(1)}</div><div class="stat-lbl">Nota Máx</div></div>
+        <div class="dash-stat-item"><div class="stat-val">${stats.cv.toFixed(1)}%</div><div class="stat-lbl">Coef. Variação</div></div>
+        <div class="dash-stat-item"><div class="stat-val">${stats.acima9}</div><div class="stat-lbl">Notas ≥ 9</div></div>
+      </div>
+    </div>`;
+  });
+  statsHtml+=`</div>
+    <div style="font-size:.72rem;color:#94a3b8;margin-top:10px;">
+      O Coeficiente de Variação (CV) indica a homogeneidade da turma: CV &lt; 15% = turma homogênea, CV &gt; 30% = turma muito heterogênea.
+    </div>
+  </div>`;
+
+  const statsDiv=document.createElement('div');
+  statsDiv.className='v16-enhanced'; statsDiv.style.gridColumn='1/-1';
+  statsDiv.innerHTML=statsHtml;
+  dashEl.appendChild(statsDiv);
+
+  // ===== 3. TOP 5 / BOTTOM 5 RANKING =====
+  const ranking=[];
+  lista.forEach(a=>{
+    const b=a?.bimestres?.[bim]; if(!b) return;
+    _syncBimestreRefs(b);
+    const m1=clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+    const m2=clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+    const mg=(m1+m2)/2;
+    ranking.push({nome:a.nome||'Sem nome', media:mg, m1, m2});
+  });
+  ranking.sort((a,b)=>b.media-a.media);
+
+  if(ranking.length>=5){
+    const top5=ranking.slice(0,5);
+    const bot5=ranking.slice(-5).reverse();
+    const posClass=['gold','silver','bronze','normal','normal'];
+
+    let rankHtml=`<div class="dash-card v16-enhanced" style="order:6;">
+      <h3><i class="fas fa-trophy"></i> Top 5 — Maiores Médias</h3>
+      <ul class="dash-rank-list">`;
+    top5.forEach((r,i)=>{
+      const cor=r.media>=7?'#16a34a':(r.media>=5?'#f59e0b':'#dc2626');
+      rankHtml+=`<li class="dash-rank-item">
+        <div class="dash-rank-pos ${posClass[i]}">${i+1}</div>
+        <span class="dash-rank-name" title="${escHTML(r.nome)}">${escHTML(r.nome)}</span>
+        <div class="dash-rank-bar"><div style="width:${(r.media/10*100).toFixed(0)}%;background:${cor};"></div></div>
+        <span class="dash-rank-score" style="color:${cor};">${r.media.toFixed(1)}</span>
+      </li>`;
+    });
+    rankHtml+=`</ul></div>`;
+
+    rankHtml+=`<div class="dash-card v16-enhanced" style="order:7;">
+      <h3 style="color:#dc2626;"><i class="fas fa-circle-exclamation"></i> Alerta — 5 Menores Médias</h3>
+      <ul class="dash-rank-list">`;
+    bot5.forEach((r,i)=>{
+      const cor=r.media>=7?'#16a34a':(r.media>=5?'#f59e0b':'#dc2626');
+      rankHtml+=`<li class="dash-rank-item">
+        <div class="dash-rank-pos danger">${ranking.length-4+i}</div>
+        <span class="dash-rank-name" title="${escHTML(r.nome)}">${escHTML(r.nome)}</span>
+        <div class="dash-rank-bar"><div style="width:${(r.media/10*100).toFixed(0)}%;background:${cor};"></div></div>
+        <span class="dash-rank-score" style="color:${cor};">${r.media.toFixed(1)}</span>
+      </li>`;
+    });
+    rankHtml+=`</ul></div>`;
+
+    const rankDiv=document.createElement('div');
+    rankDiv.className='v16-enhanced'; rankDiv.style.cssText='grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:20px;';
+    rankDiv.innerHTML=rankHtml;
+    dashEl.appendChild(rankDiv);
+  }
+
+  // ===== 4. DISTRIBUIÇÃO DE COMPORTAMENTO =====
+  if(compN>0){
+    const compBins=[0,0,0,0,0]; // 0-2, 2-4, 4-6, 6-8, 8-10
+    const compLabels=['0–2','2–4','4–6','6–8','8–10'];
+    const compColors=['#dc2626','#f97316','#f59e0b','#84cc16','#16a34a'];
+    lista.forEach(a=>{
+      const b=a?.bimestres?.[bim]; if(!b) return;
+      const c=parseFloat(b.comportamento)||0;
+      const idx=Math.min(Math.floor(c/2),4);
+      compBins[idx]++;
+    });
+    const maxBin=Math.max(...compBins,1);
+
+    let compHtml=`<div class="dash-card v16-enhanced" style="order:8;">
+      <h3><i class="fas fa-star"></i> Distribuição de Comportamento</h3>
+      <div style="display:flex;align-items:flex-end;justify-content:space-around;height:140px;padding:10px 0;gap:8px;">`;
+    compBins.forEach((count,i)=>{
+      const h=maxBin>0?(count/maxBin*100):0;
+      compHtml+=`<div style="display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end;">
+        <div style="font-size:.72rem;font-weight:700;color:${compColors[i]};margin-bottom:4px;">${count}</div>
+        <div style="width:100%;max-width:40px;height:${h}%;background:${compColors[i]};border-radius:4px 4px 0 0;min-height:2px;transition:height .4s;"></div>
+        <div style="font-size:.65rem;color:#64748b;margin-top:4px;">${compLabels[i]}</div>
+      </div>`;
+    });
+    compHtml+=`</div>
+      <div style="font-size:.72rem;color:#94a3b8;margin-top:6px;text-align:center;">
+        Média: <b style="color:${compColor};">${avgComp.toFixed(1)}</b> · ${compN} aluno(s) avaliado(s)
+      </div>
+    </div>`;
+
+    // ===== 5. SCATTER PLOT: FREQUÊNCIA × DESEMPENHO =====
+    let scatterHtml=`<div class="dash-card v16-enhanced" style="order:9;">
+      <h3><i class="fas fa-braille"></i> Frequência × Desempenho</h3>
+      <div class="dash-scatter-wrap"><canvas id="v16ScatterCanvas"></canvas></div>
+      <div style="font-size:.72rem;color:#94a3b8;margin-top:6px;text-align:center;">
+        Cada ponto = 1 aluno. Quanto mais à direita (mais frequente) e acima (mais nota), melhor.
+      </div>
+    </div>`;
+
+    const scatterDiv=document.createElement('div');
+    scatterDiv.className='v16-enhanced'; scatterDiv.style.cssText='grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:20px;';
+    scatterDiv.innerHTML=compHtml+scatterHtml;
+    dashEl.appendChild(scatterDiv);
+
+    // Draw scatter after DOM update
+    setTimeout(()=>__v16DrawScatter(lista, bim), 60);
+  }
+}
+
+function __v16DrawScatter(lista, bim){
+  const canvas=document.getElementById('v16ScatterCanvas');
+  if(!canvas) return;
+
+  const data=[];
+  lista.forEach(a=>{
+    const f=calcFreqAluno(a.id,bim);
+    if(f.total===0) return;
+    const b=a?.bimestres?.[bim]; if(!b) return;
+    _syncBimestreRefs(b);
+    const m1=clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+    const m2=clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+    const mg=(m1+m2)/2;
+    data.push({nome:a.nome, freq:f.pct, media:mg});
+  });
+
+  if(!data.length) return;
+
+  const W=canvas.width=canvas.offsetWidth*2;
+  const H=canvas.height=520;
+  const c=canvas.getContext('2d');
+  const pad={t:20,b:40,l:50,r:20};
+  const pW=W-pad.l-pad.r, pH=H-pad.t-pad.b;
+
+  c.clearRect(0,0,W,H);
+
+  // Background zones
+  // Red zone (freq<75 or media<5)
+  c.fillStyle='rgba(220,38,38,.03)';
+  c.fillRect(pad.l, pad.t+pH-(5/10)*pH, pW, (5/10)*pH);
+  c.fillRect(pad.l, pad.t, (75/100)*pW, pH);
+
+  // Green zone
+  c.fillStyle='rgba(22,163,74,.03)';
+  c.fillRect(pad.l+(75/100)*pW, pad.t, (25/100)*pW, (5/10)*pH);
+
+  // Grid
+  c.strokeStyle='rgba(148,163,184,.12)'; c.lineWidth=1;
+  [0,25,50,75,100].forEach(v=>{
+    const x=pad.l+(v/100)*pW;
+    c.beginPath(); c.moveTo(x,pad.t); c.lineTo(x,H-pad.b); c.stroke();
+    c.fillStyle='#94a3b8'; c.font='18px sans-serif'; c.textAlign='center';
+    c.fillText(v+'%',x,H-pad.b+20);
+  });
+  [0,2,4,5,6,7,8,10].forEach(v=>{
+    const y=pad.t+pH-(v/10)*pH;
+    c.beginPath(); c.moveTo(pad.l,y); c.lineTo(W-pad.r,y); c.stroke();
+    c.fillStyle='#94a3b8'; c.font='18px sans-serif'; c.textAlign='right';
+    c.fillText(v,pad.l-8,y+5);
+  });
+
+  // Reference lines
+  c.strokeStyle='rgba(220,38,38,.25)'; c.lineWidth=2; c.setLineDash([6,4]);
+  const y5=pad.t+pH-(5/10)*pH;
+  c.beginPath(); c.moveTo(pad.l,y5); c.lineTo(W-pad.r,y5); c.stroke();
+  const x75=pad.l+(75/100)*pW;
+  c.beginPath(); c.moveTo(x75,pad.t); c.lineTo(x75,H-pad.b); c.stroke();
+  c.setLineDash([]);
+
+  // Axis labels
+  c.fillStyle='#64748b'; c.font='bold 20px sans-serif';
+  c.textAlign='center'; c.fillText('Frequência (%)',pad.l+pW/2,H-5);
+  c.save(); c.translate(14,pad.t+pH/2); c.rotate(-Math.PI/2);
+  c.fillText('Média Geral',0,0); c.restore();
+
+  // Data points
+  data.forEach(d=>{
+    const x=pad.l+(Math.min(100,Math.max(0,d.freq))/100)*pW;
+    const y=pad.t+pH-(Math.min(10,Math.max(0,d.media))/10)*pH;
+    const cor=d.media>=7?(d.freq>=75?'#16a34a':'#f59e0b'):(d.media>=5?'#f59e0b':'#dc2626');
+    c.beginPath(); c.arc(x,y,8,0,Math.PI*2);
+    c.fillStyle=cor+'cc'; c.fill();
+    c.strokeStyle=cor; c.lineWidth=2; c.stroke();
+  });
+
+  // Legend
+  c.font='16px sans-serif'; c.textAlign='left';
+  const lx=pad.l+10, ly=pad.t+16;
+  [['#16a34a','Bom (≥7, ≥75%)'],['#f59e0b','Atenção'],['#dc2626','Risco (<5)']].forEach(([col,lbl],i)=>{
+    c.beginPath(); c.arc(lx+6,ly+i*22,5,0,Math.PI*2);
+    c.fillStyle=col; c.fill();
+    c.fillStyle='#64748b'; c.fillText(lbl,lx+18,ly+i*22+5);
+  });
+}
+
+// ================================================================
+// V16B FEATURE 1: TRAJETÓRIA INDIVIDUAL (Melhorou/Piorou)
+// ================================================================
+function __v16bRenderTrajetoria(lista, bim, dashEl){
+  if(bim<=1) return; // Precisa de bimestre anterior
+  const prevBim=bim-1;
+  const trajs=[];
+  lista.forEach(a=>{
+    const bCurr=a?.bimestres?.[bim]; const bPrev=a?.bimestres?.[prevBim];
+    if(!bCurr||!bPrev) return;
+    _syncBimestreRefs(bCurr); _syncBimestreRefs(bPrev);
+    const currM1=clampNota(calcularMediaDisc(config.slot1, bCurr.notas_lp));
+    const currM2=clampNota(calcularMediaDisc(config.slot2, bCurr.notas_red));
+    const prevM1=clampNota(calcularMediaDisc(config.slot1, bPrev.notas_lp));
+    const prevM2=clampNota(calcularMediaDisc(config.slot2, bPrev.notas_red));
+    const curr=(currM1+currM2)/2, prev=(prevM1+prevM2)/2;
+    const delta=curr-prev;
+    if(Math.abs(delta)<0.05) return; // Ignora estáveis
+    trajs.push({nome:a.nome||'Sem nome', curr, prev, delta, m1:currM1, m2:currM2});
+  });
+  if(!trajs.length) return;
+
+  // Separar melhoraram e pioraram
+  const melhoraram=trajs.filter(t=>t.delta>0).sort((a,b)=>b.delta-a.delta);
+  const pioraram=trajs.filter(t=>t.delta<0).sort((a,b)=>a.delta-b.delta);
+
+  let html=`<div class="dash-card wide v16b-enhanced" style="order:10;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <h3 style="margin:0;"><i class="fas fa-route"></i> Trajetória Individual — ${prevBim}ºB → ${bim}ºB</h3>
+      <div style="font-size:.72rem;color:#64748b;">
+        <span style="color:#16a34a;font-weight:700;">▲ ${melhoraram.length} melhoraram</span> · 
+        <span style="color:#dc2626;font-weight:700;">▼ ${pioraram.length} pioraram</span> · 
+        <span style="color:#64748b;">${lista.length - melhoraram.length - pioraram.length} estáveis</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">`;
+
+  // Coluna: Melhoraram
+  html+=`<div>
+    <div style="font-size:.75rem;font-weight:700;color:#16a34a;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;">▲ Melhoraram</div>
+    <ul class="dash-traj-list">`;
+  (melhoraram.length?melhoraram:['—']).forEach(t=>{
+    if(t==='—'){html+=`<li class="dash-traj-item" style="color:#94a3b8;">Nenhum aluno melhorou</li>`;return;}
+    html+=`<li class="dash-traj-item">
+      <div class="dash-traj-arrow up">▲</div>
+      <span class="dash-traj-name" title="${escHTML(t.nome)}">${escHTML(t.nome)}</span>
+      <div class="dash-traj-vals">
+        <span class="dash-traj-old">${t.prev.toFixed(1)}</span>
+        <span>→</span>
+        <span class="dash-traj-new" style="color:#16a34a;">${t.curr.toFixed(1)}</span>
+        <span class="dash-traj-delta pos">+${t.delta.toFixed(1)}</span>
+      </div>
+    </li>`;
+  });
+  html+=`</ul></div>`;
+
+  // Coluna: Pioraram
+  html+=`<div>
+    <div style="font-size:.75rem;font-weight:700;color:#dc2626;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;">▼ Pioraram</div>
+    <ul class="dash-traj-list">`;
+  (pioraram.length?pioraram:['—']).forEach(t=>{
+    if(t==='—'){html+=`<li class="dash-traj-item" style="color:#94a3b8;">Nenhum aluno piorou</li>`;return;}
+    html+=`<li class="dash-traj-item">
+      <div class="dash-traj-arrow down">▼</div>
+      <span class="dash-traj-name" title="${escHTML(t.nome)}">${escHTML(t.nome)}</span>
+      <div class="dash-traj-vals">
+        <span class="dash-traj-old">${t.prev.toFixed(1)}</span>
+        <span>→</span>
+        <span class="dash-traj-new" style="color:#dc2626;">${t.curr.toFixed(1)}</span>
+        <span class="dash-traj-delta neg">${t.delta.toFixed(1)}</span>
+      </div>
+    </li>`;
+  });
+  html+=`</ul></div></div></div>`;
+
+  const div=document.createElement('div');
+  div.className='v16b-enhanced'; div.style.gridColumn='1/-1';
+  div.innerHTML=html;
+  dashEl.appendChild(div);
+}
+
+// ================================================================
+// V16B FEATURE 2: HEATMAP POR AVALIAÇÃO
+// ================================================================
+function __v16bRenderHeatmap(lista, bim, dashEl){
+  const d1=getDiscById(config.slot1), d2=getDiscById(config.slot2);
+  if(!d1&&!d2) return;
+
+  function heatColor(nota){
+    if(nota===null||nota===undefined) return 'background:#f8fafc;color:#cbd5e1;';
+    const n=clampNota(nota);
+    if(n>=9) return 'background:#065f46;color:#fff;';
+    if(n>=8) return 'background:#16a34a;color:#fff;';
+    if(n>=7) return 'background:#4ade80;color:#064e3b;';
+    if(n>=6) return 'background:#86efac;color:#064e3b;';
+    if(n>=5) return 'background:#fde68a;color:#78350f;';
+    if(n>=4) return 'background:#fbbf24;color:#78350f;';
+    if(n>=3) return 'background:#f97316;color:#fff;';
+    if(n>=2) return 'background:#ef4444;color:#fff;';
+    return 'background:#991b1b;color:#fff;';
+  }
+
+  // Build columns: all assessments from both subjects
+  const cols=[];
+  if(d1)(d1.avaliacoes||[]).forEach(av=>cols.push({discId:d1.id,discNome:d1.nome,avId:av.id,avNome:av.nome||av.id,notasKey:'notas_lp'}));
+  cols.push({separator:true,label:''});
+  if(d2)(d2.avaliacoes||[]).forEach(av=>cols.push({discId:d2.id,discNome:d2.nome,avId:av.id,avNome:av.nome||av.id,notasKey:'notas_red'}));
+
+  let html=`<div class="dash-card wide v16b-enhanced" style="order:11;">
+    <h3><i class="fas fa-fire"></i> Heatmap de Notas por Avaliação — ${bim}º Bimestre</h3>
+    <div class="dash-heatmap-wrap"><table class="dash-heatmap"><thead><tr><th>Aluno</th>`;
+  cols.forEach(c=>{
+    if(c.separator){html+=`<th style="width:3px;padding:0;background:var(--border-color);"></th>`;return;}
+    html+=`<th title="${escHTML(c.discNome)} — ${escHTML(c.avNome)}">${escHTML(c.avNome)}</th>`;
+  });
+  html+=`<th>Média</th></tr></thead><tbody>`;
+
+  // Column averages
+  const colSums=cols.map(()=>({s:0,n:0}));
+  const mediaCol={s:0,n:0};
+
+  lista.forEach(a=>{
+    const b=a?.bimestres?.[bim]; if(!b) return;
+    _syncBimestreRefs(b);
+    const m1=clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+    const m2=clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+    const mg=(m1+m2)/2;
+    mediaCol.s+=mg; mediaCol.n++;
+
+    html+=`<tr><td title="${escHTML(a.nome||'')}">${escHTML(a.nome||'Sem nome')}</td>`;
+    cols.forEach((c,ci)=>{
+      if(c.separator){html+=`<td style="width:3px;padding:0;background:var(--border-color);"></td>`;return;}
+      const notas=b[c.notasKey];
+      const raw=notas?.[c.avId];
+      const hasVal=raw!==null&&raw!==undefined&&raw!=='';
+      const val=hasVal?clampNota(raw):null;
+      if(hasVal){colSums[ci].s+=val;colSums[ci].n++;}
+      html+=`<td style="${heatColor(val)};border-left:1px solid rgba(0,0,0,.04);">${hasVal?val.toFixed(1):'—'}</td>`;
+    });
+    html+=`<td style="${heatColor(mg)};font-weight:800;border-left:2px solid var(--border-color);">${mg.toFixed(1)}</td></tr>`;
+  });
+
+  // Average row
+  html+=`<tr style="border-top:2px solid var(--border-color);font-weight:800;"><td style="font-style:italic;">Média da turma</td>`;
+  cols.forEach((c,ci)=>{
+    if(c.separator){html+=`<td style="width:3px;padding:0;background:var(--border-color);"></td>`;return;}
+    const avg=colSums[ci].n>0?colSums[ci].s/colSums[ci].n:null;
+    html+=`<td style="${heatColor(avg)};border-left:1px solid rgba(0,0,0,.04);">${avg!==null?avg.toFixed(1):'—'}</td>`;
+  });
+  const totalAvg=mediaCol.n>0?mediaCol.s/mediaCol.n:null;
+  html+=`<td style="${heatColor(totalAvg)};font-weight:900;border-left:2px solid var(--border-color);">${totalAvg!==null?totalAvg.toFixed(1):'—'}</td></tr>`;
+
+  html+=`</tbody></table></div>
+    <div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap;font-size:.68rem;">
+      <span style="font-weight:600;color:#64748b;">Legenda:</span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#991b1b;"></span><span style="color:#64748b;">0–2</span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#ef4444;"></span><span style="color:#64748b;">2–3</span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#f97316;"></span><span style="color:#64748b;">3–4</span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#fbbf24;"></span><span style="color:#64748b;">4–5</span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#fde68a;"></span><span style="color:#64748b;">5–6</span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#86efac;"></span><span style="color:#64748b;">6–7</span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#4ade80;"></span><span style="color:#64748b;">7–8</span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#16a34a;"></span><span style="color:#64748b;">8–9</span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#065f46;"></span><span style="color:#64748b;">9–10</span>
+    </div>
+  </div>`;
+
+  const div=document.createElement('div');
+  div.className='v16b-enhanced'; div.style.gridColumn='1/-1';
+  div.innerHTML=html;
+  dashEl.appendChild(div);
+}
+
+// ================================================================
+// V16B FEATURE 3: SCATTER COMPORTAMENTO × NOTA
+// ================================================================
+function __v16bRenderCompScatter(lista, bim, dashEl){
+  let hasComp=false;
+  lista.forEach(a=>{
+    const b=a?.bimestres?.[bim];
+    if(b&&(parseFloat(b.comportamento)>0)) hasComp=true;
+  });
+  if(!hasComp) return;
+
+  const html=`<div class="dash-card v16b-enhanced" style="order:12;">
+    <h3><i class="fas fa-star"></i> Comportamento × Nota</h3>
+    <div class="dash-scatter-wrap"><canvas id="v16bCompScatter"></canvas></div>
+    <div style="font-size:.72rem;color:#94a3b8;margin-top:6px;text-align:center;">
+      Cada ponto = 1 aluno. Eixo X = comportamento, Eixo Y = média geral.
+    </div>
+  </div>`;
+
+  const div=document.createElement('div');
+  div.className='v16b-enhanced'; div.style.gridColumn='span 1';
+  div.innerHTML=html;
+  dashEl.appendChild(div);
+
+  setTimeout(()=>{
+    const canvas=document.getElementById('v16bCompScatter');
+    if(!canvas) return;
+    const data=[];
+    lista.forEach(a=>{
+      const b=a?.bimestres?.[bim]; if(!b) return;
+      _syncBimestreRefs(b);
+      const comp=parseFloat(b.comportamento)||0;
+      if(comp<=0&&b.comportamento!==0&&b.comportamento!=='0') return;
+      const m1=clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+      const m2=clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+      data.push({nome:a.nome, comp, media:(m1+m2)/2});
+    });
+    if(!data.length) return;
+
+    const W=canvas.width=canvas.offsetWidth*2, H=canvas.height=520;
+    const c=canvas.getContext('2d');
+    const pad={t:20,b:40,l:50,r:20};
+    const pW=W-pad.l-pad.r, pH=H-pad.t-pad.b;
+    c.clearRect(0,0,W,H);
+
+    // Grid
+    c.strokeStyle='rgba(148,163,184,.12)'; c.lineWidth=1;
+    [0,2,4,6,8,10].forEach(v=>{
+      const x=pad.l+(v/10)*pW;
+      c.beginPath(); c.moveTo(x,pad.t); c.lineTo(x,H-pad.b); c.stroke();
+      c.fillStyle='#94a3b8'; c.font='18px sans-serif'; c.textAlign='center';
+      c.fillText(v,x,H-pad.b+20);
+    });
+    [0,2,4,5,6,7,8,10].forEach(v=>{
+      const y=pad.t+pH-(v/10)*pH;
+      c.beginPath(); c.moveTo(pad.l,y); c.lineTo(W-pad.r,y); c.stroke();
+      c.fillStyle='#94a3b8'; c.font='18px sans-serif'; c.textAlign='right';
+      c.fillText(v,pad.l-8,y+5);
+    });
+
+    // Reference lines at 5
+    c.strokeStyle='rgba(220,38,38,.2)'; c.lineWidth=2; c.setLineDash([6,4]);
+    const y5=pad.t+pH-(5/10)*pH;
+    c.beginPath(); c.moveTo(pad.l,y5); c.lineTo(W-pad.r,y5); c.stroke();
+    const x5=pad.l+(5/10)*pW;
+    c.beginPath(); c.moveTo(x5,pad.t); c.lineTo(x5,H-pad.b); c.stroke();
+    c.setLineDash([]);
+
+    // Axis labels
+    c.fillStyle='#64748b'; c.font='bold 20px sans-serif'; c.textAlign='center';
+    c.fillText('Comportamento',pad.l+pW/2,H-5);
+    c.save(); c.translate(14,pad.t+pH/2); c.rotate(-Math.PI/2);
+    c.fillText('Média Geral',0,0); c.restore();
+
+    // Points
+    data.forEach(d=>{
+      const x=pad.l+(Math.min(10,Math.max(0,d.comp))/10)*pW;
+      const y=pad.t+pH-(Math.min(10,Math.max(0,d.media))/10)*pH;
+      const cor=d.media>=7?(d.comp>=7?'#16a34a':'#f59e0b'):(d.media>=5?'#f59e0b':'#dc2626');
+      c.beginPath(); c.arc(x,y,8,0,Math.PI*2);
+      c.fillStyle=cor+'cc'; c.fill();
+      c.strokeStyle=cor; c.lineWidth=2; c.stroke();
+    });
+
+    // Trend line (simple linear regression)
+    if(data.length>=3){
+      let sx=0,sy=0,sxy=0,sx2=0;
+      data.forEach(d=>{sx+=d.comp;sy+=d.media;sxy+=d.comp*d.media;sx2+=d.comp*d.comp;});
+      const n=data.length;
+      const denom=n*sx2-sx*sx;
+      if(Math.abs(denom)>0.001){
+        const slope=(n*sxy-sx*sy)/denom;
+        const intercept=(sy-slope*sx)/n;
+        const x0=0, x1=10, y0=intercept, y1=slope*10+intercept;
+        c.beginPath();
+        c.strokeStyle='rgba(124,58,237,.35)'; c.lineWidth=3; c.setLineDash([8,6]);
+        c.moveTo(pad.l+(x0/10)*pW, pad.t+pH-(Math.max(0,Math.min(10,y0))/10)*pH);
+        c.lineTo(pad.l+(x1/10)*pW, pad.t+pH-(Math.max(0,Math.min(10,y1))/10)*pH);
+        c.stroke(); c.setLineDash([]);
+        // R label
+        const r=Math.abs(denom)>0.001?(n*sxy-sx*sy)/Math.sqrt((n*sx2-sx*sx)*(n*data.reduce((a,d)=>a+d.media*d.media,0)-sy*sy)):0;
+        c.fillStyle='#7c3aed'; c.font='bold 18px sans-serif'; c.textAlign='right';
+        c.fillText(`r = ${r.toFixed(2)}`,W-pad.r-10,pad.t+16);
+      }
+    }
+  }, 80);
+}
+
+// ================================================================
+// V16B FEATURE 4: BOX PLOT VISUAL POR MATÉRIA
+// ================================================================
+function __v16bRenderBoxPlot(lista, bim, dashEl){
+  const s1=__v16CalcStats(lista, config.slot1, 'notas_lp', bim);
+  const s2=__v16CalcStats(lista, config.slot2, 'notas_red', bim);
+  if(!s1&&!s2) return;
+
+  const d1Name=getDiscById(config.slot1)?.nome||'Matéria 1';
+  const d2Name=getDiscById(config.slot2)?.nome||'Matéria 2';
+
+  const html=`<div class="dash-card v16b-enhanced" style="order:13;">
+    <h3><i class="fas fa-chart-bar"></i> Box Plot — Dispersão de Notas</h3>
+    <div class="dash-boxplot-wrap"><canvas id="v16bBoxPlotCanvas"></canvas></div>
+    <div style="font-size:.72rem;color:#94a3b8;margin-top:6px;text-align:center;">
+      Caixa = Q1 a Q3 (50% central) · Linha interna = Mediana · Bigodes = Min/Max · Pontos = Outliers
+    </div>
+  </div>`;
+
+  const div=document.createElement('div');
+  div.className='v16b-enhanced'; div.style.gridColumn='span 1';
+  div.innerHTML=html;
+  dashEl.appendChild(div);
+
+  setTimeout(()=>{
+    const canvas=document.getElementById('v16bBoxPlotCanvas');
+    if(!canvas) return;
+
+    function percentile(sorted,p){
+      const n=sorted.length; if(!n)return 0; if(n===1)return sorted[0];
+      const idx=(n-1)*p; const lo=Math.floor(idx),hi=Math.ceil(idx);
+      return lo===hi?sorted[lo]:sorted[lo]*(1-(idx-lo))+sorted[hi]*(idx-lo);
+    }
+
+    const datasets=[];
+    if(s1) datasets.push({name:d1Name, sorted:s1.sorted, col:'#2563eb'});
+    if(s2) datasets.push({name:d2Name, sorted:s2.sorted, col:'#ec4899'});
+
+    const W=canvas.width=canvas.offsetWidth*2, H=canvas.height=440;
+    const c=canvas.getContext('2d');
+    const pad={t:30,b:50,l:50,r:30};
+    const pW=W-pad.l-pad.r, pH=H-pad.t-pad.b;
+    c.clearRect(0,0,W,H);
+
+    // Y axis grid (0..10)
+    c.strokeStyle='rgba(148,163,184,.12)'; c.lineWidth=1;
+    for(let v=0;v<=10;v++){
+      const y=pad.t+pH-(v/10)*pH;
+      c.beginPath(); c.moveTo(pad.l,y); c.lineTo(W-pad.r,y); c.stroke();
+      c.fillStyle='#94a3b8'; c.font='18px sans-serif'; c.textAlign='right';
+      c.fillText(v,pad.l-8,y+5);
+    }
+    // Reference at 5 and 7
+    [5,7].forEach(v=>{
+      const y=pad.t+pH-(v/10)*pH;
+      c.strokeStyle=v===5?'rgba(220,38,38,.2)':'rgba(22,163,74,.2)';
+      c.lineWidth=2; c.setLineDash([6,4]);
+      c.beginPath(); c.moveTo(pad.l,y); c.lineTo(W-pad.r,y); c.stroke();
+      c.setLineDash([]);
+    });
+
+    const boxW=Math.min(120,pW/(datasets.length*2+1));
+    const spacing=pW/(datasets.length+1);
+
+    datasets.forEach((ds,i)=>{
+      const cx=pad.l+spacing*(i+1);
+      const sorted=ds.sorted;
+      const q1=percentile(sorted,.25), med=percentile(sorted,.5), q3=percentile(sorted,.75);
+      const iqr=q3-q1;
+      const wLo=Math.max(sorted[0], q1-1.5*iqr);
+      const wHi=Math.min(sorted[sorted.length-1], q3+1.5*iqr);
+      // Find actual whisker values (closest data points within range)
+      const actualLo=sorted.find(v=>v>=wLo)||sorted[0];
+      const actualHi=[...sorted].reverse().find(v=>v<=wHi)||sorted[sorted.length-1];
+
+      const toY=v=>pad.t+pH-(Math.max(0,Math.min(10,v))/10)*pH;
+
+      // Whisker lines
+      c.strokeStyle=ds.col; c.lineWidth=3;
+      c.beginPath(); c.moveTo(cx,toY(actualLo)); c.lineTo(cx,toY(actualHi)); c.stroke();
+      // Whisker caps
+      c.beginPath(); c.moveTo(cx-boxW*0.3,toY(actualLo)); c.lineTo(cx+boxW*0.3,toY(actualLo)); c.stroke();
+      c.beginPath(); c.moveTo(cx-boxW*0.3,toY(actualHi)); c.lineTo(cx+boxW*0.3,toY(actualHi)); c.stroke();
+
+      // Box (Q1 to Q3)
+      const bx=cx-boxW/2, by=toY(q3), bh=toY(q1)-toY(q3);
+      c.fillStyle=ds.col+'22'; c.fillRect(bx,by,boxW,bh);
+      c.strokeStyle=ds.col; c.lineWidth=3; c.strokeRect(bx,by,boxW,bh);
+
+      // Median line
+      c.strokeStyle='#fff'; c.lineWidth=4;
+      c.beginPath(); c.moveTo(bx+2,toY(med)); c.lineTo(bx+boxW-2,toY(med)); c.stroke();
+      c.strokeStyle=ds.col; c.lineWidth=3;
+      c.beginPath(); c.moveTo(bx+2,toY(med)); c.lineTo(bx+boxW-2,toY(med)); c.stroke();
+
+      // Outliers
+      sorted.forEach(v=>{
+        if(v<actualLo||v>actualHi){
+          c.beginPath(); c.arc(cx,toY(v),5,0,Math.PI*2);
+          c.fillStyle=ds.col+'88'; c.fill();
+          c.strokeStyle=ds.col; c.lineWidth=1.5; c.stroke();
+        }
+      });
+
+      // Label + stats
+      c.fillStyle=ds.col; c.font='bold 22px sans-serif'; c.textAlign='center';
+      c.fillText(ds.name,cx,H-pad.b+22);
+      c.font='16px sans-serif'; c.fillStyle='#64748b';
+      c.fillText(`Med: ${med.toFixed(1)} · Q1: ${q1.toFixed(1)} · Q3: ${q3.toFixed(1)}`,cx,H-pad.b+40);
+    });
+  }, 80);
+}
+
+// ================================================================
+// V16B FEATURE 5: ALUNOS MAIS VOLÁTEIS
+// ================================================================
+function __v16bRenderVolateis(lista, dashEl){
+  const volateis=[];
+  lista.forEach(a=>{
+    const medias=[];
+    [1,2,3,4].forEach(bim=>{
+      const b=a?.bimestres?.[bim]; if(!b) return;
+      _syncBimestreRefs(b);
+      const m1=clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+      const m2=clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+      const mg=(m1+m2)/2;
+      if(mg>0) medias.push({bim,val:mg});
+    });
+    if(medias.length<2) return;
+    const vals=medias.map(m=>m.val);
+    const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+    const variance=vals.reduce((a,v)=>a+Math.pow(v-mean,2),0)/vals.length;
+    const stdDev=Math.sqrt(variance);
+    const min=Math.min(...vals), max=Math.max(...vals);
+    const amplitude=max-min;
+    volateis.push({nome:a.nome||'Sem nome', stdDev, amplitude, mean, medias, min, max});
+  });
+  if(volateis.length<3) return;
+
+  volateis.sort((a,b)=>b.stdDev-a.stdDev);
+  const top=volateis.slice(0,Math.min(10,volateis.length));
+  const maxStd=Math.max(...top.map(v=>v.stdDev),0.1);
+
+  let html=`<div class="dash-card wide v16b-enhanced" style="order:14;">
+    <h3><i class="fas fa-bolt"></i> Alunos Mais Voláteis (Instabilidade entre Bimestres)</h3>
+    <div style="font-size:.72rem;color:#94a3b8;margin-bottom:10px;">
+      Alunos cujas médias gerais oscilam mais entre bimestres. Alto desvio padrão = precisa de acompanhamento.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr;gap:2px;">`;
+
+  top.forEach((v,i)=>{
+    const barPct=Math.min(100,(v.stdDev/maxStd*100)).toFixed(0);
+    const cor=v.stdDev>=2?'#dc2626':(v.stdDev>=1?'#f59e0b':'#16a34a');
+    const sparkline=v.medias.map(m=>`${m.bim}ºB: ${m.val.toFixed(1)}`).join(' → ');
+    html+=`<div class="dash-volatil-item">
+      <div style="width:22px;font-size:.72rem;font-weight:800;color:#64748b;text-align:center;">${i+1}</div>
+      <span class="dash-rank-name" title="${escHTML(v.nome)}" style="flex:1;">${escHTML(v.nome)}</span>
+      <div class="dash-volatil-bar"><div style="width:${barPct}%;background:${cor};"></div></div>
+      <span style="min-width:50px;text-align:right;font-weight:800;font-size:.8rem;color:${cor};">σ ${v.stdDev.toFixed(2)}</span>
+      <span style="min-width:70px;text-align:right;font-size:.7rem;color:#94a3b8;" title="${sparkline}">Δ ${v.amplitude.toFixed(1)} (${v.min.toFixed(1)}–${v.max.toFixed(1)})</span>
+    </div>`;
+  });
+
+  html+=`</div>
+    <div style="font-size:.7rem;color:#94a3b8;margin-top:8px;">
+      σ = desvio padrão das médias gerais · Δ = amplitude (maior – menor nota) · Apenas alunos com ≥ 2 bimestres.
+    </div>
+  </div>`;
+
+  const div=document.createElement('div');
+  div.className='v16b-enhanced'; div.style.gridColumn='1/-1';
+  div.innerHTML=html;
+  dashEl.appendChild(div);
+}
+
+// ================================================================
+// V16B FEATURE 6: RESUMO EXPORTÁVEL (PDF)
+// ================================================================
+function __v16bRenderPDFButton(dashEl){
+  const html=`<div class="v16b-enhanced" style="grid-column:1/-1;text-align:right;order:100;margin-top:8px;">
+    <button class="dash-pdf-btn" onclick="__v16bExportDashPDF()" title="Gerar relatório PDF do dashboard">
+      <i class="fas fa-file-pdf"></i> Exportar Relatório PDF
+    </button>
+  </div>`;
+  const div=document.createElement('div');
+  div.className='v16b-enhanced'; div.style.gridColumn='1/-1';
+  div.innerHTML=html;
+  dashEl.appendChild(div);
+}
+
+function __v16bExportDashPDF(){
+  try{
+    const dashEl=document.getElementById('viewDashboard');
+    if(!dashEl) return showToast('Dashboard não encontrado.','error');
+
+    const turma=filtroTurma||'Todas';
+    const bim=bimestreAtual||1;
+    const dataStr=new Date().toLocaleDateString('pt-BR');
+
+    // Create a printable container
+    const overlay=document.createElement('div');
+    overlay.id='v16bPrintOverlay';
+    overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#fff;overflow:auto;padding:20px 30px;';
+
+    // Header
+    let headerHtml=`<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0ea5e9;padding-bottom:12px;margin-bottom:20px;">
+      <div>
+        <h1 style="margin:0;font-size:1.5rem;color:#0f172a;">SGP — Relatório do Dashboard</h1>
+        <p style="margin:4px 0 0;font-size:.85rem;color:#64748b;">Turma: <b>${escHTML(turma)}</b> · ${bim}º Bimestre · Gerado em ${dataStr}</p>
+      </div>
+      <div style="display:flex;gap:8px;" class="no-print">
+        <button onclick="window.print()" style="padding:8px 16px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;">
+          <i class="fas fa-print"></i> Imprimir / Salvar PDF
+        </button>
+        <button onclick="document.getElementById('v16bPrintOverlay').remove()" style="padding:8px 16px;background:#64748b;color:#fff;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;">
+          <i class="fas fa-xmark"></i> Fechar
+        </button>
+      </div>
+    </div>`;
+
+    // Clone dashboard content
+    const cloned=dashEl.cloneNode(true);
+    cloned.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:16px;';
+    // Remove buttons and interactive elements from clone
+    cloned.querySelectorAll('button,select,.dash-pdf-btn,.no-print').forEach(el=>el.remove());
+    // Make all canvas visible (they won't clone, so add placeholder text)
+    cloned.querySelectorAll('canvas').forEach(cv=>{
+      const p=document.createElement('div');
+      p.style.cssText='padding:20px;text-align:center;color:#94a3b8;font-style:italic;border:1px dashed #e2e8f0;border-radius:8px;';
+      p.textContent='[Gráfico — visível na versão impressa via navegador]';
+      cv.replaceWith(p);
+    });
+
+    overlay.innerHTML=headerHtml;
+    overlay.appendChild(cloned);
+
+    // Print style
+    const style=document.createElement('style');
+    style.textContent=`@media print{#v16bPrintOverlay{position:static!important;padding:10px!important;}#v16bPrintOverlay .no-print{display:none!important;}body>*:not(#v16bPrintOverlay){display:none!important;}}`;
+    overlay.appendChild(style);
+
+    document.body.appendChild(overlay);
+
+    showToast('Relatório preparado! Clique em "Imprimir / Salvar PDF" para gerar o arquivo.','success');
+  }catch(e){
+    try{showToast('Erro ao gerar relatório: '+e.message,'error');}catch(_){}
+  }
+}
+
+// ================================================================
+// V16B: MASTER RENDER (hooks all 6 features)
+// ================================================================
+function renderV16bFeatures(){
+  const dashEl=document.getElementById('viewDashboard');
+  if(!dashEl) return;
+  dashEl.querySelectorAll('.v16b-enhanced').forEach(el=>el.remove());
+
+  const lista=getAlunosFiltrados();
+  if(!lista.length) return;
+  const bim=bimestreAtual;
+
+  try{ __v16bRenderTrajetoria(lista, bim, dashEl); }catch(e){ try{__diagCapture(e,'v16b.trajetoria');}catch(_){} }
+  try{ __v16bRenderHeatmap(lista, bim, dashEl); }catch(e){ try{__diagCapture(e,'v16b.heatmap');}catch(_){} }
+  
+  // Box plot + Comportamento scatter (side by side)
+  const pairDiv=document.createElement('div');
+  pairDiv.className='v16b-enhanced'; pairDiv.style.cssText='grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:20px;';
+  pairDiv.id='v16bPairContainer';
+  dashEl.appendChild(pairDiv);
+  try{ __v16bRenderBoxPlot(lista, bim, pairDiv); }catch(e){ try{__diagCapture(e,'v16b.boxplot');}catch(_){} }
+  try{ __v16bRenderCompScatter(lista, bim, pairDiv); }catch(e){ try{__diagCapture(e,'v16b.compscatter');}catch(_){} }
+  // If pair container is empty, remove it
+  if(pairDiv.children.length===0) pairDiv.remove();
+
+  try{ __v16bRenderVolateis(lista, dashEl); }catch(e){ try{__diagCapture(e,'v16b.volateis');}catch(_){} }
+  try{ __v16bRenderPDFButton(dashEl); }catch(e){ try{__diagCapture(e,'v16b.pdf');}catch(_){} }
+}
 try{
   const __origRenderDash2=renderizarDashboard;
   renderizarDashboard=function(){
@@ -19033,6 +20742,12 @@ try{
 
       // Remove old V15 elements
       dashEl.querySelectorAll('.v15-comp,.v15-evo,.v15-freqalerts').forEach(el=>el.remove());
+
+      // V16: Enhanced stats (always render)
+      try{ renderV16EnhancedDashboard(); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'v16.enhanced'); }catch(_){} }
+
+      // V16B: 6 new features (trajetória, heatmap, boxplot, comp×nota, voláteis, PDF)
+      try{ renderV16bFeatures(); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'v16b.features'); }catch(_){} }
 
       if(filtroTurma==='Todas'){
         // F8: Show comparativo

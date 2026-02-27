@@ -1,10 +1,10 @@
-// SGP - Service Worker v15.9.12.15.11 (Ranking + data local frequência + relatório semanal de ausências)
+// SGP - Service Worker v15.9.12.15.12 (Ranking + data local frequência + relatório semanal de ausências)
 // Correções estruturais:
 //  - Offline mais confiável para navegação (fallback do app shell)
 //  - Evita cache indiscriminado (reduz risco de crescimento infinito do cache)
 //  - Estratégia Stale-While-Revalidate para recursos same-origin
 
-const CACHE_NAME = 'sgp-v15.9.12.15.11';
+const CACHE_NAME = 'sgp-v15.9.12.15.12';
 const APP_SHELL = [
   './',
   './index.html',
