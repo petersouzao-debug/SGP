@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (v15.9.12.14 — Histórico semanal de ausências)</title>
+    <title>SGP - Gestão Final (v15.9.12.15.9 — Histórico semanal de ausências)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -989,6 +989,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         try{ if(typeof __diagCapture==='function') __diagCapture(e,'miniChart.draw',{}); }catch(_){}
       }
     };
+    window.__SGP_Chart = __SGP_Chart;
     window.Chart = __SGP_Chart;
   }
 })();
@@ -1261,6 +1262,11 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             padding: 6px;
             border: 2px solid var(--border-color);
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Ajuste: grupo Análise com 5 botões em uma linha */
+        .view-toggle.cols-5 {
+            grid-template-columns: repeat(5, 1fr);
         }
         body.dark-mode .view-toggle { background: #1e293b; }
         .btn-view { 
@@ -1718,6 +1724,57 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         .dash-card.wide { grid-column: 1 / -1; }
         .dash-chart-box { height: 260px; }
         .dash-chart-box canvas { width: 100% !important; height: 100% !important; }
+        /* CORREÇÃO (PROVAS/ATIVIDADES) */
+        .correcao-container{ display:none; flex-direction:column; gap:16px; }
+        .correcao-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+        .correcao-head .sub{ color: var(--text-muted); font-size: .9rem; }
+        .correcao-head-controls{ display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; }
+        .cor-prova-row{ display:flex; align-items:center; gap:6px; }
+        .cor-prova-row select.inp{ flex:1; min-width:220px; }
+        @media (max-width: 520px){ .cor-prova-row select.inp{ min-width:160px; } }
+        .mini-label{ display:flex; flex-direction:column; gap:4px; font-size:0.75rem; color: var(--text-muted); }
+        .correcao-grid{ display:grid; grid-template-columns: 1.2fr 1fr; gap:16px; }
+        .correcao-grid .card{ background: var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:16px; box-shadow: 0 2px 5px rgba(0,0,0,0.04); }
+        .correcao-grid .card.wide{ grid-column: 1 / -1; }
+        .card-top h3{ margin:0; color: var(--text-main); }
+        .card-top .hint{ margin-top:6px; color: var(--text-muted); font-size:.85rem; }
+
+        .cor-table-wrap{ overflow:auto; max-height: 55vh; padding-right: 6px; }
+        .cor-table td{ vertical-align: middle; }
+        .cor-qnum{ font-weight: 900; }
+        .cor-sel{ width:110px; }
+
+        .cor-aluno-controls{ display:flex; gap:12px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; margin-top:10px; }
+        .cor-acertos{ padding:10px 12px; border:1px solid var(--border-color); border-radius:12px; background: rgba(14,165,233,.08); color: var(--text-main); display:flex; gap:8px; align-items:center; }
+        body.dark-mode .cor-acertos{ background: rgba(14,165,233,.14); }
+
+        .cor-respostas{ display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-top:12px; }
+        @media (max-width: 980px){ .correcao-grid{ grid-template-columns: 1fr; } .cor-respostas{ grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); } }
+        .cor-resp-card{ border:1px solid var(--border-color); border-radius:12px; padding:10px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; background: rgba(2,6,23,0.02); overflow:hidden; min-width:0; }
+        body.dark-mode .cor-resp-card{ background: rgba(255,255,255,0.04); }
+        .cor-resp-card .qn{ width:28px; height:28px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:900; background: rgba(100,116,139,.15); color: var(--text-main); }
+        .cor-resp-input{ width:64px; flex:0 0 64px; padding:10px; border-radius:10px; border:1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); text-align:center; font-weight:900; text-transform:uppercase; }
+        .cor-resp-input.ok{ background: rgba(22,163,74,.15); border-color: rgba(22,163,74,.55); }
+        .cor-resp-input.no{ background: rgba(220,38,38,.12); border-color: rgba(220,38,38,.55); }
+        .cor-resp-input.na{ background: rgba(100,116,139,.08); }
+        .cor-resp-meta{ flex:1 1 100%; min-width:0; }
+        .cor-resp-meta > div{ font-size:.72rem; color: var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+        body.dark-mode .cor-resp-input.ok{ background: rgba(22,163,74,.20); }
+        body.dark-mode .cor-resp-input.no{ background: rgba(220,38,38,.18); }
+        body.dark-mode .cor-resp-input.na{ background: rgba(148,163,184,.10); }
+
+        .cor-legend{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+        .cor-legend .leg{ padding:6px 10px; border-radius:999px; font-size:.75rem; border:1px solid var(--border-color); }
+        .cor-legend .leg.ok{ background: rgba(22,163,74,.12); border-color: rgba(22,163,74,.4); }
+        .cor-legend .leg.no{ background: rgba(220,38,38,.10); border-color: rgba(220,38,38,.35); }
+        .cor-legend .leg.na{ background: rgba(100,116,139,.08); }
+
+        .cor-stats-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+        @media (max-width: 980px){ .cor-stats-grid{ grid-template-columns: 1fr; } }
+        .cor-chart-box{ height: 240px; }
+        .cor-chart-box canvas{ width:100% !important; height:100% !important; }
+
         /* Dashboard: Comparar Turmas */
         .dash-compare-controls{ display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; }
         .dash-compare-controls label{ display:flex; flex-direction:column; gap:4px; font-size:0.75rem; color:#64748b; }
@@ -3933,12 +3990,15 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                 <!-- Grupo: Análises -->
                 <div class="control-group">
                     <span class="control-label"><i class="fas fa-chart-line"></i> Análise</span>
-                    <div class="view-toggle">
+                    <div class="view-toggle cols-5">
                         <button id="btnViewAnual" class="btn-view" data-onclick="mudarVisao('anual')" title="Conselho (Anual)">
                             <i class="fas fa-graduation-cap"></i>
                         </button>
                         <button id="btnViewDash" class="btn-view" data-onclick="mudarVisao('dash')" title="Dashboard">
                             <i class="fas fa-chart-pie"></i>
+                        </button>
+                        <button id="btnViewCorrecao" class="btn-view" data-onclick="mudarVisao('correcao')" title="Correção (Provas/Atividades)">
+                            <i class="fas fa-clipboard-check"></i>
                         </button>
                         <button id="btnViewAulas" class="btn-view" data-onclick="mudarVisao('aulas')" title="Cronograma">
                             <i class="fas fa-chalkboard-teacher"></i>
@@ -4214,7 +4274,107 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
 
         </div>
 
-        <div id="viewMapa" class="mapa-container">
+        
+        <div id="viewCorrecao" class="correcao-container" style="display:none;">
+            <div class="correcao-head">
+                <div>
+                    <h2 style="margin:0; color:var(--text-main);">Correção de Provas/Atividades</h2>
+                    <div class="sub" style="margin-top:4px;">Defina o gabarito e corrija por aluno. As estatísticas são geradas automaticamente por turma.</div>
+                </div>
+                <div class="correcao-head-controls">
+                    <label class="mini-label">Turma
+                        <select id="corTurmaSelect" class="inp"></select>
+                    </label>
+                    <label class="mini-label">Prova
+    <div class="cor-prova-row">
+        <select id="corProvaSelect" class="inp"></select>
+        <button class="btn-tool" data-onclick="corRenomearProva()" title="Renomear prova"><i class="fas fa-pen"></i></button>
+        <button class="btn-tool" data-onclick="corExcluirProva()" title="Excluir prova" style="color:#dc2626;"><i class="fas fa-trash"></i></button>
+    </div>
+</label>
+                    <button class="btn btn-primary" id="corNovaProvaBtn" data-onclick="corNovaProva()"><i class="fas fa-plus"></i> Nova Prova</button>
+                </div>
+            </div>
+
+            <div class="correcao-grid">
+                <div class="card">
+                    <div class="card-top">
+                        <h3>Gabarito e referência (BNCC/Aula)</h3>
+                        <div class="hint">10 questões (A–D). Edite o gabarito e o código/ aula associado a cada questão.</div>
+                    </div>
+                    <div class="cor-table-wrap">
+                        <table class="tabela-fixa cor-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:70px;">Questão</th>
+                                    <th style="width:140px;">Gabarito</th>
+                                    <th>Código BNCC / Aula</th>
+                                </tr>
+                            </thead>
+                            <tbody id="corGabaritoTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-top">
+                        <h3>Respostas do aluno</h3>
+                        <div class="hint">Digite ou selecione A, B, C ou D. O campo fica verde se acertou e vermelho se errou.</div>
+                    </div>
+
+                    <div class="cor-aluno-controls">
+                        <label class="mini-label">Aluno
+                            <select id="corAlunoSelect" class="inp"></select>
+                        </label>
+                        <div class="cor-acertos">
+                            <span>Acertos:</span>
+                            <strong id="corAcertosLbl">0/10</strong>
+                        </div>
+                    </div>
+
+                    <div class="cor-respostas" id="corRespostasGrid"></div>
+                    <div class="cor-legend">
+                        <span class="leg ok">Acerto</span>
+                        <span class="leg no">Erro</span>
+                        <span class="leg na">Em branco</span>
+                    </div>
+                </div>
+
+                <div class="card wide">
+                    <div class="card-top">
+                        <h3>Estatísticas da turma</h3>
+                        <div class="hint">Percentual de acerto por questão e por código BNCC/Aula (considera apenas alunos com respostas registradas).</div>
+                    </div>
+
+                    <div class="cor-stats-grid">
+                        <div class="cor-stat-block">
+                            <h4>Por questão</h4>
+                            <div class="cor-chart-box"><canvas id="corChartQuestoes"></canvas></div>
+                            <div class="cor-table-wrap">
+                                <table class="tabela-fixa">
+                                    <thead><tr><th>Questão</th><th>Acertos</th><th>Erros</th><th>% Acerto</th></tr></thead>
+                                    <tbody id="corStatsQuestoesTbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="cor-stat-block">
+                            <h4>Por BNCC/Aula</h4>
+                            <div class="cor-chart-box"><canvas id="corChartBNCC"></canvas></div>
+                            <div class="cor-table-wrap">
+                                <table class="tabela-fixa">
+                                    <thead><tr><th>BNCC/Aula</th><th>Acertos</th><th>Erros</th><th>% Acerto</th></tr></thead>
+                                    <tbody id="corStatsBnccTbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+<div id="viewMapa" class="mapa-container">
             <div class="mapa-livres"><div class="mapa-livres-header">Alunos sem carteira</div><div id="listaAlunosLivres" class="lista-livres" ondrop="dropLivre(event)" ondragover="allowDrop(event)"></div></div>
             <div class="sala-grid-wrap">
                 <div class="mapa-controls" style="flex-wrap:wrap;gap:6px;">
@@ -5950,7 +6110,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
 
     <script>
         // --- ESTADOS ---
-        let turmas=[], alunos=[], aulas=[], planosSemana={}, filtroTurma='Todas', alunoEdicaoID=null, abaAtual='lp', visaoAtual='cards', bimestreAtual=1, filtroRiscoAtivo=false, filtroInclusaoAtivo=false, privacyMode=false, currMes=new Date().getMonth(), currAno=new Date().getFullYear();
+        let turmas=[], alunos=[], aulas=[], planosSemana={}, correcaoProvas={}, filtroTurma='Todas', alunoEdicaoID=null, abaAtual='lp', visaoAtual='cards', bimestreAtual=1, filtroRiscoAtivo=false, filtroInclusaoAtivo=false, privacyMode=false, currMes=new Date().getMonth(), currAno=new Date().getFullYear();
         // === Eventos internos (evita monkey patches) ===
         const __SGP_EVT = (()=> {
             const map = Object.create(null);
@@ -6538,9 +6698,501 @@ function checkBackupStatus(){
             }, {capture:true});
         }
 
+
+/* =========================
+   CORREÇÃO (PROVAS/ATIVIDADES)
+   - Gabarito (10 questões A-D)
+   - Respostas por aluno (campo verde/vermelho)
+   - Estatísticas por questão e por BNCC/Aula
+   Armazenamento: localStorage 'sgp_correcao_provas'
+========================= */
+
+let __corChartQ = null;
+let __corChartB = null;
+
+function escAttr(s){ return escHTML(s); }
+
+function corSave(){
+  try{
+    localStorage.setItem('sgp_correcao_provas', JSON.stringify(correcaoProvas || {}));
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corSave',{}); }catch(_){}
+  }
+  // Marca que há alterações locais mais recentes que o último backup ZIP
+  try{
+    const __now = Date.now();
+    if(typeof __safeLSSet === 'function'){
+      __safeLSSet('sgp_last_core_save', __now);
+      __safeLSSet('sgp_backup_pending', '1');
+    }else{
+      localStorage.setItem('sgp_last_core_save', String(__now));
+      localStorage.setItem('sgp_backup_pending', '1');
+    }
+  }catch(_){}
+
+  try{ checkBackupStatus(); }catch(_){}
+}
+
+function corGetTurmaSelecionada(){
+  const sel = document.getElementById('corTurmaSelect');
+  const t = (sel && sel.value) ? sel.value : (filtroTurma && filtroTurma!=='Todas' ? filtroTurma : (turmas[0]||''));
+  return t || '';
+}
+
+function corEnsureTurma(turma){
+  if(!turma) return null;
+  if(!correcaoProvas) correcaoProvas = {};
+  if(!correcaoProvas[turma]) correcaoProvas[turma] = { provas:{}, activeProvaId:null };
+  if(!correcaoProvas[turma].provas) correcaoProvas[turma].provas = {};
+  return correcaoProvas[turma];
+}
+
+function corEnsureProva(turma){
+  const ctx = corEnsureTurma(turma);
+  if(!ctx) return null;
+
+  let pid = ctx.activeProvaId;
+  if(pid && ctx.provas && ctx.provas[pid]) return ctx.provas[pid];
+
+  // cria prova padrão
+  pid = 'p_' + Date.now();
+  const prova = {
+    id: pid,
+    nome: 'Prova 1',
+    createdAt: new Date().toISOString(),
+    questions: Array.from({length:10}).map(()=>({ g:'', ref:'' })),
+    answers: {} // alunoId -> ['A'..]
+  };
+  ctx.provas[pid] = prova;
+  ctx.activeProvaId = pid;
+  corSave();
+  return prova;
+}
+
+function corGetProvaCtx(){
+  const turma = corGetTurmaSelecionada();
+  const prova = corEnsureProva(turma);
+  return { turma, prova, ctx: corEnsureTurma(turma) };
+}
+
+function corNovaProva(){
+  try{
+    const turma = corGetTurmaSelecionada();
+    if(!turma){ showToast && showToast('Selecione uma turma.', 'error'); return; }
+    const nome = (prompt('Nome da prova (ex.: Avaliação Diagnóstica 1):', 'Prova '+(new Date().toLocaleDateString('pt-BR'))) || '').trim();
+    if(!nome) return;
+
+    const tctx = corEnsureTurma(turma);
+    const pid = 'p_' + Date.now();
+    tctx.provas[pid] = {
+      id: pid,
+      nome,
+      createdAt: new Date().toISOString(),
+      questions: Array.from({length:10}).map(()=>({ g:'', ref:'' })),
+      answers: {}
+    };
+    tctx.activeProvaId = pid;
+    corSave();
+    corRenderAll();
+    showToast && showToast('Prova criada!', 'success');
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corNovaProva',{}); }catch(_){}
+  }
+}
+
+function corRenomearProva(){
+  try{
+    const turma = corGetTurmaSelecionada();
+    if(!turma){ showToast && showToast('Selecione uma turma.', 'error'); return; }
+    const tctx = corEnsureTurma(turma);
+    const provaSel = document.getElementById('corProvaSelect');
+    const pid = (provaSel && provaSel.value) ? provaSel.value : (tctx ? tctx.activeProvaId : null);
+    if(!tctx || !pid || !tctx.provas || !tctx.provas[pid]){ showToast && showToast('Selecione uma prova para renomear.', 'error'); return; }
+    const prova = tctx.provas[pid];
+    const novo = (prompt('Novo nome da prova:', (prova.nome||'')) || '').trim();
+    if(!novo) return;
+    prova.nome = novo;
+    corSave();
+    // Atualiza apenas os seletores (não mexe nas respostas)
+    corRenderSelectors();
+    if(provaSel) provaSel.value = pid;
+    showToast && showToast('Prova renomeada!', 'success');
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corRenomearProva',{}); }catch(_){}
+  }
+}
+
+function corExcluirProva(){
+  try{
+    const turma = corGetTurmaSelecionada();
+    if(!turma){ showToast && showToast('Selecione uma turma.', 'error'); return; }
+    const tctx = corEnsureTurma(turma);
+    const provaSel = document.getElementById('corProvaSelect');
+    const pid = (provaSel && provaSel.value) ? provaSel.value : (tctx ? tctx.activeProvaId : null);
+    if(!tctx || !pid || !tctx.provas || !tctx.provas[pid]){ showToast && showToast('Selecione uma prova para excluir.', 'error'); return; }
+    const nome = tctx.provas[pid].nome || 'esta prova';
+    const ok = confirm(`Excluir "${nome}"?\n\nEssa ação não pode ser desfeita.`);
+    if(!ok) return;
+
+    delete tctx.provas[pid];
+
+    // Define próxima prova ativa (se existir)
+    const restantes = Object.values(tctx.provas||{}).sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+    tctx.activeProvaId = restantes.length ? restantes[restantes.length-1].id : null;
+
+    corSave();
+    // Garante que exista ao menos uma prova para a UI não ficar vazia
+    corEnsureProva(turma);
+    corRenderAll();
+    showToast && showToast('Prova excluída.', 'success');
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corExcluirProva',{}); }catch(_){}
+  }
+}
+
+
+function corSetActiveProva(turma, provaId){
+  const tctx = corEnsureTurma(turma);
+  if(!tctx || !tctx.provas || !tctx.provas[provaId]) return;
+  tctx.activeProvaId = provaId;
+  corSave();
+}
+
+function corRenderSelectors(){
+  const turmaSel = document.getElementById('corTurmaSelect');
+  const provaSel = document.getElementById('corProvaSelect');
+
+  if(turmaSel){
+    // preserva a seleção do usuário ao re-renderizar (evita voltar para a 1ª turma)
+    const current = turmaSel.value || '';
+    turmaSel.innerHTML = turmas.map(t=>`<option value="${escAttr(t)}">${escHTML(t)}</option>`).join('') || `<option value="">(sem turmas)</option>`;
+    const prefer = (current && Array.isArray(turmas) && turmas.includes(current))
+      ? current
+      : ((filtroTurma && filtroTurma!=='Todas') ? filtroTurma : (turmas[0] || ''));
+    turmaSel.value = prefer || (turmas[0]||'');
+  }
+
+  const turma = corGetTurmaSelecionada();
+  const tctx = corEnsureTurma(turma);
+  if(provaSel){
+    const provasArr = tctx ? Object.values(tctx.provas||{}) : [];
+    if(provasArr.length===0){ corEnsureProva(turma); }
+    const provas = Object.values((correcaoProvas[turma]||{}).provas||{});
+    const opts = provas
+      .sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')))
+      .map(p=>`<option value="${escAttr(p.id)}">${escHTML(p.nome||p.id)}</option>`).join('');
+    provaSel.innerHTML = opts || `<option value="">(sem provas)</option>`;
+    provaSel.value = (correcaoProvas[turma] && correcaoProvas[turma].activeProvaId) ? correcaoProvas[turma].activeProvaId : (provas[0] ? provas[0].id : '');
+  }
+
+  // aluno select
+  const alunoSel = document.getElementById('corAlunoSelect');
+  if(alunoSel){
+    const lista = alunos.filter(a=>a && a.turma===turma);
+    alunoSel.innerHTML = lista.map(a=>`<option value="${escAttr(a.id)}">${escHTML(a.nome || 'Aluno')}</option>`).join('') || `<option value="">(sem alunos)</option>`;
+    if(!alunoSel.value && lista[0]) alunoSel.value = lista[0].id;
+  }
+}
+
+function corGetSelectedProva(){
+  const turma = corGetTurmaSelecionada();
+  const provaSel = document.getElementById('corProvaSelect');
+  const pid = provaSel && provaSel.value ? provaSel.value : (correcaoProvas[turma] ? correcaoProvas[turma].activeProvaId : null);
+  if(pid) corSetActiveProva(turma, pid);
+  return corEnsureProva(turma);
+}
+
+function corRenderGabarito(){
+  const { turma } = corGetProvaCtx();
+  const prova = corGetSelectedProva();
+  const tb = document.getElementById('corGabaritoTbody');
+  if(!tb || !prova) return;
+
+  tb.innerHTML = '';
+  for(let i=0;i<10;i++){
+    const q = prova.questions[i] || (prova.questions[i]={g:'',ref:''});
+    const tr = document.createElement('tr');
+
+    const tdN = document.createElement('td');
+    tdN.innerHTML = `<span class="cor-qnum">${i+1}</span>`;
+    tr.appendChild(tdN);
+
+    const tdG = document.createElement('td');
+    tdG.innerHTML = `
+      <select class="inp cor-sel" data-q="${i}" aria-label="Gabarito questão ${i+1}">
+        <option value="">—</option>
+        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+      </select>`;
+    tr.appendChild(tdG);
+
+    const tdR = document.createElement('td');
+    tdR.innerHTML = `<input class="inp" data-qref="${i}" placeholder="Ex.: EF67LPxx / Aula 3" value="${escAttr(q.ref||'')}">`;
+    tr.appendChild(tdR);
+
+    tb.appendChild(tr);
+
+    const sel = tdG.querySelector('select');
+    sel.value = (q.g||'').toUpperCase();
+    sel.addEventListener('change', function(){
+      const v = (this.value||'').toUpperCase();
+      q.g = (['A','B','C','D'].includes(v) ? v : '');
+      corSave();
+      corRenderAluno();
+      corRenderStats();
+    });
+
+    const inp = tdR.querySelector('input');
+    inp.addEventListener('input', function(){
+      q.ref = (this.value||'').trim();
+      corSave();
+      corRenderStats();
+    });
+  }
+}
+
+function corGetAlunoSelecionadoId(){
+  const sel = document.getElementById('corAlunoSelect');
+  return sel && sel.value ? sel.value : '';
+}
+
+function corEnsureAlunoAnswers(prova, alunoId){
+  if(!prova.answers) prova.answers = {};
+  if(!prova.answers[alunoId] || !Array.isArray(prova.answers[alunoId])) prova.answers[alunoId] = Array.from({length:10}).map(()=> '');
+  if(prova.answers[alunoId].length<10){
+    prova.answers[alunoId] = prova.answers[alunoId].concat(Array.from({length:10-prova.answers[alunoId].length}).map(()=> ''));
+  }
+  return prova.answers[alunoId];
+}
+
+function corNormalizeAlt(v){
+  v = String(v||'').trim().toUpperCase();
+  if(!['A','B','C','D'].includes(v)) return '';
+  return v;
+}
+
+function corCalcAcertos(prova, alunoId){
+  const ans = corEnsureAlunoAnswers(prova, alunoId);
+  let ac=0;
+  for(let i=0;i<10;i++){
+    const g = corNormalizeAlt((prova.questions[i]||{}).g);
+    const r = corNormalizeAlt(ans[i]);
+    if(g && r && g===r) ac++;
+  }
+  return ac;
+}
+
+function corRenderAluno(){
+  const prova = corGetSelectedProva();
+  const alunoId = corGetAlunoSelecionadoId();
+  const grid = document.getElementById('corRespostasGrid');
+  if(!grid || !prova) return;
+
+  grid.innerHTML = '';
+  if(!alunoId){
+    document.getElementById('corAcertosLbl') && (document.getElementById('corAcertosLbl').textContent='0/10');
+    return;
+  }
+
+  const ans = corEnsureAlunoAnswers(prova, alunoId);
+
+  for(let i=0;i<10;i++){
+    const card = document.createElement('div');
+    card.className = 'cor-resp-card';
+
+    const qn = document.createElement('div');
+    qn.className = 'qn';
+    qn.textContent = String(i+1);
+    card.appendChild(qn);
+
+    const input = document.createElement('input');
+    input.className = 'cor-resp-input';
+    input.setAttribute('maxlength','1');
+    input.setAttribute('inputmode','text');
+    input.setAttribute('aria-label', 'Resposta questão '+(i+1));
+    input.value = (ans[i]||'').toUpperCase();
+    input.dataset.q = String(i);
+    card.appendChild(input);
+
+    const meta = document.createElement('div');
+    meta.className = 'cor-resp-meta';
+    meta.innerHTML = `<div>Gabarito: <strong>${escHTML((prova.questions[i]||{}).g || '—')}</strong></div>
+                      <div>${escHTML((prova.questions[i]||{}).ref || '')}</div>`;
+    card.appendChild(meta);
+
+    grid.appendChild(card);
+
+    function updateClass(){
+      const g = corNormalizeAlt((prova.questions[i]||{}).g);
+      const r = corNormalizeAlt(input.value);
+      input.classList.remove('ok','no','na');
+      if(!r) input.classList.add('na');
+      else if(g && r===g) input.classList.add('ok');
+      else input.classList.add('no');
+    }
+    updateClass();
+
+    input.addEventListener('input', function(){
+      const v = corNormalizeAlt(this.value);
+      this.value = v;
+      ans[i] = v;
+      corSave();
+      updateClass();
+      // acertos
+      const ac = corCalcAcertos(prova, alunoId);
+      const lbl = document.getElementById('corAcertosLbl');
+      if(lbl) lbl.textContent = `${ac}/10`;
+      corRenderStats();
+    });
+  }
+
+  const ac = corCalcAcertos(prova, alunoId);
+  const lbl = document.getElementById('corAcertosLbl');
+  if(lbl) lbl.textContent = `${ac}/10`;
+}
+
+function corComputeStats(prova, turma){
+  const alunosTurma = alunos.filter(a=>a && a.turma===turma);
+  const answeredIds = Object.keys(prova.answers||{}).filter(id=>Array.isArray(prova.answers[id]));
+  const validIds = answeredIds.filter(id=>{
+    const arr = prova.answers[id]||[];
+    return arr.some(x=>String(x||'').trim()!=='');
+  });
+  const N = validIds.length;
+
+  const perQ = Array.from({length:10}).map(()=>({ac:0, er:0, pct:0}));
+  const perRef = {}; // ref -> {ac,er,pct}
+
+  validIds.forEach(id=>{
+    const arr = corEnsureAlunoAnswers(prova, id);
+    for(let i=0;i<10;i++){
+      const g = corNormalizeAlt((prova.questions[i]||{}).g);
+      const r = corNormalizeAlt(arr[i]);
+      const ok = (g && r && g===r);
+      if(ok) perQ[i].ac++; else perQ[i].er++;
+      const ref = String((prova.questions[i]||{}).ref || '—').trim() || '—';
+      if(!perRef[ref]) perRef[ref] = {ac:0, er:0};
+      if(ok) perRef[ref].ac++; else perRef[ref].er++;
+    }
+  });
+
+  perQ.forEach(q=>{
+    const tot = q.ac + q.er;
+    q.pct = tot? Math.round((q.ac/tot)*1000)/10 : 0;
+  });
+
+  Object.keys(perRef).forEach(k=>{
+    const o = perRef[k];
+    const tot = o.ac + o.er;
+    o.pct = tot? Math.round((o.ac/tot)*1000)/10 : 0;
+  });
+
+  return { N, perQ, perRef };
+}
+
+function corRenderStats(){
+  const turma = corGetTurmaSelecionada();
+  const prova = corGetSelectedProva();
+  if(!prova) return;
+
+  const qsTb = document.getElementById('corStatsQuestoesTbody');
+  const bnTb = document.getElementById('corStatsBnccTbody');
+
+  const stats = corComputeStats(prova, turma);
+
+  if(qsTb){
+    qsTb.innerHTML = stats.perQ.map((q,i)=>{
+      return `<tr><td><strong>${i+1}</strong></td><td>${q.ac}</td><td>${q.er}</td><td><strong>${q.pct}%</strong></td></tr>`;
+    }).join('');
+  }
+
+  if(bnTb){
+    const entries = Object.entries(stats.perRef)
+      .sort((a,b)=> (b[1].pct - a[1].pct));
+    bnTb.innerHTML = entries.map(([k,o])=>{
+      return `<tr><td style="max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><strong>${escHTML(k)}</strong></td><td>${o.ac}</td><td>${o.er}</td><td><strong>${o.pct}%</strong></td></tr>`;
+    }).join('');
+  }
+
+  // Charts (usa Chart.js ou o miniChart interno)
+  try{
+    const c1 = document.getElementById('corChartQuestoes');
+    if(c1 && c1.getContext){
+      if(__corChartQ) __corChartQ.destroy();
+      __corChartQ = new Chart(c1.getContext('2d'), {
+        type: 'bar',
+        data: { labels: Array.from({length:10}).map((_,i)=>String(i+1)), datasets: [{ label: '% Acerto (Questão)', data: stats.perQ.map(q=>q.pct) }]},
+        options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
+      });
+    }
+  }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'corChartQ',{}); }catch(_){} }
+
+  try{
+    const c2 = document.getElementById('corChartBNCC');
+    if(c2 && c2.getContext){
+      const labels = Object.entries(stats.perRef).map(([k])=>k);
+      const data = Object.entries(stats.perRef).map(([,o])=>o.pct);
+      if(__corChartB) __corChartB.destroy();
+      __corChartB = new Chart(c2.getContext('2d'), {
+        type: 'bar',
+        data: { labels: labels.length? labels : ['—'], datasets: [{ label: '% Acerto (BNCC/Aula)', data: data.length? data : [0] }]},
+        options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
+      });
+    }
+  }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'corChartB',{}); }catch(_){} }
+}
+
+function corBindEvents(){
+  const turmaSel = document.getElementById('corTurmaSelect');
+  const provaSel = document.getElementById('corProvaSelect');
+  const alunoSel = document.getElementById('corAlunoSelect');
+
+  if(turmaSel && !turmaSel.dataset.bound){
+    turmaSel.dataset.bound='1';
+    turmaSel.addEventListener('change', function(){
+      corEnsureProva(this.value);
+      corRenderAll();
+    });
+  }
+  if(provaSel && !provaSel.dataset.bound){
+    provaSel.dataset.bound='1';
+    provaSel.addEventListener('change', function(){
+      const turma = corGetTurmaSelecionada();
+      corSetActiveProva(turma, this.value);
+      corRenderAll();
+    });
+  }
+  if(alunoSel && !alunoSel.dataset.bound){
+    alunoSel.dataset.bound='1';
+    alunoSel.addEventListener('change', function(){
+      corRenderAluno();
+    });
+  }
+}
+
+function corRenderAll(){
+  corRenderSelectors();
+  corBindEvents();
+  corRenderGabarito();
+  corRenderAluno();
+  corRenderStats();
+}
+
+function initCorrecao(){
+  try{
+    // garante estrutura mínima
+    if(!correcaoProvas || typeof correcaoProvas !== 'object' || Array.isArray(correcaoProvas)) correcaoProvas = {};
+    // se já existe filtro de turma ativo, prepara
+    if(filtroTurma && filtroTurma!=='Todas') corEnsureProva(filtroTurma);
+    // renderiza se a visão atual for correção
+    if(visaoAtual==='correcao') corRenderAll();
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'initCorrecao',{}); }catch(_){}
+  }
+}
+
 function __sgpMainOnLoad(){ 
             carregarDados(); try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){ }
-            try{ __warnTempPath(); }catch(_){ } try{ __checkExternalLibs(); }catch(_){ } checkBackupStatus(); garantirEstruturaNova(); initMenuTurmas(); renderizarMenu(); gerarMesas(); renderizarVisao(); atualizarLabelsConfig(); initKeyboardShortcuts(); initOcorrenciasUI(); initElegivelUI(); initPlanner(); initAtividades(); }
+            try{ __warnTempPath(); }catch(_){ } try{ __checkExternalLibs(); }catch(_){ } checkBackupStatus(); garantirEstruturaNova(); initMenuTurmas(); renderizarMenu(); gerarMesas(); renderizarVisao(); atualizarLabelsConfig(); initKeyboardShortcuts(); initOcorrenciasUI(); initElegivelUI(); initPlanner(); initAtividades(); initCorrecao(); }
         window.addEventListener('load', __sgpMainOnLoad);
 
 
@@ -6835,6 +7487,9 @@ function carregarDados() {
       planosSemana = core.planosSemana || core.planos_semanais || {};
       if(!planosSemana || typeof planosSemana !== 'object' || Array.isArray(planosSemana)) planosSemana = {};
 
+	      correcaoProvas = __safe(localStorage.getItem('sgp_correcao_provas'), {}, 'sgp_correcao_provas');
+      if(!correcaoProvas || typeof correcaoProvas !== 'object' || Array.isArray(correcaoProvas)) correcaoProvas = {};
+
       const cfg = core.config;
       if(cfg && typeof cfg === 'object' && !Array.isArray(cfg)) config = cfg;
 
@@ -6854,6 +7509,7 @@ function carregarDados() {
             a=localStorage.getItem('sgp_alunos'),
             au=localStorage.getItem('sgp_aulas'),
             p=localStorage.getItem('sgp_planos_semanais'),
+            cp=localStorage.getItem('sgp_correcao_provas'),
             c=localStorage.getItem('sgp_config'),
             l=localStorage.getItem('sgp_layouts');
 
@@ -6867,6 +7523,9 @@ function carregarDados() {
       planosSemana = __safe(p, {}, 'sgp_planos_semanais');
       if(!planosSemana || typeof planosSemana !== 'object' || Array.isArray(planosSemana)) planosSemana = {};
 
+
+      correcaoProvas = __safe(cp, {}, 'sgp_correcao_provas');
+      if(!correcaoProvas || typeof correcaoProvas !== 'object' || Array.isArray(correcaoProvas)) correcaoProvas = {};
       const cfg = __safe(c, null, 'sgp_config');
       if(cfg && typeof cfg === 'object' && !Array.isArray(cfg)) config = cfg;
 
@@ -7131,7 +7790,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.12.14",
+                version: "v15.9.12.15",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -7175,6 +7834,15 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 ["extras_audit.json", JSON.stringify(extras.audit, null, 2)],
                 ["extras_autobackups.json", JSON.stringify(extras.autobackups, null, 2)]
             ];
+
+
+            // Correção (Provas/Atividades)
+            try{
+                const cp = (typeof correcaoProvas !== 'undefined' && correcaoProvas && typeof correcaoProvas==='object')
+                  ? correcaoProvas
+                  : JSON.parse(localStorage.getItem('sgp_correcao_provas')||'{}');
+                files.push(['sgp_correcao_provas.json', JSON.stringify(cp || {}, null, 2)]);
+            }catch(_){ }
 
             // === DADOS ADICIONAIS (V13+) ===
             // Frequência / Chamada
@@ -7251,7 +7919,16 @@ __safeLSSet('sgp_last_backup', Date.now());
                         plannerTasks = Array.isArray(pl) ? pl : (pl && pl.tasks ? pl.tasks : []);
                         try{ plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
 
-                        // Atividades (bancos)
+                        
+                        // Correção (Provas/Atividades)
+                        try{
+                            const bkCor = readJson('sgp_correcao_provas.json');
+                            if(bkCor && typeof bkCor === 'object'){
+                                correcaoProvas = bkCor;
+                                __safeLSSet('sgp_correcao_provas', JSON.stringify(bkCor));
+                            }
+                        }catch(_){}
+// Atividades (bancos)
                         const bkForca = readJson('atividades_forca.json');
                         const bkVf = readJson('atividades_vf.json');
                         const bkMem = readJson('atividades_memoria.json');
@@ -7518,8 +8195,8 @@ __safeLSSet('sgp_last_backup', Date.now());
             document.body.classList.remove('ranking-view');
             if(t!=='ranking') document.body.classList.remove('ranking-is-fullscreen');
 
-            ['btnViewCards','btnViewLista','btnViewMassa','btnViewEntregas','btnViewAulas','btnViewDash','btnViewMapa','btnViewCalendar','btnViewAnual','btnViewRanking'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('active');}); 
-            ['gridAlunos','tabelaFechamento','viewMassa','tabelaEntregas','viewAulas','viewDashboard','viewMapa','viewCalendar','viewAnual','viewRanking'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';}); 
+            ['btnViewCards','btnViewLista','btnViewMassa','btnViewEntregas','btnViewAulas','btnViewDash','btnViewCorrecao','btnViewMapa','btnViewCalendar','btnViewAnual','btnViewRanking'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('active');}); 
+            ['gridAlunos','tabelaFechamento','viewMassa','tabelaEntregas','viewAulas','viewDashboard','viewCorrecao','viewMapa','viewCalendar','viewAnual','viewRanking'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';}); 
             const btnEl=document.getElementById('btnView'+(t.charAt(0).toUpperCase()+t.slice(1)));
             if(btnEl) btnEl.classList.add('active'); 
             
@@ -7531,9 +8208,11 @@ __safeLSSet('sgp_last_backup', Date.now());
             else if(t==='aulas')document.getElementById('viewAulas').style.display='flex';
             else if(t==='calendar'){document.getElementById('viewCalendar').style.display='flex'; renderizarCalendario();}
             else if(t==='dash')document.getElementById('viewDashboard').style.display='grid';
+            else if(t==='correcao'){document.getElementById('viewCorrecao').style.display='flex'; corRenderAll();}
             else if(t==='mapa'){document.getElementById('viewMapa').style.display='flex'; carregarSelectLayouts(); mapaUpdateFullscreenUI();}
             else if(t==='ranking'){document.getElementById('viewRanking').style.display='flex'; document.body.classList.add('ranking-view'); if(typeof rankUpdateFullscreenUI==='function') rankUpdateFullscreenUI();}
             renderizarVisaoContent();
+            if(visaoAtual==='correcao'){ try{ corRenderAll(); }catch(_){ } }
         }
         function renderizarVisaoContent(){ 
             if(visaoAtual==='cards')renderizarGrid(); 
@@ -7608,6 +8287,7 @@ function selTurma(n){
             document.getElementById('tituloPrincipal').innerText=n; 
             renderizarMenu(); 
             renderizarVisaoContent();
+            if(visaoAtual==='correcao'){ try{ corRenderAll(); }catch(_){ } }
         }
 
         function getCorFarol(m){m=parseFloat(m); if(m>=7)return'var(--farol-verde)'; if(m>=5)return'var(--farol-amarelo)'; return'var(--farol-vermelho)';}
@@ -17193,6 +17873,11 @@ function renderEntregas(){
   const _miniBarDoughnut = function(ctx, cfg){
     const canvas = ctx.canvas || ctx;
     const c = canvas.getContext ? canvas.getContext('2d') : ctx;
+    // garante tamanho (similar ao miniChart de linha)
+    const w = canvas.clientWidth || canvas.width || 600;
+    const h = canvas.clientHeight || canvas.height || 240;
+    if(canvas.width !== w) canvas.width = w;
+    if(canvas.height !== h) canvas.height = h;
     const W = canvas.width, H = canvas.height;
     const type = cfg.type || 'line';
     const ds = cfg.data?.datasets?.[0];
@@ -17208,7 +17893,7 @@ function renderEntregas(){
       data.forEach((v,i)=>{
         const bh = (v/max) * (H - 20);
         const x = gap + i * (barW + gap);
-        c.fillStyle = Array.isArray(colors) ? (colors[i]||'#60a5fa') : colors;
+        c.fillStyle = Array.isArray(colors) ? (colors[i]||((getComputedStyle(document.documentElement).getPropertyValue('--primary')||'#2563eb').trim())) : colors;
         c.fillRect(x, H - bh - 10, barW, bh);
         c.fillStyle = '#64748b'; c.font = '9px sans-serif'; c.textAlign = 'center';
         c.fillText(v, x + barW/2, H - bh - 14);
@@ -17227,7 +17912,7 @@ function renderEntregas(){
         c.arc(cx,cy,r,startAngle,startAngle+slice);
         c.arc(cx,cy,inner,startAngle+slice,startAngle,true);
         c.closePath();
-        c.fillStyle = Array.isArray(colors)?(colors[i]||'#60a5fa'):colors;
+        c.fillStyle = Array.isArray(colors)?(colors[i]||((getComputedStyle(document.documentElement).getPropertyValue('--primary')||'#2563eb').trim())):colors;
         c.fill();
         startAngle+=slice;
       });
