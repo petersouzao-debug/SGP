@@ -1685,6 +1685,51 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         }
         .btn-salvar-massa-inline:hover{ opacity:.92; }
 
+        /* ===== MASSA V18: Enhanced Mass Editor ===== */
+        .massa-unsaved-bar{display:none;align-items:center;gap:8px;padding:8px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;font-size:.78rem;font-weight:600;color:#92400e;margin-bottom:8px;animation:massaPulse 2s infinite;}
+        .massa-unsaved-bar.visible{display:flex;}
+        @keyframes massaPulse{0%,100%{opacity:1;}50%{opacity:.8;}}
+        .massa-unsaved-bar i{font-size:.9rem;}
+        .massa-unsaved-bar .massa-auto-save-hint{margin-left:auto;font-size:.68rem;color:#b45309;font-weight:400;}
+
+        .massa-search-wrap{position:relative;margin-bottom:8px;max-width:350px;}
+        .massa-search-wrap input{width:100%;padding:7px 12px 7px 32px;border:1px solid var(--border-color);border-radius:8px;font-size:.82rem;background:var(--card-bg);color:var(--text-color);}
+        .massa-search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.78rem;}
+
+        .massa-progress{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.78rem;color:#64748b;}
+        .massa-progress-bar{flex:0 0 120px;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;}
+        .massa-progress-bar>div{height:100%;border-radius:3px;transition:width .3s;}
+
+        .massa-stats-row{display:flex;gap:2px;}
+        .massa-stats-row th{position:relative;}
+        .massa-col-stat{font-size:.58rem;color:#94a3b8;font-weight:400;display:block;line-height:1.1;margin-top:2px;}
+        .massa-col-actions{display:flex;gap:2px;justify-content:center;margin-top:3px;}
+        .massa-col-btn{border:none;background:rgba(37,99,235,.08);color:var(--primary);border-radius:4px;padding:1px 5px;font-size:.58rem;cursor:pointer;font-weight:600;}
+        .massa-col-btn:hover{background:rgba(37,99,235,.16);}
+
+        .nota-input-massa.massa-empty{background:rgba(250,204,21,.08);border-color:#fde68a;}
+        .nota-input-massa.massa-modified{box-shadow:0 0 0 2px rgba(37,99,235,.25);}
+        .nota-input-massa.massa-just-saved{animation:massaSavedFlash .5s ease-out;}
+        @keyframes massaSavedFlash{0%{box-shadow:0 0 0 3px rgba(22,163,74,.4);}100%{box-shadow:none;}}
+
+        .massa-sort-icon{cursor:pointer;margin-left:3px;font-size:.6rem;color:#94a3b8;vertical-align:middle;}
+        .massa-sort-icon:hover{color:var(--primary);}
+
+        .massa-fill-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100000;display:flex;align-items:center;justify-content:center;}
+        .massa-fill-box{background:var(--card-bg);border-radius:14px;padding:20px 24px;max-width:360px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,.2);}
+        .massa-fill-box h3{margin:0 0 12px;}
+        .massa-fill-box input{width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;font-size:1rem;text-align:center;font-weight:700;margin-bottom:12px;}
+        .massa-fill-box .btn-row{display:flex;gap:8px;justify-content:flex-end;}
+
+        .massa-import-zone{border:2px dashed var(--border-color);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:10px;font-size:.82rem;color:#64748b;}
+        .massa-import-zone:hover{border-color:var(--primary);background:rgba(37,99,235,.03);}
+        .massa-import-zone.dragover{border-color:var(--primary);background:rgba(37,99,235,.08);}
+
+        .massa-toolbar-extra{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+        .massa-tool-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--card-bg);color:var(--text-color);font-size:.75rem;font-weight:600;cursor:pointer;transition:.15s;}
+        .massa-tool-btn:hover{border-color:var(--primary);color:var(--primary);}
+        .massa-tool-btn i{font-size:.72rem;}
+
         /* ===== ENTREGAS: Status Badges ===== */
         .entrega-select{
           padding:5px 10px; border-radius:20px; border:2px solid transparent;
@@ -3452,6 +3497,14 @@ body.dark-mode #modalAtividades .fc-small{ color:#94a3b8; }
 .freq-cal-cell.J{background:#fef9c3;color:#854d0e;} .freq-cal-cell.none{background:#f1f5f9;color:#cbd5e1;}
 .freq-cal-cell.today{box-shadow:inset 0 0 0 2px #0ea5e9;}
 
+.freq-table tr.freq-unmarked{background:rgba(250,204,21,.10);}
+.freq-table tr.freq-unmarked td:nth-child(2)::after{content:' ⚠';font-size:.65rem;color:#ca8a04;}
+.freq-search-wrap{position:relative;margin-bottom:8px;}
+.freq-search-wrap input{width:100%;padding:7px 12px 7px 32px;border:1px solid var(--border-color);border-radius:8px;font-size:.82rem;background:var(--card-bg);color:var(--text-color);}
+.freq-search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.78rem;}
+.freq-date-nav{display:inline-flex;align-items:center;gap:4px;}
+.freq-date-nav button{width:28px;height:28px;border:1px solid var(--border-color);border-radius:6px;background:var(--card-bg);color:var(--text-color);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:.15s;}
+.freq-date-nav button:hover{background:rgba(14,165,233,.12);border-color:#0ea5e9;color:#0ea5e9;}
 .freq-pattern-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:.72rem;font-weight:600;border:1px solid;}
 .freq-pattern-chip.warn{background:#fef3c7;color:#92400e;border-color:#fde68a;}
 .freq-pattern-chip.danger{background:#fee2e2;color:#991b1b;border-color:#fecaca;}
@@ -3960,6 +4013,79 @@ body.sidebar-hidden main{margin-left:0;}
   .dash-traj-list{max-height:280px;}
 }
 
+/* ===== DASHBOARD ENHANCEMENTS V18 ===== */
+.dash-quick-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;grid-column:1/-1;order:-20;padding:10px 0;}
+.dash-quick-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .18s;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.dash-quick-btn:hover{border-color:var(--primary);color:var(--primary);box-shadow:0 2px 8px rgba(37,99,235,.12);transform:translateY(-1px);}
+.dash-quick-btn i{font-size:.85rem;}
+.dash-quick-btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+.dash-quick-btn.primary:hover{filter:brightness(1.1);color:#fff;}
+
+.dash-bim-filter{display:inline-flex;gap:3px;margin-left:auto;}
+.dash-bim-pill{padding:4px 12px;border-radius:16px;border:1px solid var(--border-color);background:transparent;color:#64748b;font-size:.75rem;font-weight:600;cursor:pointer;transition:.15s;}
+.dash-bim-pill.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.dash-bim-pill:hover:not(.active){background:rgba(37,99,235,.06);}
+
+.dash-section{grid-column:1/-1;margin-top:4px;}
+.dash-section-header{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;user-select:none;border-bottom:1px solid var(--border-color);margin-bottom:10px;}
+.dash-section-header h4{margin:0;font-size:.82rem;color:#64748b;text-transform:uppercase;letter-spacing:.5px;flex:1;}
+.dash-section-header .dash-section-toggle{width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#94a3b8;transition:transform .2s;}
+.dash-section-header .dash-section-toggle.collapsed{transform:rotate(-90deg);}
+.dash-section-body{display:grid;grid-template-columns:inherit;gap:inherit;}
+.dash-section-body.collapsed{display:none;}
+
+.dash-progress-card{grid-column:1/-1;order:-5;}
+.dash-progress-bar-wrap{height:10px;background:#f1f5f9;border-radius:6px;overflow:hidden;margin:6px 0;}
+.dash-progress-bar-fill{height:100%;border-radius:6px;transition:width .5s;background:linear-gradient(90deg,#2563eb,#06b6d4);}
+.dash-progress-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;}
+.dash-progress-stat{font-size:.78rem;color:#64748b;}
+.dash-progress-stat b{color:var(--text-color);}
+
+.dash-highlights{grid-column:1/-1;order:-4;}
+.dash-highlight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:8px;}
+.dash-highlight-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid var(--border-color);background:var(--card-bg);transition:all .15s;}
+.dash-highlight-item:hover{box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.dash-highlight-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;}
+.dash-highlight-info{flex:1;min-width:0;}
+.dash-highlight-name{font-size:.78rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dash-highlight-desc{font-size:.68rem;color:#94a3b8;}
+
+.dash-kpi.clickable{cursor:pointer;transition:all .18s;border-radius:12px;}
+.dash-kpi.clickable:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px);background:rgba(14,165,233,.03);}
+.dash-kpi.clickable::after{content:'Ver detalhes →';display:block;font-size:.62rem;color:#94a3b8;margin-top:4px;opacity:0;transition:opacity .18s;}
+.dash-kpi.clickable:hover::after{opacity:1;}
+
+.dash-agenda-card{grid-column:1/-1;order:-3;}
+.dash-agenda-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-top:8px;}
+.dash-agenda-day{padding:10px;border-radius:10px;border:1px solid var(--border-color);text-align:center;font-size:.78rem;transition:.15s;}
+.dash-agenda-day.today{border-color:var(--primary);background:rgba(37,99,235,.04);box-shadow:0 0 0 1px var(--primary);}
+.dash-agenda-day .day-label{font-weight:700;color:#64748b;font-size:.7rem;text-transform:uppercase;margin-bottom:4px;}
+.dash-agenda-day .day-date{font-size:.68rem;color:#94a3b8;margin-bottom:6px;}
+.dash-agenda-day .day-status{font-weight:700;font-size:.72rem;}
+.dash-agenda-day .day-status.done{color:#16a34a;}.dash-agenda-day .day-status.pending{color:#f59e0b;}.dash-agenda-day .day-status.none{color:#cbd5e1;}
+
+.dash-turma-rank{grid-column:1/-1;}
+.dash-turma-rank-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px;}
+.dash-turma-rank-item{padding:14px;border-radius:12px;border:1px solid var(--border-color);background:var(--card-bg);cursor:pointer;transition:.18s;}
+.dash-turma-rank-item:hover{border-color:var(--primary);box-shadow:0 4px 12px rgba(37,99,235,.08);transform:translateY(-1px);}
+.dash-turma-rank-item .trk-name{font-size:.9rem;font-weight:800;margin-bottom:8px;}
+.dash-turma-rank-item .trk-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.72rem;}
+.dash-turma-rank-item .trk-stat{display:flex;justify-content:space-between;}
+.dash-turma-rank-item .trk-stat-val{font-weight:800;}
+.dash-turma-minibar{height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;margin-top:8px;}
+.dash-turma-minibar>div{height:100%;border-radius:3px;transition:width .4s;}
+
+.dash-skeleton{grid-column:1/-1;order:-100;display:flex;gap:14px;flex-wrap:wrap;}
+.dash-skeleton-item{flex:1;min-width:140px;height:80px;background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;border-radius:12px;animation:dashSkeletonPulse 1.5s infinite;}
+@keyframes dashSkeletonPulse{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+@media(max-width:700px){
+  .dash-quick-actions{gap:6px;}.dash-quick-btn{padding:6px 10px;font-size:.74rem;}
+  .dash-highlight-grid{grid-template-columns:1fr;}
+  .dash-agenda-grid{grid-template-columns:repeat(3,1fr);}
+  .dash-turma-rank-grid{grid-template-columns:1fr;}
+}
+
 /* ===== V15 GAME ENHANCEMENTS CSS ===== */
 
 /* Score bar */
@@ -4112,6 +4238,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                         <i class="fas fa-4"></i> 4º Bim
                     </button>
                 </div>
+                <button id="btnAutoTest" class="btn-primary" style="padding:10px 14px;border-radius:10px;font-size:0.9rem;white-space:nowrap;" data-onclick="executarAutoTeste()"><i class="fas fa-stethoscope"></i> AutoTeste</button>
             </div>
             
             <!-- Linha de Controles -->
@@ -4250,7 +4377,13 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
         <!-- NOVA VIEW: EDIÇÃO EM MASSA -->
         <div id="viewMassa" style="display:none;">
             <h2 style="margin-bottom:8px; color:var(--text-main);"><i class="fas fa-edit"></i> Edição em Massa de Notas</h2>
-            <p class="massa-subtitle">Edite as notas de múltiplos alunos simultaneamente. Use os botões de disciplina para abrir a edição em massa específica.</p>
+            <p class="massa-subtitle">Edite as notas de múltiplos alunos simultaneamente. Use Tab/Enter/setas para navegar entre células.</p>
+
+            <div id="massaUnsavedBar" class="massa-unsaved-bar">
+                <i class="fas fa-exclamation-triangle"></i> Alterações não salvas
+                <span class="massa-auto-save-hint">Auto-save em breve...</span>
+                <button class="massa-tool-btn" onclick="salvarEdicaoMassa()" style="margin-left:8px;background:var(--farol-verde);color:#fff;border:none;"><i class="fas fa-save"></i> Salvar agora</button>
+            </div>
 
             <div class="massa-toolbar">
                 <div class="massa-disc-nav" id="massaDiscNav"></div>
@@ -4264,12 +4397,25 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                 </div>
             </div>
 
+            <div class="massa-toolbar-extra" id="massaToolbarExtra">
+                <button class="massa-tool-btn" onclick="__massaImportCSV()" title="Importar notas de arquivo CSV"><i class="fas fa-file-import"></i> Importar CSV</button>
+                <button class="massa-tool-btn" onclick="__massaExportCSV()" title="Exportar notas como CSV"><i class="fas fa-file-export"></i> Exportar CSV</button>
+            </div>
+
+            <div id="massaProgressBar" class="massa-progress"></div>
+
+            <div class="massa-search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" id="massaSearchInput" placeholder="Buscar aluno..." oninput="__massaFilterBySearch()">
+            </div>
+
             <div id="massaDiscTitle" class="massa-subtitle"></div>
 
             <div class="massa-table-wrap">
                 <table class="tabela-dados" style="display:table;">
                     <thead>
                         <tr id="trMassaHead"></tr>
+                        <tr id="trMassaStats" class="massa-stats-row" style="font-size:.7rem;background:rgba(14,165,233,.03);"></tr>
                     </thead>
                     <tbody id="tbodyMassa"></tbody>
                 </table>
@@ -6251,6 +6397,22 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
             </div>
         </div>
     </div>
+    <!-- Modal: AutoTeste -->
+    <div id="modalAutoTeste" class="modal-overlay" style="display:none;">
+        <div class="modal-box" style="max-width:780px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="margin:0;color:var(--text-main);font-size:1.2rem;"><i class="fas fa-stethoscope" style="color:var(--primary);"></i> AutoTeste do Sistema</h3>
+                <button data-onclick="fecharModalAutoTeste()" style="border:none;background:transparent;font-size:1.3rem;cursor:pointer;color:var(--text-muted);">✕</button>
+            </div>
+            <div id="autoTesteBody" style="max-height:70vh;overflow:auto;padding-right:6px;"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;">
+                <button class="btn-primary" style="padding:10px 14px;" data-onclick="autoTesteCopiar()"><i class="fas fa-copy"></i> Copiar relatório</button>
+                <button class="btn-primary" style="padding:10px 14px;background:transparent;color:var(--text-main);border:2px solid var(--border-color);" data-onclick="fecharModalAutoTeste()"><i class="fas fa-times"></i> Fechar</button>
+            </div>
+        </div>
+    </div>
+
+
 
 
 
@@ -7981,7 +8143,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.12.15.11",
+                version: "v15.9.12.15.16",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -8098,12 +8260,14 @@ __safeLSSet('sgp_last_backup', Date.now());
                         const core = readJson('sgp_core.json');
                         if(!core) throw new Error("Backup ZIP inválido (sgp_core.json ausente).");
 
-                        turmas = core.turmas || [];
-                        alunos = core.alunos || [];
-                        aulas = core.aulas || [];
-                        planosSemana = core.planosSemana || core.planos_semanais || {};
-                        config = core.config || config;
-                        layouts = core.layouts || {};
+                        turmas = Array.isArray(core.turmas) ? core.turmas : [];
+                        alunos = Array.isArray(core.alunos) ? core.alunos : [];
+                        aulas  = Array.isArray(core.aulas)  ? core.aulas  : [];
+                        const __ps = core.planosSemana || core.planos_semanais;
+                        planosSemana = (__ps && typeof __ps === 'object' && !Array.isArray(__ps)) ? __ps : {};
+                        const __cfg = core.config;
+                        if(__cfg && typeof __cfg === 'object' && !Array.isArray(__cfg)) config = __cfg;
+                        layouts = (core.layouts && typeof core.layouts === 'object' && !Array.isArray(core.layouts)) ? core.layouts : {};
 
                         const pl = readJson('sgp_planner.json');
                         plannerTasks = Array.isArray(pl) ? pl : (pl && pl.tasks ? pl.tasks : []);
@@ -11158,16 +11322,30 @@ function salvarAlteracoesDetalhadas(){
   showToast("Alterações salvas!");
 }
 
-/* ======= MASSA ======= */
+/* ======= MASSA V18 ENHANCED ======= */
 let massaDiscSelecionada = null;
+let __massaSortCol = null;
+let __massaSortAsc = true;
+let __massaSearchFilter = '';
+let __massaAutoSaveTimer = null;
+let __massaModifiedInputs = new Set();
 
 function _massaDiscDefault(){
   ensureConfigSchema();
   return massaDiscSelecionada || config.slot1 || (config.disciplinas?.[0]?.id) || null;
 }
 
+// Bug #1: Auto-save before switching discipline
 function massaSetDisc(discId){
+  if(notasModificadas){
+    salvarEdicaoMassa(true); // silent save
+  }
   massaDiscSelecionada = discId;
+  __massaSearchFilter = '';
+  __massaSortCol = null;
+  __massaSortAsc = true;
+  const si = document.getElementById('massaSearchInput');
+  if(si) si.value = '';
   document.querySelectorAll('#massaDiscNav .massa-disc-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.disc === discId);
   });
@@ -11178,16 +11356,10 @@ function massaRenderDiscNav(){
   ensureConfigSchema();
   const nav = document.getElementById('massaDiscNav');
   if(!nav) return;
-
   const discs = Array.isArray(config.disciplinas) ? config.disciplinas : [];
-  if(discs.length === 0){
-    nav.innerHTML = '';
-    return;
-  }
-
+  if(discs.length === 0){ nav.innerHTML = ''; return; }
   const current = _massaDiscDefault();
   if(!massaDiscSelecionada) massaDiscSelecionada = current;
-
   nav.innerHTML = discs.map(d=>{
     const icon = (d.id===config.slot1) ? 'fa-book' : (d.id===config.slot2) ? 'fa-pen-nib' : 'fa-layer-group';
     const active = (d.id === massaDiscSelecionada) ? 'active' : '';
@@ -11200,7 +11372,6 @@ function massaRenderDiscNav(){
 function massaToggleFullscreen(){
   const el = document.getElementById('viewMassa') || document.documentElement;
   const btn = document.getElementById('btnMassaFullscreen');
-
   const isFs = !!document.fullscreenElement;
   if(!isFs){
     const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
@@ -11209,12 +11380,9 @@ function massaToggleFullscreen(){
     const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
     if(exit) exit.call(document);
   }
-
   setTimeout(()=>{
     const fsNow = !!document.fullscreenElement;
-    if(btn){
-      btn.innerHTML = fsNow ? '<i class="fas fa-compress"></i> Sair da tela cheia' : '<i class="fas fa-expand"></i> Tela cheia';
-    }
+    if(btn) btn.innerHTML = fsNow ? '<i class="fas fa-compress"></i> Sair da tela cheia' : '<i class="fas fa-expand"></i> Tela cheia';
   }, 50);
 }
 
@@ -11226,6 +11394,592 @@ document.addEventListener('fullscreenchange', ()=>{
   }
 });
 
+// Bug #3: Real-time media calculation per row
+function __massaRecalcRowMedia(input){
+  const tr = input.closest('tr');
+  if(!tr) return;
+  const discId = input.dataset.disc;
+  const inputs = tr.querySelectorAll('.nota-input-massa[data-disc="'+discId+'"]');
+  const disc = getDiscById(discId);
+  if(!disc) return;
+  // Build temp notas object
+  const notas = {};
+  inputs.forEach(inp => { notas[inp.dataset.eval] = clampNota(inp.value); });
+  const media = calcularMediaDisc(discId, notas);
+  const cor = getCorFarol(media);
+  const mediaCell = tr.querySelector('td:last-child strong');
+  if(mediaCell){
+    mediaCell.style.color = cor;
+    mediaCell.textContent = isFinite(media) ? media.toFixed(1) : media;
+  }
+  // Also update column stats
+  __massaUpdateColStats();
+}
+
+// Feature #13: Column statistics
+function __massaUpdateColStats(){
+  const tr = document.getElementById('trMassaStats');
+  if(!tr) return;
+  const discId = _massaDiscDefault();
+  const disc = getDiscById(discId);
+  if(!disc){ tr.innerHTML = ''; return; }
+  const avs = disc.avaliacoes || [];
+  
+  let cols = '<td></td><td></td><td></td>';
+  avs.forEach((av, ci) => {
+    const inputs = document.querySelectorAll('.nota-input-massa[data-eval="'+av.id+'"][data-disc="'+discId+'"]');
+    let sum=0, n=0, min=10, max=0;
+    inputs.forEach(inp => {
+      const v = clampNota(inp.value);
+      if(v > 0 || inp.value !== '0'){ sum += v; n++; min = Math.min(min, v); max = Math.max(max, v); }
+    });
+    const avg = n > 0 ? (sum/n).toFixed(1) : '—';
+    if(n === 0){ min = 0; max = 0; }
+    cols += '<td style="text-align:center;"><span class="massa-col-stat">μ '+avg+' ('+min.toFixed(0)+'–'+max.toFixed(0)+')</span>' +
+      '<div class="massa-col-actions"><button class="massa-col-btn" onclick="__massaFillColumn(\''+av.id+'\',\''+discId+'\')" title="Preencher coluna">Preencher</button>' +
+      '<button class="massa-col-btn" onclick="__massaSortByCol(\''+av.id+'\')" title="Ordenar">Ordenar</button></div></td>';
+  });
+  // Media column
+  cols += '<td></td>';
+  tr.innerHTML = cols;
+}
+
+// Feature #7: Progress bar
+function __massaUpdateProgress(){
+  const el = document.getElementById('massaProgressBar');
+  if(!el) return;
+  const discId = _massaDiscDefault();
+  const disc = getDiscById(discId);
+  if(!disc){ el.innerHTML = ''; return; }
+  const lista = getAlunosFiltrados();
+  if(!lista.length){ el.innerHTML = ''; return; }
+  const avs = disc.avaliacoes || [];
+  
+  let filled = 0, total = 0;
+  lista.forEach(a => {
+    const b = a?.bimestres?.[bimestreAtual];
+    if(!b) return;
+    _syncBimestreRefs(b);
+    if(!b.notas_disc || !b.notas_disc[discId]) return;
+    const notas = b.notas_disc[discId];
+    avs.forEach(av => {
+      total++;
+      const v = notas?.[av.id];
+      if(v !== undefined && v !== null && v !== 0 && v !== '0' && v !== '') filled++;
+    });
+  });
+  if(total === 0){ el.innerHTML = ''; return; }
+  const pct = Math.round(filled / total * 100);
+  const col = pct >= 80 ? '#16a34a' : (pct >= 50 ? '#f59e0b' : '#dc2626');
+  el.innerHTML = '<div class="massa-progress-bar"><div style="width:'+pct+'%;background:'+col+';"></div></div>' +
+    '<span><b>'+filled+'/'+total+'</b> notas lançadas ('+pct+'%)</span>' +
+    '<span style="margin-left:auto;font-size:.72rem;">'+lista.length+' alunos</span>';
+}
+
+// Feature #10: Unsaved changes indicator + Feature #9: Auto-save
+function marcarModificacao(input){
+  notasModificadas=true;
+  if(input){
+    input.classList.add('massa-modified');
+    __massaModifiedInputs.add(input);
+    __massaRecalcRowMedia(input);
+  }
+  // Show unsaved bar
+  const bar = document.getElementById('massaUnsavedBar');
+  if(bar) bar.classList.add('visible');
+  const btn=document.getElementById('btnSalvarMassa');
+  if(btn) btn.style.display='flex';
+  const btn2=document.getElementById('btnSalvarMassaInline');
+  if(btn2) btn2.style.display='flex';
+  
+  // Auto-save with debounce (4 seconds)
+  clearTimeout(__massaAutoSaveTimer);
+  __massaAutoSaveTimer = setTimeout(()=>{
+    if(notasModificadas) salvarEdicaoMassa(false);
+  }, 4000);
+}
+
+// Feature #5: Keyboard navigation
+function __massaKeyboardNav(e, input){
+  const tbody = document.getElementById('tbodyMassa');
+  if(!tbody) return;
+  const allInputs = Array.from(tbody.querySelectorAll('.nota-input-massa:not([style*="display:none"])'));
+  const idx = allInputs.indexOf(input);
+  if(idx < 0) return;
+  
+  const disc = getDiscById(_massaDiscDefault());
+  const numCols = disc ? (disc.avaliacoes||[]).length : 1;
+  let target = null;
+  
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    // Move down in same column
+    target = allInputs[idx + numCols];
+  } else if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    target = allInputs[idx + numCols];
+  } else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    target = allInputs[idx - numCols];
+  } else if(e.key === 'ArrowRight' && input.selectionStart >= input.value.length){
+    e.preventDefault();
+    target = allInputs[idx + 1];
+  } else if(e.key === 'ArrowLeft' && input.selectionStart <= 0){
+    e.preventDefault();
+    target = allInputs[idx - 1];
+  }
+  
+  if(target){
+    target.focus();
+    target.select();
+  }
+}
+
+// Feature #6: Search/filter
+function __massaFilterBySearch(){
+  const si = document.getElementById('massaSearchInput');
+  __massaSearchFilter = (si?.value || '').toLowerCase();
+  const tbody = document.getElementById('tbodyMassa');
+  if(!tbody) return;
+  const rows = tbody.querySelectorAll('tr.row-aluno-massa');
+  rows.forEach(tr => {
+    const nameTd = tr.querySelector('td:nth-child(2)');
+    const name = (nameTd?.textContent || '').toLowerCase();
+    tr.style.display = (!__massaSearchFilter || name.includes(__massaSearchFilter)) ? '' : 'none';
+  });
+}
+
+// Feature #14: Sort by column
+function __massaSortByCol(evalId){
+  if(__massaSortCol === evalId){
+    __massaSortAsc = !__massaSortAsc;
+  } else {
+    __massaSortCol = evalId;
+    __massaSortAsc = true;
+  }
+  // If modified, save first
+  if(notasModificadas) salvarEdicaoMassa(true);
+  renderizarEdicaoMassa();
+}
+
+// Feature #12: Fill column with value
+function __massaFillColumn(evalId, discId){
+  let old = document.getElementById('massaFillOverlay');
+  if(old) old.remove();
+  
+  const disc = getDiscById(discId);
+  const av = disc ? (disc.avaliacoes||[]).find(a=>a.id===evalId) : null;
+  const avName = av?.nome || evalId;
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'massaFillOverlay';
+  overlay.className = 'massa-fill-overlay';
+  overlay.onclick = function(e){ if(e.target === this) this.remove(); };
+  overlay.innerHTML = '<div class="massa-fill-box">' +
+    '<h3><i class="fas fa-fill-drip"></i> Preencher "' + escHTML(avName) + '"</h3>' +
+    '<p style="font-size:.82rem;color:#64748b;margin:0 0 12px;">Valor será aplicado a todos os alunos visíveis.</p>' +
+    '<input type="number" id="massaFillValue" min="0" max="10" step="0.5" placeholder="Nota (0-10)" autofocus>' +
+    '<div class="btn-row">' +
+      '<button style="padding:8px 16px;border:1px solid var(--border-color);border-radius:8px;background:transparent;cursor:pointer;" onclick="this.closest(\'.massa-fill-overlay\').remove()">Cancelar</button>' +
+      '<button style="padding:8px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;cursor:pointer;" onclick="__massaDoFillColumn(\''+evalId+'\',\''+discId+'\')">Aplicar</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  setTimeout(()=>{ const inp=document.getElementById('massaFillValue'); if(inp) inp.focus(); }, 100);
+}
+
+function __massaDoFillColumn(evalId, discId){
+  const valInp = document.getElementById('massaFillValue');
+  if(!valInp) return;
+  const val = clampNota(valInp.value);
+  const inputs = document.querySelectorAll('.nota-input-massa[data-eval="'+evalId+'"][data-disc="'+discId+'"]');
+  inputs.forEach(inp => {
+    const tr = inp.closest('tr');
+    if(tr && tr.style.display === 'none') return; // skip hidden (filtered)
+    inp.value = val;
+    handleNotaInput(inp);
+    inp.classList.add('massa-modified');
+  });
+  marcarModificacao(null);
+  // recalc all medias
+  document.querySelectorAll('#tbodyMassa .nota-input-massa[data-eval="'+evalId+'"]').forEach(inp => __massaRecalcRowMedia(inp));
+  const overlay = document.getElementById('massaFillOverlay');
+  if(overlay) overlay.remove();
+  showToast('Coluna preenchida com ' + val.toFixed(1));
+}
+
+// Feature #11: Paste from spreadsheet
+function __massaHandlePaste(e){
+  const input = e.target;
+  if(!input.classList.contains('nota-input-massa')) return;
+  
+  const text = (e.clipboardData || window.clipboardData)?.getData('text');
+  if(!text || !text.includes('\t') && !text.includes('\n')) return; // not tabular
+  
+  e.preventDefault();
+  const rows = text.trim().split(/\r?\n/).map(r => r.split('\t').map(c => c.trim()));
+  if(!rows.length) return;
+  
+  const tbody = document.getElementById('tbodyMassa');
+  if(!tbody) return;
+  const disc = getDiscById(_massaDiscDefault());
+  if(!disc) return;
+  const avs = disc.avaliacoes || [];
+  
+  // Find starting position
+  const allInputs = Array.from(tbody.querySelectorAll('.nota-input-massa'));
+  const startIdx = allInputs.indexOf(input);
+  if(startIdx < 0) return;
+  
+  const numCols = avs.length;
+  const startCol = startIdx % numCols;
+  const startRow = Math.floor(startIdx / numCols);
+  
+  let count = 0;
+  rows.forEach((cells, ri) => {
+    cells.forEach((cell, ci) => {
+      const targetIdx = (startRow + ri) * numCols + (startCol + ci);
+      if(targetIdx < allInputs.length){
+        const targetInput = allInputs[targetIdx];
+        const val = clampNota(cell.replace(',', '.'));
+        targetInput.value = val;
+        handleNotaInput(targetInput);
+        targetInput.classList.add('massa-modified');
+        __massaRecalcRowMedia(targetInput);
+        count++;
+      }
+    });
+  });
+  
+  if(count > 0){
+    marcarModificacao(null);
+    showToast(count + ' notas coladas com sucesso!');
+  }
+}
+
+// Feature #15: Import CSV
+function __massaImportCSV(){
+  let old = document.getElementById('massaImportOverlay');
+  if(old) old.remove();
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'massaImportOverlay';
+  overlay.className = 'massa-fill-overlay';
+  overlay.onclick = function(e){ if(e.target === this) this.remove(); };
+  overlay.innerHTML = '<div class="massa-fill-box" style="max-width:500px;">' +
+    '<h3><i class="fas fa-file-import"></i> Importar CSV</h3>' +
+    '<p style="font-size:.8rem;color:#64748b;margin:0 0 10px;">Formato: <code>Nome;Nota1;Nota2;...</code> (separador: <b>;</b> ou <b>,</b> ou <b>Tab</b>)</p>' +
+    '<div class="massa-import-zone" id="massaDropZone" onclick="document.getElementById(\'massaFileInput\').click()">' +
+      '<i class="fas fa-cloud-upload-alt" style="font-size:1.5rem;color:var(--primary);"></i><br>' +
+      'Clique ou arraste um arquivo CSV aqui' +
+    '</div>' +
+    '<input type="file" id="massaFileInput" accept=".csv,.txt,.tsv" style="display:none;" onchange="__massaProcessCSVFile(this.files[0])">' +
+    '<textarea id="massaCSVText" rows="5" placeholder="Ou cole o conteúdo CSV aqui..." style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:8px;font-family:monospace;font-size:.78rem;resize:vertical;margin-bottom:10px;"></textarea>' +
+    '<div class="btn-row">' +
+      '<button style="padding:8px 16px;border:1px solid var(--border-color);border-radius:8px;background:transparent;cursor:pointer;" onclick="this.closest(\'.massa-fill-overlay\').remove()">Cancelar</button>' +
+      '<button style="padding:8px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;cursor:pointer;" onclick="__massaDoImportCSV()">Importar</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  
+  // Drag and drop
+  const zone = document.getElementById('massaDropZone');
+  if(zone){
+    zone.ondragover = function(e){ e.preventDefault(); this.classList.add('dragover'); };
+    zone.ondragleave = function(){ this.classList.remove('dragover'); };
+    zone.ondrop = function(e){ e.preventDefault(); this.classList.remove('dragover'); if(e.dataTransfer.files.length) __massaProcessCSVFile(e.dataTransfer.files[0]); };
+  }
+}
+
+function __massaProcessCSVFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const txt = document.getElementById('massaCSVText');
+    if(txt) txt.value = e.target.result;
+  };
+  reader.readAsText(file);
+}
+
+function __massaDoImportCSV(){
+  const txt = document.getElementById('massaCSVText')?.value;
+  if(!txt || !txt.trim()){ showToast('Nenhum conteúdo para importar.', 'error'); return; }
+  
+  const discId = _massaDiscDefault();
+  const disc = getDiscById(discId);
+  if(!disc){ showToast('Selecione uma disciplina.', 'error'); return; }
+  const avs = disc.avaliacoes || [];
+  const lista = getAlunosFiltrados();
+  
+  // Detect separator
+  const firstLine = txt.trim().split(/\r?\n/)[0] || '';
+  let sep = ';';
+  if(firstLine.includes('\t')) sep = '\t';
+  else if(!firstLine.includes(';') && firstLine.includes(',')) sep = ',';
+  
+  const rows = txt.trim().split(/\r?\n/).map(r => r.split(sep).map(c => c.trim()));
+  
+  // Try to match by name
+  let matched = 0;
+  rows.forEach(cells => {
+    if(cells.length < 2) return;
+    const nome = cells[0].toLowerCase().trim();
+    const aluno = lista.find(a => (a.nome||'').toLowerCase().trim() === nome);
+    if(!aluno) return;
+    
+    const b = aluno.bimestres[bimestreAtual];
+    _syncBimestreRefs(b);
+    if(!b.notas_disc) b.notas_disc = {};
+    if(!b.notas_disc[discId]) b.notas_disc[discId] = {};
+    
+    const notas = cells.slice(1);
+    avs.forEach((av, i) => {
+      if(i < notas.length && notas[i] !== ''){
+        b.notas_disc[discId][av.id] = clampNota(notas[i].replace(',', '.'));
+      }
+    });
+    try{ b.notas_disc[discId].__touched = true; }catch(_){}
+    matched++;
+  });
+  
+  if(matched > 0){
+    salvarDadosLocal();
+    showToast(matched + ' aluno(s) importados com sucesso!');
+    renderizarEdicaoMassa();
+  } else {
+    showToast('Nenhum aluno correspondente encontrado. Verifique os nomes.', 'error');
+  }
+  
+  const overlay = document.getElementById('massaImportOverlay');
+  if(overlay) overlay.remove();
+}
+
+// Export CSV
+function __massaExportCSV(){
+  const discId = _massaDiscDefault();
+  const disc = getDiscById(discId);
+  if(!disc){ showToast('Selecione uma disciplina.', 'error'); return; }
+  const avs = disc.avaliacoes || [];
+  const lista = getAlunosFiltrados();
+  
+  let csv = 'Nome;' + avs.map(av => av.nome || av.id).join(';') + ';Média\n';
+  lista.forEach(a => {
+    const b = a?.bimestres?.[bimestreAtual];
+    if(!b) return;
+    _syncBimestreRefs(b);
+    const notas = b.notas_disc?.[discId] || {};
+    const media = calcularMediaDisc(discId, notas);
+    csv += (a.nome||'') + ';' + avs.map(av => (notas[av.id]??0)).join(';') + ';' + (isFinite(media)?media.toFixed(1):0) + '\n';
+  });
+  
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'notas_' + (disc.nome||'disc') + '_' + bimestreAtual + 'bim.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exportado com sucesso!');
+}
+
+// Enhanced header with sort icons
+function _renderMassaHeader(discId){
+  const tr=document.getElementById('trMassaHead');
+  if(!tr) return;
+  ensureConfigSchema();
+  const id = discId || _massaDiscDefault();
+  const disc = getDiscById(id);
+  
+  const cols=[];
+  cols.push('<th>#</th><th style="cursor:pointer;" onclick="__massaSortByCol(\'__nome__\')" title="Ordenar por nome">Nome <span class="massa-sort-icon">' + (__massaSortCol==='__nome__' ? (__massaSortAsc?'▲':'▼') : '⇅') + '</span></th><th>Turma</th>');
+  
+  if(disc){
+    const cls = (id===config.slot1) ? 'lbl-mat1' : (id===config.slot2) ? 'lbl-mat2' : '';
+    (disc.avaliacoes||[]).forEach(av=>{
+      const sortIcon = __massaSortCol===av.id ? (__massaSortAsc?'▲':'▼') : '⇅';
+      cols.push('<th class="'+cls+'" style="cursor:pointer;" onclick="__massaSortByCol(\''+av.id+'\')" title="Ordenar por '+_escHTML(String(av.nome||''))+'">' +
+        _escHTML(String(av.nome||'')).slice(0,22) + ' <span class="massa-sort-icon">'+sortIcon+'</span></th>');
+    });
+    cols.push('<th class="'+cls+'" style="cursor:pointer;" onclick="__massaSortByCol(\'__media__\')" title="Ordenar por média">Média <span class="massa-sort-icon">' + (__massaSortCol==='__media__' ? (__massaSortAsc?'▲':'▼') : '⇅') + '</span></th>');
+  } else {
+    cols.push('<th>Notas</th>');
+  }
+  tr.innerHTML = cols.join('');
+}
+
+function renderizarEdicaoMassa(){
+  ensureConfigSchema();
+  massaRenderDiscNav();
+  
+  const tbody=document.getElementById('tbodyMassa');
+  let lista=getAlunosFiltrados();
+  const discId = _massaDiscDefault();
+  const disc = getDiscById(discId);
+  
+  _renderMassaHeader(discId);
+  
+  const ttl = document.getElementById('massaDiscTitle');
+  if(ttl){
+    ttl.innerHTML = disc
+      ? '<i class="fas fa-tag"></i> Disciplina: <strong>'+_escHTML(disc.nome||'')+'</strong> • <i class="fas fa-calendar"></i> '+bimestreAtual+'º bimestre • <small style="color:#94a3b8;">Dica: Cole dados do Excel com Ctrl+V</small>'
+      : '<i class="fas fa-tag"></i> Disciplina não encontrada • <i class="fas fa-calendar"></i> '+bimestreAtual+'º bimestre';
+  }
+  
+  if(!tbody) return;
+  if(!lista || lista.length===0){
+    tbody.innerHTML = '<tr><td colspan="50" style="text-align:center; padding:20px;">Selecione uma turma ou nenhum aluno encontrado</td></tr>';
+    return;
+  }
+  if(!disc){
+    tbody.innerHTML = '<tr><td colspan="50" style="text-align:center; padding:20px;">Nenhuma disciplina encontrada. Vá em Configurações e crie pelo menos uma disciplina.</td></tr>';
+    return;
+  }
+  
+  // Feature #14: Sort
+  if(__massaSortCol){
+    lista = lista.slice().sort((a, b) => {
+      const ba = a.bimestres[bimestreAtual] || {};
+      const bb = b.bimestres[bimestreAtual] || {};
+      _syncBimestreRefs(ba); _syncBimestreRefs(bb);
+      let va, vb;
+      if(__massaSortCol === '__nome__'){
+        va = (a.nome||'').toLowerCase(); vb = (b.nome||'').toLowerCase();
+        return __massaSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+      } else if(__massaSortCol === '__media__'){
+        const na = ba.notas_disc?.[discId] || {};
+        const nb = bb.notas_disc?.[discId] || {};
+        va = calcularMediaDisc(discId, na);
+        vb = calcularMediaDisc(discId, nb);
+      } else {
+        va = clampNota(ba.notas_disc?.[discId]?.[__massaSortCol]);
+        vb = clampNota(bb.notas_disc?.[discId]?.[__massaSortCol]);
+      }
+      return __massaSortAsc ? (va - vb) : (vb - va);
+    });
+  }
+  
+  const avs = disc.avaliacoes || [];
+  let buf='';
+  lista.forEach((a, idx)=>{
+    const b=a.bimestres[bimestreAtual];
+    _syncBimestreRefs(b);
+    if(!b.notas_disc || typeof b.notas_disc !== 'object') b.notas_disc = {};
+    if(!b.notas_disc[discId]) b.notas_disc[discId] = {};
+    const notas = b.notas_disc[discId];
+    avs.forEach(av => { if(typeof notas[av.id] === 'undefined') notas[av.id] = 0; });
+    
+    const media = calcularMediaDisc(discId, notas);
+    const cor = getCorFarol(media);
+    
+    // Feature #8: highlight empty/zero
+    const hasAnyFilled = avs.some(av => {
+      const v = notas?.[av.id]; return v !== undefined && v !== null && v !== 0 && v !== '0';
+    });
+    
+    buf += '<tr class="row-aluno-massa" data-nome="'+_escHTML((a.nome||'').toLowerCase())+'">' +
+      '<td>'+(idx+1)+'</td>' +
+      '<td><strong>'+(privacyMode ? '••••••••' : _escHTML(a.nome))+'</strong></td>' +
+      '<td>'+_escHTML(a.turma)+'</td>';
+    
+    avs.forEach(av=>{
+      const v=(notas?.[av.id] ?? 0);
+      const emptyClass = (!hasAnyFilled || v === 0) ? ' massa-empty' : '';
+      buf += '<td><input type="number" class="nota-input-massa'+emptyClass+'" data-aluno="'+__u(a.id)+'" data-disc="'+discId+'" data-eval="'+__u(av.id)+'" value="'+v+'" min="0" max="10" step="0.5" data-oninput="handleNotaInput(this); marcarModificacao(this)" onkeydown="__massaKeyboardNav(event, this)" onpaste="__massaHandlePaste(event)"></td>';
+    });
+    
+    buf += '<td><strong style="color:'+cor+'">'+(isFinite(media) ? media.toFixed(1) : media)+'</strong></td></tr>';
+  });
+  
+  tbody.innerHTML = buf;
+  tbody.querySelectorAll('.nota-input-massa').forEach(inp=>handleNotaInput(inp));
+  
+  // Reset unsaved state
+  const bar = document.getElementById('massaUnsavedBar');
+  if(bar && !notasModificadas) bar.classList.remove('visible');
+  
+  // Update progress & stats
+  __massaUpdateProgress();
+  __massaUpdateColStats();
+  
+  // Re-apply search filter
+  if(__massaSearchFilter){
+    const si = document.getElementById('massaSearchInput');
+    if(si) si.value = __massaSearchFilter;
+    __massaFilterBySearch();
+  }
+}
+
+function salvarEdicaoMassa(silent){
+  ensureConfigSchema();
+  const inputs=document.querySelectorAll('.nota-input-massa');
+  if(!inputs || inputs.length===0) return;
+  
+  clearTimeout(__massaAutoSaveTimer);
+  
+  const alunoMap = new Map();
+  alunos.forEach(a => alunoMap.set(a.id, a));
+  const changes = new Map();
+  
+  inputs.forEach(inp=>{
+    const alunoId=parseFloat(inp.dataset.aluno);
+    const discId=inp.dataset.disc;
+    const evalId=inp.dataset.eval;
+    handleNotaInput(inp);
+    const valor=clampNota(inp.value);
+    if(!changes.has(alunoId)) changes.set(alunoId, {});
+    const perAluno = changes.get(alunoId);
+    if(!perAluno[discId]) perAluno[discId] = {};
+    perAluno[discId][evalId] = valor;
+  });
+  
+  changes.forEach((discMap, alunoId)=>{
+    const aluno=alunoMap.get(alunoId);
+    if(!aluno) return;
+    const b=aluno.bimestres[bimestreAtual];
+    if(!b.notas_disc || typeof b.notas_disc !== 'object') b.notas_disc = {};
+    Object.keys(discMap).forEach(discId=>{
+      if(!b.notas_disc[discId]) b.notas_disc[discId] = {};
+      try{ b.notas_disc[discId].__touched = true; }catch(_){ }
+      const evs = discMap[discId];
+      Object.keys(evs).forEach(evId=>{ b.notas_disc[discId][evId] = evs[evId]; });
+    });
+    _syncBimestreRefs(b);
+    b.media_lp = calcularMediaLPIndividual(b.notas_lp, b.notas_lp?.rec);
+    b.media_red = calcularMediaRED(b.notas_red);
+    try{
+      const d2id = config.slot2;
+      if(d2id && b.notas_disc[d2id]){
+        if(!b.entregas_red) b.entregas_red = {};
+        const _rn = b.notas_disc[d2id];
+        if(parseFloat(_rn['r1']||0) > 0 && _migrateEntregaStatus(b.entregas_red.r1) !== 'entregue') b.entregas_red.r1 = 'entregue';
+        if(parseFloat(_rn['r2']||0) > 0 && _migrateEntregaStatus(b.entregas_red.r2) !== 'entregue') b.entregas_red.r2 = 'entregue';
+      }
+    }catch(_){}
+  });
+  
+  salvarDadosLocal();
+  notasModificadas=false;
+  
+  // Visual feedback
+  const bar = document.getElementById('massaUnsavedBar');
+  if(bar) bar.classList.remove('visible');
+  const btn=document.getElementById('btnSalvarMassa');
+  if(btn) btn.style.display='none';
+  const btn2=document.getElementById('btnSalvarMassaInline');
+  if(btn2) btn2.style.display='none';
+  
+  // Flash saved inputs
+  __massaModifiedInputs.forEach(inp => {
+    try{
+      inp.classList.remove('massa-modified');
+      inp.classList.add('massa-just-saved');
+      setTimeout(()=> inp.classList.remove('massa-just-saved'), 600);
+    }catch(_){}
+  });
+  __massaModifiedInputs.clear();
+  
+  if(!silent) showToast("Todas as notas foram salvas com sucesso!");
+  __massaUpdateProgress();
+  __massaUpdateColStats();
+}
 
 
 /* === Mapa de Sala: Tela Cheia === */
@@ -11234,13 +11988,10 @@ function mapaToggleFullscreen(){
   const btn = document.getElementById('btnMapaFullscreen');
   const fsEl = document.fullscreenElement;
   const isFsOnMapa = !!(fsEl && (fsEl===el || el.contains(fsEl)));
-
-  // Se estiver em tela cheia em outro elemento, sai primeiro
   if(fsEl && !isFsOnMapa){
     const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
     if(exit) { try{ exit.call(document); }catch(_){} }
   }
-
   const isFs = !!document.fullscreenElement && isFsOnMapa;
   if(!isFs){
     const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
@@ -11251,9 +12002,7 @@ function mapaToggleFullscreen(){
     }
   }else{
     const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-    if(exit){
-      try{ exit.call(document); }catch(_){}
-    }
+    if(exit){ try{ exit.call(document); }catch(_){} }
     document.body.classList.remove('mapa-fs-fallback');
     el.classList.remove('act-fullscreen');
   }
@@ -11279,170 +12028,6 @@ if(!window.__MAPA_FS_LISTENER){
   document.addEventListener('webkitfullscreenchange', mapaUpdateFullscreenUI);
   document.addEventListener('mozfullscreenchange', mapaUpdateFullscreenUI);
   document.addEventListener('MSFullscreenChange', mapaUpdateFullscreenUI);
-}
-function _renderMassaHeader(discId){
-  const tr=document.getElementById('trMassaHead');
-  if(!tr) return;
-
-  ensureConfigSchema();
-  const id = discId || _massaDiscDefault();
-  const disc = getDiscById(id);
-
-  const cols=[];
-  cols.push('<th>#</th><th>Nome</th><th>Turma</th>');
-
-  if(disc){
-    const cls = (id===config.slot1) ? 'lbl-mat1' : (id===config.slot2) ? 'lbl-mat2' : '';
-    (disc.avaliacoes||[]).forEach(av=>{
-      cols.push(`<th class="${cls}">${_escHTML(String(av.nome||'')).slice(0,22)}</th>`);
-    });
-    cols.push(`<th class="${cls}">Média</th>`);
-  } else {
-    cols.push('<th>Notas</th>');
-  }
-
-  tr.innerHTML = cols.join('');
-}
-
-function renderizarEdicaoMassa(){
-  ensureConfigSchema();
-  massaRenderDiscNav();
-
-  const tbody=document.getElementById('tbodyMassa');
-  const lista=getAlunosFiltrados();
-  const discId = _massaDiscDefault();
-  const disc = getDiscById(discId);
-
-  _renderMassaHeader(discId);
-
-  const ttl = document.getElementById('massaDiscTitle');
-  if(ttl){
-    ttl.innerHTML = disc
-      ? `<i class="fas fa-tag"></i> Disciplina: <strong>${_escHTML(disc.nome||'')}</strong> • <i class="fas fa-calendar"></i> ${bimestreAtual}º bimestre`
-      : `<i class="fas fa-tag"></i> Disciplina não encontrada • <i class="fas fa-calendar"></i> ${bimestreAtual}º bimestre`;
-  }
-
-  if(!tbody) return;
-
-  if(!lista || lista.length===0){
-    tbody.innerHTML = '<tr><td colspan="50" style="text-align:center; padding:20px;">Selecione uma turma ou nenhum aluno encontrado</td></tr>';
-    return;
-  }
-
-  if(!disc){
-    tbody.innerHTML = '<tr><td colspan="50" style="text-align:center; padding:20px;">Nenhuma disciplina encontrada. Vá em Configurações e crie pelo menos uma disciplina.</td></tr>';
-    return;
-  }
-
-  let buf='';
-  lista.forEach((a, idx)=>{
-    const b=a.bimestres[bimestreAtual];
-    _syncBimestreRefs(b);
-
-    if(!b.notas_disc || typeof b.notas_disc !== 'object') b.notas_disc = {};
-    if(!b.notas_disc[discId]) b.notas_disc[discId] = {};
-    const notas = b.notas_disc[discId];
-
-    (disc.avaliacoes||[]).forEach(av => { if(typeof notas[av.id] === 'undefined') notas[av.id] = 0; });
-
-    const media = calcularMediaDisc(discId, notas);
-    const cor = getCorFarol(media);
-
-    buf += `<tr class="row-aluno-massa">
-      <td>${idx+1}</td>
-      <td><strong>${privacyMode ? '••••••••' : _escHTML(a.nome)}</strong></td>
-      <td>${_escHTML(a.turma)}</td>`;
-
-    (disc.avaliacoes||[]).forEach(av=>{
-      const v=(notas?.[av.id] ?? 0);
-      buf += `<td><input type="number" class="nota-input-massa" data-aluno="${__u(a.id)}" data-disc="${discId}" data-eval="${__u(av.id)}" value="${v}" min="0" max="10" step="0.5" data-oninput="handleNotaInput(this); marcarModificacao()"></td>`;
-    });
-
-    buf += `<td><strong style="color:${cor}">${(isFinite(media) ? media.toFixed(1) : media)}</strong></td></tr>`;
-  });
-
-  tbody.innerHTML = buf;
-  tbody.querySelectorAll('.nota-input-massa').forEach(inp=>handleNotaInput(inp));
-}
-
-function marcarModificacao(){
-  notasModificadas=true;
-  const btn=document.getElementById('btnSalvarMassa');
-  if(btn) btn.style.display='flex';
-  const btn2=document.getElementById('btnSalvarMassaInline');
-  if(btn2) btn2.style.display='flex';
-}
-
-function salvarEdicaoMassa(){
-  ensureConfigSchema();
-  const inputs=document.querySelectorAll('.nota-input-massa');
-  if(!inputs || inputs.length===0) return;
-
-  const alunoMap = new Map();
-  alunos.forEach(a => alunoMap.set(a.id, a));
-
-  const changes = new Map();
-
-  inputs.forEach(inp=>{
-    const alunoId=parseFloat(inp.dataset.aluno);
-    const discId=inp.dataset.disc;
-    const evalId=inp.dataset.eval;
-
-    handleNotaInput(inp);
-    const valor=clampNota(inp.value);
-
-    if(!changes.has(alunoId)) changes.set(alunoId, {});
-    const perAluno = changes.get(alunoId);
-    if(!perAluno[discId]) perAluno[discId] = {};
-    perAluno[discId][evalId] = valor;
-  });
-
-  changes.forEach((discMap, alunoId)=>{
-    const aluno=alunoMap.get(alunoId);
-    if(!aluno) return;
-
-    const b=aluno.bimestres[bimestreAtual];
-    if(!b.notas_disc || typeof b.notas_disc !== 'object') b.notas_disc = {};
-
-    Object.keys(discMap).forEach(discId=>{
-      if(!b.notas_disc[discId]) b.notas_disc[discId] = {};
-      try{ b.notas_disc[discId].__touched = true; }catch(_){ }
-      const evs = discMap[discId];
-      Object.keys(evs).forEach(evId=>{
-        b.notas_disc[discId][evId] = evs[evId];
-      });
-    });
-
-    _syncBimestreRefs(b);
-    b.media_lp = calcularMediaLPIndividual(b.notas_lp, b.notas_lp?.rec);
-    b.media_red = calcularMediaRED(b.notas_red);
-
-    // Auto-mark entregas_red as 'entregue' when grade > 0 in redação disc
-    try{
-      const d2id = config.slot2;
-      if(d2id && b.notas_disc[d2id]){
-        if(!b.entregas_red) b.entregas_red = {};
-        const _rn = b.notas_disc[d2id];
-        if(parseFloat(_rn['r1']||0) > 0 && _migrateEntregaStatus(b.entregas_red.r1) !== 'entregue'){
-          b.entregas_red.r1 = 'entregue';
-        }
-        if(parseFloat(_rn['r2']||0) > 0 && _migrateEntregaStatus(b.entregas_red.r2) !== 'entregue'){
-          b.entregas_red.r2 = 'entregue';
-        }
-      }
-    }catch(_){}
-  });
-
-  salvarDadosLocal();
-  notasModificadas=false;
-
-  const btn=document.getElementById('btnSalvarMassa');
-  if(btn) btn.style.display='none';
-  const btn2=document.getElementById('btnSalvarMassaInline');
-  if(btn2) btn2.style.display='none';
-
-  showToast("Todas as notas foram salvas com sucesso!");
-  renderizarEdicaoMassa();
 }
 
 
@@ -16897,7 +17482,14 @@ function abrirFrequencia(){
         <button class="freq-fullscreen-btn" id="freqFullscreenBtn" onclick="freqToggleFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i></button>
       </div>
       <div class="freq-header-row">
-        <label>Data: <input type="date" id="freqDate" value="${__freqTodayStr()}"></label>
+        <label>Data:
+          <div class="freq-date-nav">
+            <button onclick="freqNavDate(-1)" title="Dia útil anterior"><i class="fas fa-chevron-left"></i></button>
+            <input type="date" id="freqDate" value="${__freqTodayStr()}">
+            <button onclick="freqNavDate(1)" title="Próximo dia útil"><i class="fas fa-chevron-right"></i></button>
+            <button onclick="document.getElementById('freqDate').value=__freqTodayStr();renderFrequencia();" title="Hoje" style="font-size:.68rem;width:auto;padding:0 8px;">Hoje</button>
+          </div>
+        </label>
         <label>Disciplina:
           <select id="freqDisciplina" onchange="freqSaveMeta()">
             <option value="">— Selecione —</option>
@@ -16927,14 +17519,15 @@ function abrirFrequencia(){
       </div>
     </div>`;
     document.body.appendChild(overlay);
-  try{
-    const sel = overlay.querySelector('select[onchange*=\"__histSetDisc\"]');
-    if(sel) sel.value = (window.__histDiscFilter||'all');
-  }catch(_){ }
   if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
     document.getElementById('freqDate').addEventListener('change', renderFrequencia);
   }
   overlay.style.display='flex';
+  // Bug fix: always reset date to today when reopening
+  const freqDateInput = document.getElementById('freqDate');
+  if(freqDateInput) freqDateInput.value = __freqTodayStr();
+  // Clear search filter on open
+  window.__freqSearchFilter = '';
   renderFrequencia();
 }
 
@@ -16982,13 +17575,25 @@ function renderFrequencia(){
   const txtRegistro = document.getElementById('freqRegistroAula');
   if(txtRegistro) txtRegistro.value = meta.registroAula || '';
   
-  let html = `<table class="freq-table"><thead><tr><th>#</th><th style="text-align:left;">Nome</th><th>Status</th><th>Freq. Bim.</th></tr></thead><tbody>`;
-  lista.forEach((a,i)=>{
+  // Search filter
+  const searchVal = (window.__freqSearchFilter||'').toLowerCase();
+  const listaFiltrada = searchVal ? lista.filter(a=>(a.nome||'').toLowerCase().includes(searchVal)) : lista;
+  
+  // Count unmarked
+  const totalAlunos = lista.length;
+  const marcados = lista.filter(a=>registro[a.id]).length;
+  const semMarcacao = totalAlunos - marcados;
+  
+  let html = `<div class="freq-search-wrap"><i class="fas fa-search"></i><input type="text" id="freqSearchInput" placeholder="Buscar aluno... (${semMarcacao>0?semMarcacao+' sem marcação':'todos marcados'})" value="${escHTML(searchVal)}" oninput="window.__freqSearchFilter=this.value;renderFrequencia();"></div>`;
+  html += `<table class="freq-table"><thead><tr><th>#</th><th style="text-align:left;">Nome</th><th>Status</th><th>Freq. Bim.</th></tr></thead><tbody>`;
+  listaFiltrada.forEach((a,i)=>{
     const status = registro[a.id] || '';
     const freq = calcFreqAluno(a.id, bimestreAtual);
+    const globalIdx = lista.indexOf(a);
+    const unmarkedClass = status ? '' : ' freq-unmarked';
     const pctClass = freq.pct>=75?'good':(freq.pct>=50?'warn':'danger');
-    html+=`<tr>
-      <td>${i+1}</td>
+    html+=`<tr class="${unmarkedClass}">
+      <td>${globalIdx+1}</td>
       <td style="text-align:left;">${escHTML(a.nome)}</td>
       <td>
         <button class="freq-btn ${status==='P'?'P':'none'}" onclick="setFreq('${a.id}','P')" title="Presente">P</button>
@@ -17000,6 +17605,11 @@ function renderFrequencia(){
   });
   html+=`</tbody></table>`;
   document.getElementById('freqTableContainer').innerHTML=html;
+  // Preserve search input focus
+  try{
+    const si=document.getElementById('freqSearchInput');
+    if(si && searchVal){ si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
+  }catch(_){}
 }
 
 function freqSaveMeta(){
@@ -17039,7 +17649,19 @@ function freqToggleFullscreen(){
   }
 }
 
+function freqNavDate(dir){
+  const inp=document.getElementById('freqDate');
+  if(!inp) return;
+  let d=new Date((inp.value||__freqTodayStr())+'T12:00:00');
+  let tries=0;
+  do{ d.setDate(d.getDate()+dir); tries++; }while((d.getDay()===0||d.getDay()===6)&&tries<10);
+  inp.value=__localISODate(d);
+  renderFrequencia();
+}
+
 function setFreq(alunoId, value){
+  // UX: haptic feedback on mobile
+  try{ if(navigator.vibrate) navigator.vibrate(50); }catch(_){}
   const date = document.getElementById('freqDate')?.value || __freqTodayStr();
   const key = `${filtroTurma}|${bimestreAtual}|${date}`;
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
@@ -17065,6 +17687,8 @@ function freqMarcarTodosP(){
   try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
 }
 function freqMarcarTodosF(){
+  const total = alunos.filter(a=>a.turma===filtroTurma).length;
+  if(!confirm(`Marcar todos os ${total} alunos como AUSENTES?\n\nEssa ação pode ser desfeita individualmente.`)) return;
   const date = document.getElementById('freqDate')?.value || __freqTodayStr();
   const key = `${filtroTurma}|${bimestreAtual}|${date}`;
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
@@ -17179,9 +17803,9 @@ function abrirHistoricoChamadas(){
     // Status filter bar
 // Visualização + disciplina
 const __viewBtn = (mode, label, icon)=>`<button class="freq-btn ${viewMode===mode?'P':'none'}" onclick="window.__histSetView('${mode}')" style="width:auto;padding:4px 10px;"><i class="fas ${icon}"></i> ${label}</button>`;
-let discOptions = `<option value="all">Todas</option>`;
-if(hasNoneDisc) discOptions += `<option value="__none__">Sem disciplina</option>`;
-discList.forEach(d=>{ discOptions += `<option value="${escHTML(d)}">${escHTML(d)}</option>`; });
+let discOptions = `<option value="all"${discFilter==='all'?' selected':''}>Todas</option>`;
+if(hasNoneDisc) discOptions += `<option value="__none__"${discFilter==='__none__'?' selected':''}>Sem disciplina</option>`;
+discList.forEach(d=>{ discOptions += `<option value="${escHTML(d)}"${discFilter===d?' selected':''}>${escHTML(d)}</option>`; });
 
 html += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
   <span style="font-size:.82rem;font-weight:600;color:var(--text-muted);">Visualização:</span>
@@ -18073,26 +18697,23 @@ function renderFreqPatternsHTML(turma,bim){
 try{
   const __origRenderFreq=renderFrequencia;
   renderFrequencia=function(){
+    // Bug fix: always remove orphaned freqExtraButtons before rebuild
+    try{ const old=document.getElementById('freqExtraButtons'); if(old) old.remove(); }catch(_){}
     __origRenderFreq();
-    // Inject extra buttons if not present
+    // Inject extra buttons inside container
     try{
       const container=document.getElementById('freqTableContainer');
-      if(!container) return;
-	      // Evita duplicação dos botões ao abrir/fechar o modal (o bloco é anexado fora do container)
-	      try{
-	        const all = document.querySelectorAll('#freqExtraButtons');
-	        if(all && all.length>1) all.forEach((el,i)=>{ if(i>0) el.remove(); });
-	      }catch(_){ }
-	      if(document.getElementById('freqExtraButtons')) return;
-      const btnsDiv=document.createElement('div');
-      btnsDiv.id='freqExtraButtons';
-      btnsDiv.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color);';
-      btnsDiv.innerHTML=`
-        <button onclick="freqCopiarAusentesWA()" style="padding:6px 14px;background:#25D366;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fab fa-whatsapp"></i> Copiar Ausentes</button>
-        <button onclick="freqAbrirRelatorioMensal()" style="padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fas fa-file-pdf"></i> Relatório Mensal</button>
-        <button onclick="__freqAbrirTendencia()" style="padding:6px 14px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fas fa-chart-line"></i> Tendência</button>
-      `;
-      container.parentElement.appendChild(btnsDiv);
+      if(container){
+        const btnsDiv=document.createElement('div');
+        btnsDiv.id='freqExtraButtons';
+        btnsDiv.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color);';
+        btnsDiv.innerHTML=`
+          <button onclick="freqCopiarAusentesWA()" style="padding:6px 14px;background:#25D366;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fab fa-whatsapp"></i> Copiar Ausentes</button>
+          <button onclick="freqAbrirRelatorioMensal()" style="padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fas fa-file-pdf"></i> Relatório Mensal</button>
+          <button onclick="__freqAbrirTendencia()" style="padding:6px 14px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fas fa-chart-line"></i> Tendência</button>
+        `;
+        container.appendChild(btnsDiv);
+      }
     }catch(_){}
 
     // Make student names clickable for calendar
@@ -18102,13 +18723,15 @@ try{
       const rows=container.querySelectorAll('tbody tr');
       const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
       rows.forEach((tr,i)=>{
-        if(!lista[i]) return;
         const td=tr.querySelector('td:nth-child(2)');
-        if(!td||td.dataset.clickable) return;
-        td.dataset.clickable='1';
+        if(!td) return;
+        // Match by name text to handle search filtering
+        const nomeText=(td.textContent||'').trim();
+        const alunoMatch=lista.find(a=>(a.nome||'').trim()===nomeText);
+        if(!alunoMatch) return;
         td.style.cssText='text-align:left;cursor:pointer;color:var(--primary);text-decoration:underline;text-decoration-style:dotted;';
         td.title='Clique para ver calendário de presença';
-        td.onclick=function(){freqAbrirCalendarioAluno(lista[i].id);};
+        td.onclick=function(){freqAbrirCalendarioAluno(alunoMatch.id);};
       });
     }catch(_){}
   };
@@ -20780,6 +21403,472 @@ if(freqHtml){
   dashEl.appendChild(div);
 }
     }catch(_){}
+  };
+}catch(_){}
+
+// ================================================================
+// V18: DASHBOARD ENHANCEMENTS
+// ================================================================
+
+// --- V18 Chart instance tracking for memory leak prevention ---
+window.__v18ChartInstances = window.__v18ChartInstances || {};
+function __v18DestroyChart(id){
+  try{ if(window.__v18ChartInstances[id]){ window.__v18ChartInstances[id].destroy(); delete window.__v18ChartInstances[id]; } }catch(_){}
+}
+function __v18TrackChart(id, instance){
+  __v18DestroyChart(id);
+  window.__v18ChartInstances[id] = instance;
+}
+
+// --- V18 Feature: Quick Actions Card ---
+function __v18RenderQuickActions(dashEl){
+  const turma = filtroTurma;
+  const isTurma = turma && turma !== 'Todas';
+  
+  let pend = null;
+  try{ if(isTurma && typeof __freqPendenciaHojeTurma==='function') pend = __freqPendenciaHojeTurma(turma, bimestreAtual); }catch(_){}
+  const chamadaPending = pend && !pend.skip && (pend.missing || pend.incomplete>0);
+  
+  let html = '<div class="dash-quick-actions v18-enhanced">';
+  if(isTurma && chamadaPending){
+    html += '<button class="dash-quick-btn primary" onclick="abrirFrequencia()"><i class="fas fa-clipboard-check"></i> Fazer chamada de hoje</button>';
+  } else if(isTurma){
+    html += '<button class="dash-quick-btn" onclick="abrirFrequencia()"><i class="fas fa-clipboard-check"></i> Chamada</button>';
+  }
+  if(isTurma){
+    html += '<button class="dash-quick-btn" onclick="mudarVisao(\'alunos\')"><i class="fas fa-pen"></i> Lançar notas</button>';
+    html += '<button class="dash-quick-btn" onclick="mudarVisao(\'fechamento\')"><i class="fas fa-table"></i> Fechamento</button>';
+  }
+  html += '<button class="dash-quick-btn" onclick="mudarVisao(\'calendar\')"><i class="fas fa-calendar"></i> Calendário</button>';
+  
+  // Bimestre quick filter
+  html += '<div class="dash-bim-filter">';
+  for(let b=1; b<=4; b++){
+    html += '<button class="dash-bim-pill'+(bimestreAtual===b?' active':'')+'" onclick="bimestreAtual='+b+';try{document.querySelectorAll(\'.dash-bim-pill\').forEach(el=>el.classList.remove(\'active\'));this.classList.add(\'active\');}catch(_){}renderizarDashboard();try{atualizarUI();}catch(_){}" title="'+b+'º Bimestre">'+b+'ºB</button>';
+  }
+  html += '</div></div>';
+  
+  const div = document.createElement('div');
+  div.className = 'v18-enhanced'; div.style.cssText = 'grid-column:1/-1;order:-20;';
+  div.innerHTML = html;
+  dashEl.insertBefore(div, dashEl.firstChild);
+}
+
+// --- V18 Feature: Context-aware Total card ---
+function __v18EnhanceTotalCard(dashEl){
+  const el = document.getElementById('dashTotal');
+  if(!el) return;
+  const card = el.closest('.dash-card');
+  if(!card) return;
+  
+  const turma = filtroTurma || 'Todas';
+  const h3 = card.querySelector('h3');
+  if(h3) h3.innerHTML = '<i class="fas fa-users" style="color:var(--primary);margin-right:4px;"></i> Total de Alunos';
+  
+  let sub = card.querySelector('.v18-total-sub');
+  if(!sub){
+    sub = document.createElement('div');
+    sub.className = 'v18-total-sub';
+    sub.style.cssText = 'font-size:.75rem;color:#64748b;margin-top:4px;';
+    card.appendChild(sub);
+  }
+  sub.innerHTML = '<b>' + escHTML(turma) + '</b> · ' + bimestreAtual + 'º Bimestre';
+}
+
+// --- V18 Feature: Progress Indicator ---
+function __v18RenderProgress(dashEl){
+  const lista = getAlunosFiltrados();
+  if(!lista.length) return;
+  const bim = bimestreAtual;
+  
+  let comNota1=0, comNota2=0, comFreq=0;
+  const d1 = getDiscById(config.slot1);
+  const d2 = getDiscById(config.slot2);
+  
+  lista.forEach(a => {
+    const b = a?.bimestres?.[bim]; if(!b) return;
+    _syncBimestreRefs(b);
+    const n1 = b.notas_lp; const n2 = b.notas_red;
+    try{ if(n1 && !__cmpIsDiscEmpty(n1, d1)) comNota1++; }catch(_){}
+    try{ if(n2 && !__cmpIsDiscEmpty(n2, d2)) comNota2++; }catch(_){}
+    const f = calcFreqAluno(a.id, bim);
+    if(f.total > 0) comFreq++;
+  });
+  
+  const total = lista.length;
+  const pctNotas = total > 0 ? Math.round(((comNota1 + comNota2) / (total * 2)) * 100) : 0;
+  const pctFreq = total > 0 ? Math.round((comFreq / total) * 100) : 0;
+  const pctGeral = Math.round((pctNotas + pctFreq) / 2);
+  
+  const barColor = pctGeral >= 80 ? '#16a34a' : (pctGeral >= 50 ? '#f59e0b' : '#dc2626');
+  const nm1 = d1?.nome || 'Matéria 1';
+  const nm2 = d2?.nome || 'Matéria 2';
+  
+  const html = '<div class="dash-card dash-progress-card v18-enhanced">' +
+    '<h3 style="margin:0 0 4px;"><i class="fas fa-tasks" style="color:var(--primary);"></i> Progresso de Lançamento — ' + bim + 'º Bimestre</h3>' +
+    '<div class="dash-progress-bar-wrap"><div class="dash-progress-bar-fill" style="width:' + pctGeral + '%;background:' + barColor + ';"></div></div>' +
+    '<div style="font-size:.8rem;font-weight:800;color:' + barColor + ';">' + pctGeral + '% concluído</div>' +
+    '<div class="dash-progress-row">' +
+      '<div class="dash-progress-stat"><i class="fas fa-book" style="color:#2563eb;"></i> ' + escHTML(nm1) + ': <b>' + comNota1 + '/' + total + '</b></div>' +
+      '<div class="dash-progress-stat"><i class="fas fa-book" style="color:#ec4899;"></i> ' + escHTML(nm2) + ': <b>' + comNota2 + '/' + total + '</b></div>' +
+      '<div class="dash-progress-stat"><i class="fas fa-clipboard-check" style="color:#0d9488;"></i> Frequência: <b>' + comFreq + '/' + total + '</b></div>' +
+    '</div></div>';
+  
+  const div = document.createElement('div');
+  div.className = 'v18-enhanced'; div.style.cssText = 'grid-column:1/-1;order:-5;';
+  div.innerHTML = html;
+  dashEl.appendChild(div);
+}
+
+// --- V18 Feature: Highlights / Destaques Card ---
+function __v18RenderHighlights(dashEl){
+  const lista = getAlunosFiltrados();
+  if(lista.length < 3) return;
+  const bim = bimestreAtual;
+  const items = [];
+  
+  const alunoData = lista.map(a => {
+    const b = a?.bimestres?.[bim]; if(!b) return null;
+    _syncBimestreRefs(b);
+    const m1 = clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+    const m2 = clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+    const mg = (m1 + m2) / 2;
+    const f = calcFreqAluno(a.id, bim);
+    return { id:a.id, nome:a.nome, m1, m2, mg, freq:f.pct, freqTotal:f.total };
+  }).filter(Boolean);
+  
+  // Best average
+  const sorted = alunoData.filter(a=>a.mg>0).sort((a,b) => b.mg - a.mg);
+  if(sorted.length){
+    items.push({ icon:'fa-trophy', color:'#f59e0b', bg:'rgba(245,158,11,.1)', name:sorted[0].nome, desc:'Maior média: ' + sorted[0].mg.toFixed(1) });
+  }
+  
+  // Most improved
+  if(bim > 1){
+    let bestDelta = -Infinity, bestName = '';
+    alunoData.forEach(a => {
+      const bPrev = lista.find(al=>al.id===a.id)?.bimestres?.[bim-1];
+      if(!bPrev) return;
+      _syncBimestreRefs(bPrev);
+      const prevMg = (clampNota(calcularMediaDisc(config.slot1, bPrev.notas_lp)) + clampNota(calcularMediaDisc(config.slot2, bPrev.notas_red))) / 2;
+      if(prevMg > 0){ const delta = a.mg - prevMg; if(delta > bestDelta){ bestDelta = delta; bestName = a.nome; } }
+    });
+    if(bestDelta > 0.1){
+      items.push({ icon:'fa-arrow-trend-up', color:'#16a34a', bg:'rgba(22,163,74,.1)', name:bestName, desc:'Mais melhorou: +' + bestDelta.toFixed(1) + ' pts' });
+    }
+  }
+  
+  // Best frequency
+  const freqSorted = alunoData.filter(a=>a.freqTotal>0).sort((a,b) => b.freq - a.freq);
+  if(freqSorted.length && freqSorted[0].freq >= 90){
+    const perfect = freqSorted.filter(a=>a.freq >= 100).length;
+    items.push(perfect > 0
+      ? { icon:'fa-medal', color:'#0d9488', bg:'rgba(13,148,136,.1)', name:perfect + ' aluno(s)', desc:'100% de frequência' }
+      : { icon:'fa-medal', color:'#0d9488', bg:'rgba(13,148,136,.1)', name:freqSorted[0].nome, desc:'Melhor frequência: ' + freqSorted[0].freq.toFixed(0) + '%' }
+    );
+  }
+  
+  // Green students
+  const verdes = alunoData.filter(a => a.mg >= 7).length;
+  if(verdes > 0) items.push({ icon:'fa-check-circle', color:'#16a34a', bg:'rgba(22,163,74,.1)', name:verdes + ' aluno(s)', desc:'Média ≥ 7 (farol verde)' });
+  
+  // Near-perfect scores
+  const nota10 = alunoData.filter(a => a.m1 >= 9.5 || a.m2 >= 9.5);
+  if(nota10.length) items.push({ icon:'fa-star', color:'#7c3aed', bg:'rgba(124,58,237,.1)', name:nota10.length + ' aluno(s)', desc:'Nota ≥ 9.5 em alguma matéria' });
+  
+  if(!items.length) return;
+  
+  let html = '<div class="dash-card dash-highlights v18-enhanced"><h3 style="margin:0;"><i class="fas fa-award" style="color:#f59e0b;"></i> Destaques do Bimestre</h3><div class="dash-highlight-grid">';
+  items.forEach(it => {
+    html += '<div class="dash-highlight-item"><div class="dash-highlight-icon" style="background:' + it.bg + ';color:' + it.color + ';"><i class="fas ' + it.icon + '"></i></div>' +
+      '<div class="dash-highlight-info"><div class="dash-highlight-name">' + escHTML(it.name) + '</div><div class="dash-highlight-desc">' + escHTML(it.desc) + '</div></div></div>';
+  });
+  html += '</div></div>';
+  
+  const div = document.createElement('div');
+  div.className = 'v18-enhanced'; div.style.cssText = 'grid-column:1/-1;order:-4;';
+  div.innerHTML = html;
+  dashEl.appendChild(div);
+}
+
+// --- V18 Feature: Week Agenda Card ---
+function __v18RenderAgenda(dashEl){
+  const turma = filtroTurma;
+  if(!turma || turma === 'Todas') return;
+  
+  const today = typeof __freqTodayStr==='function' ? __freqTodayStr() : new Date().toISOString().slice(0,10);
+  const todayD = new Date(today + 'T12:00:00');
+  const dow = todayD.getDay();
+  const monday = new Date(todayD);
+  monday.setDate(todayD.getDate() - (dow === 0 ? 6 : dow - 1));
+  
+  const days = [];
+  const dowNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const freq = window.__sgpFrequencia || {};
+  
+  for(let i = 0; i < 5; i++){
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const ds = typeof __localISODate==='function' ? __localISODate(d) : d.toISOString().slice(0,10);
+    const key = turma + '|' + bimestreAtual + '|' + ds;
+    const reg = freq[key] || null;
+    const isToday = ds === today;
+    
+    let status = 'none', statusText = '—';
+    if(reg){
+      const alunosTurma = alunos.filter(a=>a.turma===turma);
+      let filled = 0;
+      alunosTurma.forEach(a=>{ if(reg[a.id]) filled++; });
+      if(filled >= alunosTurma.length){ status = 'done'; statusText = '✓ Completa'; }
+      else if(filled > 0){ status = 'pending'; statusText = filled + '/' + alunosTurma.length; }
+      else { status = 'pending'; statusText = 'Pendente'; }
+    } else if(ds <= today){
+      status = ds === today ? 'pending' : 'none';
+      statusText = ds === today ? 'Pendente' : 'Sem registro';
+    }
+    
+    let events = [];
+    try{
+      const planner = window.__sgpPlanner || {};
+      Object.keys(planner).forEach(pk => {
+        const p = planner[pk];
+        if(p && p.data === ds && (!p.turma || p.turma === turma || p.turma === 'Todas')) events.push(p.titulo || p.tipo || 'Evento');
+      });
+    }catch(_){}
+    
+    days.push({ ds, dow:dowNames[d.getDay()], dayNum:d.getDate(), isToday, status, statusText, events });
+  }
+  
+  let html = '<div class="dash-card dash-agenda-card v18-enhanced"><h3 style="margin:0 0 4px;"><i class="fas fa-calendar-week" style="color:var(--primary);"></i> Semana — ' + escHTML(turma) + '</h3><div class="dash-agenda-grid">';
+  days.forEach(day => {
+    html += '<div class="dash-agenda-day' + (day.isToday ? ' today' : '') + '"' + (day.isToday ? ' onclick="abrirFrequencia()" style="cursor:pointer;" title="Clique para abrir chamada"' : '') + '>' +
+      '<div class="day-label">' + day.dow + '</div><div class="day-date">' + day.dayNum + '</div>' +
+      '<div class="day-status ' + day.status + '">' + day.statusText + '</div>';
+    day.events.forEach(ev => { html += '<div style="font-size:.6rem;color:#7c3aed;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escHTML(ev) + '">📌 ' + escHTML(ev) + '</div>'; });
+    html += '</div>';
+  });
+  html += '</div></div>';
+  
+  const div = document.createElement('div');
+  div.className = 'v18-enhanced'; div.style.cssText = 'grid-column:1/-1;order:-3;';
+  div.innerHTML = html;
+  dashEl.appendChild(div);
+}
+
+// --- V18 Feature: Clickable KPIs ---
+function __v18MakeKPIsClickable(dashEl){
+  const kpis = dashEl.querySelectorAll('.dash-kpi');
+  kpis.forEach(kpi => {
+    const label = (kpi.querySelector('.dash-kpi-label')?.textContent || '').toLowerCase();
+    kpi.classList.add('clickable');
+    if(label.includes('risco')) kpi.onclick = function(){ __v18ShowKPIDetail('risco'); };
+    else if(label.includes('frequência') || label.includes('frequencia')) kpi.onclick = function(){ try{ abrirFrequencia(); }catch(_){} };
+    else if(label.includes('média') || label.includes('media')) kpi.onclick = function(){ __v18ShowKPIDetail('media'); };
+    else if(label.includes('comportamento')) kpi.onclick = function(){ __v18ShowKPIDetail('comportamento'); };
+  });
+}
+
+function __v18ShowKPIDetail(type){
+  const lista = getAlunosFiltrados();
+  if(!lista.length) return;
+  const bim = bimestreAtual;
+  let title = '', rows = [];
+  const d1Name = getDiscById(config.slot1)?.nome || 'Mat 1';
+  const d2Name = getDiscById(config.slot2)?.nome || 'Mat 2';
+  
+  lista.forEach(a => {
+    const b = a?.bimestres?.[bim]; if(!b) return;
+    _syncBimestreRefs(b);
+    const m1 = clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+    const m2 = clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+    const c = parseFloat(b.comportamento) || 0;
+    if(type === 'risco' && (m1 < 5 || m2 < 5)) rows.push({ nome:a.nome, id:a.id, vals:[m1.toFixed(1), m2.toFixed(1), ((m1+m2)/2).toFixed(1)] });
+    else if(type === 'media') rows.push({ nome:a.nome, id:a.id, vals:[m1.toFixed(1), m2.toFixed(1), ((m1+m2)/2).toFixed(1)] });
+    else if(type === 'comportamento') rows.push({ nome:a.nome, id:a.id, vals:[c.toFixed(1)] });
+  });
+  
+  if(type === 'risco'){ title = 'Alunos em Risco (média < 5)'; rows.sort((a,b) => parseFloat(a.vals[2]) - parseFloat(b.vals[2])); }
+  else if(type === 'media'){ title = 'Ranking por Média Geral'; rows.sort((a,b) => parseFloat(b.vals[2]) - parseFloat(a.vals[2])); }
+  else if(type === 'comportamento'){ title = 'Comportamento dos Alunos'; rows.sort((a,b) => parseFloat(a.vals[0]) - parseFloat(b.vals[0])); }
+  
+  let old = document.getElementById('v18KPIDetailOverlay'); if(old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'v18KPIDetailOverlay';
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.onclick = function(e){ if(e.target === this) this.remove(); };
+  
+  let tbl = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;"><thead><tr><th style="text-align:left;padding:8px;border-bottom:2px solid var(--border-color);">#</th><th style="text-align:left;padding:8px;border-bottom:2px solid var(--border-color);">Nome</th>';
+  if(type === 'comportamento') tbl += '<th style="padding:8px;border-bottom:2px solid var(--border-color);">Nota</th>';
+  else tbl += '<th style="padding:8px;border-bottom:2px solid var(--border-color);">' + escHTML(d1Name) + '</th><th style="padding:8px;border-bottom:2px solid var(--border-color);">' + escHTML(d2Name) + '</th><th style="padding:8px;border-bottom:2px solid var(--border-color);">Geral</th>';
+  tbl += '</tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    tbl += '<tr style="' + (i%2 ? 'background:rgba(0,0,0,.02);' : '') + '"><td style="padding:6px 8px;border-bottom:1px solid var(--border-color);">' + (i+1) + '</td>';
+    tbl += '<td style="padding:6px 8px;border-bottom:1px solid var(--border-color);text-align:left;cursor:pointer;color:var(--primary);" onclick="try{document.getElementById(\'v18KPIDetailOverlay\').remove();}catch(_){}try{abrirDetalhes(\'' + r.id + '\');}catch(_){}">' + escHTML(r.nome) + '</td>';
+    r.vals.forEach(v => {
+      const n = parseFloat(v); const col = n >= 7 ? '#16a34a' : (n >= 5 ? '#f59e0b' : '#dc2626');
+      tbl += '<td style="padding:6px 8px;border-bottom:1px solid var(--border-color);text-align:center;font-weight:700;color:' + col + ';">' + v + '</td>';
+    });
+    tbl += '</tr>';
+  });
+  tbl += '</tbody></table>';
+  
+  overlay.innerHTML = '<div class="modal-box" style="max-width:700px;max-height:80vh;overflow-y:auto;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h2 style="margin:0;"><i class="fas fa-list"></i> ' + escHTML(title) + '</h2>' +
+    '<button onclick="this.closest(\'.modal-overlay\').remove()" style="border:none;background:transparent;font-size:1.3rem;cursor:pointer;">&times;</button></div>' +
+    '<div style="font-size:.78rem;color:#64748b;margin-bottom:10px;">' + rows.length + ' aluno(s) · ' + bim + 'º Bimestre · Clique no nome para ver detalhes</div>' +
+    tbl + '</div>';
+  document.body.appendChild(overlay);
+  try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){}
+}
+
+// --- V18 Feature: Rich "Todas as turmas" view ---
+function __v18RenderTurmaRanking(dashEl){
+  const turmasList = (turmas || []).filter(t => t && t !== 'Todas');
+  if(turmasList.length < 2) return;
+  const bim = bimestreAtual;
+  const rankData = [];
+  
+  turmasList.forEach(t => {
+    const lista = alunos.filter(a => a.turma === t);
+    if(!lista.length) return;
+    let sumMedia=0, nMedia=0, sumFreq=0, nFreq=0, emRisco=0;
+    lista.forEach(a => {
+      const b = a?.bimestres?.[bim]; if(!b) return;
+      _syncBimestreRefs(b);
+      const m1 = clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+      const m2 = clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+      const mg = (m1 + m2) / 2;
+      if(mg > 0){ sumMedia += mg; nMedia++; }
+      if(m1 < 5 || m2 < 5) emRisco++;
+      const f = calcFreqAluno(a.id, bim);
+      if(f.total > 0){ sumFreq += f.pct; nFreq++; }
+    });
+    rankData.push({ turma:t, total:lista.length, avg:nMedia>0?sumMedia/nMedia:0, avgFreq:nFreq>0?sumFreq/nFreq:0, emRisco, pctRisco:lista.length>0?(emRisco/lista.length*100):0 });
+  });
+  
+  rankData.sort((a,b) => b.avg - a.avg);
+  
+  let html = '<div class="dash-card dash-turma-rank v18-enhanced"><h3 style="margin:0;"><i class="fas fa-ranking-star" style="color:var(--primary);"></i> Ranking de Turmas — ' + bim + 'º Bimestre</h3><div class="dash-turma-rank-grid">';
+  rankData.forEach((td, i) => {
+    const medal = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':(i+1)+'º'));
+    const mc = td.avg>=7?'#16a34a':(td.avg>=5?'#f59e0b':'#dc2626');
+    const fc = td.avgFreq>=75?'#16a34a':(td.avgFreq>=50?'#f59e0b':'#dc2626');
+    html += '<div class="dash-turma-rank-item" onclick="selTurma('+__j(td.turma)+');mudarVisao(\'dash\');">' +
+      '<div class="trk-name">' + medal + ' ' + escHTML(td.turma) + ' <small style="color:#94a3b8;font-weight:400;">(' + td.total + ' alunos)</small></div>' +
+      '<div class="trk-stats">' +
+        '<div class="trk-stat">Média<span class="trk-stat-val" style="color:'+mc+';">' + td.avg.toFixed(1) + '</span></div>' +
+        '<div class="trk-stat">Frequência<span class="trk-stat-val" style="color:'+fc+';">' + (td.avgFreq>0?td.avgFreq.toFixed(0)+'%':'—') + '</span></div>' +
+        '<div class="trk-stat">Em risco<span class="trk-stat-val" style="color:'+(td.pctRisco<=10?'#16a34a':'#dc2626')+';">' + td.emRisco + '</span></div>' +
+        '<div class="trk-stat">Verdes<span class="trk-stat-val" style="color:#16a34a;">' + Math.max(0,td.total-td.emRisco) + '</span></div>' +
+      '</div><div class="dash-turma-minibar"><div style="width:'+Math.round(td.avg/10*100)+'%;background:'+mc+';"></div></div></div>';
+  });
+  html += '</div></div>';
+  
+  const div = document.createElement('div');
+  div.className = 'v18-enhanced'; div.style.cssText = 'grid-column:1/-1;order:1;';
+  div.innerHTML = html;
+  dashEl.appendChild(div);
+}
+
+// --- V18 Feature: Collapsible Sections ---
+function __v18AddCollapsibleSections(dashEl){
+  const hists = dashEl.querySelectorAll('.dash-card.wide');
+  let histCards = [];
+  hists.forEach(h => {
+    const title = h.querySelector('h3');
+    if(title && (title.textContent||'').includes('Histograma')) histCards.push(h);
+  });
+  if(histCards.length >= 2){
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dash-section v18-section';
+    const sectionId = 'v18sec_hist';
+    const collapsed = sessionStorage.getItem(sectionId) === '1';
+    wrapper.innerHTML = '<div class="dash-section-header" onclick="__v18ToggleSection(\'' + sectionId + '\')"><i class="fas fa-chart-bar" style="color:#64748b;"></i><h4>Histogramas de Notas</h4><span class="dash-section-toggle' + (collapsed?' collapsed':'') + '" id="' + sectionId + '_icon"><i class="fas fa-chevron-down"></i></span></div>';
+    const body = document.createElement('div');
+    body.className = 'dash-section-body' + (collapsed?' collapsed':'');
+    body.id = sectionId + '_body';
+    body.style.cssText = 'display:' + (collapsed?'none':'grid') + ';grid-template-columns:1fr;gap:20px;';
+    histCards.forEach(c => body.appendChild(c));
+    wrapper.appendChild(body);
+    dashEl.appendChild(wrapper);
+  }
+}
+
+function __v18ToggleSection(sectionId){
+  const body = document.getElementById(sectionId + '_body');
+  const icon = document.getElementById(sectionId + '_icon');
+  if(!body) return;
+  const isCollapsed = body.style.display === 'none';
+  body.style.display = isCollapsed ? 'grid' : 'none';
+  if(icon) icon.classList.toggle('collapsed', !isCollapsed);
+  try{ sessionStorage.setItem(sectionId, isCollapsed ? '0' : '1'); }catch(_){}
+}
+
+// --- V18 Feature: Responsive Heatmap enhancement ---
+function __v18EnhanceHeatmap(dashEl){
+  if(window.innerWidth < 700){
+    dashEl.querySelectorAll('.dash-heatmap-wrap').forEach(w => {
+      if(!w.parentElement?.querySelector('.v18-swipe-hint')){
+        const h = document.createElement('div');
+        h.className = 'v18-swipe-hint';
+        h.style.cssText = 'font-size:.65rem;color:#94a3b8;text-align:center;margin-top:4px;';
+        h.textContent = '← Deslize para ver mais colunas →';
+        w.parentElement?.appendChild(h);
+      }
+    });
+  }
+}
+
+
+
+// --- V18 Helper: restore original dashboard cards moved into collapsible sections ---
+function __v18RestoreMovedDashCards(dashEl){
+  try{
+    if(!dashEl) return;
+    const sections = Array.from(dashEl.querySelectorAll('.v18-section'));
+    if(!sections.length) return;
+    sections.forEach(sec=>{
+      // Move any original dash-card elements back to the main dashboard container
+      const body = sec.querySelector('.dash-section-body') || sec;
+      const moved = Array.from(body.children).filter(ch => ch && ch.classList && ch.classList.contains('dash-card'));
+      moved.forEach(card => dashEl.appendChild(card));
+      try{ sec.remove(); }catch(_){ if(sec.parentElement) sec.parentElement.removeChild(sec); }
+    });
+  }catch(_){}
+}
+// --- V18 Master Orchestrator ---
+function __v18RenderAllEnhancements(){
+  const dashEl = document.getElementById('viewDashboard');
+  if(!dashEl) return;
+  
+  // Clean previous v18 elements
+  // Restore cards that were moved into collapsible sections (avoid losing original DOM)
+  try{ __v18RestoreMovedDashCards(dashEl); }catch(_){ }
+  dashEl.querySelectorAll('.v18-enhanced').forEach(el => el.remove());
+  dashEl.querySelectorAll('.v18-swipe-hint').forEach(el => el.remove());
+  try{ __v18RenderQuickActions(dashEl); }catch(_){}
+  try{ __v18EnhanceTotalCard(dashEl); }catch(_){}
+  
+  if(filtroTurma && filtroTurma !== 'Todas'){
+    try{ __v18RenderProgress(dashEl); }catch(_){}
+    try{ __v18RenderHighlights(dashEl); }catch(_){}
+    try{ __v18RenderAgenda(dashEl); }catch(_){}
+  } else {
+    try{ __v18RenderTurmaRanking(dashEl); }catch(_){}
+  }
+  
+  try{ __v18MakeKPIsClickable(dashEl); }catch(_){}
+  try{ __v18AddCollapsibleSections(dashEl); }catch(_){}
+  try{ __v18EnhanceHeatmap(dashEl); }catch(_){}
+}
+
+// Hook into render chain
+try{
+  const __origRenderDashV18 = renderizarDashboard;
+  renderizarDashboard = function(){
+    __origRenderDashV18();
+    try{ __v18RenderAllEnhancements(); }catch(_){}
   };
 }catch(_){}
 
@@ -24679,6 +25768,253 @@ try{
 }catch(_){ }
 
 // ================================================================
+
+// ================================================================
+// AUTO TESTE (Dashboard + Backup)
+// ================================================================
+function __autoTestEscape(s){
+    try{
+        return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+    }catch(e){ return String(s); }
+}
+function abrirModalAutoTeste(){
+    const m = document.getElementById('modalAutoTeste');
+    const b = document.getElementById('autoTesteBody');
+    if(b) b.innerHTML = '<div style="padding:10px;color:var(--text-muted);">Executando autoteste...</div>';
+    if(m) m.style.display = 'flex';
+}
+function fecharModalAutoTeste(){
+    const m = document.getElementById('modalAutoTeste');
+    if(m) m.style.display = 'none';
+}
+function autoTesteCopiar(){
+    try{
+        const txt = window.__autoTesteUltimoRelatorio || '';
+        if(!txt){ showToast('Nada para copiar.', 'error'); return; }
+        if(navigator.clipboard && navigator.clipboard.writeText){
+            navigator.clipboard.writeText(txt).then(()=>showToast('Relatório copiado!')).catch(()=>{});
+        }else{
+            const ta=document.createElement('textarea');
+            ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+            showToast('Relatório copiado!');
+        }
+    }catch(e){ showToast('Não foi possível copiar.', 'error'); }
+}
+function __autoTestSleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+function __autoTestIsVisible(el){
+    if(!el) return false;
+    const style = window.getComputedStyle(el);
+    if(style && (style.display==='none' || style.visibility==='hidden' || style.opacity==='0')) return false;
+    if(el.offsetParent === null && style.position !== 'fixed') return false;
+    return true;
+}
+async function executarAutoTeste(){
+    if(window.__autoTestRunning){ showToast('AutoTeste já está em execução.'); return; }
+    window.__autoTestRunning = true;
+    abrirModalAutoTeste();
+
+    const results=[];
+    const add=(name, ok, detail='')=>{
+        results.push({name, ok: !!ok, detail: detail||''});
+    };
+
+    const prevVisao = (typeof visaoAtual !== 'undefined') ? visaoAtual : null;
+    const prevBim   = (typeof bimestreAtual !== 'undefined') ? bimestreAtual : null;
+
+    try{
+        // 1) LocalStorage
+        try{
+            const k='__sgp_autotest_ls';
+            const v=String(Date.now());
+            localStorage.setItem(k, v);
+            const got=localStorage.getItem(k);
+            localStorage.removeItem(k);
+            add('LocalStorage: leitura/escrita', got===v, got===v ? '' : 'Falha ao escrever/ler no localStorage (modo anônimo, bloqueio ou quota).');
+        }catch(e){
+            add('LocalStorage: leitura/escrita', false, 'Exceção ao acessar localStorage: '+(e && e.message ? e.message : e));
+        }
+
+        // 2) Dashboard + bimestre
+        if(typeof mudarVisao === 'function'){
+            try{ mudarVisao('dash'); }catch(e){}
+        }
+        await __autoTestSleep(80);
+
+        const dash = document.getElementById('viewDashboard');
+        if(!dash){
+            add('Dashboard: container', false, 'Elemento #viewDashboard não encontrado.');
+        }else{
+            add('Dashboard: container', true);
+            const canvasIds = Array.from(dash.querySelectorAll('canvas')).map(c=>c.id).filter(Boolean);
+            if(canvasIds.length===0){
+                add('Dashboard: canvases', false, 'Nenhum canvas encontrado dentro do dashboard.');
+            }else{
+                add('Dashboard: canvases', true, canvasIds.join(', '));
+            }
+
+            const bims=[1,2,3,4].filter(n=>document.getElementById('btnBim'+n));
+            for(const n of bims){
+                try{
+                    if(typeof mudarBimestre==='function') mudarBimestre(n);
+                    await __autoTestSleep(140);
+
+                    let missing=[];
+                    let hidden=[];
+                    canvasIds.forEach(id=>{
+                        const el=document.getElementById(id);
+                        if(!el || !dash.contains(el)) { missing.push(id); return; }
+                        if(!__autoTestIsVisible(el)) { hidden.push(id); }
+                    });
+
+                    add('Bimestre '+n+': gráficos presentes', missing.length===0, missing.length?('Sumiram: '+missing.join(', ')):'');
+                    add('Bimestre '+n+': gráficos visíveis', hidden.length===0, hidden.length?('Ocultos: '+hidden.join(', ')):'');
+
+                    // Chart instances (Chart.js v2/v3/v4). Não depende de variáveis globais em window.
+                    const expectedCharts = [
+                        { id:'dashChartBimestres', ref:()=> (typeof __dashChartBim!=='undefined' ? __dashChartBim : null) },
+                        { id:'dashPieMat1',        ref:()=> (typeof __dashPie1!=='undefined' ? __dashPie1 : null) },
+                        { id:'dashPieMat2',        ref:()=> (typeof __dashPie2!=='undefined' ? __dashPie2 : null) },
+                        { id:'dashHistMat1',       ref:()=> (typeof __dashHist1!=='undefined' ? __dashHist1 : null) },
+                        { id:'dashHistMat2',       ref:()=> (typeof __dashHist2!=='undefined' ? __dashHist2 : null) }
+                    ];
+
+                    const missingCharts = [];
+                    const details = [];
+                    expectedCharts.forEach(ec=>{
+                        let ok = false;
+                        try{
+                            const inst = ec.ref();
+                            ok = !!(inst && (typeof inst.update === 'function' || typeof inst.destroy === 'function' || typeof inst.render === 'function'));
+                        }catch(_){ ok = false; }
+
+                        // fallback: tenta capturar a instância pelo canvas
+                        if(!ok && typeof Chart !== 'undefined'){
+                            try{
+                                const cv = document.getElementById(ec.id);
+                                if(cv){
+                                    if(typeof Chart.getChart === 'function'){
+                                        const c = Chart.getChart(cv);
+                                        if(c && (typeof c.update === 'function' || typeof c.destroy === 'function' || typeof c.render === 'function')) ok = true;
+                                    }else if(Chart.instances){
+                                        const insts = Array.isArray(Chart.instances) ? Chart.instances : Object.values(Chart.instances);
+                                        const c = (insts||[]).find(ch=>ch && ch.canvas===cv);
+                                        if(c && (typeof c.update === 'function' || typeof c.destroy === 'function' || typeof c.render === 'function')) ok = true;
+                                    }
+                                }
+                            }catch(_){}
+                        }
+
+                        if(!ok) missingCharts.push(ec.id);
+                        details.push(ec.id+':'+(ok?'ok':'x'));
+                    });
+
+                    add('Bimestre '+n+': instâncias Chart', missingCharts.length===0, missingCharts.length ? ('Não inicializados: '+missingCharts.join(', ')) : details.join(' | '));
+                }catch(e){
+                    add('Bimestre '+n+': troca/atualização', false, 'Erro: '+(e && e.message ? e.message : e));
+                }
+            }
+        }
+
+        // 3) Backup ZIP (geração + leitura)
+        try{
+            const has = (typeof __collectBackupFiles==='function' && typeof __zipStore==='function' && typeof __zipReadStore==='function');
+            add('Backup: funções ZIP disponíveis', has, has?'':'Faltam __collectBackupFiles/__zipStore/__zipReadStore.');
+            if(has){
+                const tuples = __collectBackupFiles();
+                const blob = __zipStore(tuples);
+                const blobOk = blob && typeof blob.size === 'number' && blob.size > 50;
+                add('Backup: ZIP gerado', blobOk, blobOk ? ('Tamanho: '+blob.size+' bytes') : 'Blob ZIP inválido.');
+
+                let filesMap = null;
+                if(blobOk){
+                    try{
+                        const ab = await blob.arrayBuffer();
+                        filesMap = __zipReadStore(ab);
+                    }catch(_){
+                        filesMap = null;
+                    }
+                }
+
+                // Core válido: valida o que realmente está dentro do ZIP
+                let coreOk=false, coreDetail='';
+                if(filesMap && typeof filesMap === 'object' && filesMap['sgp_core.json']){
+                    try{
+                        const core = JSON.parse(filesMap['sgp_core.json']);
+                        const okTurmas = Array.isArray(core.turmas);
+                        const okAlunos = Array.isArray(core.alunos);
+                        const okAulas  = Array.isArray(core.aulas);
+                        coreOk = okTurmas && okAlunos && okAulas;
+                        coreDetail = 'turmas:'+ (okTurmas?'ok':'x') +' alunos:'+ (okAlunos?'ok':'x') +' aulas:'+ (okAulas?'ok':'x');
+                    }catch(e){
+                        coreOk=false; coreDetail='sgp_core.json inválido (JSON).';
+                    }
+                }else{
+                    // fallback: verifica se ao menos está na lista de arquivos antes de zipar
+                    const hasCoreTuple = tuples && Array.isArray(tuples) && tuples.some(f=>f && f[0]==='sgp_core.json');
+                    coreOk=false;
+                    coreDetail = hasCoreTuple ? 'sgp_core.json está na lista, mas não foi encontrado no ZIP (leitura).' : 'sgp_core.json ausente no backup.';
+                }
+                add('Backup: core válido', coreOk, coreDetail);
+
+                const zipReadable = !!(filesMap && typeof filesMap === 'object' && filesMap['sgp_core.json']);
+                add('Backup: ZIP legível', zipReadable, zipReadable ? '' : 'Falha ao reabrir ZIP gerado.');
+            }
+        }catch(e){
+            add('Backup: geração/leitura', false, 'Erro: '+(e && e.message ? e.message : e));
+        }
+
+    }catch(e){
+        add('AutoTeste: execução', false, 'Erro inesperado: '+(e && e.message ? e.message : e));
+    }finally{
+        try{ if(prevBim && typeof mudarBimestre==='function') mudarBimestre(prevBim); }catch(_){}
+        try{ if(prevVisao && typeof mudarVisao==='function') mudarVisao(prevVisao); }catch(_){}
+        window.__autoTestRunning = false;
+    }
+
+    // render relatório
+    try{
+        const okCount = results.filter(r=>r.ok).length;
+        const failCount = results.length - okCount;
+        const lines = [,'executarAutoTeste','abrirModalAutoTeste','fecharModalAutoTeste','autoTesteCopiar'];
+        lines.push('AutoTeste SGP');
+        lines.push('Data: '+(new Date()).toLocaleString());
+        lines.push('Resultado: '+okCount+'/'+results.length+' OK; '+failCount+' falhas');
+        lines.push('');
+        results.forEach(r=>{
+            lines.push((r.ok?'OK':'FALHA')+' - '+r.name+(r.detail?(' | '+r.detail):''));
+        });
+        window.__autoTesteUltimoRelatorio = lines.join('\n');
+
+        const body = document.getElementById('autoTesteBody');
+        if(body){
+            const badge = failCount===0
+              ? '<span style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(16,185,129,.15);color:var(--success);font-weight:800;">OK</span>'
+              : '<span style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(239,68,68,.15);color:var(--danger);font-weight:800;">FALHAS</span>';
+
+            const items = results.map(r=>{
+                const icon = r.ok ? '✅' : '❌';
+                const det = r.detail ? `<div style="color:var(--text-muted);font-size:.92rem;margin-top:2px;">${__autoTestEscape(r.detail)}</div>` : '';
+                return `<li style="padding:8px 0;border-bottom:1px solid var(--border-color);"><div style="display:flex;gap:10px;align-items:flex-start;"><div style="width:22px;">${icon}</div><div style="flex:1;"><div style="font-weight:800;color:var(--text-main);">${__autoTestEscape(r.name)}</div>${det}</div></div></li>`;
+            }).join('');
+
+            body.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0 12px 0;">
+                    <div style="font-weight:900;color:var(--text-main);font-size:1.05rem;">Resultado do AutoTeste</div>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        ${badge}
+                        <div style="color:var(--text-muted);font-weight:800;">${okCount}/${results.length} OK</div>
+                    </div>
+                </div>
+                <ul style="list-style:none;padding:0;margin:0;">${items}</ul>
+                <div style="margin-top:10px;color:var(--text-muted);font-size:.9rem;">
+                    Dica: se alguma falha aparecer ao trocar o bimestre, normalmente é cache antigo. Atualize com Ctrl+F5 e tente novamente.
+                </div>
+            `;
+        }
+    }catch(e){}
+}
+
+
 // WHITELIST ALL NEW FUNCTIONS
 // ================================================================
 try{
