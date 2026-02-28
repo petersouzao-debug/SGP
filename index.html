@@ -1810,6 +1810,36 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         .cor-aluno-controls{ display:flex; gap:12px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; margin-top:10px; }
         .cor-acertos{ padding:10px 12px; border:1px solid var(--border-color); border-radius:12px; background: rgba(14,165,233,.08); color: var(--text-main); display:flex; gap:8px; align-items:center; }
         body.dark-mode .cor-acertos{ background: rgba(14,165,233,.14); }
+        .cor-nota-final{ padding:10px 14px; border-radius:12px; display:flex; gap:8px; align-items:center; font-weight:700; border:2px solid var(--border-color); transition: all .25s; }
+        .cor-nota-final .cor-nota-val{ font-size:1.35rem; font-weight:900; }
+        .cor-nota-final.farol-v{ background: rgba(22,163,74,.12); border-color: rgba(22,163,74,.55); }
+        .cor-nota-final.farol-v .cor-nota-val{ color: var(--farol-verde); }
+        .cor-nota-final.farol-a{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.55); }
+        .cor-nota-final.farol-a .cor-nota-val{ color: var(--farol-amarelo); }
+        .cor-nota-final.farol-r{ background: rgba(220,38,38,.10); border-color: rgba(220,38,38,.50); }
+        .cor-nota-final.farol-r .cor-nota-val{ color: var(--farol-vermelho); }
+        body.dark-mode .cor-nota-final.farol-v{ background: rgba(22,163,74,.18); }
+        body.dark-mode .cor-nota-final.farol-a{ background: rgba(245,158,11,.18); }
+        body.dark-mode .cor-nota-final.farol-r{ background: rgba(220,38,38,.16); }
+        .cor-disc-badge{ display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:999px; font-size:.72rem; font-weight:600; background: rgba(147,51,234,.10); border:1px solid rgba(147,51,234,.30); color:#7c3aed; white-space:nowrap; }
+        body.dark-mode .cor-disc-badge{ background: rgba(147,51,234,.18); color:#c4b5fd; border-color: rgba(147,51,234,.40); }
+        .cor-disc-badge i{ font-size:.68rem; }
+        .cor-sync-info{ font-size:.72rem; color: var(--text-muted); display:flex; align-items:center; gap:5px; padding:2px 0; }
+        .cor-sync-info i{ color:#7c3aed; }
+        .cor-head-actions{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+        @media print {
+          body *{ visibility: hidden; }
+          #corPrintArea, #corPrintArea *{ visibility: visible; }
+          #corPrintArea{ position:absolute; left:0; top:0; width:100%; padding:10px; }
+          #corPrintArea table{ width:100%; border-collapse:collapse; font-size:11px; }
+          #corPrintArea th, #corPrintArea td{ border:1px solid #333; padding:4px 6px; text-align:center; }
+          #corPrintArea th{ background:#ddd !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+          #corPrintArea .print-title{ font-size:16px; font-weight:bold; margin-bottom:8px; }
+          #corPrintArea .print-sub{ font-size:11px; color:#555; margin-bottom:12px; }
+          #corPrintArea .nota-verde{ background:#dcfce7 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+          #corPrintArea .nota-amarela{ background:#fef9c3 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+          #corPrintArea .nota-vermelha{ background:#fee2e2 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        }
 
         .cor-respostas{ display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-top:12px; }
         @media (max-width: 980px){ .correcao-grid{ grid-template-columns: 1fr; } .cor-respostas{ grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); } }
@@ -4604,7 +4634,9 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
     </div>
 </label>
                     <button class="btn btn-primary" id="corNovaProvaBtn" data-onclick="corNovaProva()"><i class="fas fa-plus"></i> Nova Prova</button>
+                    <button class="btn-tool" data-onclick="corPrintList()" title="Imprimir lista de resultados" style="font-size:1.05rem;"><i class="fas fa-print"></i></button>
                 </div>
+                <div id="corDiscBadge" style="width:100%;margin-top:2px;"></div>
             </div>
 
             <div class="correcao-grid">
@@ -4637,9 +4669,15 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                         <label class="mini-label">Aluno
                             <select id="corAlunoSelect" class="inp"></select>
                         </label>
-                        <div class="cor-acertos">
-                            <span>Acertos:</span>
-                            <strong id="corAcertosLbl">0/10</strong>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <div class="cor-acertos">
+                                <span>Acertos:</span>
+                                <strong id="corAcertosLbl">0/10</strong>
+                            </div>
+                            <div class="cor-nota-final" id="corNotaFinalBox">
+                                <span>Nota:</span>
+                                <span class="cor-nota-val" id="corNotaFinalLbl">0.0</span>
+                            </div>
                         </div>
                     </div>
 
@@ -4683,6 +4721,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
 
                 </div>
             </div>
+            <div id="corPrintArea" style="display:none;"></div>
         </div>
 
 <div id="viewMapa" class="mapa-container">
@@ -7041,9 +7080,17 @@ function escAttr(s){ return escHTML(s); }
 
 function corSave(){
   try{
-    localStorage.setItem('sgp_correcao_provas', JSON.stringify(correcaoProvas || {}));
+    const str = JSON.stringify(correcaoProvas || {});
+    if(typeof __safeLSSet === 'function'){
+      if(!__safeLSSet('sgp_correcao_provas', str)){
+        try{ if(typeof showToast==='function') showToast('Erro ao salvar correção (armazenamento cheio?)', 'error'); }catch(_){}
+      }
+    } else {
+      localStorage.setItem('sgp_correcao_provas', str);
+    }
   }catch(e){
     try{ if(typeof __diagCapture==='function') __diagCapture(e,'corSave',{}); }catch(_){}
+    try{ if(typeof showToast==='function') showToast('Erro ao salvar correção.', 'error'); }catch(_){}
   }
   // Marca que há alterações locais mais recentes que o último backup ZIP
   try{
@@ -7109,15 +7156,40 @@ function corNovaProva(){
     const nome = (prompt('Nome da prova (ex.: Avaliação Diagnóstica 1):', 'Prova '+(new Date().toLocaleDateString('pt-BR'))) || '').trim();
     if(!nome) return;
 
+    // Oferece vincular a uma disciplina
+    let _discId = null, _avId = null;
+    const discs = config && Array.isArray(config.disciplinas) ? config.disciplinas : [];
+    if(discs.length > 0){
+      const opcoes = discs.map((d,i) => `${i+1}) ${d.nome}`).join('\n');
+      const resp = prompt('Deseja vincular esta prova a uma disciplina?\nDigite o número da disciplina ou deixe vazio para NÃO vincular:\n\n' + opcoes);
+      if(resp && resp.trim()){
+        const idx = parseInt(resp.trim()) - 1;
+        if(idx >= 0 && idx < discs.length){
+          _discId = discs[idx].id;
+          const avs = discs[idx].avaliacoes || [];
+          if(avs.length > 0){
+            const opAv = avs.map((a,j) => `${j+1}) ${a.nome}`).join('\n');
+            const rAv = prompt('Qual atividade/avaliação desta disciplina?\n\n' + opAv);
+            if(rAv && rAv.trim()){
+              const jIdx = parseInt(rAv.trim()) - 1;
+              if(jIdx >= 0 && jIdx < avs.length) _avId = avs[jIdx].id;
+            }
+          }
+        }
+      }
+    }
+
     const tctx = corEnsureTurma(turma);
     const pid = 'p_' + Date.now();
-    tctx.provas[pid] = {
+    const provaObj = {
       id: pid,
       nome,
       createdAt: new Date().toISOString(),
       questions: Array.from({length:10}).map(()=>({ g:'', ref:'' })),
       answers: {}
     };
+    if(_discId){ provaObj._discId = _discId; provaObj._avId = _avId; provaObj._syncKey = 'manual_' + _discId + '_' + (_avId||''); }
+    tctx.provas[pid] = provaObj;
     tctx.activeProvaId = pid;
     corSave();
     corRenderAll();
@@ -7266,6 +7338,12 @@ function corRenderGabarito(){
       corSave();
       corRenderAluno();
       corRenderStats();
+      // Auto-post when gabarito changes
+      try{
+        const _turma = corGetTurmaSelecionada();
+        const _prova = corGetSelectedProva();
+        if(_prova && _prova._discId) corAutoPostAllGrades(_prova, _turma);
+      }catch(_){}
     });
 
     const inp = tdR.querySelector('input');
@@ -7317,6 +7395,10 @@ function corRenderAluno(){
   grid.innerHTML = '';
   if(!alunoId){
     document.getElementById('corAcertosLbl') && (document.getElementById('corAcertosLbl').textContent='0/10');
+    const _nfLbl = document.getElementById('corNotaFinalLbl');
+    const _nfBox = document.getElementById('corNotaFinalBox');
+    if(_nfLbl) _nfLbl.textContent = '0.0';
+    if(_nfBox){ _nfBox.classList.remove('farol-v','farol-a','farol-r'); _nfBox.classList.add('farol-r'); }
     return;
   }
 
@@ -7364,10 +7446,12 @@ function corRenderAluno(){
       ans[i] = v;
       corSave();
       updateClass();
-      // acertos
+      // acertos + nota final
       const ac = corCalcAcertos(prova, alunoId);
       const lbl = document.getElementById('corAcertosLbl');
       if(lbl) lbl.textContent = `${ac}/10`;
+      corUpdateNotaFinal(prova, alunoId);
+      corAutoPostGrade(prova, alunoId);
       corRenderStats();
     });
   }
@@ -7375,6 +7459,7 @@ function corRenderAluno(){
   const ac = corCalcAcertos(prova, alunoId);
   const lbl = document.getElementById('corAcertosLbl');
   if(lbl) lbl.textContent = `${ac}/10`;
+  corUpdateNotaFinal(prova, alunoId);
 }
 
 function corComputeStats(prova, turma){
@@ -7540,11 +7625,223 @@ function corBindEvents(){
 }
 
 function corRenderAll(){
+  corSyncDiscActivities();
   corRenderSelectors();
   corBindEvents();
   corRenderGabarito();
   corRenderAluno();
   corRenderStats();
+  corRenderDiscBadge();
+}
+
+/* ======= SINCRONIZAÇÃO AUTOMÁTICA: Disciplinas -> Correção ======= */
+function corSyncDiscActivities(){
+  try{
+    if(!config || !Array.isArray(config.disciplinas)) return;
+    let changed = false;
+
+    // Build set of valid syncKeys from current config
+    const validSyncKeys = new Set();
+    config.disciplinas.forEach(disc=>{
+      if(!disc || !disc.id || !Array.isArray(disc.avaliacoes)) return;
+      disc.avaliacoes.forEach(av=>{
+        if(!av || !av.id) return;
+        validSyncKeys.add('sync_' + disc.id + '_' + av.id);
+      });
+    });
+
+    turmas.forEach(turma=>{
+      const tctx = corEnsureTurma(turma);
+      if(!tctx) return;
+
+      // 1) Create missing synced provas
+      config.disciplinas.forEach(disc=>{
+        if(!disc || !disc.id || !Array.isArray(disc.avaliacoes)) return;
+        disc.avaliacoes.forEach(av=>{
+          if(!av || !av.id) return;
+          const syncKey = 'sync_' + disc.id + '_' + av.id;
+          const exists = Object.values(tctx.provas||{}).some(p=> p && p._syncKey === syncKey);
+          if(!exists){
+            const pid = 'p_sync_' + disc.id + '_' + av.id + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+            tctx.provas[pid] = {
+              id: pid,
+              nome: (disc.nome||'Disciplina') + ' — ' + (av.nome||'Atividade'),
+              createdAt: new Date().toISOString(),
+              questions: Array.from({length:10}).map(()=>({ g:'', ref:'' })),
+              answers: {},
+              _syncKey: syncKey,
+              _discId: disc.id,
+              _avId: av.id,
+              _autoSync: true
+            };
+            changed = true;
+          }
+        });
+      });
+
+      // 2) Clean orphaned auto-synced provas (discipline/activity removed from config)
+      Object.keys(tctx.provas||{}).forEach(pid=>{
+        const p = tctx.provas[pid];
+        if(p && p._autoSync && p._syncKey && !validSyncKeys.has(p._syncKey)){
+          // Only remove if no student answers exist
+          const hasAnswers = Object.values(p.answers||{}).some(ans =>
+            Array.isArray(ans) && ans.some(x => String(x||'').trim()!=='')
+          );
+          if(!hasAnswers){
+            delete tctx.provas[pid];
+            changed = true;
+          }
+        }
+      });
+    });
+
+    if(changed) corSave();
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corSyncDiscActivities',{}); }catch(_){}
+  }
+}
+
+/* ======= NOTA FINAL: calcula nota do aluno na prova ======= */
+function corCalcNotaFinal(prova, alunoId){
+  if(!prova || !alunoId) return 0;
+  const totalQ = (prova.questions||[]).filter(q => corNormalizeAlt(q.g)).length;
+  if(totalQ === 0) return 0;
+  const ac = corCalcAcertos(prova, alunoId);
+  return Math.round((ac / totalQ) * 100) / 10; // nota de 0 a 10
+}
+
+function corUpdateNotaFinal(prova, alunoId){
+  const box = document.getElementById('corNotaFinalBox');
+  const lbl = document.getElementById('corNotaFinalLbl');
+  if(!box || !lbl) return;
+  const nota = corCalcNotaFinal(prova, alunoId);
+  lbl.textContent = nota.toFixed(1);
+  box.classList.remove('farol-v','farol-a','farol-r');
+  if(nota >= 7) box.classList.add('farol-v');
+  else if(nota >= 5) box.classList.add('farol-a');
+  else box.classList.add('farol-r');
+}
+
+/* ======= AUTO-POST: lança nota na disciplina do aluno ======= */
+function corAutoPostGrade(prova, alunoId){
+  try{
+    if(!prova || !alunoId) return;
+    if(!prova._discId || !prova._avId) return; // sem vínculo
+    const aluno = alunos.find(a => a && a.id === alunoId);
+    if(!aluno || !aluno.bimestres) return;
+    const bim = aluno.bimestres[bimestreAtual];
+    if(!bim) return;
+    if(!bim.notas_disc || typeof bim.notas_disc !== 'object') bim.notas_disc = {};
+    if(!bim.notas_disc[prova._discId]) bim.notas_disc[prova._discId] = {};
+    const nota = corCalcNotaFinal(prova, alunoId);
+    bim.notas_disc[prova._discId][prova._avId] = nota;
+    // Sync legados
+    try{ _syncBimestreRefs(bim); }catch(_){}
+    // Recalcula média para a disciplina vinculada
+    const disc = getDiscById(prova._discId);
+    if(disc){
+      const notas = bim.notas_disc[prova._discId];
+      const media = calcularMediaDisc(prova._discId, notas).toFixed(1);
+      // Atualiza campos legados (slot1 -> media_lp, slot2 -> media_red)
+      if(prova._discId === config.slot1) bim.media_lp = media;
+      if(prova._discId === config.slot2) bim.media_red = media;
+      // Armazena media genérica para qualquer disciplina (suporte a 3+ disciplinas)
+      if(!bim.medias_disc || typeof bim.medias_disc !== 'object') bim.medias_disc = {};
+      bim.medias_disc[prova._discId] = parseFloat(media);
+    }
+    salvarDadosLocal();
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corAutoPostGrade',{}); }catch(_){}
+  }
+}
+
+/* Auto-post grades for ALL students of a prova (batch) */
+function corAutoPostAllGrades(prova, turma){
+  try{
+    if(!prova || !prova._discId || !prova._avId) return;
+    const alunosTurma = alunos.filter(a => a && a.turma === turma);
+    alunosTurma.forEach(a => {
+      const ans = (prova.answers||{})[a.id];
+      if(Array.isArray(ans) && ans.some(x => String(x||'').trim()!=='')) {
+        corAutoPostGrade(prova, a.id);
+      }
+    });
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corAutoPostAllGrades',{}); }catch(_){}
+  }
+}
+
+/* ======= BADGE DE DISCIPLINA VINCULADA ======= */
+function corRenderDiscBadge(){
+  const el = document.getElementById('corDiscBadge');
+  if(!el) return;
+  const prova = corGetSelectedProva();
+  if(!prova || !prova._discId){
+    el.innerHTML = '';
+    return;
+  }
+  const disc = getDiscById(prova._discId);
+  const av = disc ? (disc.avaliacoes||[]).find(a=>a.id===prova._avId) : null;
+  const discNome = disc ? disc.nome : prova._discId;
+  const avNome = av ? av.nome : prova._avId;
+  el.innerHTML = `<span class="cor-disc-badge"><i class="fas fa-link"></i> Vinculada: ${escHTML(discNome)} → ${escHTML(avNome)}</span>
+    <span class="cor-sync-info"><i class="fas fa-bolt"></i> Notas lançadas automaticamente no bimestre ${bimestreAtual}</span>`;
+}
+
+/* ======= IMPRIMIR LISTA DE RESULTADOS ======= */
+function corPrintList(){
+  try{
+    const turma = corGetTurmaSelecionada();
+    const prova = corGetSelectedProva();
+    if(!turma || !prova){ showToast && showToast('Selecione uma turma e prova.', 'error'); return; }
+    const alunosTurma = alunos.filter(a => a && a.turma === turma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+    if(!alunosTurma.length){ showToast && showToast('Nenhum aluno nesta turma.', 'error'); return; }
+
+    const nQ = (prova.questions||[]).length || 10;
+    let thQ = '';
+    for(let i=0;i<nQ;i++) thQ += `<th style="width:35px;">Q${i+1}<br><small style="font-size:9px;color:#666;">${escHTML(corNormalizeAlt((prova.questions[i]||{}).g)||'—')}</small></th>`;
+
+    let rows = '';
+    alunosTurma.forEach((a,idx)=>{
+      const ans = corEnsureAlunoAnswers(prova, a.id);
+      const ac = corCalcAcertos(prova, a.id);
+      const nota = corCalcNotaFinal(prova, a.id);
+      const cls = nota>=7 ? 'nota-verde' : (nota>=5 ? 'nota-amarela' : 'nota-vermelha');
+      let tds = '';
+      for(let i=0;i<nQ;i++){
+        const r = corNormalizeAlt(ans[i]);
+        const g = corNormalizeAlt((prova.questions[i]||{}).g);
+        const ok = (g && r && g===r);
+        const cellCls = !r ? '' : (ok ? 'nota-verde' : 'nota-vermelha');
+        tds += `<td class="${cellCls}">${escHTML(r||'—')}</td>`;
+      }
+      rows += `<tr><td style="text-align:left;font-weight:600;">${idx+1}. ${escHTML(a.nome||'Aluno')}</td>${tds}<td><strong>${ac}/${nQ}</strong></td><td class="${cls}"><strong>${nota.toFixed(1)}</strong></td></tr>`;
+    });
+
+    const printArea = document.getElementById('corPrintArea');
+    if(!printArea) return;
+    const discInfo = prova._discId ? (() => {
+      const d = getDiscById(prova._discId);
+      return d ? (' | Disciplina: ' + (d.nome||'')) : '';
+    })() : '';
+    printArea.innerHTML = `
+      <div class="print-title">${escHTML(prova.nome||'Prova')} — Turma: ${escHTML(turma)}</div>
+      <div class="print-sub">Bimestre ${bimestreAtual}${escHTML(discInfo)} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+      <table>
+        <thead><tr><th style="text-align:left;min-width:140px;">Aluno</th>${thQ}<th>Acertos</th><th>Nota</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="margin-top:12px;font-size:10px;color:#888;">
+        <span style="display:inline-block;width:12px;height:12px;background:#dcfce7;border:1px solid #999;margin-right:3px;vertical-align:middle;"></span> Verde (≥7)&nbsp;&nbsp;
+        <span style="display:inline-block;width:12px;height:12px;background:#fef9c3;border:1px solid #999;margin-right:3px;vertical-align:middle;"></span> Amarelo (5-6.9)&nbsp;&nbsp;
+        <span style="display:inline-block;width:12px;height:12px;background:#fee2e2;border:1px solid #999;margin-right:3px;vertical-align:middle;"></span> Vermelho (<5)
+      </div>`;
+    printArea.style.display = 'block';
+    window.print();
+    setTimeout(()=>{ printArea.style.display='none'; }, 500);
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corPrintList',{}); }catch(_){}
+  }
 }
 
 function initCorrecao(){
@@ -7700,12 +7997,7 @@ function __sgpMainOnLoad(){
             window.getSelection().removeAllRanges();
         }
 
-        function sortearAluno() {
-            if(filtroTurma==='Todas') return showToast("Selecione uma turma.", "error");
-            const lista = getAlunosFiltrados(); if(lista.length===0) return showToast("Sem alunos.", "error");
-            abrirModal('modalSorteio'); const w=document.getElementById('winnerName'); let c=0;
-            const i=setInterval(()=>{ w.innerText=lista[Math.floor(Math.random()*lista.length)].nome; c++; if(c>15){clearInterval(i);w.style.transform="scale(1.2)";}},100);
-        }
+        // [REMOVED] Old sortearAluno - replaced by advanced version with absent exclusion (see below)
 
         function abrirGeradorGrupos() {
             if(filtroTurma==='Todas') return showToast("Selecione uma turma.", "error");
@@ -7713,49 +8005,7 @@ function __sgpMainOnLoad(){
             document.getElementById('resultadoGrupos').innerHTML = '';
         }
 
-        function gerarGrupos() {
-            const n = parseInt(document.getElementById('inputQtdGrupos').value);
-            const tipo = document.getElementById('selectTipoGrupo').value;
-            let lista = getAlunosFiltrados();
-            if(lista.length === 0) return showToast("Turma vazia!", "error");
-            if(!n || n < 2) return showToast("Mínimo 2 grupos", "error");
-
-            lista = lista.sort(() => Math.random() - 0.5);
-
-            if(tipo === 'equilibrado') {
-                lista.sort((a,b) => {
-                    const mA = (parseFloat(a.bimestres[bimestreAtual].media_lp) + parseFloat(a.bimestres[bimestreAtual].media_red))/2;
-                    const mB = (parseFloat(b.bimestres[bimestreAtual].media_lp) + parseFloat(b.bimestres[bimestreAtual].media_red))/2;
-                    return mB - mA;
-                });
-            }
-
-            const grupos = Array.from({length: n}, () => []);
-            
-            if (tipo === 'equilibrado') {
-                let g = 0;
-                let dir = 1;
-                lista.forEach(aluno => {
-                    grupos[g].push(aluno);
-                    g += dir;
-                    if(g >= n) { g = n-1; dir = -1; }
-                    if(g < 0) { g = 0; dir = 1; }
-                });
-            } else {
-                lista.forEach((aluno, i) => {
-                    grupos[i % n].push(aluno);
-                });
-            }
-            
-            const res = document.getElementById('resultadoGrupos');
-            res.innerHTML = '';
-            grupos.forEach((g, i) => {
-                let html = `<div class="group-card"><div class="group-title">Grupo ${i+1}</div>`;
-                g.forEach(a => html += `<div class="group-member">${_escHTML(a.nome)}</div>`);
-                html += '</div>';
-                res.innerHTML += html;
-            });
-        }
+        // [REMOVED] Old gerarGrupos - replaced by advanced version with modo/qtdGrupos support (see below)
 
         function clonarAulas() {
             if(filtroTurma === 'Todas') return showToast("Selecione a turma de DESTINO.", "error");
@@ -7857,8 +8107,16 @@ function carregarDados() {
       planosSemana = core.planosSemana || core.planos_semanais || {};
       if(!planosSemana || typeof planosSemana !== 'object' || Array.isArray(planosSemana)) planosSemana = {};
 
-	      correcaoProvas = __safe(localStorage.getItem('sgp_correcao_provas'), {}, 'sgp_correcao_provas');
-      if(!correcaoProvas || typeof correcaoProvas !== 'object' || Array.isArray(correcaoProvas)) correcaoProvas = {};
+	      correcaoProvas = __safe(localStorage.getItem('sgp_correcao_provas'), null, 'sgp_correcao_provas');
+      // Fallback: se chave separada falhou/vazia, tenta recuperar do blob atômico
+      if(!correcaoProvas || typeof correcaoProvas !== 'object' || Array.isArray(correcaoProvas)){
+        if(core.correcaoProvas && typeof core.correcaoProvas === 'object' && !Array.isArray(core.correcaoProvas)){
+          correcaoProvas = core.correcaoProvas;
+          try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_correcao_provas', JSON.stringify(correcaoProvas)); }catch(_){}
+        } else {
+          correcaoProvas = {};
+        }
+      }
 
       const cfg = core.config;
       if(cfg && typeof cfg === 'object' && !Array.isArray(cfg)) config = cfg;
@@ -7938,7 +8196,8 @@ function __buildAtomicCoreState(){
     aulas,
     planosSemana,
     config,
-    layouts
+    layouts,
+    correcaoProvas: (typeof correcaoProvas !== 'undefined' && correcaoProvas) ? correcaoProvas : {}
   };
 }
 
@@ -8160,7 +8419,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.12.15.18",
+                version: "v16",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -8438,6 +8697,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                         renderizarVisaoContent();
                         if(typeof initAtividades === 'function') initAtividades();
                         if(typeof initPlanner === 'function') initPlanner();
+                        if(typeof initCorrecao === 'function') initCorrecao();
                         // Reload quiz/comp/ord banks (not covered by initAtividades)
                         try{ if(typeof quizLoad==='function'){ quizLoad(); quizRenderBank(); } }catch(_){}
                         try{ if(typeof compLoad==='function'){ compLoad(); compRenderBank(); } }catch(_){}
@@ -8492,6 +8752,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                         renderizarMenu();
                         renderizarVisao();
                         atualizarLabelsConfig();
+                        try{ if(typeof initCorrecao === 'function') initCorrecao(); }catch(_){}
                         showToast("Backup carregado!");
                         try{ __safeLSSet('sgp_last_backup', Date.now()); }catch(_){ }
                         try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){ }
@@ -8506,7 +8767,7 @@ __safeLSSet('sgp_last_backup', Date.now());
             i.value=''; 
         }
 
-        function exportarCSV() { const l=getAlunosFiltrados(); if(l.length===0)return showToast("Vazio", "error"); let c=`data:text/csv;charset=utf-8,\uFEFFID;Nome;Turma;Bimestre;${__u(config.materia1)};${__u(config.materia2)}\n`; l.forEach((a,idx)=>{const b=a.bimestres[bimestreAtual]; c+=`${idx+1};${__u(a.nome)};${__u(a.turma)};${bimestreAtual};${__u(b.media_lp)};${__u(b.media_red)}\n`}); const k=document.createElement("a"); k.href=encodeURI(c); k.download="SGP.csv"; k.click(); }
+        // [REMOVED] Old exportarCSV - replaced by V13 complete version (see below)
 
         // --- FILTROS & RENDER ---
         function toggleFiltroRisco(){
@@ -12292,6 +12553,7 @@ function __snapshotObj(){
     turmas, alunos, aulas,
     planosSemana,
     config, layouts,
+    correcaoProvas: (typeof correcaoProvas !== 'undefined' && correcaoProvas) ? correcaoProvas : {},
     planner: (typeof plannerTasks !== 'undefined') ? (plannerTasks || []) : [],
     atividades: {
       forca: (typeof forcaBank !== 'undefined') ? (forcaBank || []) : [],
@@ -12430,6 +12692,12 @@ function __applySnapshot(snapshotStr, label){
     if(typeof memBank !== 'undefined') memBank = Array.isArray(acts.memoria) ? acts.memoria : (memBank || []);
     if(typeof fcBank !== 'undefined') fcBank = Array.isArray(acts.flashcards) ? acts.flashcards : (fcBank || []);
 
+    // Correção de provas
+    if(data.correcaoProvas && typeof data.correcaoProvas === 'object' && !Array.isArray(data.correcaoProvas)){
+      correcaoProvas = data.correcaoProvas;
+      try{ corSave(); }catch(_){}
+    }
+
     ensureConfigSchema();
     _syncAllStudents();
 
@@ -12460,19 +12728,7 @@ function __applySnapshot(snapshotStr, label){
   __renderBackupsUI();
 }
 
-function undo(){
-  if(!__HIST.undo.length) return showToast("Nada para desfazer.");
-  const item = __HIST.undo.pop();
-  __HIST.redo.push(item);
-  __applySnapshot(item.before, "Desfeito!");
-}
-
-function redo(){
-  if(!__HIST.redo.length) return showToast("Nada para refazer.");
-  const item = __HIST.redo.pop();
-  __HIST.undo.push(item);
-  __applySnapshot(item.after, "Refeito!");
-}
+// [REMOVED] Old undo/redo using __HIST - replaced by atomic undo/redo system (see below)
 
 function criarBackupAgora(){
   const snap = __snapshotStr();
@@ -13829,7 +14085,7 @@ function __getPlanosTurma(){
 }
 
 
-function __getPlanosTurma(){
+function __getPlanosTurmaAll(){
   if(!planosSemana) planosSemana = {};
   const key = __getPlanoStoreKey();
   if(!key || key === 'Todas') return [];
@@ -19679,6 +19935,10 @@ function __undoRestore(snap){
     planosSemana=core.planosSemana||{};
     if(core.config) config=core.config;
     if(core.layouts) layouts=core.layouts;
+    if(core.correcaoProvas && typeof core.correcaoProvas === 'object' && !Array.isArray(core.correcaoProvas)){
+      correcaoProvas = core.correcaoProvas;
+      try{ corSave(); }catch(_){}
+    }
     salvarDadosLocal();
     garantirEstruturaNova();
     renderizarMenu(); renderizarVisao();

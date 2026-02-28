@@ -1,14 +1,14 @@
-// SGP - Service Worker v15.9.12.15.18 (Ranking + data local frequência + relatório semanal de ausências)
+// SGP - Service Worker v16 (Ranking + data local frequência + relatório semanal de ausências)
 // Correções estruturais:
 //  - Offline mais confiável para navegação (fallback do app shell)
 //  - Evita cache indiscriminado (reduz risco de crescimento infinito do cache)
 //  - Estratégia Stale-While-Revalidate para recursos same-origin
 
-const CACHE_NAME = 'sgp-v15.9.12.15.18';
+const CACHE_NAME = 'sgp-v16';
 const APP_SHELL = [
   './',
   './index.html',
-  './SGP_Gestao_Final_v15.html',
+  './SGP_Gestao_Final_v16.html',
 ];
 
 self.addEventListener('install', (event) => {
@@ -60,7 +60,7 @@ self.addEventListener('fetch', (event) => {
         return (
           (await cache.match(event.request, { ignoreSearch: true })) ||
           (await cache.match('./index.html')) ||
-          (await cache.match('./SGP_Gestao_Final_v15.html')) ||
+          (await cache.match('./SGP_Gestao_Final_v16.html')) ||
           Response.error()
         );
       }
