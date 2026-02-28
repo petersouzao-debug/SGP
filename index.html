@@ -1715,7 +1715,25 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         .massa-sort-icon{cursor:pointer;margin-left:3px;font-size:.6rem;color:#94a3b8;vertical-align:middle;}
         .massa-sort-icon:hover{color:var(--primary);}
 
-        .massa-fill-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100000;display:flex;align-items:center;justify-content:center;}
+        
+
+        /* Ajuste do layout de nomes na Edição em Massa */
+        #viewMassa table.tabela-dados th:nth-child(2),
+        #viewMassa table.tabela-dados td:nth-child(2){
+          min-width: 260px;
+          max-width: 360px;
+        }
+        #viewMassa table.tabela-dados td:nth-child(2){
+          white-space: normal;
+          word-break: normal;
+          overflow-wrap: break-word;
+          line-height: 1.25;
+        }
+        #viewMassa .massa-nome{
+          font-weight: 800;
+          font-size: .88rem;
+        }
+.massa-fill-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100000;display:flex;align-items:center;justify-content:center;}
         .massa-fill-box{background:var(--card-bg);border-radius:14px;padding:20px 24px;max-width:360px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,.2);}
         .massa-fill-box h3{margin:0 0 12px;}
         .massa-fill-box input{width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;font-size:1rem;text-align:center;font-weight:700;margin-bottom:12px;}
@@ -4415,8 +4433,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                 <table class="tabela-dados" style="display:table;">
                     <thead>
                         <tr id="trMassaHead"></tr>
-                        <tr id="trMassaStats" class="massa-stats-row" style="font-size:.7rem;background:rgba(14,165,233,.03);"></tr>
-                    </thead>
+</thead>
                     <tbody id="tbodyMassa"></tbody>
                 </table>
             </div>
@@ -8143,7 +8160,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v15.9.12.15.16",
+                version: "v15.9.12.15.17",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -11413,7 +11430,6 @@ function __massaRecalcRowMedia(input){
     mediaCell.textContent = isFinite(media) ? media.toFixed(1) : media;
   }
   // Also update column stats
-  __massaUpdateColStats();
 }
 
 // Feature #13: Column statistics
@@ -11780,25 +11796,23 @@ function __massaExportCSV(){
   showToast('CSV exportado com sucesso!');
 }
 
-// Enhanced header with sort icons
+// Enhanced header (sorting removed per preference)
 function _renderMassaHeader(discId){
   const tr=document.getElementById('trMassaHead');
   if(!tr) return;
   ensureConfigSchema();
   const id = discId || _massaDiscDefault();
   const disc = getDiscById(id);
-  
+
   const cols=[];
-  cols.push('<th>#</th><th style="cursor:pointer;" onclick="__massaSortByCol(\'__nome__\')" title="Ordenar por nome">Nome <span class="massa-sort-icon">' + (__massaSortCol==='__nome__' ? (__massaSortAsc?'▲':'▼') : '⇅') + '</span></th><th>Turma</th>');
-  
+  cols.push('<th>#</th><th>Nome</th><th>Turma</th>');
+
   if(disc){
     const cls = (id===config.slot1) ? 'lbl-mat1' : (id===config.slot2) ? 'lbl-mat2' : '';
     (disc.avaliacoes||[]).forEach(av=>{
-      const sortIcon = __massaSortCol===av.id ? (__massaSortAsc?'▲':'▼') : '⇅';
-      cols.push('<th class="'+cls+'" style="cursor:pointer;" onclick="__massaSortByCol(\''+av.id+'\')" title="Ordenar por '+_escHTML(String(av.nome||''))+'">' +
-        _escHTML(String(av.nome||'')).slice(0,22) + ' <span class="massa-sort-icon">'+sortIcon+'</span></th>');
+      cols.push('<th class="'+cls+'">'+_escHTML(String(av.nome||'')).slice(0,22)+'</th>');
     });
-    cols.push('<th class="'+cls+'" style="cursor:pointer;" onclick="__massaSortByCol(\'__media__\')" title="Ordenar por média">Média <span class="massa-sort-icon">' + (__massaSortCol==='__media__' ? (__massaSortAsc?'▲':'▼') : '⇅') + '</span></th>');
+    cols.push('<th class="'+cls+'">Média</th>');
   } else {
     cols.push('<th>Notas</th>');
   }
@@ -11807,6 +11821,8 @@ function _renderMassaHeader(discId){
 
 function renderizarEdicaoMassa(){
   ensureConfigSchema();
+  // Sorting UI removed: ensure no hidden sort state persists
+  __massaSortCol = null; __massaSortAsc = true;
   massaRenderDiscNav();
   
   const tbody=document.getElementById('tbodyMassa');
@@ -11876,7 +11892,7 @@ function renderizarEdicaoMassa(){
     
     buf += '<tr class="row-aluno-massa" data-nome="'+_escHTML((a.nome||'').toLowerCase())+'">' +
       '<td>'+(idx+1)+'</td>' +
-      '<td><strong>'+(privacyMode ? '••••••••' : _escHTML(a.nome))+'</strong></td>' +
+      '<td class="massa-td-nome"><div class="massa-nome" title="'+_escHTML(String(a.nome||'').replace(/\s+/g,' ').trim())+'">'+(privacyMode ? '••••••••' : _escHTML(String(a.nome||'').replace(/\s+/g,' ').trim()))+'</div></td>' +
       '<td>'+_escHTML(a.turma)+'</td>';
     
     avs.forEach(av=>{
