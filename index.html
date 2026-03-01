@@ -9373,7 +9373,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             // Preferências de interface (UI) — tema/cor/fonte/sidebar/grid
             const uiPrefs = {};
             try{
-                ['sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid','sgp_plano_disc_last'].forEach(k=>{
+                ['sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid','sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b'].forEach(k=>{
                     const v = localStorage.getItem(k);
                     if(v !== null && typeof v !== 'undefined') uiPrefs[k] = v;
                 });
