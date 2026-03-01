@@ -4,7 +4,7 @@
 //  - Evita cache indiscriminado (reduz risco de crescimento infinito do cache)
 //  - Estratégia Stale-While-Revalidate para recursos same-origin
 
-const CACHE_NAME = 'sgp-v16.10';
+const CACHE_NAME = 'sgp-v16.11';
 const APP_SHELL = [
   './',
   './index.html',

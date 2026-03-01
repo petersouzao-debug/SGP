@@ -7610,18 +7610,27 @@ function corRenderGabarito(){
 }
 
 
+function corIdKey(v){
+  try{
+    if(v===null || typeof v==='undefined') return '';
+    return String(v);
+  }catch(_){ return ''; }
+}
+
 function corGetAlunoSelecionadoId(){
   const sel = document.getElementById('corAlunoSelect');
-  return sel && sel.value ? sel.value : '';
+  return corIdKey(sel && sel.value ? sel.value : '');
 }
 
 function corEnsureAlunoAnswers(prova, alunoId){
   if(!prova.answers) prova.answers = {};
-  if(!prova.answers[alunoId] || !Array.isArray(prova.answers[alunoId])) prova.answers[alunoId] = Array.from({length:10}).map(()=> '');
-  if(prova.answers[alunoId].length<10){
-    prova.answers[alunoId] = prova.answers[alunoId].concat(Array.from({length:10-prova.answers[alunoId].length}).map(()=> ''));
+  const k = corIdKey(alunoId);
+  if(!k) return Array.from({length:10}).map(()=> '');
+  if(!prova.answers[k] || !Array.isArray(prova.answers[k])) prova.answers[k] = Array.from({length:10}).map(()=> '');
+  if(prova.answers[k].length<10){
+    prova.answers[k] = prova.answers[k].concat(Array.from({length:10-prova.answers[k].length}).map(()=> ''));
   }
-  return prova.answers[alunoId];
+  return prova.answers[k];
 }
 
 function corNormalizeAlt(v){
@@ -8214,7 +8223,8 @@ function corUpdateNotaFinal(prova, alunoId){
 /* ======= AUTO-POST: lança nota na disciplina do aluno ======= */
 function corHasAnyAnswer(prova, alunoId){
   try{
-    const ans = (prova && prova.answers) ? prova.answers[alunoId] : null;
+    const k = corIdKey(alunoId);
+    const ans = (prova && prova.answers) ? prova.answers[k] : null;
     return Array.isArray(ans) && ans.some(x => String(x||'').trim()!=='');
   }catch(_){ return false; }
 }
@@ -8294,7 +8304,7 @@ function corAutoPostGrade(prova, alunoId){
   try{
     if(!prova || !alunoId) return;
     if(!prova._discId || !prova._avId) return; // sem vínculo
-    const aluno = alunos.find(a => a && a.id === alunoId);
+    const aluno = alunos.find(a => a && String(a.id) === String(alunoId));
     if(!aluno) return;
 
     const changed = corPostGradeToAlunoBimestre(prova, aluno, bimestreAtual);
@@ -27170,11 +27180,116 @@ try{
                 }catch(_){ }
 
 
+                // Arquivos essenciais no ZIP (inclui módulos novos)
+                try{
+                    const requiredFiles = [
+                        'sgp_core.json','sgp_planner.json','sgp_ui_prefs.json',
+                        'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
+                        'atividades_relacoes.json','atividades_roleta.json',
+                        'atividades_quiz.json','atividades_completar.json','atividades_ordenar.json',
+                        'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
+                        'sgp_audit_log.json','sgp_freq_events.json',
+                        'extras_audit.json','extras_autobackups.json'
+                    ];
+                    if(filesMap && typeof filesMap === 'object'){
+                        const missingF = requiredFiles.filter(fn=>!(fn in filesMap));
+                        add('Backup: arquivos essenciais', missingF.length===0, missingF.length?('Ausentes: '+missingF.join(', ')):'');
+                        const bad = [];
+                        const okList = [];
+                        requiredFiles.forEach(fn=>{
+                            if(!(fn in filesMap)) return;
+                            if(!/\.json$/i.test(fn)) return;
+                            try{ JSON.parse(filesMap[fn]); okList.push(fn); }catch(e){ bad.push(fn); }
+                        });
+                        add('Backup: JSON válido', bad.length===0, bad.length?('Inválidos: '+bad.join(', ')):(okList.slice(0,8).join(' | ')+(okList.length>8?' | ...':'')));
+                    }else{
+                        add('Backup: arquivos essenciais', false, 'Não foi possível ler o mapa de arquivos do ZIP.');
+                    }
+                }catch(e){
+                    add('Backup: arquivos essenciais', false, 'Erro ao validar arquivos do ZIP: '+(e && e.message ? e.message : e));
+                }
+
                 const zipReadable = !!(filesMap && typeof filesMap === 'object' && filesMap['sgp_core.json']);
                 add('Backup: ZIP legível', zipReadable, zipReadable ? '' : 'Falha ao reabrir ZIP gerado.');
             }
         }catch(e){
             add('Backup: geração/leitura', false, 'Erro: '+(e && e.message ? e.message : e));
+        }
+
+        // 4) AutoBackup (snapshot completo + restore) — sem fechar o modal do AutoTeste
+        try{
+            const hasSnap = (typeof __snapshotObj==='function' && typeof __snapshotStr==='function');
+            add('AutoBackup: snapshot disponível', hasSnap, hasSnap?'':'Faltam __snapshotObj/__snapshotStr.');
+            if(hasSnap){
+                let obj=null;
+                try{ obj = __snapshotObj(); }catch(e){ obj=null; }
+                const requiredTop = ['turmas','alunos','aulas','planosSemana','config','layouts','correcaoProvas','planner','atividades','frequencia','entregas','ranking','rankHistCfg','auditLog','freqEvents'];
+                const missingTop = requiredTop.filter(k=>!obj || typeof obj[k]==='undefined');
+                add('AutoBackup: snapshot completo', missingTop.length===0, missingTop.length?('Faltando: '+missingTop.join(', ')):'');
+                const acts = (obj && obj.atividades) ? obj.atividades : null;
+                const requiredActs = ['forca','vf','memoria','flashcards','relacoes','roleta','quiz','completar','ordenar'];
+                const missingActs = requiredActs.filter(k=>!acts || typeof acts[k]==='undefined');
+                add('AutoBackup: bancos atividades', missingActs.length===0, missingActs.length?('Faltando: '+missingActs.join(', ')):'');
+                const truncOk = !!obj && (!Array.isArray(obj.auditLog) || obj.auditLog.length<=300) && (!Array.isArray(obj.freqEvents) || obj.freqEvents.length<=300);
+                add('AutoBackup: logs truncados', truncOk, truncOk?'':('auditLog:'+((obj&&obj.auditLog&&obj.auditLog.length)||0)+' freqEvents:'+((obj&&obj.freqEvents&&obj.freqEvents.length)||0)));
+
+                const hasApply = (typeof __applySnapshot==='function');
+                add('AutoBackup: restore disponível', hasApply, hasApply?'':'Falta __applySnapshot.');
+                if(hasApply && obj){
+                    const before = __snapshotStr();
+                    let rtOk=false, rtDet='';
+                    const _orig = {
+                        fecharModais: (typeof fecharModais==='function') ? fecharModais : null,
+                        showToast: (typeof showToast==='function') ? showToast : null,
+                        renderizarMenu: (typeof renderizarMenu==='function') ? renderizarMenu : null,
+                        renderizarVisao: (typeof renderizarVisao==='function') ? renderizarVisao : null,
+                        renderizarVisaoContent: (typeof renderizarVisaoContent==='function') ? renderizarVisaoContent : null,
+                        applyThemeFromConfig: (typeof applyThemeFromConfig==='function') ? applyThemeFromConfig : null,
+                        __renderBackupsUI: (typeof __renderBackupsUI==='function') ? __renderBackupsUI : null
+                    };
+                    try{
+                        // neutraliza UI para não fechar o modal do AutoTeste
+                        if(_orig.fecharModais) window.fecharModais = ()=>{};
+                        if(_orig.showToast) window.showToast = ()=>{};
+                        if(_orig.renderizarMenu) window.renderizarMenu = ()=>{};
+                        if(_orig.renderizarVisao) window.renderizarVisao = ()=>{};
+                        if(_orig.renderizarVisaoContent) window.renderizarVisaoContent = ()=>{};
+                        if(_orig.applyThemeFromConfig) window.applyThemeFromConfig = ()=>{};
+                        if(_orig.__renderBackupsUI) window.__renderBackupsUI = ()=>{};
+
+                        const d = JSON.parse(before);
+                        if(!d.config || typeof d.config!=='object') d.config = {};
+                        const nonce = 'at_'+Date.now();
+                        d.config.__autotest_nonce = nonce;
+
+                        __applySnapshot(JSON.stringify(d), 'AutoTeste');
+                        await __autoTestSleep(80);
+
+                        rtOk = !!(typeof config==='object' && config && config.__autotest_nonce===nonce);
+                        rtDet = rtOk ? 'nonce aplicado' : 'nonce não aplicado';
+                    }catch(e){
+                        rtOk=false; rtDet='Erro: '+(e && e.message ? e.message : e);
+                    }finally{
+                        try{ __applySnapshot(before, 'AutoTeste'); }catch(_){}
+                        await __autoTestSleep(60);
+
+                        // restaura funções originais
+                        try{
+                            if(_orig.fecharModais) window.fecharModais = _orig.fecharModais;
+                            if(_orig.showToast) window.showToast = _orig.showToast;
+                            if(_orig.renderizarMenu) window.renderizarMenu = _orig.renderizarMenu;
+                            if(_orig.renderizarVisao) window.renderizarVisao = _orig.renderizarVisao;
+                            if(_orig.renderizarVisaoContent) window.renderizarVisaoContent = _orig.renderizarVisaoContent;
+                            if(_orig.applyThemeFromConfig) window.applyThemeFromConfig = _orig.applyThemeFromConfig;
+                            if(_orig.__renderBackupsUI) window.__renderBackupsUI = _orig.__renderBackupsUI;
+                        }catch(_){}
+                        try{ if(config && config.__autotest_nonce) delete config.__autotest_nonce; }catch(_){}
+                    }
+                    add('AutoBackup: round-trip aplica/restaura', rtOk, rtDet);
+                }
+            }
+        }catch(e){
+            add('AutoBackup: snapshot/restore', false, 'Erro: '+(e && e.message ? e.message : e));
         }
 
     }catch(e){
