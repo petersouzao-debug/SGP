@@ -4730,7 +4730,19 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
 
                     <div class="cor-stats-grid">
                         <div class="cor-stat-block">
-                            <h4>Por questão</h4>
+                            <div class="cor-stat-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                            <h4 style="margin:0;">Por questão</h4>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span class="hint" style="margin:0; font-size:.72rem;">Ordenar</span>
+                                <select id="corSortQuestoes" class="inp" style="width:auto; padding:6px 10px; font-size:.78rem;">
+                                    <option value="qnum">Questão (1→10)</option>
+                                    <option value="ac_desc">Acertos ↓</option>
+                                    <option value="ac_asc">Acertos ↑</option>
+                                    <option value="pct_desc">% Acerto ↓</option>
+                                    <option value="pct_asc">% Acerto ↑</option>
+                                </select>
+                            </div>
+                        </div>
                             <div class="cor-chart-box"><canvas id="corChartQuestoes"></canvas></div>
                             <div class="cor-table-wrap">
                                 <table class="tabela-fixa">
@@ -4741,7 +4753,20 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                         </div>
 
                         <div class="cor-stat-block">
-                            <h4>Por BNCC/Aula</h4>
+                            <div class="cor-stat-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                            <h4 style="margin:0;">Por BNCC/Aula</h4>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span class="hint" style="margin:0; font-size:.72rem;">Ordenar</span>
+                                <select id="corSortBncc" class="inp" style="width:auto; padding:6px 10px; font-size:.78rem;">
+                                    <option value="pct_desc">% Acerto ↓</option>
+                                    <option value="pct_asc">% Acerto ↑</option>
+                                    <option value="ac_desc">Acertos ↓</option>
+                                    <option value="ac_asc">Acertos ↑</option>
+                                    <option value="az">A→Z</option>
+                                    <option value="za">Z→A</option>
+                                </select>
+                            </div>
+                        </div>
                             <div class="cor-chart-box"><canvas id="corChartBNCC"></canvas></div>
                             <div class="cor-table-wrap">
                                 <table class="tabela-fixa">
@@ -7108,6 +7133,17 @@ function checkBackupStatus(){
 
 let __corChartQ = null;
 let __corChartB = null;
+
+// Ordenação dos gráficos/tabelas (Correção)
+let __corSortQ = 'qnum';
+let __corSortB = 'pct_desc';
+try{
+  const sq = localStorage.getItem('sgp_cor_sort_q');
+  const sb = localStorage.getItem('sgp_cor_sort_b');
+  if(sq) __corSortQ = String(sq);
+  if(sb) __corSortB = String(sb);
+}catch(_){}
+
 // ======= UI SYNC (Correção -> Cards / Edição em Massa / Lista) =======
 // Corrige o caso em que a nota já foi calculada/salva, mas a UI não atualiza em outras telas.
 let __corUiSyncTimer = null;
@@ -7789,19 +7825,66 @@ function corRenderStats(){
   const qsTb = document.getElementById('corStatsQuestoesTbody');
   const bnTb = document.getElementById('corStatsBnccTbody');
 
+  // UI: sort selectors (persistência)
+  const selQ = document.getElementById('corSortQuestoes');
+  const selB = document.getElementById('corSortBncc');
+  try{
+    if(selQ && !selQ.dataset.bound){
+      selQ.dataset.bound='1';
+      selQ.value = __corSortQ || 'qnum';
+      selQ.addEventListener('change', function(){
+        __corSortQ = String(this.value||'qnum');
+        try{ localStorage.setItem('sgp_cor_sort_q', __corSortQ); }catch(_){}
+        corRenderStats();
+      });
+    }else if(selQ){
+      selQ.value = __corSortQ || 'qnum';
+    }
+    if(selB && !selB.dataset.bound){
+      selB.dataset.bound='1';
+      selB.value = __corSortB || 'pct_desc';
+      selB.addEventListener('change', function(){
+        __corSortB = String(this.value||'pct_desc');
+        try{ localStorage.setItem('sgp_cor_sort_b', __corSortB); }catch(_){}
+        corRenderStats();
+      });
+    }else if(selB){
+      selB.value = __corSortB || 'pct_desc';
+    }
+  }catch(_){}
+
   const stats = corComputeStats(prova, turma);
 
+  // ===== Por questão =====
+  const perQList = (stats.perQ||[]).map((q,i)=>({ idx:i+1, ac:q.ac||0, er:q.er||0, pct:q.pct||0 }));
+  let perQSorted = perQList.slice();
+  const qMode = (__corSortQ||'qnum');
+  if(qMode==='ac_desc') perQSorted.sort((a,b)=> (b.ac-a.ac) || (b.pct-a.pct) || (a.idx-b.idx));
+  else if(qMode==='ac_asc') perQSorted.sort((a,b)=> (a.ac-b.ac) || (a.pct-b.pct) || (a.idx-b.idx));
+  else if(qMode==='pct_desc') perQSorted.sort((a,b)=> (b.pct-a.pct) || (b.ac-a.ac) || (a.idx-b.idx));
+  else if(qMode==='pct_asc') perQSorted.sort((a,b)=> (a.pct-b.pct) || (a.ac-b.ac) || (a.idx-b.idx));
+  else perQSorted.sort((a,b)=> a.idx-b.idx);
+
   if(qsTb){
-    qsTb.innerHTML = stats.perQ.map((q,i)=>{
-      return `<tr><td><strong>${i+1}</strong></td><td>${q.ac}</td><td>${q.er}</td><td><strong>${q.pct}%</strong></td></tr>`;
+    qsTb.innerHTML = perQSorted.map((q)=>{
+      return `<tr><td><strong>${q.idx}</strong></td><td>${q.ac}</td><td>${q.er}</td><td><strong>${q.pct}%</strong></td></tr>`;
     }).join('');
   }
 
+  // ===== Por BNCC/Aula =====
+  const refEntries = Object.entries(stats.perRef||{}).map(([k,o])=>({ k, ac:o.ac||0, er:o.er||0, pct:o.pct||0 }));
+  let refSorted = refEntries.slice();
+  const bMode = (__corSortB||'pct_desc');
+  if(bMode==='ac_desc') refSorted.sort((a,b)=> (b.ac-a.ac) || (b.pct-a.pct) || String(a.k).localeCompare(String(b.k),'pt-BR'));
+  else if(bMode==='ac_asc') refSorted.sort((a,b)=> (a.ac-b.ac) || (a.pct-b.pct) || String(a.k).localeCompare(String(b.k),'pt-BR'));
+  else if(bMode==='pct_asc') refSorted.sort((a,b)=> (a.pct-b.pct) || (a.ac-b.ac) || String(a.k).localeCompare(String(b.k),'pt-BR'));
+  else if(bMode==='az') refSorted.sort((a,b)=> String(a.k).localeCompare(String(b.k),'pt-BR'));
+  else if(bMode==='za') refSorted.sort((a,b)=> String(b.k).localeCompare(String(a.k),'pt-BR'));
+  else refSorted.sort((a,b)=> (b.pct-a.pct) || (b.ac-a.ac) || String(a.k).localeCompare(String(b.k),'pt-BR'));
+
   if(bnTb){
-    const entries = Object.entries(stats.perRef)
-      .sort((a,b)=> (b[1].pct - a[1].pct));
-    bnTb.innerHTML = entries.map(([k,o])=>{
-      return `<tr><td style="max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><strong>${escHTML(k)}</strong></td><td>${o.ac}</td><td>${o.er}</td><td><strong>${o.pct}%</strong></td></tr>`;
+    bnTb.innerHTML = refSorted.map((o)=>{
+      return `<tr><td style="max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><strong>${escHTML(o.k)}</strong></td><td>${o.ac}</td><td>${o.er}</td><td><strong>${o.pct}%</strong></td></tr>`;
     }).join('');
   }
 
@@ -7810,53 +7893,55 @@ function corRenderStats(){
     const c1 = document.getElementById('corChartQuestoes');
     if(c1 && c1.getContext){
       if(__corChartQ) __corChartQ.destroy();
-      
-const qLabels = Array.from({length:10}).map((_,i)=>String(i+1));
-const qColors = corBarColors(qLabels, 0.75);
-const qBorders = corBarColors(qLabels, 1);
-__corChartQ = new Chart(c1.getContext('2d'), {
-  type: 'bar',
-  data: { 
-    labels: qLabels, 
-    datasets: [{
-      label: '% Acerto (Questão)', 
-      data: stats.perQ.map(q=>q.pct),
-      backgroundColor: qColors,
-      borderColor: qBorders,
-      borderWidth: 1
-    }]
-  },
-  options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
-});
-}
+
+      const qLabels = perQSorted.map(o=>String(o.idx));
+      const qColors = corBarColors(qLabels, 0.75);
+      const qBorders = corBarColors(qLabels, 1);
+
+      __corChartQ = new Chart(c1.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: qLabels,
+          datasets: [{
+            label: '% Acerto (Questão)',
+            data: perQSorted.map(o=>o.pct),
+            backgroundColor: qColors,
+            borderColor: qBorders,
+            borderWidth: 1
+          }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
+      });
+    }
   }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'corChartQ',{}); }catch(_){} }
 
   try{
     const c2 = document.getElementById('corChartBNCC');
     if(c2 && c2.getContext){
-      const labels = Object.entries(stats.perRef).map(([k])=>k);
-      const data = Object.entries(stats.perRef).map(([,o])=>o.pct);
+      const labels = refSorted.map(o=>o.k);
+      const data = refSorted.map(o=>o.pct);
       if(__corChartB) __corChartB.destroy();
-      
-const bLabels = labels.length ? labels : ['—'];
-const bData = data.length ? data : [0];
-const bColors = corBarColors(bLabels, 0.75);
-const bBorders = corBarColors(bLabels, 1);
-__corChartB = new Chart(c2.getContext('2d'), {
-  type: 'bar',
-  data: { 
-    labels: bLabels, 
-    datasets: [{
-      label: '% Acerto (BNCC/Aula)', 
-      data: bData,
-      backgroundColor: bColors,
-      borderColor: bBorders,
-      borderWidth: 1
-    }]
-  },
-  options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
-});
-}
+
+      const bLabels = labels.length ? labels : ['—'];
+      const bData = data.length ? data : [0];
+      const bColors = corBarColors(bLabels, 0.75);
+      const bBorders = corBarColors(bLabels, 1);
+
+      __corChartB = new Chart(c2.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: bLabels,
+          datasets: [{
+            label: '% Acerto (BNCC/Aula)',
+            data: bData,
+            backgroundColor: bColors,
+            borderColor: bBorders,
+            borderWidth: 1
+          }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
+      });
+    }
   }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'corChartB',{}); }catch(_){} }
 }
 
