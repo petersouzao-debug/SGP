@@ -1795,6 +1795,10 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         .cor-prova-row{ display:flex; align-items:center; gap:6px; }
         .cor-prova-row select.inp{ flex:1; min-width:220px; }
         @media (max-width: 520px){ .cor-prova-row select.inp{ min-width:160px; } }
+        .cor-link-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+        .cor-link-row select.inp{ min-width:190px; }
+        @media (max-width: 520px){ .cor-link-row select.inp{ min-width:160px; } }
+
         .mini-label{ display:flex; flex-direction:column; gap:4px; font-size:0.75rem; color: var(--text-muted); }
         .correcao-grid{ display:grid; grid-template-columns: 1.2fr 1fr; gap:16px; }
         .correcao-grid .card{ background: var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:16px; box-shadow: 0 2px 5px rgba(0,0,0,0.04); }
@@ -4230,6 +4234,17 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
 .bulk-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
 
 
+
+        /* PRINT FIX (Correção): garante que #corPrintArea fique visível mesmo com outros modos de impressão */
+        @media print {
+          #corPrintArea, #corPrintArea * { visibility: visible !important; }
+          #corPrintArea { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; background: #fff !important; }
+          #corPrintArea .print-section{ margin-top: 14px; }
+          #corPrintArea .print-h2{ font-size: 13px; font-weight: 700; margin: 10px 0 6px; }
+          #corPrintArea .print-muted{ color:#555; font-size: 11px; }
+          #corPrintArea .pb{ page-break-before: always; }
+        }
+
 </style>
 </head>
 <body>
@@ -4633,8 +4648,26 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
         <button class="btn-tool" data-onclick="corExcluirProva()" title="Excluir prova" style="color:#dc2626;"><i class="fas fa-trash"></i></button>
     </div>
 </label>
+                    <label class="mini-label" title="Vincule esta prova a uma Disciplina/Atividade para lançar a nota automaticamente no card e na edição em massa.">Lançar nota em
+                        <div class="cor-link-row">
+                            <select id="corDiscSelect" class="inp" aria-label="Disciplina para lançamento de nota"></select>
+                            <select id="corAvSelect" class="inp" aria-label="Atividade para lançamento de nota"></select>
+                        </div>
+                    </label>
+                    <label class="mini-label" style="flex-direction:row;align-items:center;gap:8px;margin-top:18px;" title="Cria/atualiza gabarito e referência desta prova em TODAS as turmas (sem apagar respostas já lançadas).">
+                        <input type="checkbox" id="corApplyAll" style="width:16px;height:16px; accent-color: var(--primary);" />
+                        <span>Todas as turmas</span>
+                    </label>
                     <button class="btn btn-primary" id="corNovaProvaBtn" data-onclick="corNovaProva()"><i class="fas fa-plus"></i> Nova Prova</button>
                     <button class="btn-tool" data-onclick="corPrintList()" title="Imprimir lista de resultados" style="font-size:1.05rem;"><i class="fas fa-print"></i></button>
+                    <label class="mini-label" style="flex-direction:row;align-items:center;gap:8px;margin-top:18px;" title="Se marcado, a migração pode sobrescrever notas já existentes no bimestre.">
+                        <input type="checkbox" id="corOverwriteExisting" style="width:16px;height:16px; accent-color: var(--primary);" />
+                        <span>Sobrescrever</span>
+                    </label>
+                    <button class="btn btn-secondary" id="corMigrarBtn" data-onclick="corMigrarLancamentosAntigos()" title="Migra notas já lançadas anteriormente nesta prova para Cards/Edição em Massa/Lista SED (no bimestre atual).">
+                        <i class="fas fa-rotate"></i> Migrar lançamentos
+                    </button>
+
                 </div>
                 <div id="corDiscBadge" style="width:100%;margin-top:2px;"></div>
             </div>
@@ -4737,7 +4770,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                         <option value="5x8">5×8 (40)</option>
                     </select>
                     <button class="btn-tool" data-onclick="mapaAutoDistribuir()" title="Distribuir automaticamente"><i class="fas fa-wand-magic-sparkles"></i></button>
-                    <button id="btnMapaSwap" class="btn-tool" data-onclick="mapaToggleSwap()" title="Trocar 2 alunos de lugar"><i class="fas fa-arrows-rotate"></i></button>
+                    <button id="btnMapaSwap" class="btn-tool" data-onclick="mapaToggleSwap()" title="Trocar 2 alunos de lugar"><i class="fas fa-rotate"></i></button>
                     <button class="btn-tool" data-onclick="mapaToggleDisable()" title="Desabilitar/habilitar mesas"><i class="fas fa-square-minus"></i></button>
                     <button class="btn-tool" data-onclick="mapaImprimir()" title="Imprimir mapa"><i class="fas fa-print"></i></button>
                     <span style="border-left:1px solid var(--border-color);height:20px;"></span>
@@ -7075,8 +7108,154 @@ function checkBackupStatus(){
 
 let __corChartQ = null;
 let __corChartB = null;
+// ======= UI SYNC (Correção -> Cards / Edição em Massa / Lista) =======
+// Corrige o caso em que a nota já foi calculada/salva, mas a UI não atualiza em outras telas.
+let __corUiSyncTimer = null;
+let __corPendingUIUpdates = new Map(); // key: aluno|disc|av -> {alunoId,discId,avId,nota}
+
+function __corQueueUiUpdate(discId, avId, alunoId, nota){
+  try{
+    if(!discId || !avId || !alunoId) return;
+    const key = String(alunoId) + '|' + String(discId) + '|' + String(avId);
+    __corPendingUIUpdates.set(key, { alunoId, discId, avId, nota });
+    __corScheduleUiSync();
+  }catch(_){}
+}
+
+function __corScheduleUiSync(){
+  try{
+    clearTimeout(__corUiSyncTimer);
+    __corUiSyncTimer = setTimeout(__corApplyUiSync, 250);
+  }catch(_){}
+}
+
+function __corApplyUiSync(){
+  try{
+    // 1) Edição em massa (não destrói edições não salvas; só atualiza células não modificadas)
+    const massaView = document.getElementById('viewMassa');
+    const massaVisible = !!(massaView && getComputedStyle(massaView).display !== 'none');
+    if(massaVisible){
+      __corPendingUIUpdates.forEach(u=>{
+        try{ __corSyncOneMassaCell(u); }catch(_){}
+      });
+      try{ if(typeof __massaUpdateProgress === 'function') __massaUpdateProgress(); }catch(_){}
+    }
+
+    // 2) Cards (grid) e Lista SED, apenas se estiverem visíveis
+    const grid = document.getElementById('gridAlunos');
+    if(grid && getComputedStyle(grid).display !== 'none'){
+      try{ if(typeof renderizarGrid === 'function') renderizarGrid(); }catch(_){}
+    }
+    const tabela = document.getElementById('tabelaFechamento');
+    if(tabela && getComputedStyle(tabela).display !== 'none'){
+      try{ if(typeof renderizarListaSED === 'function') renderizarListaSED(); }catch(_){}
+    }
+  }catch(_){}
+  try{ __corPendingUIUpdates.clear(); }catch(_){}
+}
+
+function __corSyncOneMassaCell(u){
+  if(!u) return;
+  const alunoId = String(u.alunoId);
+  const discId  = String(u.discId);
+  const avId    = String(u.avId);
+  const nota = (u.nota!=null && isFinite(u.nota)) ? (Math.round(Number(u.nota)*10)/10) : 0;
+
+  const inputs = document.querySelectorAll('.nota-input-massa');
+  inputs.forEach(inp=>{
+    if(!inp || !inp.dataset) return;
+    if(String(inp.dataset.aluno) !== alunoId) return;
+    if(String(inp.dataset.disc)  !== discId)  return;
+    if(String(inp.dataset.eval)  !== avId)    return;
+
+    // Não sobrescreve se o usuário já modificou esta célula na edição em massa
+    try{
+      if(inp.classList && inp.classList.contains('massa-modified')) return;
+      if(typeof __massaModifiedInputs === 'object' && __massaModifiedInputs && __massaModifiedInputs.has && __massaModifiedInputs.has(inp)) return;
+    }catch(_){}
+
+    inp.value = String(nota);
+    try{ if(typeof handleNotaInput === 'function') handleNotaInput(inp); }catch(_){}
+    try{ if(typeof __massaRecalcRowMedia === 'function') __massaRecalcRowMedia(inp); }catch(_){}
+  });
+}
+
 
 function escAttr(s){ return escHTML(s); }
+
+let __corApplyAllTimer = null;
+
+function corIsApplyAllEnabled(){
+  const cb = document.getElementById('corApplyAll');
+  return !!(cb && cb.checked);
+}
+
+// Copia apenas o MODELO (gabarito + ref) desta prova para as demais turmas.
+// - Não apaga respostas já lançadas (answers)
+// - Cria a prova nas turmas que ainda não a possuem (com answers vazio)
+function corApplyTemplateToAllTurmas(baseTurma, prova){
+  try{
+    if(!corIsApplyAllEnabled()) return;
+    if(!prova || !prova.id) return;
+    if(!Array.isArray(turmas) || turmas.length===0) return;
+
+    const pid = prova.id;
+    const templateQuestions = Array.from({length:10}).map((_,i)=>{
+      const q = (prova.questions && prova.questions[i]) ? prova.questions[i] : {};
+      return { g: String(q.g||'').toUpperCase(), ref: String(q.ref||'').trim() };
+    });
+
+    turmas.forEach(t=>{
+      if(!t) return;
+      const tctx = corEnsureTurma(t);
+      if(!tctx) return;
+      if(!tctx.provas) tctx.provas = {};
+
+      let p = tctx.provas[pid];
+      if(!p){
+        p = {
+          id: pid,
+          nome: prova.nome || 'Prova',
+          createdAt: prova.createdAt || new Date().toISOString(),
+          questions: JSON.parse(JSON.stringify(templateQuestions)),
+          answers: {}
+        };
+        // mantém vínculo de disciplina/atividade quando existir
+        if(prova._discId) p._discId = prova._discId;
+        if(prova._avId) p._avId = prova._avId;
+        if(prova._syncKey) p._syncKey = prova._syncKey;
+        if(prova._autoSync) p._autoSync = prova._autoSync;
+
+        tctx.provas[pid] = p;
+        if(!tctx.activeProvaId) tctx.activeProvaId = pid;
+      }else{
+        // preserva respostas já lançadas
+        if(!p.answers) p.answers = {};
+        p.nome = prova.nome || p.nome;
+        p.questions = JSON.parse(JSON.stringify(templateQuestions));
+        if(prova._discId) p._discId = prova._discId;
+        if(prova._avId) p._avId = prova._avId;
+        if(prova._syncKey) p._syncKey = prova._syncKey;
+      }
+    });
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corApplyTemplateToAllTurmas',{}); }catch(_){}
+  }
+}
+
+// Para evitar aplicar a cada tecla digitada, agenda a aplicação após breve pausa
+function corScheduleApplyAll(baseTurma, prova){
+  try{
+    if(!corIsApplyAllEnabled()) return;
+    clearTimeout(__corApplyAllTimer);
+    __corApplyAllTimer = setTimeout(()=>{
+      try{
+        corApplyTemplateToAllTurmas(baseTurma, prova);
+        corSave();
+      }catch(_){}
+    }, 350);
+  }catch(_){}
+}
 
 function corSave(){
   try{
@@ -7191,6 +7370,12 @@ function corNovaProva(){
     if(_discId){ provaObj._discId = _discId; provaObj._avId = _avId; provaObj._syncKey = 'manual_' + _discId + '_' + (_avId||''); }
     tctx.provas[pid] = provaObj;
     tctx.activeProvaId = pid;
+
+    // Se marcado, cria/aplica este MODELO para todas as turmas (sem duplicar trabalho)
+    if(corIsApplyAllEnabled()){
+      corApplyTemplateToAllTurmas(turma, provaObj);
+    }
+
     corSave();
     corRenderAll();
     showToast && showToast('Prova criada!', 'success');
@@ -7211,6 +7396,17 @@ function corRenomearProva(){
     const novo = (prompt('Novo nome da prova:', (prova.nome||'')) || '').trim();
     if(!novo) return;
     prova.nome = novo;
+
+    // Se marcado, mantém o mesmo nome nas demais turmas que já possuam esta prova
+    if(corIsApplyAllEnabled()){
+      try{
+        (turmas||[]).forEach(t=>{
+          const c = corEnsureTurma(t);
+          if(c && c.provas && c.provas[pid]) c.provas[pid].nome = novo;
+        });
+      }catch(_){ }
+    }
+
     corSave();
     // Atualiza apenas os seletores (não mexe nas respostas)
     corRenderSelectors();
@@ -7230,14 +7426,30 @@ function corExcluirProva(){
     const pid = (provaSel && provaSel.value) ? provaSel.value : (tctx ? tctx.activeProvaId : null);
     if(!tctx || !pid || !tctx.provas || !tctx.provas[pid]){ showToast && showToast('Selecione uma prova para excluir.', 'error'); return; }
     const nome = tctx.provas[pid].nome || 'esta prova';
-    const ok = confirm(`Excluir "${nome}"?\n\nEssa ação não pode ser desfeita.`);
+    const _all = corIsApplyAllEnabled();
+    const ok = confirm(_all
+      ? `Excluir "${nome}" em TODAS as turmas?\n\n(As respostas já lançadas nessas turmas também serão removidas.)\n\nEssa ação não pode ser desfeita.`
+      : `Excluir "${nome}"?\n\nEssa ação não pode ser desfeita.`);
     if(!ok) return;
 
-    delete tctx.provas[pid];
+    if(_all){
+      // Remove esta prova em todas as turmas
+      (turmas||[]).forEach(t=>{
+        const c = corEnsureTurma(t);
+        if(!c || !c.provas) return;
+        if(c.provas[pid]) delete c.provas[pid];
+        if(c.activeProvaId === pid){
+          const rest = Object.values(c.provas||{}).sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+          c.activeProvaId = rest.length ? rest[rest.length-1].id : null;
+        }
+      });
+    }else{
+      delete tctx.provas[pid];
 
-    // Define próxima prova ativa (se existir)
-    const restantes = Object.values(tctx.provas||{}).sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
-    tctx.activeProvaId = restantes.length ? restantes[restantes.length-1].id : null;
+      // Define próxima prova ativa (se existir)
+      const restantes = Object.values(tctx.provas||{}).sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+      tctx.activeProvaId = restantes.length ? restantes[restantes.length-1].id : null;
+    }
 
     corSave();
     // Garante que exista ao menos uma prova para a UI não ficar vazia
@@ -7307,9 +7519,15 @@ function corRenderGabarito(){
   const tb = document.getElementById('corGabaritoTbody');
   if(!tb || !prova) return;
 
+  // Garantia: questions sempre como array com 10 entradas
+  if(!Array.isArray(prova.questions)) prova.questions = Array.from({length:10}).map(()=>({ g:'', ref:'' }));
+  if(prova.questions.length < 10){
+    prova.questions = prova.questions.concat(Array.from({length:10-prova.questions.length}).map(()=>({ g:'', ref:'' })));
+  }
+
   tb.innerHTML = '';
   for(let i=0;i<10;i++){
-    const q = prova.questions[i] || (prova.questions[i]={g:'',ref:''});
+    const q0 = prova.questions[i] || (prova.questions[i]={g:'',ref:''});
     const tr = document.createElement('tr');
 
     const tdN = document.createElement('td');
@@ -7325,35 +7543,72 @@ function corRenderGabarito(){
     tr.appendChild(tdG);
 
     const tdR = document.createElement('td');
-    tdR.innerHTML = `<input class="inp" data-qref="${i}" placeholder="Ex.: EF67LPxx / Aula 3" value="${escAttr(q.ref||'')}">`;
+    tdR.innerHTML = `<input class="inp" data-qref="${i}" placeholder="Ex.: EF67LPxx / Aula 3" value="${escAttr(q0.ref||'')}">`;
     tr.appendChild(tdR);
 
     tb.appendChild(tr);
 
     const sel = tdG.querySelector('select');
-    sel.value = (q.g||'').toUpperCase();
+    sel.value = (q0.g||'').toUpperCase();
+
+    // IMPORTANT: não capturar referência de q0 para escrita
+    // (prova.questions pode ser substituído por deep-copy ao aplicar modelo/sync)
     sel.addEventListener('change', function(){
-      const v = (this.value||'').toUpperCase();
-      q.g = (['A','B','C','D'].includes(v) ? v : '');
-      corSave();
-      corRenderAluno();
-      corRenderStats();
-      // Auto-post when gabarito changes
       try{
-        const _turma = corGetTurmaSelecionada();
-        const _prova = corGetSelectedProva();
-        if(_prova && _prova._discId) corAutoPostAllGrades(_prova, _turma);
-      }catch(_){}
+        const idx = parseInt(this.dataset.q||'0', 10) || 0;
+        const p = corGetSelectedProva();
+        if(!p) return;
+
+        if(!Array.isArray(p.questions)) p.questions = Array.from({length:10}).map(()=>({ g:'', ref:'' }));
+        if(!p.questions[idx]) p.questions[idx] = { g:'', ref:'' };
+
+        const v = (this.value||'').toUpperCase();
+        p.questions[idx].g = (['A','B','C','D'].includes(v) ? v : '');
+
+        // Opcional: aplica o modelo (gabarito/ref) a todas as turmas
+        if(corIsApplyAllEnabled()) corApplyTemplateToAllTurmas(turma, p);
+
+        corSave();
+
+        // Re-renderiza para eliminar handlers "stale" quando questions é deep-copiado
+        try{ corRenderGabarito(); }catch(_){}
+
+        corRenderAluno();
+        corRenderStats();
+
+        // Auto-post quando o gabarito muda
+        try{
+          const _turma = corGetTurmaSelecionada();
+          const _prova = corGetSelectedProva();
+          if(_prova && _prova._discId && _prova._avId) corAutoPostAllGrades(_prova, _turma);
+        }catch(_){}
+      }catch(e){
+        try{ if(typeof __diagCapture==='function') __diagCapture(e,'corGabarito.change',{}); }catch(_){}
+      }
     });
 
     const inp = tdR.querySelector('input');
     inp.addEventListener('input', function(){
-      q.ref = (this.value||'').trim();
-      corSave();
-      corRenderStats();
+      try{
+        const idx = parseInt(this.dataset.qref||'0', 10) || 0;
+        const p = corGetSelectedProva();
+        if(!p) return;
+
+        if(!Array.isArray(p.questions)) p.questions = Array.from({length:10}).map(()=>({ g:'', ref:'' }));
+        if(!p.questions[idx]) p.questions[idx] = { g:'', ref:'' };
+
+        p.questions[idx].ref = (this.value||'').trim();
+        corSave();
+        corRenderStats();
+        // Aplica a todas as turmas após pequena pausa (evita aplicar a cada tecla)
+        corScheduleApplyAll(turma, p);
+      }catch(e){
+        try{ if(typeof __diagCapture==='function') __diagCapture(e,'corGabarito.ref',{}); }catch(_){}
+      }
     });
   }
 }
+
 
 function corGetAlunoSelecionadoId(){
   const sel = document.getElementById('corAlunoSelect');
@@ -7624,10 +7879,152 @@ function corBindEvents(){
   }
 }
 
+
+function corRenderLinkSelectors(){
+  try{
+    const discSel = document.getElementById('corDiscSelect');
+    const avSel   = document.getElementById('corAvSelect');
+    if(!discSel || !avSel) return;
+
+    const prova = corGetSelectedProva();
+    const discs = (config && Array.isArray(config.disciplinas)) ? config.disciplinas : [];
+
+    // Sem disciplinas configuradas
+    if(!discs.length){
+      discSel.disabled = true;
+      discSel.innerHTML = `<option value="">(Configure disciplinas no Config.)</option>`;
+      avSel.disabled = true;
+      avSel.innerHTML = `<option value="">—</option>`;
+      return;
+    }
+
+    discSel.disabled = false;
+
+    // Disciplinas
+    const optsDisc = ['<option value="">— Sem vínculo —</option>']
+      .concat(discs.map(d=>`<option value="${escAttr(d.id)}">${escHTML(d.nome||'Disciplina')}</option>`));
+    discSel.innerHTML = optsDisc.join('');
+
+    const currDisc = (prova && prova._discId) ? String(prova._discId) : '';
+    discSel.value = (currDisc && discs.some(d=>String(d.id)===currDisc)) ? currDisc : '';
+
+    // Atividades (depende da disciplina)
+    const discObj = discs.find(d=>String(d.id)===String(discSel.value));
+    if(!discObj){
+      avSel.disabled = true;
+      avSel.innerHTML = `<option value="">—</option>`;
+      avSel.value = '';
+    } else {
+      const avsRaw = Array.isArray(discObj.avaliacoes) ? discObj.avaliacoes : [];
+      // Dedup por id (evita atividades duplicadas no seletor)
+      const avs = [];
+      const _seenAv = new Set();
+      avsRaw.forEach(av=>{
+        const _id = av && av.id ? String(av.id) : '';
+        if(!_id || _seenAv.has(_id)) return;
+        _seenAv.add(_id);
+        avs.push(av);
+      });
+
+      avSel.disabled = false;
+      const optsAv = ['<option value="">— Selecionar atividade —</option>']
+        .concat(avs.map(av=>`<option value="${escAttr(av.id)}">${escHTML(av.nome||'Atividade')}</option>`));
+      avSel.innerHTML = optsAv.join('');
+      const currAv = (prova && prova._avId) ? String(prova._avId) : '';
+      avSel.value = (currAv && avs.some(a=>String(a.id)===currAv)) ? currAv : '';
+    }
+
+    // Bind (1x)
+    if(!discSel.dataset.bound){
+      discSel.dataset.bound='1';
+      discSel.addEventListener('change', function(){
+        try{
+          const turma = corGetTurmaSelecionada();
+          const p = corGetSelectedProva();
+          if(!p) return;
+
+          const newDiscStr = String(this.value||'');
+          if(!newDiscStr){
+            delete p._discId; delete p._avId; delete p._syncKey;
+            corSave();
+            corRenderLinkSelectors();
+            corRenderDiscBadge();
+            return;
+          }
+
+          // Preserva o TIPO do id (evita falhas por comparação estrita em outras telas)
+          const discObj = (config.disciplinas||[]).find(d=>String(d.id)===newDiscStr);
+          p._discId = discObj ? discObj.id : newDiscStr;
+
+          // Se a atividade atual não pertence à disciplina, limpa (evita postar em atividade errada)
+          const avs = discObj && Array.isArray(discObj.avaliacoes) ? discObj.avaliacoes : [];
+          if(p._avId && !avs.some(a=>String(a.id)===String(p._avId))){
+            delete p._avId;
+          }
+          delete p._syncKey; // será recriado quando a atividade for selecionada
+
+          if(corIsApplyAllEnabled()) corApplyTemplateToAllTurmas(turma, p);
+          corSave();
+          corRenderLinkSelectors();
+          corRenderDiscBadge();
+        }catch(e){
+          try{ if(typeof __diagCapture==='function') __diagCapture(e,'corDiscSelect.change',{}); }catch(_){}
+        }
+      });
+    }
+
+    if(!avSel.dataset.bound){
+      avSel.dataset.bound='1';
+      avSel.addEventListener('change', function(){
+        try{
+          const turma = corGetTurmaSelecionada();
+          const p = corGetSelectedProva();
+          if(!p || !p._discId) return;
+
+          const newAvStr = String(this.value||'');
+          if(!newAvStr){
+            delete p._avId; delete p._syncKey;
+            if(corIsApplyAllEnabled()) corApplyTemplateToAllTurmas(turma, p);
+            corSave();
+            corRenderDiscBadge();
+            return;
+          }
+
+          // Preserva o TIPO do id (evita falhas por comparação estrita)
+          const discObj = (config.disciplinas||[]).find(d=>String(d.id)===String(p._discId));
+          const avObj = discObj ? (discObj.avaliacoes||[]).find(av=>String(av.id)===newAvStr) : null;
+          p._avId = avObj ? avObj.id : newAvStr;
+
+          // syncKey ajuda a evitar provas duplicadas auto-sincronizadas para a mesma atividade
+          p._syncKey = 'sync_' + String(p._discId) + '_' + String(p._avId);
+
+          // Evita duplicar provas/atividades vinculadas ao mesmo Disciplina→Atividade (syncKey)
+          try{ corDedupProvasBySyncKey(turma, p._syncKey, p.id); }catch(_){}
+
+
+          if(corIsApplyAllEnabled()) corApplyTemplateToAllTurmas(turma, p);
+          corSave();
+          corRenderDiscBadge();
+
+          // Posta em lote (para quem já tem respostas lançadas)
+          try{ corAutoPostAllGrades(p, turma); }catch(_){}
+        }catch(e){
+          try{ if(typeof __diagCapture==='function') __diagCapture(e,'corAvSelect.change',{}); }catch(_){}
+        }
+      });
+    }
+
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corRenderLinkSelectors',{}); }catch(_){}
+  }
+}
+
+
 function corRenderAll(){
   corSyncDiscActivities();
   corRenderSelectors();
   corBindEvents();
+  corRenderLinkSelectors();
   corRenderGabarito();
   corRenderAluno();
   corRenderStats();
@@ -7635,7 +8032,92 @@ function corRenderAll(){
 }
 
 /* ======= SINCRONIZAÇÃO AUTOMÁTICA: Disciplinas -> Correção ======= */
+/* Dedup/merge: garante que não existam provas duplicadas para o mesmo Disciplina→Atividade (syncKey) */
+function corCountFilledAnswers(prova){
+  try{
+    let c=0;
+    const ans = (prova && prova.answers && typeof prova.answers==='object') ? prova.answers : {};
+    Object.values(ans).forEach(arr=>{
+      if(!Array.isArray(arr)) return;
+      arr.forEach(v=>{ if(String(v||'').trim()!=='') c++; });
+    });
+    return c;
+  }catch(_){ return 0; }
+}
+
+function corMergeProvasTemplateAndAnswers(dst, src){
+  try{
+    if(!dst || !src) return;
+    // questions (template)
+    if(!Array.isArray(dst.questions)) dst.questions = Array.from({length:10}).map(()=>({g:'',ref:''}));
+    if(!Array.isArray(src.questions)) src.questions = [];
+    for(let i=0;i<10;i++){
+      const dq = dst.questions[i] || (dst.questions[i]={g:'',ref:''});
+      const sq = src.questions[i] || {};
+      if(!dq.g && sq.g) dq.g = String(sq.g||'').trim().toUpperCase();
+      if(!dq.ref && sq.ref) dq.ref = String(sq.ref||'');
+    }
+
+    // answers
+    if(!dst.answers || typeof dst.answers!=='object') dst.answers = {};
+    const sans = (src.answers && typeof src.answers==='object') ? src.answers : {};
+    Object.keys(sans).forEach(aid=>{
+      const sarr = sans[aid];
+      if(!Array.isArray(sarr)) return;
+      if(!dst.answers[aid] || !Array.isArray(dst.answers[aid])){
+        const copy = sarr.slice(0,10);
+        while(copy.length<10) copy.push('');
+        dst.answers[aid] = copy;
+        return;
+      }
+      const darr = dst.answers[aid];
+      while(darr.length<10) darr.push('');
+      for(let i=0;i<10;i++){
+        const dv = String(darr[i]||'').trim();
+        const sv = String(sarr[i]||'').trim();
+        if(!dv && sv) darr[i] = sv.toUpperCase();
+      }
+    });
+  }catch(_){}
+}
+
+function corDedupProvasBySyncKey(turma, syncKey, preferId){
+  try{
+    if(!turma || !syncKey) return false;
+    const tctx = corEnsureTurma(turma);
+    if(!tctx || !tctx.provas) return false;
+
+    const ids = Object.keys(tctx.provas).filter(pid=>{
+      const p = tctx.provas[pid];
+      return p && p._syncKey === syncKey;
+    });
+    if(ids.length<=1) return false;
+
+    // Escolhe alvo: preferId > prova não autoSync > mais respostas
+    let targetId = (preferId && tctx.provas[preferId] && tctx.provas[preferId]._syncKey===syncKey) ? preferId : '';
+    if(!targetId){
+      const nonAuto = ids.filter(pid=>!(tctx.provas[pid] && tctx.provas[pid]._autoSync));
+      const base = nonAuto.length ? nonAuto : ids;
+      base.sort((a,b)=> corCountFilledAnswers(tctx.provas[b]) - corCountFilledAnswers(tctx.provas[a]));
+      targetId = base[0];
+    }
+
+    const target = tctx.provas[targetId];
+    ids.forEach(pid=>{
+      if(pid===targetId) return;
+      const other = tctx.provas[pid];
+      if(!other) return;
+      corMergeProvasTemplateAndAnswers(target, other);
+      delete tctx.provas[pid];
+    });
+
+    if(tctx.activeProvaId && !tctx.provas[tctx.activeProvaId]) tctx.activeProvaId = targetId;
+    return true;
+  }catch(_){ return false; }
+}
+
 function corSyncDiscActivities(){
+
   try{
     if(!config || !Array.isArray(config.disciplinas)) return;
     let changed = false;
@@ -7693,6 +8175,13 @@ function corSyncDiscActivities(){
           }
         }
       });
+      // 3) Dedup provas duplicadas por syncKey (mescla respostas/template e mantém só 1)
+      try{
+        const keys = new Set();
+        Object.values(tctx.provas||{}).forEach(p=>{ if(p && p._syncKey) keys.add(p._syncKey); });
+        keys.forEach(k=>{ if(corDedupProvasBySyncKey(turma, k, tctx.activeProvaId)) changed = true; });
+      }catch(_){}
+
     });
 
     if(changed) corSave();
@@ -7723,33 +8212,100 @@ function corUpdateNotaFinal(prova, alunoId){
 }
 
 /* ======= AUTO-POST: lança nota na disciplina do aluno ======= */
-function corAutoPostGrade(prova, alunoId){
+function corHasAnyAnswer(prova, alunoId){
   try{
-    if(!prova || !alunoId) return;
-    if(!prova._discId || !prova._avId) return; // sem vínculo
-    const aluno = alunos.find(a => a && a.id === alunoId);
-    if(!aluno || !aluno.bimestres) return;
-    const bim = aluno.bimestres[bimestreAtual];
-    if(!bim) return;
+    const ans = (prova && prova.answers) ? prova.answers[alunoId] : null;
+    return Array.isArray(ans) && ans.some(x => String(x||'').trim()!=='');
+  }catch(_){ return false; }
+}
+
+function corPostGradeToAlunoBimestre(prova, aluno, bimIdx){
+  try{
+    if(!prova || !aluno) return false;
+    if(!prova._discId || !prova._avId) return false; // sem vínculo
+
+    // opts: { overwrite: true|false }
+    let __overwrite = true;
+    try{ if(arguments.length>=4){ const opts = arguments[3]; if(opts && opts.overwrite===false) __overwrite = false; } }catch(_){ __overwrite = true; }
+
+    if(!corHasAnyAnswer(prova, aluno.id)) return false;
+
+    const totalQ = (prova.questions||[]).filter(q => corNormalizeAlt(q.g)).length;
+    if(totalQ === 0) return false; // sem gabarito válido
+
+    if(!aluno.bimestres) return false;
+    const bim = aluno.bimestres[bimIdx];
+    if(!bim) return false;
+
     if(!bim.notas_disc || typeof bim.notas_disc !== 'object') bim.notas_disc = {};
     if(!bim.notas_disc[prova._discId]) bim.notas_disc[prova._discId] = {};
-    const nota = corCalcNotaFinal(prova, alunoId);
+
+    const prev = bim.notas_disc[prova._discId][prova._avId];
+    const prevHas = !(typeof prev === 'undefined' || prev === null || prev === '');
+    const prevN = clampNota(prev);
+
+    // Modo seguro (migração): não sobrescreve notas já existentes (>0) quando __overwrite=false
+    if(__overwrite === false){
+      // Se já existe uma nota lançada (>0), preserva
+      if(prevHas && prevN > 0.05){
+        try{ _syncBimestreRefs(bim); }catch(_){}
+        return false;
+      }
+      // Se nota calculada é ~0 e o campo já está 0/vazio, não precisa gravar
+      // (mantém 0 para casos de aluno que zerou)
+      const __notaCalcTmp = corCalcNotaFinal(prova, aluno.id);
+      if(__notaCalcTmp <= 0.05 && (!prevHas || prevN <= 0.05)){
+        try{ _syncBimestreRefs(bim); }catch(_){}
+        return false;
+      }
+    }
+
+    // Nota final (calculada)
+    const nota = corCalcNotaFinal(prova, aluno.id);
+// Só grava se mudou (evita salvar toda hora)
+    if(Math.abs(prevN - nota) < 0.05){
+      try{ _syncBimestreRefs(bim); }catch(_){}
+      return false;
+    }
+
     bim.notas_disc[prova._discId][prova._avId] = nota;
+
     // Sync legados
     try{ _syncBimestreRefs(bim); }catch(_){}
+
     // Recalcula média para a disciplina vinculada
     const disc = getDiscById(prova._discId);
     if(disc){
       const notas = bim.notas_disc[prova._discId];
       const media = calcularMediaDisc(prova._discId, notas).toFixed(1);
-      // Atualiza campos legados (slot1 -> media_lp, slot2 -> media_red)
       if(prova._discId === config.slot1) bim.media_lp = media;
       if(prova._discId === config.slot2) bim.media_red = media;
-      // Armazena media genérica para qualquer disciplina (suporte a 3+ disciplinas)
       if(!bim.medias_disc || typeof bim.medias_disc !== 'object') bim.medias_disc = {};
       bim.medias_disc[prova._discId] = parseFloat(media);
     }
-    salvarDadosLocal();
+    return true;
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corPostGradeToAlunoBimestre',{}); }catch(_){}
+    return false;
+  }
+}
+
+function corAutoPostGrade(prova, alunoId){
+  try{
+    if(!prova || !alunoId) return;
+    if(!prova._discId || !prova._avId) return; // sem vínculo
+    const aluno = alunos.find(a => a && a.id === alunoId);
+    if(!aluno) return;
+
+    const changed = corPostGradeToAlunoBimestre(prova, aluno, bimestreAtual);
+    if(changed){
+      salvarDadosLocal();
+      // Atualiza cards/edição em massa/lista, sem depender de recarregar a página
+      try{
+        const nota = corCalcNotaFinal(prova, alunoId);
+        __corQueueUiUpdate(prova._discId, prova._avId, alunoId, nota);
+      }catch(_){}
+    }
   }catch(e){
     try{ if(typeof __diagCapture==='function') __diagCapture(e,'corAutoPostGrade',{}); }catch(_){}
   }
@@ -7760,16 +8316,108 @@ function corAutoPostAllGrades(prova, turma){
   try{
     if(!prova || !prova._discId || !prova._avId) return;
     const alunosTurma = alunos.filter(a => a && a.turma === turma);
+
+    let changed = false;
     alunosTurma.forEach(a => {
-      const ans = (prova.answers||{})[a.id];
-      if(Array.isArray(ans) && ans.some(x => String(x||'').trim()!=='')) {
-        corAutoPostGrade(prova, a.id);
+      if(corHasAnyAnswer(prova, a.id)){
+        if(corPostGradeToAlunoBimestre(prova, a, bimestreAtual)){
+          changed = true;
+          try{
+            const nota = corCalcNotaFinal(prova, a.id);
+            __corQueueUiUpdate(prova._discId, prova._avId, a.id, nota);
+          }catch(_){}
+        }
       }
     });
+
+    if(changed) salvarDadosLocal();
   }catch(e){
     try{ if(typeof __diagCapture==='function') __diagCapture(e,'corAutoPostAllGrades',{}); }catch(_){}
   }
 }
+
+
+
+/* ======= MIGRAÇÃO (LANÇAMENTOS ANTIGOS) ======= */
+/**
+ * Migra notas que já foram corrigidas (respostas já lançadas) para o bimestre atual,
+ * preenchendo Cards / Edição em Massa / Lista SED.
+ * Respeita o checkbox "Todas as turmas": quando ativo, migra esta prova para todas as turmas.
+ * Por padrão NÃO sobrescreve notas já existentes (>0). Marque "Sobrescrever" se quiser forçar.
+ */
+function corMigrarLancamentosAntigos(){
+  try{
+    const turmaBase = corGetTurmaSelecionada();
+    const provaBase = corGetSelectedProva();
+    if(!turmaBase || !provaBase){
+      showToast('Selecione uma turma e uma prova para migrar.', 'error');
+      return;
+    }
+    const pid = provaBase.id;
+    if(!pid){
+      showToast('Prova inválida.', 'error');
+      return;
+    }
+
+    const overwrite = !!(document.getElementById('corOverwriteExisting') && document.getElementById('corOverwriteExisting').checked);
+    const scopeAll = corIsApplyAllEnabled();
+    const turmasAlvo = scopeAll ? (Array.isArray(turmas) ? turmas.slice() : []) : [turmaBase];
+
+    let totalUpdated = 0;
+    let totalSeen = 0;
+    let totalTurmas = 0;
+
+    turmasAlvo.forEach(t=>{
+      if(!t) return;
+      const tctx = corEnsureTurma(t);
+      const prova = (tctx && tctx.provas) ? tctx.provas[pid] : null;
+      if(!prova) return;
+
+      if(!prova._discId || !prova._avId){
+        // sem vínculo: nada a migrar
+        return;
+      }
+      // precisa ter algum gabarito válido para calcular nota
+      const totalQ = (prova.questions||[]).filter(q => corNormalizeAlt(q.g)).length;
+      if(totalQ === 0) return;
+
+      totalTurmas++;
+
+      const alunosTurma = alunos.filter(a => a && a.turma === t);
+      alunosTurma.forEach(a=>{
+        if(!a) return;
+        if(!corHasAnyAnswer(prova, a.id)) return;
+        totalSeen++;
+
+        const changed = corPostGradeToAlunoBimestre(prova, a, bimestreAtual, { overwrite: overwrite });
+        if(changed){
+          totalUpdated++;
+          try{
+            const nota = corCalcNotaFinal(prova, a.id);
+            __corQueueUiUpdate(prova._discId, prova._avId, a.id, nota);
+          }catch(_){}
+        }
+      });
+    });
+
+    if(totalUpdated > 0){
+      salvarDadosLocal();
+      showToast(`Migração concluída: ${totalUpdated} nota(s) atualizada(s).`, 'success');
+    }else{
+      if(totalTurmas === 0){
+        showToast('Nada para migrar: esta prova não está vinculada ou não tem gabarito válido nas turmas selecionadas.', 'success');
+      }else if(totalSeen === 0){
+        showToast('Nada para migrar: não há respostas lançadas para esta prova nas turmas selecionadas.', 'success');
+      }else{
+        showToast('Nada para migrar: as notas já estavam lançadas (ou "Sobrescrever" está desmarcado).', 'success');
+      }
+    }
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corMigrarLancamentosAntigos',{}); }catch(_){}
+    showToast('Falha ao migrar lançamentos.', 'error');
+  }
+}
+
 
 /* ======= BADGE DE DISCIPLINA VINCULADA ======= */
 function corRenderDiscBadge(){
@@ -7781,68 +8429,205 @@ function corRenderDiscBadge(){
     return;
   }
   const disc = getDiscById(prova._discId);
-  const av = disc ? (disc.avaliacoes||[]).find(a=>a.id===prova._avId) : null;
   const discNome = disc ? disc.nome : prova._discId;
+
+  if(!prova._avId){
+    el.innerHTML = `<span class="cor-disc-badge"><i class="fas fa-link"></i> Vinculada: ${escHTML(discNome)}</span>
+      <span class="cor-sync-info" style="color:#f59e0b;"><i class="fas fa-triangle-exclamation"></i> Selecione a atividade para lançar a nota no card/edição em massa</span>`;
+    return;
+  }
+
+  const av = disc ? (disc.avaliacoes||[]).find(a=>String(a.id)===String(prova._avId)) : null;
   const avNome = av ? av.nome : prova._avId;
+
   el.innerHTML = `<span class="cor-disc-badge"><i class="fas fa-link"></i> Vinculada: ${escHTML(discNome)} → ${escHTML(avNome)}</span>
     <span class="cor-sync-info"><i class="fas fa-bolt"></i> Notas lançadas automaticamente no bimestre ${bimestreAtual}</span>`;
 }
 
-/* ======= IMPRIMIR LISTA DE RESULTADOS ======= */
+/* ======= IMPRESSÃO (PROVA/ATIVIDADE) ======= */
+function corDoPrintHTML(htmlStr){
+  const printArea = document.getElementById('corPrintArea');
+  if(!printArea){
+    try{ window.print(); }catch(_){}
+    return;
+  }
+  printArea.innerHTML = htmlStr || '';
+  printArea.style.display = 'block';
+
+  let mql = null;
+  let mqlListener = null;
+  let cleaned = false;
+
+  const cleanup = ()=>{
+    if(cleaned) return;
+    cleaned = true;
+    try{ printArea.style.display = 'none'; }catch(_){}
+    try{ printArea.innerHTML = ''; }catch(_){}
+    try{ window.removeEventListener('afterprint', cleanup); }catch(_){}
+    try{ if(mql && mqlListener && mql.removeEventListener) mql.removeEventListener('change', mqlListener); }catch(_){}
+  };
+
+  try{ window.addEventListener('afterprint', cleanup); }catch(_){}
+  try{
+    if(window.matchMedia){
+      mql = window.matchMedia('print');
+      mqlListener = (e)=>{ if(e && e.matches === false) cleanup(); };
+      if(mql && mql.addEventListener) mql.addEventListener('change', mqlListener);
+    }
+  }catch(_){}
+
+  // Pequeno delay para garantir render/estilos antes do print (Chrome/Edge)
+  setTimeout(()=>{
+    try{ window.print(); }catch(e){ cleanup(); throw e; }
+  }, 60);
+
+  // Fallback: se afterprint não disparar
+  setTimeout(cleanup, 120000);
+}
+
 function corPrintList(){
   try{
     const turma = corGetTurmaSelecionada();
     const prova = corGetSelectedProva();
     if(!turma || !prova){ showToast && showToast('Selecione uma turma e prova.', 'error'); return; }
-    const alunosTurma = alunos.filter(a => a && a.turma === turma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-    if(!alunosTurma.length){ showToast && showToast('Nenhum aluno nesta turma.', 'error'); return; }
 
+    const alunosTurma = alunos.filter(a => a && a.turma === turma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
     const nQ = (prova.questions||[]).length || 10;
+
+    // Infos
+    const disc = prova._discId ? getDiscById(prova._discId) : null;
+    const av = (disc && prova._avId) ? (disc.avaliacoes||[]).find(a=>a.id===prova._avId) : null;
+    const discNome = disc ? (disc.nome||prova._discId) : null;
+    const avNome = av ? (av.nome||prova._avId) : (prova._avId||null);
+
+    const created = prova.createdAt ? new Date(prova.createdAt) : null;
+    const createdTxt = created && !isNaN(created.getTime())
+      ? (created.toLocaleDateString('pt-BR') + ' ' + created.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))
+      : null;
+
+    // 1) Gabarito + referência
+    const gabRows = Array.from({length:nQ}).map((_,i)=>{
+      const q = prova.questions[i] || {};
+      const g = escHTML(corNormalizeAlt(q.g) || '—');
+      const ref = escHTML(String(q.ref || '—').trim() || '—');
+      return `<tr><td style="text-align:center;"><strong>${i+1}</strong></td><td style="text-align:center;"><strong>${g}</strong></td><td style="text-align:left;">${ref}</td></tr>`;
+    }).join('');
+
+    // 2) Estatísticas (por questão / por BNCC/Aula)
+    const stats = corComputeStats(prova, turma);
+    const perQ = (stats && stats.perQ) ? stats.perQ.slice(0,nQ) : [];
+    const qStatsRows = perQ.map((q,i)=>{
+      return `<tr><td style="text-align:center;"><strong>${i+1}</strong></td><td>${q.ac||0}</td><td>${q.er||0}</td><td><strong>${(q.pct||0)}%</strong></td></tr>`;
+    }).join('');
+
+    const refEntries = stats && stats.perRef ? Object.entries(stats.perRef).sort((a,b)=> (b[1].pct - a[1].pct)) : [];
+    const refRows = refEntries.map(([k,o])=>{
+      const key = escHTML(String(k||'—'));
+      return `<tr><td style="text-align:left;"><strong>${key}</strong></td><td>${o.ac||0}</td><td>${o.er||0}</td><td><strong>${(o.pct||0)}%</strong></td></tr>`;
+    }).join('') || `<tr><td style="text-align:left;">—</td><td>0</td><td>0</td><td><strong>0%</strong></td></tr>`;
+
+    // 3) Resultados por aluno (com respostas)
     let thQ = '';
-    for(let i=0;i<nQ;i++) thQ += `<th style="width:35px;">Q${i+1}<br><small style="font-size:9px;color:#666;">${escHTML(corNormalizeAlt((prova.questions[i]||{}).g)||'—')}</small></th>`;
+    for(let i=0;i<nQ;i++){
+      const g = escHTML(corNormalizeAlt((prova.questions[i]||{}).g) || '—');
+      thQ += `<th style="width:35px;">Q${i+1}<br><small style="font-size:9px;color:#666;">${g}</small></th>`;
+    }
 
     let rows = '';
-    alunosTurma.forEach((a,idx)=>{
-      const ans = corEnsureAlunoAnswers(prova, a.id);
-      const ac = corCalcAcertos(prova, a.id);
-      const nota = corCalcNotaFinal(prova, a.id);
-      const cls = nota>=7 ? 'nota-verde' : (nota>=5 ? 'nota-amarela' : 'nota-vermelha');
-      let tds = '';
-      for(let i=0;i<nQ;i++){
-        const r = corNormalizeAlt(ans[i]);
-        const g = corNormalizeAlt((prova.questions[i]||{}).g);
-        const ok = (g && r && g===r);
-        const cellCls = !r ? '' : (ok ? 'nota-verde' : 'nota-vermelha');
-        tds += `<td class="${cellCls}">${escHTML(r||'—')}</td>`;
-      }
-      rows += `<tr><td style="text-align:left;font-weight:600;">${idx+1}. ${escHTML(a.nome||'Aluno')}</td>${tds}<td><strong>${ac}/${nQ}</strong></td><td class="${cls}"><strong>${nota.toFixed(1)}</strong></td></tr>`;
-    });
+    if(alunosTurma.length){
+      alunosTurma.forEach((a,idx)=>{
+        const ans = corEnsureAlunoAnswers(prova, a.id);
+        const ac = corCalcAcertos(prova, a.id);
+        const nota = corCalcNotaFinal(prova, a.id);
+        const cls = nota>=7 ? 'nota-verde' : (nota>=5 ? 'nota-amarela' : 'nota-vermelha');
+        let tds = '';
+        for(let i=0;i<nQ;i++){
+          const r = corNormalizeAlt(ans[i]);
+          const g = corNormalizeAlt((prova.questions[i]||{}).g);
+          const ok = (g && r && g===r);
+          const cellCls = !r ? '' : (ok ? 'nota-verde' : 'nota-vermelha');
+          tds += `<td class="${cellCls}">${escHTML(r||'—')}</td>`;
+        }
+        rows += `<tr>
+          <td style="text-align:left;font-weight:600;">${idx+1}. ${escHTML(a.nome||'Aluno')}</td>
+          ${tds}
+          <td><strong>${ac}/${nQ}</strong></td>
+          <td class="${cls}"><strong>${nota.toFixed(1)}</strong></td>
+        </tr>`;
+      });
+    }else{
+      rows = `<tr><td colspan="${nQ+3}" style="text-align:left;">Nenhum aluno cadastrado nesta turma.</td></tr>`;
+    }
 
-    const printArea = document.getElementById('corPrintArea');
-    if(!printArea) return;
-    const discInfo = prova._discId ? (() => {
-      const d = getDiscById(prova._discId);
-      return d ? (' | Disciplina: ' + (d.nome||'')) : '';
-    })() : '';
-    printArea.innerHTML = `
-      <div class="print-title">${escHTML(prova.nome||'Prova')} — Turma: ${escHTML(turma)}</div>
-      <div class="print-sub">Bimestre ${bimestreAtual}${escHTML(discInfo)} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
-      <table>
-        <thead><tr><th style="text-align:left;min-width:140px;">Aluno</th>${thQ}<th>Acertos</th><th>Nota</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div style="margin-top:12px;font-size:10px;color:#888;">
-        <span style="display:inline-block;width:12px;height:12px;background:#dcfce7;border:1px solid #999;margin-right:3px;vertical-align:middle;"></span> Verde (≥7)&nbsp;&nbsp;
-        <span style="display:inline-block;width:12px;height:12px;background:#fef9c3;border:1px solid #999;margin-right:3px;vertical-align:middle;"></span> Amarelo (5-6.9)&nbsp;&nbsp;
-        <span style="display:inline-block;width:12px;height:12px;background:#fee2e2;border:1px solid #999;margin-right:3px;vertical-align:middle;"></span> Vermelho (<5)
-      </div>`;
-    printArea.style.display = 'block';
-    window.print();
-    setTimeout(()=>{ printArea.style.display='none'; }, 500);
+    const hdrLine = [
+      `Turma: <strong>${escHTML(turma)}</strong>`,
+      (typeof bimestreAtual !== 'undefined' ? `Bimestre <strong>${escHTML(String(bimestreAtual))}</strong>` : null),
+      (createdTxt ? `Criada em: <strong>${escHTML(createdTxt)}</strong>` : null),
+      (discNome ? `Disciplina: <strong>${escHTML(discNome)}</strong>` : null),
+      (avNome ? `Atividade/Avaliação: <strong>${escHTML(avNome)}</strong>` : null),
+      (stats ? `Respostas válidas: <strong>${escHTML(String(stats.N||0))}</strong>` : null)
+    ].filter(Boolean).join(' &nbsp;|&nbsp; ');
+
+    const now = new Date();
+    const genTxt = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+
+    const htmlOut = `
+      <div class="print-title">${escHTML(prova.nome||'Prova/Atividade')}</div>
+      <div class="print-sub">${hdrLine}</div>
+      <div class="print-muted">Gerado em: ${escHTML(genTxt)}</div>
+
+      <div class="print-section">
+        <div class="print-h2">1) Gabarito e referência (BNCC/Aula)</div>
+        <table>
+          <thead><tr><th style="width:70px;">Questão</th><th style="width:110px;">Gabarito</th><th style="text-align:left;">Código BNCC / Aula</th></tr></thead>
+          <tbody>${gabRows}</tbody>
+        </table>
+      </div>
+
+      <div class="print-section">
+        <div class="print-h2">2) Estatísticas da turma</div>
+        <div class="print-muted">Percentual de acerto por questão e por código (considera apenas alunos com pelo menos 1 resposta preenchida).</div>
+        <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:10px;margin-top:8px;">
+          <div>
+            <div class="print-h2" style="margin:0 0 6px;">Por questão</div>
+            <table>
+              <thead><tr><th>Q</th><th>Acertos</th><th>Erros</th><th>%</th></tr></thead>
+              <tbody>${qStatsRows}</tbody>
+            </table>
+          </div>
+          <div>
+            <div class="print-h2" style="margin:0 0 6px;">Por código BNCC / Aula</div>
+            <table>
+              <thead><tr><th style="text-align:left;">Código</th><th>Acertos</th><th>Erros</th><th>%</th></tr></thead>
+              <tbody>${refRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="print-section pb">
+        <div class="print-h2">3) Resultados por aluno</div>
+        <table>
+          <thead><tr><th style="text-align:left;min-width:160px;">Aluno</th>${thQ}<th>Acertos</th><th>Nota</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+
+        <div style="margin-top:12px;font-size:10px;color:#888;">
+          <span style="display:inline-block;width:12px;height:12px;background:#dcfce7;border:1px solid #999;margin-right:3px;vertical-align:middle;"></span> Verde (≥7)&nbsp;&nbsp;
+          <span style="display:inline-block;width:12px;height:12px;background:#fef9c3;border:1px solid #999;margin-right:3px;vertical-align:middle;"></span> Amarelo (5-6.9)&nbsp;&nbsp;
+          <span style="display:inline-block;width:12px;height:12px;background:#fee2e2;border:1px solid #999;margin-right:3px;vertical-align:middle;"></span> Vermelho (<5)
+        </div>
+      </div>
+    `;
+
+    corDoPrintHTML(htmlOut);
   }catch(e){
     try{ if(typeof __diagCapture==='function') __diagCapture(e,'corPrintList',{}); }catch(_){}
+    try{ console.error(e); }catch(_){}
+    showToast && showToast('Falha ao imprimir. Verifique o console/AutoTeste.', 'error');
   }
 }
+
 
 function initCorrecao(){
   try{
@@ -8434,7 +9219,9 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 });
             }catch(_){ }
 
-            const _lsArr = (k)=>{ try{ const r=localStorage.getItem(k); const v=r?JSON.parse(r):null; return Array.isArray(v)?v:[]; }catch(_){ return []; } };
+            const _lsJson = (k, fb)=>{ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(_){ return fb; } };
+            const _lsArr = (k)=>{ const v=_lsJson(k, []); return Array.isArray(v)?v:[]; };
+            const _lsObj = (k)=>{ const v=_lsJson(k, {}); return (v && typeof v==='object' && !Array.isArray(v))?v:{}; };
             const acts = {
                 forca: (typeof forcaBank !== 'undefined' && Array.isArray(forcaBank)) ? (forcaBank || []) : _lsArr('sgp_atividades_forca_bank'),
                 vf: (typeof vfBank !== 'undefined' && Array.isArray(vfBank)) ? (vfBank || []) : _lsArr('sgp_atividades_vf_bank'),
@@ -8445,8 +9232,8 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             };
 
             const extras = {
-                audit: (typeof __AUDIT !== 'undefined') ? (__AUDIT || []) : [],
-                autobackups: (typeof __BACKUPS !== 'undefined') ? (__BACKUPS || []) : []
+                audit: (typeof __AUDIT !== 'undefined') ? (__AUDIT || []) : _lsArr('sgp_audit'),
+                autobackups: (typeof __BACKUPS !== 'undefined') ? (__BACKUPS || []) : _lsArr('sgp_autobackups')
             };
 
             const files = [
@@ -8465,34 +9252,38 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             ];
 
             // Correção (Provas/Atividades)
-            try{
-                const cp = (typeof correcaoProvas !== 'undefined' && correcaoProvas && typeof correcaoProvas==='object')
-                  ? correcaoProvas
-                  : JSON.parse(localStorage.getItem('sgp_correcao_provas')||'{}');
-                files.push(['sgp_correcao_provas.json', JSON.stringify(cp || {}, null, 2)]);
-            }catch(_){}
+            const cp = (typeof correcaoProvas !== 'undefined' && correcaoProvas && typeof correcaoProvas==='object')
+              ? correcaoProvas
+              : _lsObj('sgp_correcao_provas');
+            files.push(['sgp_correcao_provas.json', JSON.stringify(cp || {}, null, 2)]);
 
             // === DADOS ADICIONAIS (V13+) ===
             // Frequência / Chamada
-            try{ files.push(['sgp_frequencia.json', JSON.stringify((window.__sgpFrequencia && typeof window.__sgpFrequencia==='object') ? window.__sgpFrequencia : (JSON.parse(localStorage.getItem('sgp_frequencia')||'{}')), null, 2)]); }catch(_){}
-            // Entregas
-            try{ files.push(['sgp_entregas.json', JSON.stringify((window.__sgpEntregas && typeof window.__sgpEntregas==='object') ? window.__sgpEntregas : (JSON.parse(localStorage.getItem('sgp_entregas')||'{}')), null, 2)]); }catch(_){}
-            // Ranking da Sala
-            try{ files.push(['sgp_ranking_v1.json', JSON.stringify(JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}'), null, 2)]); }catch(_){}
-            // Ranking: histórico semanal config
-            try{ files.push(['sgp_rank_hist_cfg.json', JSON.stringify(JSON.parse(localStorage.getItem('sgp_rank_hist_cfg')||'{}'), null, 2)]); }catch(_){}
-            // Quiz (atividades)
-            try{ files.push(['atividades_quiz.json', JSON.stringify((typeof quizBank!=='undefined') ? (quizBank||[]) : JSON.parse(localStorage.getItem('sgp_atividades_quiz_bank')||'[]'), null, 2)]); }catch(_){}
-            // Completar (atividades)
-            try{ files.push(['atividades_completar.json', JSON.stringify((typeof compBank!=='undefined') ? (compBank||[]) : JSON.parse(localStorage.getItem('sgp_atividades_comp_bank')||'[]'), null, 2)]); }catch(_){}
-            // Ordenar (atividades)
-            try{ files.push(['atividades_ordenar.json', JSON.stringify((typeof ordBank!=='undefined') ? (ordBank||[]) : JSON.parse(localStorage.getItem('sgp_atividades_ord_bank')||'[]'), null, 2)]); }catch(_){}
-            // Audit Log
-            try{ files.push(['sgp_audit_log.json', JSON.stringify(window.__sgpAuditLog||[], null, 2)]); }catch(_){}
-            // Frequency events log
-            try{ files.push(['sgp_freq_events.json', JSON.stringify(window.__sgpFreqEvents||[], null, 2)]); }catch(_){}
-
-            return files;
+            const __bkFreq = (window.__sgpFrequencia && typeof window.__sgpFrequencia==='object') ? window.__sgpFrequencia : _lsObj('sgp_frequencia');
+            files.push(['sgp_frequencia.json', JSON.stringify(__bkFreq || {}, null, 2)]);
+// Entregas
+            const __bkEnt = (window.__sgpEntregas && typeof window.__sgpEntregas==='object') ? window.__sgpEntregas : _lsObj('sgp_entregas');
+            files.push(['sgp_entregas.json', JSON.stringify(__bkEnt || {}, null, 2)]);
+// Ranking da Sala
+            files.push(['sgp_ranking_v1.json', JSON.stringify(_lsObj('sgp_ranking_v1'), null, 2)]);
+// Ranking: histórico semanal config
+            files.push(['sgp_rank_hist_cfg.json', JSON.stringify(_lsObj('sgp_rank_hist_cfg'), null, 2)]);
+// Quiz (atividades)
+            const __bkQuiz = (typeof quizBank!=='undefined' && Array.isArray(quizBank)) ? (quizBank||[]) : _lsArr('sgp_atividades_quiz_bank');
+            files.push(['atividades_quiz.json', JSON.stringify(__bkQuiz || [], null, 2)]);
+// Completar (atividades)
+            const __bkComp = (typeof compBank!=='undefined' && Array.isArray(compBank)) ? (compBank||[]) : _lsArr('sgp_atividades_comp_bank');
+            files.push(['atividades_completar.json', JSON.stringify(__bkComp || [], null, 2)]);
+// Ordenar (atividades)
+            const __bkOrd = (typeof ordBank!=='undefined' && Array.isArray(ordBank)) ? (ordBank||[]) : _lsArr('sgp_atividades_ord_bank');
+            files.push(['atividades_ordenar.json', JSON.stringify(__bkOrd || [], null, 2)]);
+// Audit Log
+            const __bkALog = Array.isArray(window.__sgpAuditLog) ? window.__sgpAuditLog : _lsArr('sgp_audit_log');
+            files.push(['sgp_audit_log.json', JSON.stringify(__bkALog || [], null, 2)]);
+// Frequency events log
+            const __bkFLog = Array.isArray(window.__sgpFreqEvents) ? window.__sgpFreqEvents : _lsArr('sgp_freq_events');
+            files.push(['sgp_freq_events.json', JSON.stringify(__bkFLog || [], null, 2)]);
+return files;
         }
 
         function baixarBackup() { 
@@ -11013,7 +11804,10 @@ function __j(v){
   window.__SGP_setupDataHandlers = _setup;
 })();
 
-function getDiscById(id, cfg=config){ return (cfg?.disciplinas||[]).find(d=>d.id===id) || null; }
+function getDiscById(id, cfg=config){
+  const sid = (id===null || typeof id==='undefined') ? '' : String(id);
+  return (cfg?.disciplinas||[]).find(d=> String(d?.id) === sid) || null;
+}
 
 function _syncConfigLegacyFields(){
   const d1=getDiscById(config.slot1);
@@ -12548,19 +13342,56 @@ let __BACKUPS = [];
 let __lastBackupAt = 0;
 
 function __snapshotObj(){
-  // inclui tudo o que o usuário precisa recuperar
+  // inclui tudo o que o usuário precisa recuperar (sem depender só das variáveis em memória)
+  const __lsJson = (k, fallback)=>{
+    try{
+      const raw = localStorage.getItem(k);
+      return raw ? JSON.parse(raw) : fallback;
+    }catch(_){
+      return fallback;
+    }
+  };
+
+  // bancos/objetos que podem estar apenas no localStorage, dependendo do fluxo de uso
+  const freqObj = (window.__sgpFrequencia && typeof window.__sgpFrequencia==='object')
+    ? window.__sgpFrequencia
+    : __lsJson('sgp_frequencia', {});
+  const entregasObj = (window.__sgpEntregas && typeof window.__sgpEntregas==='object')
+    ? window.__sgpEntregas
+    : __lsJson('sgp_entregas', {});
+  const rankingObj = __lsJson('sgp_ranking_v1', {});
+  const rankHistCfgObj = __lsJson('sgp_rank_hist_cfg', {});
+
+  // logs podem crescer muito → mantém só o final (para não estourar quota)
+  const auditLog = (Array.isArray(window.__sgpAuditLog) ? window.__sgpAuditLog : __lsJson('sgp_audit_log', [])).slice(-300);
+  const freqEvents = (Array.isArray(window.__sgpFreqEvents) ? window.__sgpFreqEvents : __lsJson('sgp_freq_events', [])).slice(-300);
+
+  // Atividades (bancos)
+  const acts = {
+    forca: (typeof forcaBank !== 'undefined' && Array.isArray(forcaBank)) ? (forcaBank || []) : __lsJson('sgp_atividades_forca_bank', []),
+    vf: (typeof vfBank !== 'undefined' && Array.isArray(vfBank)) ? (vfBank || []) : __lsJson('sgp_atividades_vf_bank', []),
+    memoria: (typeof memBank !== 'undefined' && Array.isArray(memBank)) ? (memBank || []) : __lsJson('sgp_atividades_mem_bank', []),
+    flashcards: (typeof fcBank !== 'undefined' && Array.isArray(fcBank)) ? (fcBank || []) : __lsJson('sgp_atividades_fc_bank', []),
+    relacoes: (typeof relBank !== 'undefined' && Array.isArray(relBank)) ? (relBank || []) : __lsJson('sgp_atividades_rel_bank', []),
+    roleta: (typeof roletaBank !== 'undefined' && Array.isArray(roletaBank)) ? (roletaBank || []) : __lsJson('sgp_atividades_roleta_bank', []),
+    quiz: (typeof quizBank !== 'undefined' && Array.isArray(quizBank)) ? (quizBank || []) : __lsJson('sgp_atividades_quiz_bank', []),
+    completar: (typeof compBank !== 'undefined' && Array.isArray(compBank)) ? (compBank || []) : __lsJson('sgp_atividades_comp_bank', []),
+    ordenar: (typeof ordBank !== 'undefined' && Array.isArray(ordBank)) ? (ordBank || []) : __lsJson('sgp_atividades_ord_bank', [])
+  };
+
   return {
     turmas, alunos, aulas,
     planosSemana,
     config, layouts,
-    correcaoProvas: (typeof correcaoProvas !== 'undefined' && correcaoProvas) ? correcaoProvas : {},
-    planner: (typeof plannerTasks !== 'undefined') ? (plannerTasks || []) : [],
-    atividades: {
-      forca: (typeof forcaBank !== 'undefined') ? (forcaBank || []) : [],
-      vf: (typeof vfBank !== 'undefined') ? (vfBank || []) : [],
-      memoria: (typeof memBank !== 'undefined') ? (memBank || []) : [],
-      flashcards: (typeof fcBank !== 'undefined') ? (fcBank || []) : []
-    }
+    correcaoProvas: (typeof correcaoProvas !== 'undefined' && correcaoProvas) ? correcaoProvas : __lsJson('sgp_correcao_provas', {}),
+    planner: (typeof plannerTasks !== 'undefined') ? (plannerTasks || []) : __lsJson('sgp_planner', []),
+    atividades: acts,
+    frequencia: freqObj,
+    entregas: entregasObj,
+    ranking: rankingObj,
+    rankHistCfg: rankHistCfgObj,
+    auditLog,
+    freqEvents
   };
 }
 function __snapshotStr(){
@@ -12580,9 +13411,29 @@ function __loadExtras(){
 }
 
 function __saveExtras(){
-  __safeLSSet('sgp_audit', JSON.stringify(__AUDIT));
-  __safeLSSet('sgp_autobackups', JSON.stringify(__BACKUPS));
-  __safeLSSet('sgp_lastBackupAt', String(__lastBackupAt||0));
+  // Salva com tolerância a quota: se o snapshot ficar grande, reduz a quantidade de backups até caber.
+  try{ __safeLSSet('sgp_audit', JSON.stringify(__AUDIT)); }catch(_){}
+  let ok = false;
+  try{
+    ok = __safeLSSet('sgp_autobackups', JSON.stringify(__BACKUPS));
+  }catch(_){ ok = false; }
+
+  if(!ok){
+    try{
+      // tenta reduzir (mantém os mais recentes)
+      for(let keep = (__BACKUPS||[]).length-1; keep>=1 && !ok; keep--){
+        __BACKUPS = (__BACKUPS||[]).slice(0, keep);
+        ok = __safeLSSet('sgp_autobackups', JSON.stringify(__BACKUPS));
+      }
+      // se ainda falhar, apaga todos os autobackups (não perde core atual)
+      if(!ok){
+        __BACKUPS = [];
+        __safeLSSet('sgp_autobackups', '[]');
+      }
+    }catch(_){}
+  }
+
+  try{ __safeLSSet('sgp_lastBackupAt', String(__lastBackupAt||0)); }catch(_){}
 }
 function __countChangedAlunos(beforeArr, afterArr){
   try{
@@ -12692,7 +13543,51 @@ function __applySnapshot(snapshotStr, label){
     if(typeof memBank !== 'undefined') memBank = Array.isArray(acts.memoria) ? acts.memoria : (memBank || []);
     if(typeof fcBank !== 'undefined') fcBank = Array.isArray(acts.flashcards) ? acts.flashcards : (fcBank || []);
 
-    // Correção de provas
+    
+    // Atividades adicionais (relacoes/roleta/quiz/completar/ordenar)
+    if(typeof relBank !== 'undefined') relBank = Array.isArray(acts.relacoes) ? acts.relacoes : (relBank || []);
+    if(typeof roletaBank !== 'undefined') roletaBank = Array.isArray(acts.roleta) ? acts.roleta : (roletaBank || []);
+    if(typeof quizBank !== 'undefined') quizBank = Array.isArray(acts.quiz) ? acts.quiz : (quizBank || []);
+    if(typeof compBank !== 'undefined') compBank = Array.isArray(acts.completar) ? acts.completar : (compBank || []);
+    if(typeof ordBank !== 'undefined') ordBank = Array.isArray(acts.ordenar) ? acts.ordenar : (ordBank || []);
+
+    // Frequência / Entregas / Ranking
+    try{
+      if(data.frequencia && typeof data.frequencia==='object'){
+        window.__sgpFrequencia = data.frequencia;
+        __safeLSSet('sgp_frequencia', JSON.stringify(data.frequencia));
+      }
+    }catch(_){}
+    try{
+      if(data.entregas && typeof data.entregas==='object'){
+        window.__sgpEntregas = data.entregas;
+        __safeLSSet('sgp_entregas', JSON.stringify(data.entregas));
+      }
+    }catch(_){}
+    try{
+      if(data.ranking && typeof data.ranking==='object'){
+        __safeLSSet('sgp_ranking_v1', JSON.stringify(data.ranking));
+      }
+    }catch(_){}
+    try{
+      if(data.rankHistCfg && typeof data.rankHistCfg==='object'){
+        __safeLSSet('sgp_rank_hist_cfg', JSON.stringify(data.rankHistCfg));
+      }
+    }catch(_){}
+    // Logs (opcional / truncado)
+    try{
+      if(Array.isArray(data.auditLog)){
+        window.__sgpAuditLog = data.auditLog.slice(-300);
+        __safeLSSet('sgp_audit_log', JSON.stringify(window.__sgpAuditLog));
+      }
+    }catch(_){}
+    try{
+      if(Array.isArray(data.freqEvents)){
+        window.__sgpFreqEvents = data.freqEvents.slice(-300);
+        __safeLSSet('sgp_freq_events', JSON.stringify(window.__sgpFreqEvents));
+      }
+    }catch(_){}
+// Correção de provas
     if(data.correcaoProvas && typeof data.correcaoProvas === 'object' && !Array.isArray(data.correcaoProvas)){
       correcaoProvas = data.correcaoProvas;
       try{ corSave(); }catch(_){}
@@ -12711,10 +13606,17 @@ function __applySnapshot(snapshotStr, label){
         __safeLSSet(ACT_STORAGE.vf, JSON.stringify(vfBank || []));
         __safeLSSet(ACT_STORAGE.mem, JSON.stringify(memBank || []));
         __safeLSSet(ACT_STORAGE.fc, JSON.stringify(fcBank || []));
+        try{ if(ACT_STORAGE.rel) __safeLSSet(ACT_STORAGE.rel, JSON.stringify((typeof relBank!=='undefined') ? (relBank||[]) : [])); }catch(_){ }
+        try{ if(ACT_STORAGE.roleta) __safeLSSet(ACT_STORAGE.roleta, JSON.stringify((typeof roletaBank!=='undefined') ? (roletaBank||[]) : [])); }catch(_){ }
       }
     }catch(e){}
 
-    __HIST.lastSnapshot = __snapshotStr();
+    
+    // Persistência adicional dos bancos (quiz/completar/ordenar) para não depender de init
+    try{ __safeLSSet('sgp_atividades_quiz_bank', JSON.stringify((typeof quizBank!=='undefined') ? (quizBank||[]) : [])); }catch(_){}
+    try{ __safeLSSet('sgp_atividades_comp_bank', JSON.stringify((typeof compBank!=='undefined') ? (compBank||[]) : [])); }catch(_){}
+    try{ __safeLSSet('sgp_atividades_ord_bank', JSON.stringify((typeof ordBank!=='undefined') ? (ordBank||[]) : [])); }catch(_){}
+__HIST.lastSnapshot = __snapshotStr();
   }finally{
     __HIST.mute = false;
   }
@@ -26110,6 +27012,22 @@ async function executarAutoTeste(){
             add('LocalStorage: leitura/escrita', false, 'Exceção ao acessar localStorage: '+(e && e.message ? e.message : e));
         }
 
+
+// 1.1) Backup: checkBackupStatus não pode quebrar (indicador de backup pendente)
+try{
+    const hasFn = (typeof checkBackupStatus === 'function');
+    add('Backup: checkBackupStatus disponível', hasFn, hasFn?'':'Função checkBackupStatus não encontrada.');
+    if(hasFn){
+        try{
+            checkBackupStatus();
+            add('Backup: checkBackupStatus executa', true);
+        }catch(e){
+            add('Backup: checkBackupStatus executa', false, (e && e.message) ? e.message : String(e));
+        }
+    }
+}catch(e){
+    add('Backup: checkBackupStatus executa', false, 'Exceção: '+((e && e.message) ? e.message : String(e)));
+}
         // 2) Dashboard + bimestre
         if(typeof mudarVisao === 'function'){
             try{ mudarVisao('dash'); }catch(e){}
@@ -26232,6 +27150,26 @@ async function executarAutoTeste(){
                 }
                 add('Backup: core válido', coreOk, coreDetail);
 
+                // Arquivos essenciais (devem existir mesmo vazios)
+                try{
+                  const required = [
+                    'manifest.json','sgp_core.json','sgp_planner.json','sgp_ui_prefs.json',
+                    'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json',
+                    'sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
+                    'extras_audit.json','extras_autobackups.json',
+                    'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
+                    'atividades_relacoes.json','atividades_roleta.json','atividades_quiz.json','atividades_completar.json','atividades_ordenar.json'
+                  ];
+                  const missingReq = required.filter(n=>!(filesMap && Object.prototype.hasOwnProperty.call(filesMap, n)));
+                  add('Backup: arquivos essenciais no ZIP', missingReq.length===0, missingReq.length?('Faltando: '+missingReq.join(', ')):'');
+
+                  const badJson = required.filter(n=>n.endsWith('.json') && filesMap && Object.prototype.hasOwnProperty.call(filesMap,n)).filter(n=>{
+                    try{ JSON.parse(filesMap[n]); return false; }catch(_){ return true; }
+                  });
+                  add('Backup: JSON válido (essenciais)', badJson.length===0, badJson.length?('Inválidos: '+badJson.join(', ')):'');
+                }catch(_){ }
+
+
                 const zipReadable = !!(filesMap && typeof filesMap === 'object' && filesMap['sgp_core.json']);
                 add('Backup: ZIP legível', zipReadable, zipReadable ? '' : 'Falha ao reabrir ZIP gerado.');
             }
@@ -26251,7 +27189,7 @@ async function executarAutoTeste(){
     try{
         const okCount = results.filter(r=>r.ok).length;
         const failCount = results.length - okCount;
-        const lines = [,'executarAutoTeste','abrirModalAutoTeste','fecharModalAutoTeste','autoTesteCopiar'];
+        const lines = ['executarAutoTeste','abrirModalAutoTeste','fecharModalAutoTeste','autoTesteCopiar'];
         lines.push('AutoTeste SGP');
         lines.push('Data: '+(new Date()).toLocaleString());
         lines.push('Resultado: '+okCount+'/'+results.length+' OK; '+failCount+' falhas');
