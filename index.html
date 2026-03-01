@@ -8456,6 +8456,86 @@ function corRenderDiscBadge(){
 
 /* ======= IMPRESSÃO (PROVA/ATIVIDADE) ======= */
 function corDoPrintHTML(htmlStr){
+  // ✅ Estratégia robusta: imprime via iframe "isolado".
+  // Evita cortes/limites de containers do app e permite paginação correta (38+ alunos).
+  try{
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('aria-hidden','true');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+    if(!doc) throw new Error('print_iframe_no_doc');
+
+    // CSS de impressão: paginação + cabeçalho repetido + layout paisagem para a tabela larga.
+    const css = `
+@page{ size: A4 landscape; margin: 10mm; }
+html,body{ margin:0; padding:0; }
+body{ font-family: Arial, Helvetica, sans-serif; color:#111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+.print-title{ font-size:16px; font-weight:800; margin:0 0 6px; }
+.print-sub{ font-size:11px; color:#444; margin:0 0 8px; }
+.print-muted{ font-size:10px; color:#666; margin:0 0 10px; }
+.print-section{ margin-top: 12px; }
+.print-h2{ font-size: 13px; font-weight: 800; margin: 10px 0 6px; }
+
+table{ width:100%; border-collapse:collapse; table-layout: fixed; }
+thead{ display: table-header-group; }
+tfoot{ display: table-footer-group; }
+th,td{ border:1px solid #333; padding:3px 4px; text-align:center; font-size:11px; }
+th{ background:#ddd !important; }
+td{ word-wrap: break-word; }
+tr{ break-inside: avoid; page-break-inside: avoid; }
+
+.nota-verde{ background:#dcfce7 !important; }
+.nota-amarela{ background:#fef9c3 !important; }
+.nota-vermelha{ background:#fee2e2 !important; }
+
+/* Resultados por aluno: tabela larga → fonte menor para caber sem cortar */
+.print-section.pb table th, .print-section.pb table td{ font-size:9px; padding:2px 3px; }
+.pb{ break-before: page; page-break-before: always; }
+    `;
+
+    const html = `<!doctype html><html><head><meta charset="utf-8" />
+<title>Relatório - Correção</title>
+<style>${css}</style></head><body>${htmlStr || ''}</body></html>`;
+
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    let cleaned = false;
+    const cleanup = ()=>{
+      if(cleaned) return;
+      cleaned = true;
+      try{ iframe.remove(); }catch(_){ try{ iframe.parentNode && iframe.parentNode.removeChild(iframe); }catch(__){} }
+    };
+
+    try{ iframe.contentWindow && iframe.contentWindow.addEventListener('afterprint', cleanup); }catch(_){}
+
+    // Pequeno delay para garantir layout antes do print (Chrome/Edge)
+    setTimeout(()=>{
+      try{
+        iframe.contentWindow && iframe.contentWindow.focus();
+        iframe.contentWindow && iframe.contentWindow.print();
+      }catch(e){ cleanup(); throw e; }
+    }, 80);
+
+    // Fallback: se afterprint não disparar
+    setTimeout(cleanup, 180000);
+    return;
+  }catch(e){
+    try{ console.warn('corDoPrintHTML fallback', e); }catch(_){}
+  }
+
+  // Fallback legado (se iframe falhar)
   const printArea = document.getElementById('corPrintArea');
   if(!printArea){
     try{ window.print(); }catch(_){}
@@ -8464,32 +8544,17 @@ function corDoPrintHTML(htmlStr){
   printArea.innerHTML = htmlStr || '';
   printArea.style.display = 'block';
 
-  let mql = null;
-  let mqlListener = null;
   let cleaned = false;
-
   const cleanup = ()=>{
     if(cleaned) return;
     cleaned = true;
     try{ printArea.style.display = 'none'; }catch(_){}
     try{ printArea.innerHTML = ''; }catch(_){}
     try{ window.removeEventListener('afterprint', cleanup); }catch(_){}
-    try{ if(mql && mqlListener && mql.removeEventListener) mql.removeEventListener('change', mqlListener); }catch(_){}
   };
 
   try{ window.addEventListener('afterprint', cleanup); }catch(_){}
-  try{
-    if(window.matchMedia){
-      mql = window.matchMedia('print');
-      mqlListener = (e)=>{ if(e && e.matches === false) cleanup(); };
-      if(mql && mql.addEventListener) mql.addEventListener('change', mqlListener);
-    }
-  }catch(_){}
-
-  // Pequeno delay para garantir render/estilos antes do print (Chrome/Edge)
-  setTimeout(()=>{
-    try{ window.print(); }catch(e){ cleanup(); throw e; }
-  }, 60);
+  setTimeout(()=>{ try{ window.print(); }catch(e){ cleanup(); throw e; } }, 60);
 
   // Fallback: se afterprint não disparar
   setTimeout(cleanup, 120000);
