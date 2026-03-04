@@ -25860,18 +25860,45 @@ function _rankSave(data){
 }
 
 // Estrutura: { [turma]: { [bimestre]: { [alunoId]: { notas:N, comportamento:N, participacao:N, bonus:N, historico:[...] } } } }
-function _rankGetTurma(){
-    const data = _rankLoad();
-    const turma = filtroTurma || 'Todas';
-    const bim = bimestreAtual || 1;
-    if(!data[turma]) data[turma] = {};
-    if(!data[turma][bim]) data[turma][bim] = {};
-    return { data, turma, bim, pontos: data[turma][bim] };
+function _rankEnsureBucket(data, turma, bim){
+    const t = turma || 'Todas';
+    const b = bim || 1;
+    if(!data[t]) data[t] = {};
+    if(!data[t][b]) data[t][b] = {};
+    return data[t][b];
 }
 
+// Resolve a turma alvo para um aluno (em "Todas", usa a turma real do aluno)
+function _rankResolveTurmaForAluno(alunoId){
+    try{
+        if(filtroTurma && filtroTurma !== 'Todas') return filtroTurma;
+        const id = String(alunoId);
+        const a = (Array.isArray(alunos) ? alunos.find(x => String(x.id) === id) : null);
+        return (a && a.turma) ? a.turma : (filtroTurma || 'Todas');
+    }catch(_){ return (filtroTurma || 'Todas'); }
+}
+
+function _rankGetBucket(turmaOverride){
+    const data = _rankLoad();
+    const bim = bimestreAtual || 1;
+    const turma = turmaOverride || ((filtroTurma && filtroTurma !== 'Todas') ? filtroTurma : null);
+    if(!turma){
+        // Modo "Todas": não cria/usa bucket "Todas"; leituras/escritas devem resolver por aluno.
+        return { data, turma: 'Todas', bim, pontos: null };
+    }
+    const pontos = _rankEnsureBucket(data, turma, bim);
+    return { data, turma, bim, pontos };
+}
+
+function _rankGetTurma(){
+    return _rankGetBucket();
+}
 function _rankGetPontos(alunoId){
-    const { pontos } = _rankGetTurma();
-    const p = pontos[alunoId];
+    const data = _rankLoad();
+    const bim = bimestreAtual || 1;
+    const turmaAlvo = _rankResolveTurmaForAluno(alunoId);
+    const bucket = (turmaAlvo && turmaAlvo !== 'Todas') ? _rankEnsureBucket(data, turmaAlvo, bim) : {};
+    const p = bucket[String(alunoId)] || bucket[alunoId];
     if(!p) return { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
     return { notas:p.notas||0, comportamento:p.comportamento||0, participacao:p.participacao||0, bonus:p.bonus||0, historico:p.historico||[] };
 }
@@ -25880,7 +25907,8 @@ function _rankTotal(p){ return (p.notas||0) + (p.comportamento||0) + (p.particip
 
 // --- Auto-sync: Calculate auto-points from frequency and grades ---
 // Performance cache to avoid recalculating on every render
-let __rankAutoSyncCache = { version: -1, freqVersion: -1, turma: '', bim: 0 };
+let __rankAutoSyncCache = {}; // legado (mantido por compatibilidade)
+let __rankAutoSyncCacheByTurma = {}; // cache por turma|bimestre
 
 function _rankCalcAutoFreq(alunoId, turma, bim){
     // Count all P marks for this student in this turma/bimestre
@@ -25920,52 +25948,65 @@ function _rankCalcAutoGrades(alunoId, turma, bim){
 }
 
 // --- Sync auto-points into ranking data ---
-function _rankSyncAuto(){
+function _rankSyncAutoForTurma(turma, bim){
     try{
-        const turma = filtroTurma || 'Todas';
-        if(turma === 'Todas') return;
-        const bim = bimestreAtual || 1;
-        
-        // Skip if nothing changed since last sync
+        if(!turma || turma === 'Todas') return;
+        const b = bim || (bimestreAtual || 1);
+
         const freqV = window.__sgpFreqVersion || 0;
         const coreV = parseInt(localStorage.getItem('sgp_last_core_save')||'0') || 0;
-        if(__rankAutoSyncCache.turma === turma && __rankAutoSyncCache.bim === bim
-           && __rankAutoSyncCache.freqVersion === freqV && __rankAutoSyncCache.version === coreV){
+
+        const k = turma + '|' + b;
+        const c = __rankAutoSyncCacheByTurma[k];
+        if(c && c.freqVersion === freqV && c.version === coreV){
             return; // Cache hit — skip expensive recalculation
         }
-        
-        const { data } = _rankGetTurma();
-        if(!data[turma]) data[turma] = {};
-        if(!data[turma][bim]) data[turma][bim] = {};
-        const pontos = data[turma][bim];
-        
-        const lista = alunos.filter(a => a.turma === turma);
+
+        const data = _rankLoad();
+        const pontos = _rankEnsureBucket(data, turma, b);
+
+        const lista = (alunos||[]).filter(a => a && a.turma === turma);
         lista.forEach(a => {
             const id = String(a.id);
             if(!pontos[id]) pontos[id] = { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
-            
+
             // Calculate auto points
-            const autoFreq = _rankCalcAutoFreq(id, turma, bim);
-            const autoGrades = _rankCalcAutoGrades(id, turma, bim);
-            
+            const autoFreq = _rankCalcAutoFreq(id, turma, b);
+            const autoGrades = _rankCalcAutoGrades(id, turma, b);
+
             // Store auto-tracked values
             pontos[id]._autoParticipacao = autoFreq;
             pontos[id]._autoNotas = autoGrades;
         });
-        
+
         _rankSave(data);
-        
-        // Update cache
-        __rankAutoSyncCache = { version: coreV, freqVersion: freqV, turma, bim };
+        __rankAutoSyncCacheByTurma[k] = { version: coreV, freqVersion: freqV };
     }catch(_){}
 }
+
+function _rankSyncAuto(){
+    try{
+        const bim = bimestreAtual || 1;
+        const turma = filtroTurma || 'Todas';
+        if(turma === 'Todas'){
+            const turmas = Array.from(new Set((alunos||[]).map(a=>a && a.turma).filter(Boolean)));
+            turmas.forEach(t => { try{ _rankSyncAutoForTurma(t, bim); }catch(_){ } });
+            return;
+        }
+        _rankSyncAutoForTurma(turma, bim);
+    }catch(_){}
+}
+
 
 // Override _rankGetPontos to include auto-points
 const __origRankGetPontos = _rankGetPontos;
 function _rankGetPontosWithAuto(alunoId){
-    const { pontos } = _rankGetTurma();
-    const p = pontos[String(alunoId)];
-    if(!p) return { notas:0, comportamento:0, participacao:0, bonus:0, historico:[], _autoParticipacao:0, _autoNotas:0 };
+    const data = _rankLoad();
+    const bim = bimestreAtual || 1;
+    const turmaAlvo = _rankResolveTurmaForAluno(alunoId);
+    const bucket = (turmaAlvo && turmaAlvo !== 'Todas') ? _rankEnsureBucket(data, turmaAlvo, bim) : {};
+    const p = bucket[String(alunoId)] || bucket[alunoId];
+    if(!p) return { notas:0, comportamento:0, participacao:0, bonus:0, historico:[], _autoParticipacao:0, _autoNotas:0, _manualNotas:0, _manualParticipacao:0 };
     return {
         notas: (p.notas||0) + (p._autoNotas||0),
         comportamento: p.comportamento||0,
@@ -25979,11 +26020,17 @@ function _rankGetPontosWithAuto(alunoId){
     };
 }
 
+
 function _rankAddPontos(alunoId, categoria, valor, motivo){
-    const { data, turma, bim, pontos } = _rankGetTurma();
-    if(!pontos[alunoId]) pontos[alunoId] = { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
-    pontos[alunoId][categoria] = (pontos[alunoId][categoria]||0) + valor;
-    pontos[alunoId].historico.push({
+    const data = _rankLoad();
+    const bim = bimestreAtual || 1;
+    const turmaAlvo = _rankResolveTurmaForAluno(alunoId);
+    const bucket = (turmaAlvo && turmaAlvo !== 'Todas') ? _rankEnsureBucket(data, turmaAlvo, bim) : _rankEnsureBucket(data, (filtroTurma||'Todas'), bim);
+    const id = String(alunoId);
+
+    if(!bucket[id]) bucket[id] = { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
+    bucket[id][categoria] = (bucket[id][categoria]||0) + valor;
+    bucket[id].historico.push({
         cat: categoria,
         val: valor,
         motivo: motivo || '',
@@ -25991,9 +26038,10 @@ function _rankAddPontos(alunoId, categoria, valor, motivo){
         ts: Date.now()
     });
     // Keep last 100 entries per student
-    if(pontos[alunoId].historico.length > 100) pontos[alunoId].historico = pontos[alunoId].historico.slice(-100);
+    if(bucket[id].historico.length > 100) bucket[id].historico = bucket[id].historico.slice(-100);
     _rankSave(data);
 }
+
 
 // --- Cores consistentes por aluno ---
 const RANK_AVATAR_COLORS = ['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#f97316','#6366f1','#14b8a6','#e11d48','#84cc16','#0ea5e9','#d946ef','#22c55e','#eab308'];
@@ -26005,8 +26053,34 @@ function _rankInitials(nome){
 }
 
 // --- Ranking calculado ---
+function _rankMigrateTodosToTurmas(){
+    try{
+        const data = _rankLoad();
+        const bim = bimestreAtual || 1;
+        const legacy = (data && data['Todas'] && data['Todas'][bim]) ? data['Todas'][bim] : null;
+        if(!legacy || typeof legacy !== 'object') return;
+        let changed = false;
+        (alunos||[]).forEach(a=>{
+            const t = a && a.turma;
+            if(!t || t === 'Todas') return;
+            const id = String(a.id);
+            const l = legacy[id];
+            if(!l) return;
+            if(!data[t]) data[t] = {};
+            if(!data[t][bim]) data[t][bim] = {};
+            if(data[t][bim][id] === undefined){
+                try{ data[t][bim][id] = JSON.parse(JSON.stringify(l)); }
+                catch(_){ data[t][bim][id] = l; }
+                changed = true;
+            }
+        });
+        if(changed) _rankSave(data);
+    }catch(_){}
+}
+
 function _rankBuild(categoria){
     // Sync auto-points from frequency and grades before building
+    try{ if((filtroTurma||'Todas') === 'Todas') _rankMigrateTodosToTurmas(); }catch(_){}
     try{ _rankSyncAuto(); }catch(_){}
     
     const lista = getAlunosFiltrados();
@@ -26357,8 +26431,11 @@ window.rankAlunoHistRender = function(){
     const q = (document.getElementById('rankAlunoHistBusca')?.value || '').trim().toLowerCase();
     const catFilter = document.getElementById('rankAlunoHistCat')?.value || '';
 
-    const { pontos } = _rankGetTurma();
-    const p = pontos[String(alunoId)] || pontos[alunoId] || null;
+    const data = _rankLoad();
+    const bim = bimestreAtual || 1;
+    const turmaAlvo = _rankResolveTurmaForAluno(alunoId);
+    const bucket = (turmaAlvo && turmaAlvo !== 'Todas') ? _rankEnsureBucket(data, turmaAlvo, bim) : {};
+    const p = bucket[String(alunoId)] || bucket[alunoId] || null;
     const hist = (p && Array.isArray(p.historico)) ? p.historico.slice() : [];
     hist.sort((a,b)=>(b.ts||0)-(a.ts||0));
 
@@ -26480,13 +26557,37 @@ window.rankExportarPDF = function(){
 
 // --- Resetar pontos ---
 window.rankResetar = function(){
-    if(!confirm('Tem certeza que deseja resetar todos os pontos desta turma neste bimestre?\n\nEsta ação não pode ser desfeita.')) return;
-    const { data, turma, bim } = _rankGetTurma();
-    data[turma][bim] = {};
+    const turma = filtroTurma || 'Todas';
+    const bim = bimestreAtual || 1;
+
+    const msg = (turma === 'Todas')
+        ? 'Tem certeza que deseja resetar todos os pontos de TODAS as turmas neste bimestre?\n\nEsta ação não pode ser desfeita.'
+        : 'Tem certeza que deseja resetar todos os pontos desta turma neste bimestre?\n\nEsta ação não pode ser desfeita.';
+    if(!confirm(msg)) return;
+
+    const data = _rankLoad();
+
+    if(turma === 'Todas'){
+        // Zera todas as turmas existentes (e também limpa o bucket legado "Todas", se houver)
+        const turmas = Array.from(new Set((alunos||[]).map(a=>a && a.turma).filter(Boolean)));
+        turmas.forEach(t => {
+            if(!t || t === 'Todas') return;
+            if(!data[t]) data[t] = {};
+            data[t][bim] = {};
+        });
+        if(data['Todas']){
+            data['Todas'][bim] = {};
+        }
+    } else {
+        if(!data[turma]) data[turma] = {};
+        data[turma][bim] = {};
+    }
+
     _rankSave(data);
     showToast('Pontos resetados');
     renderizarRanking();
 };
+
 
 // --- Quick add from cards (bonus integration) ---
 window.rankQuickAdd = function(alunoId, val, cat){
@@ -26560,7 +26661,8 @@ function _rankHistBuildWeeks(){
     // CRITICAL: sync auto-points before reading (same as _rankBuild does)
     try{ _rankSyncAuto(); }catch(_){}
 
-    const { pontos } = _rankGetTurma();
+    const __rt = _rankGetTurma();
+    const pontos = (__rt && __rt.pontos) ? __rt.pontos : {};
     const lista = getAlunosFiltrados();
     const CATS = ['notas','comportamento','participacao','bonus'];
 
