@@ -26497,10 +26497,24 @@ window.rankExportarPDF = function(){
 
 // --- Resetar pontos ---
 window.rankResetar = function(){
-    if(!confirm('Tem certeza que deseja resetar todos os pontos desta turma neste bimestre?\n\nEsta ação não pode ser desfeita.')) return;
     const { data, turma, bim } = _rankGetTurma();
+
+    const msg = (turma === 'Todas')
+        ? 'Tem certeza que deseja resetar os pontos da aba "Todas" neste bimestre?
+
+Esta ação não pode ser desfeita.'
+        : 'Tem certeza que deseja resetar todos os pontos desta turma neste bimestre?
+
+Esta ação não pode ser desfeita.';
+    if(!confirm(msg)) return;
+
+    // Caso especial: Aba "Todas" (visão geral)
+    // Aqui nós apenas zeramos o ranking agregado desta visão, sem afetar os rankings individuais por turma.
     if(turma === 'Todas'){
-        showToast('Selecione uma turma específica para resetar');
+        data[turma][bim] = {};
+        _rankSave(data);
+        showToast('Pontos resetados');
+        renderizarRanking();
         return;
     }
 
