@@ -1774,6 +1774,52 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
           display:inline-flex; align-items:center; gap:3px;
           font-size:.62rem; color:#16a34a; font-weight:600; margin-left:4px; opacity:.8;
         }
+/* ===== ENTREGAS: Contador (Resumo) ===== */
+.entregas-counter-caption{caption-side:top;text-align:left;padding:0;margin:0;}
+.entregas-counter-bar{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:flex-start;
+  padding:10px 10px; margin:10px 0 8px;
+  background:rgba(148,163,184,.10);
+  border:1px solid rgba(148,163,184,.25);
+  border-radius:14px;
+}
+.entregas-counter-title{
+  font-weight:800; font-size:.82rem; color:#0f172a;
+  display:inline-flex; align-items:center; gap:8px; margin-right:6px;
+}
+.entregas-counter-title small{font-weight:700;color:#64748b;font-size:.72rem;}
+.entrega-badge .ent-count{font-weight:900;margin-left:6px;}
+.entregas-counter-mobile{margin:0 0 10px;}
+/* Contador por atividade (Redação 1 / Redação 2) */
+.entregas-counter-groups{
+  display:flex; flex-wrap:wrap; gap:10px; width:100%;
+}
+.entregas-counter-group{
+  display:flex; flex-direction:column; gap:6px;
+  padding:8px 10px;
+  background:rgba(255,255,255,.65);
+  border:1px solid rgba(148,163,184,.25);
+  border-radius:12px;
+  min-width:240px;
+}
+.entregas-counter-group-title{
+  font-weight:900; font-size:.78rem; color:#0f172a;
+}
+.entregas-counter-group-title small{font-weight:800;color:#64748b;font-size:.70rem;}
+.entregas-counter-group-badges{display:flex; flex-wrap:wrap; gap:6px;}
+.entregas-counter-total{
+  display:flex; flex-wrap:wrap; gap:6px; align-items:center; width:100%;
+  border-top:1px dashed rgba(148,163,184,.35);
+  padding-top:8px; margin-top:6px;
+}
+.entregas-counter-total-label{
+  font-weight:900; font-size:.76rem; color:#334155; margin-right:6px;
+}
+@media (max-width:520px){
+  .entregas-counter-group{min-width:100%;}
+}
+
+
 /* BLITZ BUTTONS */
         .blitz-controls { display: flex; gap: 5px; align-items: center; }
         .btn-blitz { width: 25px; height: 25px; border-radius: 50%; border: none; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; transition: 0.2s; }
@@ -4487,7 +4533,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
             <i class="fas fa-save"></i> Salvar Alterações
         </button>
 
-        <table id="tabelaEntregas" class="tabela-dados"><thead><tr><th>#</th><th>Nome</th><th>Turma</th><th>Redação 1</th><th>Redação 2</th></tr></thead><tbody id="tbodyEntregas"></tbody></table>
+        <table id="tabelaEntregas" class="tabela-dados"><caption class="entregas-counter-caption"><div id="entregasCounterBar" class="entregas-counter-bar" aria-label="Contador de entregas"></div></caption><thead><tr><th>#</th><th>Nome</th><th>Turma</th><th>Redação 1</th><th>Redação 2</th></tr></thead><tbody id="tbodyEntregas"></tbody></table>
         <div id="mobileEntregasCards" class="mobile-table-cards" style="display:none;"></div>
 
 
@@ -10172,7 +10218,7 @@ function selTurma(n){
                         </div>
                       </div>`;
                 });
-                cards.innerHTML = cbuf || `<div class="mcard" style="text-align:center;color:#64748b;">Nenhum aluno.</div>`;
+                cards.innerHTML = `<div class=\"entregas-counter-bar entregas-counter-mobile\">${itemsHTML}</div>` + (cbuf || `<div class=\"mcard\" style=\"text-align:center;color:#64748b;\">Nenhum aluno.</div>`);
             }else{
                 if(cards) cards.style.display='none';
                 try{ if(table && visaoAtual==='lista') table.style.display='table'; }catch(_){}
@@ -10230,6 +10276,52 @@ function selTurma(n){
                 const b = a.bimestres[bimestreAtual];
                 ['r1','r2'].forEach(k => { const st = b.entregas_red[k] || 'pendente'; if(counts[k][st] !== undefined) counts[k][st]++; });
             });
+
+
+// Render contador no topo (separado por atividade: Redação 1 e Redação 2)
+const totalCounts = {
+    entregue: (counts.r1.entregue||0) + (counts.r2.entregue||0),
+    rascunho: (counts.r1.rascunho||0) + (counts.r2.rascunho||0),
+    revisao: (counts.r1.revisao||0) + (counts.r2.revisao||0),
+    pendente: (counts.r1.pendente||0) + (counts.r2.pendente||0),
+};
+const totalPorAtividade = (lista.length||0);
+const totalRedacoes = totalPorAtividade * 2;
+
+const itemsHTML = (function(){
+    const mk = (st, num) => {
+        const si = _entregaStatusInfo(st);
+        return `<span class="entrega-badge ${si.cls}">${si.label}<span class="ent-count">${num}</span></span>`;
+    };
+    const mkGroup = (titulo, cts) => `
+      <div class="entregas-counter-group" role="group" aria-label="${titulo}">
+        <div class="entregas-counter-group-title">${titulo} <small>(${totalPorAtividade})</small></div>
+        <div class="entregas-counter-group-badges">
+          ${mk('entregue', cts.entregue||0)}
+          ${mk('rascunho', cts.rascunho||0)}
+          ${mk('revisao',  cts.revisao||0)}
+          ${mk('pendente', cts.pendente||0)}
+        </div>
+      </div>`;
+    return `
+      <span class="entregas-counter-title"><i class="fas fa-hashtag"></i> Resumo por atividade <small>(${totalRedacoes} redações no total)</small></span>
+      <div class="entregas-counter-groups">
+        ${mkGroup('Redação 1', counts.r1)}
+        ${mkGroup('Redação 2', counts.r2)}
+      </div>
+      <div class="entregas-counter-total" aria-label="Totais (Redação 1 + Redação 2)">
+        <span class="entregas-counter-total-label">Total (R1+R2)</span>
+        ${mk('entregue', totalCounts.entregue)}
+        ${mk('rascunho', totalCounts.rascunho)}
+        ${mk('revisao', totalCounts.revisao)}
+        ${mk('pendente', totalCounts.pendente)}
+      </div>
+    `;
+})();
+try{
+    const barEl = document.getElementById('entregasCounterBar');
+    if(barEl) barEl.innerHTML = itemsHTML;
+}catch(_){} 
 
             let htmlBuffer = '';
             lista.forEach((a, idx)=>{
