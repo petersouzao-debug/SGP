@@ -25951,6 +25951,9 @@ function _rankSyncAuto(){
             // Store auto-tracked values
             pontos[id]._autoParticipacao = autoFreq;
             pontos[id]._autoNotas = autoGrades;
+            // Baseline (para resetar pontos sem "voltar" automaticamente)
+            if(pontos[id]._autoBaseParticipacao == null) pontos[id]._autoBaseParticipacao = 0;
+            if(pontos[id]._autoBaseNotas == null) pontos[id]._autoBaseNotas = 0;
         });
         
         _rankSave(data);
@@ -25965,15 +25968,29 @@ const __origRankGetPontos = _rankGetPontos;
 function _rankGetPontosWithAuto(alunoId){
     const { pontos } = _rankGetTurma();
     const p = pontos[String(alunoId)];
-    if(!p) return { notas:0, comportamento:0, participacao:0, bonus:0, historico:[], _autoParticipacao:0, _autoNotas:0 };
+    if(!p) return { notas:0, comportamento:0, participacao:0, bonus:0, historico:[], _autoParticipacao:0, _autoNotas:0, _autoParticipacaoRaw:0, _autoNotasRaw:0, _autoParticipacaoBase:0, _autoNotasBase:0 };
+
+    const rawAutoNotas = (p._autoNotas||0);
+    const rawAutoPart = (p._autoParticipacao||0);
+    const baseAutoNotas = (p._autoBaseNotas||0);
+    const baseAutoPart = (p._autoBaseParticipacao||0);
+    const deltaAutoNotas = Math.max(0, rawAutoNotas - baseAutoNotas);
+    const deltaAutoPart = Math.max(0, rawAutoPart - baseAutoPart);
+
     return {
-        notas: (p.notas||0) + (p._autoNotas||0),
+        notas: (p.notas||0) + deltaAutoNotas,
         comportamento: p.comportamento||0,
-        participacao: (p.participacao||0) + (p._autoParticipacao||0),
+        participacao: (p.participacao||0) + deltaAutoPart,
         bonus: p.bonus||0,
         historico: p.historico||[],
-        _autoParticipacao: p._autoParticipacao||0,
-        _autoNotas: p._autoNotas||0,
+        // Auto-pontos já descontados pelo baseline (útil para "resetar pontos")
+        _autoParticipacao: deltaAutoPart,
+        _autoNotas: deltaAutoNotas,
+        // Valores brutos e baseline (diagnóstico)
+        _autoParticipacaoRaw: rawAutoPart,
+        _autoNotasRaw: rawAutoNotas,
+        _autoParticipacaoBase: baseAutoPart,
+        _autoNotasBase: baseAutoNotas,
         _manualNotas: p.notas||0,
         _manualParticipacao: p.participacao||0
     };
@@ -26482,7 +26499,26 @@ window.rankExportarPDF = function(){
 window.rankResetar = function(){
     if(!confirm('Tem certeza que deseja resetar todos os pontos desta turma neste bimestre?\n\nEsta ação não pode ser desfeita.')) return;
     const { data, turma, bim } = _rankGetTurma();
-    data[turma][bim] = {};
+    if(turma === 'Todas'){
+        showToast('Selecione uma turma específica para resetar');
+        return;
+    }
+
+    // Reset "de verdade": zera pontos manuais e cria um baseline dos auto-pontos atuais.
+    // Assim, os pontos não "voltam" automaticamente logo após o reset.
+    const lista = alunos.filter(a => a.turma === turma);
+    const novo = {};
+    lista.forEach(a => {
+        const id = String(a.id);
+        const baseFreq = _rankCalcAutoFreq(id, turma, bim);
+        const baseGrades = _rankCalcAutoGrades(id, turma, bim);
+        novo[id] = { notas:0, comportamento:0, participacao:0, bonus:0, historico:[],
+            _autoParticipacao: baseFreq, _autoNotas: baseGrades,
+            _autoBaseParticipacao: baseFreq, _autoBaseNotas: baseGrades
+        };
+    });
+    data[turma][bim] = novo;
+
     _rankSave(data);
     showToast('Pontos resetados');
     renderizarRanking();
