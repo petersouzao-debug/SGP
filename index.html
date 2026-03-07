@@ -18894,6 +18894,14 @@ function __requestPersistentStorage(){
     }).catch(()=>false);
   }catch(_){ return Promise.resolve(false); }
 }
+function __rehydrateShadowBackedStateAfterIDB(){
+  try{ if(typeof __loadExtras === 'function') __loadExtras(); }catch(_){ }
+  try{ if(typeof applyThemeFromConfig === 'function') applyThemeFromConfig(); }catch(_){ }
+  try{ if(typeof initSidebarMobile === 'function') initSidebarMobile(); }catch(_){ }
+  try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
+  try{ if(typeof initBackupReminder === 'function') initBackupReminder(); }catch(_){ }
+  try{ if(typeof __scheduleStorageMonitorRefresh === 'function') __scheduleStorageMonitorRefresh(150); }catch(_){ }
+}
 
 let __storageMonitorCache = null;
 let __storageMonitorPromise = null;
@@ -19117,6 +19125,7 @@ function initIndexedDB(){
         __sgpDB = e.target.result;
         console.log('[SGP] IndexedDB inicializado.');
         Promise.resolve(__idbPrimeShadowCache())
+          .then(()=>{ try{ __rehydrateShadowBackedStateAfterIDB(); }catch(_){ } })
           .then(()=>__requestPersistentStorage())
           .finally(()=>resolve(__sgpDB));
       };
@@ -23896,249 +23905,53 @@ function __v18ShowKPIDetail(type){
 }
 
 // --- V18 Feature: Rich "Todas as turmas" view ---
-function __dashNotaContaComoLancada(raw){
-  if(raw === null || typeof raw === 'undefined') return false;
-  if(typeof raw === 'string' && raw.trim() === '') return false;
-  const n = Number(raw);
-  return Number.isFinite(n) && n > 0;
-}
-function __dashCalcDiscLancamento(discId, notas){
-  const disc = getDiscById(discId);
-  const out = { expected:0, lancadas:0, media:0 };
-  if(!disc) return out;
-  let sum = 0, totalPeso = 0;
-  (disc.avaliacoes || []).forEach(av => {
-    if(!av) return;
-    const avId = String(av.id || '');
-    if(avId === 'rec') return;
-    out.expected++;
-    const raw = notas ? notas[avId] : undefined;
-    if(!__dashNotaContaComoLancada(raw)) return;
-    out.lancadas++;
-    const peso = Math.max(0, parseFloat(av.peso) || 0);
-    if(peso > 0){
-      totalPeso += peso;
-      sum += clampNota(raw) * peso;
-    }
-  });
-  out.media = totalPeso > 0 ? (sum / totalPeso) : 0;
-  return out;
-}
-function __dashCalcTurmaHybridRow(turma, bim){
-  const lista = alunos.filter(a => a.turma === turma);
-  if(!lista.length) return null;
-  let sumMediaLancada = 0, nMediaLancada = 0;
-  let sumFreq = 0, nFreq = 0;
-  let emRisco = 0;
-  let lancadas = 0, esperadas = 0;
-
-  lista.forEach(a => {
-    const b = a?.bimestres?.[bim];
-    if(!b) return;
-    _syncBimestreRefs(b);
-
-    const lp = __dashCalcDiscLancamento(config.slot1, b.notas_lp);
-    const red = __dashCalcDiscLancamento(config.slot2, b.notas_red);
-    const mediasLancadas = [];
-    if(lp.lancadas > 0) mediasLancadas.push(lp.media);
-    if(red.lancadas > 0) mediasLancadas.push(red.media);
-    const mediaLancadaAluno = mediasLancadas.length ? (mediasLancadas.reduce((s,v)=>s+v,0) / mediasLancadas.length) : 0;
-    if(mediaLancadaAluno > 0){
-      sumMediaLancada += mediaLancadaAluno;
-      nMediaLancada++;
-    }
-
-    if((lp.lancadas > 0 && lp.media < 5) || (red.lancadas > 0 && red.media < 5)) emRisco++;
-
-    lancadas += lp.lancadas + red.lancadas;
-    esperadas += lp.expected + red.expected;
-
-    const f = calcFreqAluno(a.id, bim);
-    if(f.total > 0){ sumFreq += f.pct; nFreq++; }
-  });
-
-  const avgMediaLancada = nMediaLancada > 0 ? (sumMediaLancada / nMediaLancada) : 0;
-  const avgFreq = nFreq > 0 ? (sumFreq / nFreq) : 0;
-  const cobertura = esperadas > 0 ? (lancadas / esperadas) * 100 : 0;
-  const pctRisco = lista.length > 0 ? (emRisco / lista.length) * 100 : 0;
-  const score = (
-    ((avgMediaLancada / 10) * 0.55) +
-    ((cobertura / 100) * 0.25) +
-    ((avgFreq / 100) * 0.15) +
-    (((100 - pctRisco) / 100) * 0.05)
-  ) * 10;
-
-  return {
-    turma,
-    total: lista.length,
-    score,
-    avg: avgMediaLancada,
-    avgFreq,
-    cobertura,
-    lancadas,
-    esperadas,
-    emRisco,
-    pctRisco
-  };
-}
 function __v18RenderTurmaRanking(dashEl){
   const turmasList = (turmas || []).filter(t => t && t !== 'Todas');
   if(turmasList.length < 2) return;
   const bim = bimestreAtual;
-  const rankData = turmasList
-    .map(t => __dashCalcTurmaHybridRow(t, bim))
-    .filter(Boolean);
-
-  rankData.sort((a,b) => (b.score - a.score) || (b.avg - a.avg) || (b.cobertura - a.cobertura) || (b.avgFreq - a.avgFreq));
-
-  let html = '<div class="dash-card dash-turma-rank v18-enhanced"><h3 style="margin:0 0 4px;"><i class="fas fa-ranking-star" style="color:var(--primary);"></i> Ranking de Turmas — ' + bim + 'º Bimestre</h3>' +
-    '<div style="font-size:.78rem;color:#64748b;margin:0 0 12px;">Critério híbrido: 55% média lançada + 25% cobertura de notas + 15% frequência + 5% baixo risco.</div>' +
-    '<div class="dash-turma-rank-grid">';
+  const rankData = [];
+  
+  turmasList.forEach(t => {
+    const lista = alunos.filter(a => a.turma === t);
+    if(!lista.length) return;
+    let sumMedia=0, nMedia=0, sumFreq=0, nFreq=0, emRisco=0;
+    lista.forEach(a => {
+      const b = a?.bimestres?.[bim]; if(!b) return;
+      _syncBimestreRefs(b);
+      const m1 = clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+      const m2 = clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+      const mg = (m1 + m2) / 2;
+      if(mg > 0){ sumMedia += mg; nMedia++; }
+      if(m1 < 5 || m2 < 5) emRisco++;
+      const f = calcFreqAluno(a.id, bim);
+      if(f.total > 0){ sumFreq += f.pct; nFreq++; }
+    });
+    rankData.push({ turma:t, total:lista.length, avg:nMedia>0?sumMedia/nMedia:0, avgFreq:nFreq>0?sumFreq/nFreq:0, emRisco, pctRisco:lista.length>0?(emRisco/lista.length*100):0 });
+  });
+  
+  rankData.sort((a,b) => b.avg - a.avg);
+  
+  let html = '<div class="dash-card dash-turma-rank v18-enhanced"><h3 style="margin:0;"><i class="fas fa-ranking-star" style="color:var(--primary);"></i> Ranking de Turmas — ' + bim + 'º Bimestre</h3><div class="dash-turma-rank-grid">';
   rankData.forEach((td, i) => {
     const medal = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':(i+1)+'º'));
-    const sc = td.score>=7?'#16a34a':(td.score>=5?'#f59e0b':'#dc2626');
     const mc = td.avg>=7?'#16a34a':(td.avg>=5?'#f59e0b':'#dc2626');
-    const cc = td.cobertura>=75?'#16a34a':(td.cobertura>=50?'#f59e0b':'#dc2626');
     const fc = td.avgFreq>=75?'#16a34a':(td.avgFreq>=50?'#f59e0b':'#dc2626');
-    html += '<div class="dash-turma-rank-item" onclick="abrirModalRankingTurmaHybrid('+__j(td.turma)+','+bim+')" style="cursor:pointer;" title="Clique para ver como o índice foi calculado">' +
+    html += '<div class="dash-turma-rank-item" onclick="selTurma('+__j(td.turma)+');mudarVisao(\'dash\');">' +
       '<div class="trk-name">' + medal + ' ' + escHTML(td.turma) + ' <small style="color:#94a3b8;font-weight:400;">(' + td.total + ' alunos)</small></div>' +
       '<div class="trk-stats">' +
-        '<div class="trk-stat">Índice<span class="trk-stat-val" style="color:'+sc+';">' + td.score.toFixed(1) + '</span></div>' +
         '<div class="trk-stat">Média<span class="trk-stat-val" style="color:'+mc+';">' + td.avg.toFixed(1) + '</span></div>' +
-        '<div class="trk-stat">Cobertura<span class="trk-stat-val" style="color:'+cc+';">' + td.cobertura.toFixed(0) + '%</span></div>' +
         '<div class="trk-stat">Frequência<span class="trk-stat-val" style="color:'+fc+';">' + (td.avgFreq>0?td.avgFreq.toFixed(0)+'%':'—') + '</span></div>' +
-      '</div>' +
-      '<div style="display:flex;justify-content:space-between;gap:12px;font-size:.78rem;color:#64748b;margin-top:8px;">' +
-        '<span>Em risco: <b style="color:'+(td.pctRisco<=10?'#16a34a':'#dc2626')+';">' + td.emRisco + '</b></span>' +
-        '<span>Notas lançadas: <b>' + td.lancadas + '/' + td.esperadas + '</b></span>' +
-      '</div>' +
-      '<div class="dash-turma-minibar"><div style="width:'+Math.round(Math.max(0, Math.min(100, td.score/10*100)))+'%;background:'+sc+';"></div></div></div>';
+        '<div class="trk-stat">Em risco<span class="trk-stat-val" style="color:'+(td.pctRisco<=10?'#16a34a':'#dc2626')+';">' + td.emRisco + '</span></div>' +
+        '<div class="trk-stat">Verdes<span class="trk-stat-val" style="color:#16a34a;">' + Math.max(0,td.total-td.emRisco) + '</span></div>' +
+      '</div><div class="dash-turma-minibar"><div style="width:'+Math.round(td.avg/10*100)+'%;background:'+mc+';"></div></div></div>';
   });
   html += '</div></div>';
-
+  
   const div = document.createElement('div');
   div.className = 'v18-enhanced'; div.style.cssText = 'grid-column:1/-1;order:1;';
   div.innerHTML = html;
   dashEl.appendChild(div);
 }
-
-function __rankHybridColor(v){
-  return v >= 7 ? '#16a34a' : (v >= 5 ? '#f59e0b' : '#dc2626');
-}
-function __rankHybridPctColor(v){
-  return v >= 75 ? '#16a34a' : (v >= 50 ? '#f59e0b' : '#dc2626');
-}
-function __rankHybridOpenTurma(turma){
-  try{ window.fecharModalRankingTurmaHybrid && window.fecharModalRankingTurmaHybrid(); }catch(_){ }
-  try{ selTurma(turma); }catch(_){ }
-  try{ mudarVisao('dash'); }catch(_){ }
-}
-window.abrirModalRankingTurmaHybrid = function(turma, bim){
-  const td = __dashCalcTurmaHybridRow(turma, bim || bimestreAtual);
-  if(!td) return;
-  const mediaPts = (td.avg / 10) * 5.5;
-  const coberturaPts = (td.cobertura / 100) * 2.5;
-  const freqPts = (td.avgFreq / 100) * 1.5;
-  const baixoRiscoPct = Math.max(0, 100 - td.pctRisco);
-  const riscoPts = (baixoRiscoPct / 100) * 0.5;
-  const scoreColor = __rankHybridColor(td.score);
-  const mediaColor = __rankHybridColor(td.avg);
-  const coberturaColor = __rankHybridPctColor(td.cobertura);
-  const freqColor = __rankHybridPctColor(td.avgFreq);
-  const riscoColor = baixoRiscoPct >= 75 ? '#16a34a' : (baixoRiscoPct >= 50 ? '#f59e0b' : '#dc2626');
-  const modalId = 'rankTurmaHybridModal';
-  let wrap = document.getElementById(modalId);
-  if(!wrap){
-    wrap = document.createElement('div');
-    wrap.id = modalId;
-    wrap.style.cssText = 'position:fixed;inset:0;z-index:10030;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:18px;';
-    wrap.addEventListener('click', function(ev){ if(ev.target === wrap) window.fecharModalRankingTurmaHybrid(); });
-    document.body.appendChild(wrap);
-  }
-  wrap.innerHTML = `
-    <div role="dialog" aria-modal="true" aria-label="Cálculo do índice da turma" style="width:min(760px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(15,23,42,.28);border:1px solid #dbe4f0;padding:20px;">
-      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
-        <div>
-          <div style="font-size:1.2rem;font-weight:900;color:#22314d;">📊 ${escHTML(td.turma)} — ${bim || bimestreAtual}º Bimestre</div>
-          <div style="margin-top:4px;color:#64748b;font-size:.9rem;">O ranking híbrido combina desempenho, cobertura de lançamento, frequência e risco.</div>
-        </div>
-        <button onclick="fecharModalRankingTurmaHybrid()" style="border:none;background:#eef2ff;color:#334155;border-radius:10px;padding:8px 10px;cursor:pointer;font-weight:800;">✕</button>
-      </div>
-
-      <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px;">
-          <div style="font-size:.78rem;color:#64748b;">Índice final</div>
-          <div style="font-size:1.7rem;font-weight:900;color:${scoreColor};">${td.score.toFixed(1)}</div>
-        </div>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px;">
-          <div style="font-size:.78rem;color:#64748b;">Média lançada</div>
-          <div style="font-size:1.45rem;font-weight:900;color:${mediaColor};">${td.avg.toFixed(1)}</div>
-        </div>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px;">
-          <div style="font-size:.78rem;color:#64748b;">Cobertura</div>
-          <div style="font-size:1.45rem;font-weight:900;color:${coberturaColor};">${td.cobertura.toFixed(0)}%</div>
-        </div>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px;">
-          <div style="font-size:.78rem;color:#64748b;">Frequência</div>
-          <div style="font-size:1.45rem;font-weight:900;color:${freqColor};">${td.avgFreq > 0 ? td.avgFreq.toFixed(0) + '%' : '—'}</div>
-        </div>
-      </div>
-
-      <div style="margin-top:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:14px;">
-        <div style="font-weight:800;color:#22314d;margin-bottom:8px;">Como o índice foi calculado</div>
-        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(110px,.7fr) minmax(110px,.7fr);gap:8px 10px;align-items:center;font-size:.92rem;">
-          <div style="color:#334155;font-weight:700;">55% da média lançada</div>
-          <div style="color:${mediaColor};font-weight:800;">${td.avg.toFixed(1)}</div>
-          <div style="color:#334155;font-weight:800;">${mediaPts.toFixed(2)} pts</div>
-
-          <div style="color:#334155;font-weight:700;">25% da cobertura de notas</div>
-          <div style="color:${coberturaColor};font-weight:800;">${td.cobertura.toFixed(0)}%</div>
-          <div style="color:#334155;font-weight:800;">${coberturaPts.toFixed(2)} pts</div>
-
-          <div style="color:#334155;font-weight:700;">15% da frequência média</div>
-          <div style="color:${freqColor};font-weight:800;">${td.avgFreq > 0 ? td.avgFreq.toFixed(0) + '%' : '—'}</div>
-          <div style="color:#334155;font-weight:800;">${freqPts.toFixed(2)} pts</div>
-
-          <div style="color:#334155;font-weight:700;">5% do baixo risco</div>
-          <div style="color:${riscoColor};font-weight:800;">${baixoRiscoPct.toFixed(0)}%</div>
-          <div style="color:#334155;font-weight:800;">${riscoPts.toFixed(2)} pts</div>
-        </div>
-        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #cbd5e1;color:#22314d;font-weight:900;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-          <span>Índice final = ${mediaPts.toFixed(2)} + ${coberturaPts.toFixed(2)} + ${freqPts.toFixed(2)} + ${riscoPts.toFixed(2)}</span>
-          <span style="color:${scoreColor};">${td.score.toFixed(1)}</span>
-        </div>
-      </div>
-
-      <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
-        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:12px;">
-          <div style="font-size:.78rem;color:#9a3412;">Em risco</div>
-          <div style="font-size:1.35rem;font-weight:900;color:#c2410c;">${td.emRisco} de ${td.total}</div>
-        </div>
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:12px;">
-          <div style="font-size:.78rem;color:#1d4ed8;">Notas lançadas</div>
-          <div style="font-size:1.35rem;font-weight:900;color:#1e40af;">${td.lancadas}/${td.esperadas}</div>
-        </div>
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:12px;">
-          <div style="font-size:.78rem;color:#15803d;">Baixo risco</div>
-          <div style="font-size:1.35rem;font-weight:900;color:${riscoColor};">${baixoRiscoPct.toFixed(0)}%</div>
-        </div>
-      </div>
-
-      <div style="margin-top:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:12px;color:#854d0e;font-size:.9rem;line-height:1.45;">
-        <b>Leitura do ranking:</b> ter mais atividades lançadas ajuda na <b>cobertura</b>, mas não garante posição maior. Se a turma tiver notas médias mais baixas, frequência menor ou mais alunos em risco, o índice final pode cair mesmo com mais lançamentos.
-      </div>
-
-      <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
-        <button onclick="fecharModalRankingTurmaHybrid()" style="border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:800;">Fechar</button>
-        <button onclick="__rankHybridOpenTurma(${__j(td.turma)})" style="border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:800;box-shadow:0 10px 20px rgba(37,99,235,.22);">Abrir turma no dashboard</button>
-      </div>
-    </div>`;
-  wrap.style.display = 'flex';
-};
-window.fecharModalRankingTurmaHybrid = function(){
-  const wrap = document.getElementById('rankTurmaHybridModal');
-  if(wrap) wrap.style.display = 'none';
-};
 
 // --- V18 Feature: Collapsible Sections ---
 function __v18AddCollapsibleSections(dashEl){
@@ -28467,7 +28280,7 @@ try{
                     'manifest.json','sgp_core.json','sgp_planner.json','sgp_ui_prefs.json','sgp_plano_prefs.json',
                     'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json',
                     'sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
-                    'extras_audit.json','extras_autobackups.json',
+                    'extras_audit.json','extras_autobackups.json','extras_lastBackupAt.json',
                     'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
                     'atividades_relacoes.json','atividades_roleta.json','atividades_quiz.json','atividades_completar.json','atividades_ordenar.json'
                   ];
@@ -28484,13 +28297,13 @@ try{
                 // Arquivos essenciais no ZIP (inclui módulos novos)
                 try{
                     const requiredFiles = [
-                        'sgp_core.json','sgp_planner.json','sgp_ui_prefs.json','sgp_plano_prefs.json',
+                        'manifest.json','sgp_core.json','sgp_planner.json','sgp_ui_prefs.json','sgp_plano_prefs.json',
                         'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
                         'atividades_relacoes.json','atividades_roleta.json',
                         'atividades_quiz.json','atividades_completar.json','atividades_ordenar.json',
                         'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
                         'sgp_audit_log.json','sgp_freq_events.json',
-                        'extras_audit.json','extras_autobackups.json'
+                        'extras_audit.json','extras_autobackups.json','extras_lastBackupAt.json'
                     ];
                     if(filesMap && typeof filesMap === 'object'){
                         const missingF = requiredFiles.filter(fn=>!(fn in filesMap));
