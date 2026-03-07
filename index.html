@@ -5159,6 +5159,30 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
 
             <hr style="margin: 18px 0;">
 
+            <h3 style="margin:0 0 10px 0;">Monitor de armazenamento</h3>
+            <div id="cfgStorageBox" style="border:1px solid var(--border-color); border-radius:12px; padding:12px; background:var(--input-bg);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+                    <div>
+                        <div id="cfgStorageStatusText" style="font-weight:800; color:var(--text-color);">Verificando armazenamento...</div>
+                        <div id="cfgStorageMetaText" style="margin-top:4px; font-size:0.85rem; color:#64748b;">Aguarde alguns instantes.</div>
+                    </div>
+                    <button class="btn-secondary" data-onclick="__refreshStorageMonitor()"><i class="fas fa-arrows-rotate"></i> Atualizar</button>
+                </div>
+                <div style="margin-top:12px;">
+                    <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:0.85rem; color:#64748b;">
+                        <span id="cfgStorageUsageText">Uso: —</span>
+                        <span id="cfgStoragePercentText">—</span>
+                    </div>
+                    <div style="margin-top:8px; height:12px; border-radius:999px; background:rgba(148,163,184,.18); overflow:hidden;">
+                        <div id="cfgStorageBar" style="width:0%; height:100%; border-radius:999px; background:#16a34a; transition:width .25s ease;"></div>
+                    </div>
+                </div>
+                <div id="cfgStoragePersistText" style="margin-top:10px; font-size:0.83rem; color:#64748b;">Persistência do navegador: verificando...</div>
+                <div id="cfgStorageAdvice" style="margin-top:8px; font-size:0.85rem; color:#475569;">O sistema exibirá alerta preventivo antes de o armazenamento ficar crítico.</div>
+            </div>
+
+            <hr style="margin: 18px 0;">
+
             <h3 style="margin:0 0 10px 0;">Diagnóstico</h3>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
                 <button class="btn-secondary" data-onclick="diagExecutarTestes()"><i class="fas fa-stethoscope"></i> Executar testes</button>
@@ -8893,6 +8917,7 @@ function __sgpMainOnLoad(){
                 initAtividades();
                 initCorrecao();
                 try{ __HIST.lastSnapshot = __snapshotStr(); }catch(_){ }
+                try{ __scheduleStorageMonitorRefresh(1200); }catch(_){ }
             };
             try{
                 const p = (typeof initIndexedDB === 'function') ? initIndexedDB() : null;
@@ -8911,6 +8936,10 @@ function __sgpMainOnLoad(){
         window.onbeforeunload = function() {
             if(dadosNaoSalvosEmArquivo) return "Você tem alterações não salvas em arquivo. Deseja sair?";
         };
+        window.addEventListener('focus', ()=>{ try{ __scheduleStorageMonitorRefresh(250); }catch(_){ } });
+        document.addEventListener('visibilitychange', ()=>{
+            try{ if(!document.hidden) __scheduleStorageMonitorRefresh(250); }catch(_){ }
+        });
 
         // === NOVAS FUNÇÕES: BUSCA GLOBAL ===
         function aplicarBuscaGlobal() {
@@ -9243,7 +9272,9 @@ function __getIDBShadowKeys(){
     'sgp_entregas',
     'sgp_ranking_v1',
     'sgp_audit_log',
-    'sgp_freq_events'
+    'sgp_freq_events',
+    'sgp_audit',
+    'sgp_autobackups'
   ];
 }
 function __shadowStorageIdbKey(key){ return '__shadow__::' + String(key || ''); }
@@ -9256,6 +9287,8 @@ function __shadowLegacyIdbKey(key){
     case 'sgp_ranking_v1': return 'ranking';
     case 'sgp_audit_log': return 'audit_log';
     case 'sgp_freq_events': return 'freq_events';
+    case 'sgp_audit': return 'audit';
+    case 'sgp_autobackups': return 'autobackups';
     default: return null;
   }
 }
@@ -9264,7 +9297,7 @@ function __isIDBShadowKey(key){
 }
 function __shouldPreferIDBStorage(key, value){
   key = String(key || '');
-  return key === __SGP_ATOMIC_CORE_KEY || key === 'sgp_correcao_provas';
+  return key === __SGP_ATOMIC_CORE_KEY || key === 'sgp_correcao_provas' || key === 'sgp_autobackups';
 }
 function __shouldFallbackToIDBStorage(key, value){
   key = String(key || '');
@@ -9544,6 +9577,15 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                     if(v !== null && typeof v !== 'undefined') uiPrefs[k] = v;
                 });
             }catch(_){ }
+            const planoPrefs = {};
+            try{
+                for(let i=0;i<localStorage.length;i++){
+                    const k = localStorage.key(i);
+                    if(!k || !String(k).startsWith('sgp_plano_prefs_')) continue;
+                    const v = localStorage.getItem(k);
+                    if(v !== null && typeof v !== 'undefined') planoPrefs[k] = v;
+                }
+            }catch(_){ }
 
             const _lsJson = (k, fb)=>{ try{ const r=(typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(_){ return fb; } };
             const _lsArr = (k)=>{ const v=_lsJson(k, []); return Array.isArray(v)?v:[]; };
@@ -9567,6 +9609,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 ["sgp_core.json", JSON.stringify(core, null, 2)],
                 ["sgp_planner.json", JSON.stringify(planner, null, 2)],
                 ["sgp_ui_prefs.json", JSON.stringify(uiPrefs, null, 2)],
+                ["sgp_plano_prefs.json", JSON.stringify(planoPrefs, null, 2)],
                 ["atividades_forca.json", JSON.stringify(acts.forca, null, 2)],
                 ["atividades_vf.json", JSON.stringify(acts.vf, null, 2)],
                 ["atividades_memoria.json", JSON.stringify(acts.memoria, null, 2)],
@@ -9707,6 +9750,27 @@ __safeLSSet('sgp_last_backup', Date.now());
                         }catch(_){}
 
 
+
+                        // Preferências do Plano Semanal por disciplina
+                        try{
+                            const planoPrefs = readJson('sgp_plano_prefs.json');
+                            if(planoPrefs && typeof planoPrefs === 'object'){
+                                try{
+                                    const prefix = 'sgp_plano_prefs_';
+                                    const toRemove = [];
+                                    for(let idx=0; idx<localStorage.length; idx++){
+                                        const k = localStorage.key(idx);
+                                        if(k && String(k).startsWith(prefix)) toRemove.push(k);
+                                    }
+                                    toRemove.forEach(k=>{ try{ localStorage.removeItem(k); }catch(_){ } });
+                                }catch(_){ }
+                                Object.keys(planoPrefs).forEach(k=>{
+                                    try{
+                                        if(k && String(k).startsWith('sgp_plano_prefs_')) __safeLSSet(k, String(planoPrefs[k] ?? '{}'));
+                                    }catch(_){ }
+                                });
+                            }
+                        }catch(_){ }
 
 // Atividades storages
                         try{
@@ -12389,6 +12453,7 @@ function renderConfigModal(){
   _renderTemaConfig();
   _renderHistoricoConfig();
   _renderDiagnosticoConfig();
+  try{ __updateStorageMonitor(true); }catch(_){ }
 }
 
 function _renderDisciplinasList(){
@@ -13772,13 +13837,16 @@ function __snapshotStr(){
 
 function __loadExtras(){
   try{
-    __AUDIT = JSON.parse(localStorage.getItem('sgp_audit') || '[]') || [];
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_audit') : localStorage.getItem('sgp_audit');
+    __AUDIT = JSON.parse(raw || '[]') || [];
   }catch(e){ __AUDIT = []; }
   try{
-    __BACKUPS = JSON.parse(localStorage.getItem('sgp_autobackups') || '[]') || [];
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_autobackups') : localStorage.getItem('sgp_autobackups');
+    __BACKUPS = JSON.parse(raw || '[]') || [];
   }catch(e){ __BACKUPS = []; }
   try{
-    __lastBackupAt = parseInt(localStorage.getItem('sgp_lastBackupAt') || '0', 10) || 0;
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_lastBackupAt') : localStorage.getItem('sgp_lastBackupAt');
+    __lastBackupAt = parseInt(raw || '0', 10) || 0;
   }catch(e){ __lastBackupAt = 0; }
 }
 
@@ -14059,6 +14127,7 @@ function baixarLog(){
 
 // Após salvar no localStorage: registra undo/redo, log e auto-backup
 __SGP_EVT.on('afterSave', ()=>{
+  try{ __scheduleStorageMonitorRefresh(400); }catch(_){ }
   try{
     if(typeof __HIST !== 'object' || !__HIST) return;
     if(__HIST.mute) return;
@@ -18552,6 +18621,211 @@ function __requestPersistentStorage(){
       return navigator.storage.persist().catch(()=>false);
     }).catch(()=>false);
   }catch(_){ return Promise.resolve(false); }
+}
+
+let __storageMonitorCache = null;
+let __storageMonitorPromise = null;
+let __storageMonitorTimer = null;
+
+function __formatBytes(bytes){
+  try{
+    const n = Number(bytes) || 0;
+    if(!isFinite(n) || n <= 0) return '0 B';
+    const units = ['B','KB','MB','GB','TB'];
+    let v = n;
+    let i = 0;
+    while(v >= 1024 && i < units.length - 1){ v /= 1024; i++; }
+    const fixed = (v >= 100 || i === 0) ? 0 : (v >= 10 ? 1 : 2);
+    return v.toFixed(fixed) + ' ' + units[i];
+  }catch(_){ return '0 B'; }
+}
+function __estimateLocalBytesOnly(){
+  try{
+    let total = 0;
+    const seen = new Set();
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(!k) continue;
+      seen.add(k);
+      const v = localStorage.getItem(k) || '';
+      total += (String(k).length + String(v).length) * 2;
+    }
+    try{
+      const cache = window.__sgpIDBShadowCache || {};
+      Object.keys(cache).forEach((k)=>{
+        if(seen.has(k)) return;
+        const v = cache[k];
+        total += (String(k).length + String(v || '').length) * 2;
+      });
+    }catch(_){ }
+    return total;
+  }catch(_){ return 0; }
+}
+function __storageLevelFromPercent(percent){
+  const p = Number(percent);
+  if(!isFinite(p)) return { key:'unknown', rank:0, label:'Estimativa parcial', color:'#64748b', tone:'info' };
+  if(p >= 95) return { key:'critical', rank:3, label:'Crítico', color:'#dc2626', tone:'error' };
+  if(p >= 85) return { key:'high', rank:2, label:'Alto', color:'#f59e0b', tone:'warning' };
+  if(p >= 70) return { key:'attention', rank:1, label:'Atenção', color:'#eab308', tone:'warning' };
+  return { key:'ok', rank:0, label:'Saudável', color:'#16a34a', tone:'success' };
+}
+function __storageAdviceText(state){
+  if(!state) return 'Monitor indisponível no momento.';
+  if(!isFinite(state.percent)) return 'O navegador não informou a quota total. Continue fazendo backup ZIP periódico para segurança.';
+  if(state.percent >= 95) return 'Uso muito alto. Faça backup ZIP agora e considere limpar logs ou backups antigos do navegador.';
+  if(state.percent >= 85) return 'Uso alto. Recomenda-se baixar um backup ZIP preventivo e acompanhar o crescimento dos dados.';
+  if(state.percent >= 70) return 'Uso em atenção. O sistema avisará novamente se o armazenamento continuar subindo.';
+  return 'Armazenamento em faixa segura para continuar usando normalmente. Ainda assim, mantenha backup ZIP periódico.';
+}
+function __storagePersistLabel(state){
+  if(!state) return 'Persistência do navegador: —';
+  const persistTxt = state.persistent === true ? 'ativa' : (state.persistent === false ? 'não garantida' : 'indisponível');
+  return 'Persistência do navegador: ' + persistTxt + ' • Modo: ' + (state.mode || 'local');
+}
+function __storageMonitorReachedLevel(state){
+  if(!state || !isFinite(state.percent)) return null;
+  const level = __storageLevelFromPercent(state.percent);
+  return level.rank > 0 ? level : null;
+}
+function __storageMonitorNotify(state, forceToast){
+  try{
+    const reached = __storageMonitorReachedLevel(state);
+    const key = 'sgp_storage_alert_level';
+    const current = String(localStorage.getItem(key) || '');
+    if(!reached){
+      if(isFinite(state?.percent) && state.percent < 65){ try{ localStorage.removeItem(key); }catch(_){ } }
+      return;
+    }
+    if(!forceToast && current === reached.key) return;
+    const msg = reached.key === 'critical'
+      ? ('Armazenamento em ' + state.percent.toFixed(1) + '%. Faça backup ZIP agora para evitar falha ao salvar.')
+      : reached.key === 'high'
+        ? ('Armazenamento em ' + state.percent.toFixed(1) + '%. Recomenda-se backup ZIP preventivo.')
+        : ('Armazenamento em ' + state.percent.toFixed(1) + '%. O espaço do navegador entrou em atenção.');
+    try{ if(typeof showToast === 'function') showToast(msg, reached.tone || 'warning'); }catch(_){ }
+    try{ localStorage.setItem(key, reached.key); }catch(_){ }
+  }catch(_){ }
+}
+function __renderStorageMonitor(state){
+  const statusEl = document.getElementById('cfgStorageStatusText');
+  const metaEl = document.getElementById('cfgStorageMetaText');
+  const usageEl = document.getElementById('cfgStorageUsageText');
+  const percentEl = document.getElementById('cfgStoragePercentText');
+  const barEl = document.getElementById('cfgStorageBar');
+  const adviceEl = document.getElementById('cfgStorageAdvice');
+  const persistEl = document.getElementById('cfgStoragePersistText');
+  if(!statusEl && !metaEl && !usageEl && !percentEl && !barEl && !adviceEl && !persistEl) return;
+
+  const level = __storageLevelFromPercent(state && state.percent);
+  const percent = (state && isFinite(state.percent)) ? Math.max(0, Math.min(100, state.percent)) : null;
+
+  if(statusEl){
+    statusEl.textContent = 'Status: ' + level.label;
+    statusEl.style.color = level.color;
+  }
+  if(metaEl){
+    const src = (state && state.sourceLabel) ? state.sourceLabel : 'Estimativa local';
+    const updated = (state && state.ts) ? new Date(state.ts).toLocaleString('pt-BR') : 'agora';
+    metaEl.textContent = src + ' • Atualizado em ' + updated;
+  }
+  if(usageEl){
+    const usageTxt = state ? __formatBytes(state.usage || 0) : '—';
+    const quotaTxt = (state && isFinite(state.quota) && state.quota > 0) ? __formatBytes(state.quota) : 'quota não informada';
+    usageEl.textContent = 'Uso: ' + usageTxt + ' de ' + quotaTxt;
+  }
+  if(percentEl){
+    percentEl.textContent = (percent === null) ? 'Quota não informada' : (percent.toFixed(1) + '%');
+    percentEl.style.color = level.color;
+    percentEl.style.fontWeight = '800';
+  }
+  if(barEl){
+    barEl.style.width = (percent === null ? 18 : Math.max(4, percent)) + '%';
+    barEl.style.background = level.color;
+    barEl.title = (percent === null) ? 'Quota não informada pelo navegador' : ('Uso estimado: ' + percent.toFixed(1) + '%');
+  }
+  if(adviceEl) adviceEl.textContent = __storageAdviceText(state);
+  if(persistEl) persistEl.textContent = __storagePersistLabel(state);
+}
+function __collectStorageMonitorState(force){
+  if(__storageMonitorPromise && !force) return __storageMonitorPromise;
+  if(!force && __storageMonitorCache && (Date.now() - (__storageMonitorCache.ts || 0) < 15000)) return Promise.resolve(__storageMonitorCache);
+
+  __storageMonitorPromise = (async()=>{
+    const state = {
+      ts: Date.now(),
+      usage: 0,
+      quota: 0,
+      percent: NaN,
+      persistent: null,
+      mode: (__sgpDB ? 'IndexedDB ativo' : (window.indexedDB ? 'IndexedDB disponível' : 'localStorage')),
+      sourceLabel: 'Estimativa local do app'
+    };
+
+    try{
+      if(navigator.storage && typeof navigator.storage.estimate === 'function'){
+        const est = await navigator.storage.estimate();
+        if(est && typeof est === 'object'){
+          state.usage = Number(est.usage) || 0;
+          state.quota = Number(est.quota) || 0;
+          state.sourceLabel = 'Estimativa do navegador para este site';
+        }
+      }
+    }catch(_){ }
+
+    if(!(state.usage > 0) && !(state.quota > 0)){
+      state.usage = __estimateLocalBytesOnly();
+      state.sourceLabel = 'Estimativa local do app (quota não informada)';
+    }
+
+    try{
+      if(navigator.storage && typeof navigator.storage.persisted === 'function'){
+        state.persistent = await navigator.storage.persisted();
+      }
+    }catch(_){ state.persistent = null; }
+
+    state.mode = (__sgpDB ? 'IndexedDB ativo' : (window.indexedDB ? 'IndexedDB disponível' : 'localStorage'));
+    if(state.quota > 0) state.percent = (state.usage / state.quota) * 100;
+
+    __storageMonitorCache = state;
+    __storageMonitorPromise = null;
+    return state;
+  })().catch((e)=>{
+    __storageMonitorPromise = null;
+    const fallback = {
+      ts: Date.now(),
+      usage: __estimateLocalBytesOnly(),
+      quota: 0,
+      percent: NaN,
+      persistent: null,
+      mode: (__sgpDB ? 'IndexedDB ativo' : (window.indexedDB ? 'IndexedDB disponível' : 'localStorage')),
+      sourceLabel: 'Estimativa local do app'
+    };
+    try{ if(typeof __diagCapture==='function') __diagCapture(e, '__collectStorageMonitorState'); }catch(_){ }
+    __storageMonitorCache = fallback;
+    return fallback;
+  });
+
+  return __storageMonitorPromise;
+}
+function __updateStorageMonitor(force, opts){
+  opts = opts || {};
+  return __collectStorageMonitorState(!!force).then((state)=>{
+    __renderStorageMonitor(state);
+    __storageMonitorNotify(state, !!opts.forceToast);
+    return state;
+  }).catch((e)=>{
+    try{ if(typeof __diagCapture==='function') __diagCapture(e, '__updateStorageMonitor'); }catch(_){ }
+    return null;
+  });
+}
+function __refreshStorageMonitor(){
+  return __updateStorageMonitor(true, { forceToast:true });
+}
+function __scheduleStorageMonitorRefresh(delay){
+  try{ if(__storageMonitorTimer) clearTimeout(__storageMonitorTimer); }catch(_){ }
+  __storageMonitorTimer = setTimeout(()=>{
+    __updateStorageMonitor(false);
+  }, Math.max(0, Number(delay)||0));
 }
 function initIndexedDB(){
   if(!window.indexedDB) { console.warn('[SGP] IndexedDB não disponível.'); return Promise.resolve(null); }
@@ -27579,6 +27853,24 @@ try{
 }catch(e){
     add('Backup: checkBackupStatus executa', false, 'Exceção: '+((e && e.message) ? e.message : String(e)));
 }
+        // 1.2) Monitor de armazenamento
+        try{
+            const hasMonitor = (typeof __updateStorageMonitor === 'function');
+            add('Armazenamento: monitor disponível', hasMonitor, hasMonitor ? '' : 'Função __updateStorageMonitor não encontrada.');
+            if(hasMonitor){
+                const st = await __updateStorageMonitor(true);
+                const ok = !!st;
+                const det = !ok
+                  ? 'Monitor sem retorno.'
+                  : (isFinite(st.percent)
+                      ? ('Uso estimado: ' + st.percent.toFixed(1) + '% (' + __formatBytes(st.usage||0) + ' de ' + __formatBytes(st.quota||0) + ')')
+                      : ('Quota não informada; uso local estimado em ' + __formatBytes(st.usage||0)));
+                add('Armazenamento: monitor executa', ok, det);
+            }
+        }catch(e){
+            add('Armazenamento: monitor executa', false, 'Erro: '+(e && e.message ? e.message : e));
+        }
+
         // 2) Dashboard + bimestre
         if(typeof mudarVisao === 'function'){
             try{ mudarVisao('dash'); }catch(e){}
@@ -27704,7 +27996,7 @@ try{
                 // Arquivos essenciais (devem existir mesmo vazios)
                 try{
                   const required = [
-                    'manifest.json','sgp_core.json','sgp_planner.json','sgp_ui_prefs.json',
+                    'manifest.json','sgp_core.json','sgp_planner.json','sgp_ui_prefs.json','sgp_plano_prefs.json',
                     'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json',
                     'sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
                     'extras_audit.json','extras_autobackups.json',
@@ -27724,7 +28016,7 @@ try{
                 // Arquivos essenciais no ZIP (inclui módulos novos)
                 try{
                     const requiredFiles = [
-                        'sgp_core.json','sgp_planner.json','sgp_ui_prefs.json',
+                        'sgp_core.json','sgp_planner.json','sgp_ui_prefs.json','sgp_plano_prefs.json',
                         'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
                         'atividades_relacoes.json','atividades_roleta.json',
                         'atividades_quiz.json','atividades_completar.json','atividades_ordenar.json',

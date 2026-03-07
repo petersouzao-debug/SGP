@@ -1,10 +1,10 @@
-// SGP - Service Worker v16 (AutoTeste + backup completo)
+// SGP - Service Worker v16 (monitor de armazenamento + backup completo)
 // Correções estruturais:
 //  - Offline mais confiável para navegação (fallback do app shell)
 //  - Evita cache indiscriminado (reduz risco de crescimento infinito do cache)
 //  - Estratégia Stale-While-Revalidate para recursos same-origin
 
-const CACHE_NAME = 'sgp-v16.19';
+const CACHE_NAME = 'sgp-v16.21';
 const APP_SHELL = [
   './',
   './index.html',
