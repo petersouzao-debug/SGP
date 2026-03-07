@@ -6679,7 +6679,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
         function __idSeqNext(){
             try{
                 const K = 'sgp_id_seq';
-                let v = parseInt(localStorage.getItem(K) || '0', 10);
+                let v = parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem(K) : localStorage.getItem(K)) || '0', 10);
                 if(!isFinite(v) || v < 0) v = 0;
                 v = (v + 1) % 1000; // 0..999
                 __safeLSSet(K, String(v));
@@ -6909,27 +6909,45 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                 storage: {}
             };
             try{
-                for(let i=0;i<localStorage.length;i++){
-                    const k = localStorage.key(i);
-                    if(k && k.startsWith('sgp_')){
-                        out.storage[k] = localStorage.getItem(k);
-                    }
-                }
+                const keys = (typeof __storageListKeys === 'function')
+                    ? __storageListKeys('sgp_')
+                    : Array.from({length: localStorage.length}, (_, i)=>localStorage.key(i)).filter(k=>k && k.startsWith('sgp_'));
+                keys.forEach((k)=>{
+                    try{
+                        const v = (typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k);
+                        if(v !== null && typeof v !== 'undefined') out.storage[k] = v;
+                    }catch(_){ }
+                });
             }catch(e){
-                try{ if(typeof __diagCapture==='function') __diagCapture(e, '__exportState'); }catch(_){}
+                try{ if(typeof __diagCapture==='function') __diagCapture(e, '__exportState'); }catch(_){ }
             }
             return out;
         }
 
-        function __importStateObject(obj){
+        function __importStateObject(obj, options){
             if(!obj || typeof obj !== 'object') throw new Error("Arquivo inválido");
             const storage = obj.storage;
             if(!storage || typeof storage !== 'object') throw new Error("Arquivo inválido (sem storage)");
-            // Grava as chaves sgp_ exatamente como estavam
             const keys = Object.keys(storage).filter(k=>k && k.startsWith('sgp_'));
             if(!keys.length) throw new Error("Arquivo inválido (sem chaves sgp_)");
-            keys.forEach(k=>{
-                __safeLSSet(k, storage[k]);
+
+            const opts = (options && typeof options === 'object') ? options : {};
+            const clearExisting = opts.clearExisting !== false;
+
+            if(clearExisting){
+                try{
+                    const currentKeys = (typeof __storageListKeys === 'function') ? __storageListKeys('sgp_') : [];
+                    currentKeys.forEach((k)=>{ try{ __safeLSRemove(k); }catch(_){ } });
+                }catch(_){ }
+            }
+
+            keys.forEach((k)=>{
+                const v = storage[k];
+                if(v === null || typeof v === 'undefined'){
+                    try{ __safeLSRemove(k); }catch(_){ }
+                    return;
+                }
+                __safeLSSet(k, String(v));
             });
         }
 
@@ -6981,9 +6999,13 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
         }
 
         async function abrirEstadoArquivo(){
+            let __beforeState = null;
+            let __restoreStarted = false;
             try{
                 const ok = confirm("Importar estado irá substituir os dados locais salvos neste navegador. Deseja continuar?");
                 if(!ok) return;
+
+                try{ __beforeState = (typeof __exportState === 'function') ? __exportState() : null; }catch(_){ __beforeState = null; }
 
                 let file = null;
                 if(window.showOpenFilePicker){
@@ -6997,14 +7019,22 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                 }
                 const txt = await file.text();
                 const obj = JSON.parse(txt);
-                __importStateObject(obj);
+                __restoreStarted = true;
+                __importStateObject(obj, { clearExisting: true });
 
-                try{ if(typeof showToast==='function') showToast("Estado importado. Recarregando..."); }catch(_){}
+                try{ if(typeof showToast==='function') showToast("Estado importado. Recarregando..."); }catch(_){ }
                 setTimeout(()=>{ try{ location.reload(); }catch(_){ } }, 650);
             }catch(e){
                 console.error(e);
-                try{ if(typeof showToast==='function') showToast("Erro ao abrir/importar estado.", "error"); }catch(_){}
-                try{ if(typeof __diagCapture==='function') __diagCapture(e, 'abrirEstadoArquivo'); }catch(_){}
+                let __rolledBack = false;
+                try{
+                    if(__restoreStarted && __beforeState && typeof __importStateObject === 'function'){
+                        __importStateObject(__beforeState, { clearExisting: true });
+                        __rolledBack = true;
+                    }
+                }catch(_){ __rolledBack = false; }
+                try{ if(typeof showToast==='function') showToast(__rolledBack ? "Falha na importação — estado anterior restaurado." : "Erro ao abrir/importar estado.", "error"); }catch(_){ }
+                try{ if(typeof __diagCapture==='function') __diagCapture(e, 'abrirEstadoArquivo', { rolledBack: __rolledBack }); }catch(_){ }
             }
         }
 
@@ -7018,7 +7048,7 @@ function checkBackupStatus(){
 
     let lastSave = 0;
     try{
-      const ls = parseInt(localStorage.getItem('sgp_last_core_save') || '0', 10);
+      const ls = parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_core_save') : localStorage.getItem('sgp_last_core_save')) || '0', 10);
       if(!isNaN(ls) && ls>0) lastSave = ls;
     }catch(_){}
 
@@ -7037,7 +7067,7 @@ function checkBackupStatus(){
 
     let lastBackup = 0;
     try{
-      const lb = parseInt(localStorage.getItem('sgp_last_backup') || '0', 10);
+      const lb = parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_backup') : localStorage.getItem('sgp_last_backup')) || '0', 10);
       if(!isNaN(lb) && lb>0) lastBackup = lb;
     }catch(_){}
 
@@ -7233,8 +7263,8 @@ let __corChartB = null;
 let __corSortQ = 'qnum';
 let __corSortB = 'pct_desc';
 try{
-  const sq = localStorage.getItem('sgp_cor_sort_q');
-  const sb = localStorage.getItem('sgp_cor_sort_b');
+  const sq = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_cor_sort_q') : localStorage.getItem('sgp_cor_sort_q');
+  const sb = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_cor_sort_b') : localStorage.getItem('sgp_cor_sort_b');
   if(sq) __corSortQ = String(sq);
   if(sb) __corSortB = String(sb);
 }catch(_){}
@@ -7929,7 +7959,7 @@ function corRenderStats(){
       selQ.value = __corSortQ || 'qnum';
       selQ.addEventListener('change', function(){
         __corSortQ = String(this.value||'qnum');
-        try{ localStorage.setItem('sgp_cor_sort_q', __corSortQ); }catch(_){}
+        try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_cor_sort_q', __corSortQ); else localStorage.setItem('sgp_cor_sort_q', __corSortQ); }catch(_){}
         corRenderStats();
       });
     }else if(selQ){
@@ -7940,7 +7970,7 @@ function corRenderStats(){
       selB.value = __corSortB || 'pct_desc';
       selB.addEventListener('change', function(){
         __corSortB = String(this.value||'pct_desc');
-        try{ localStorage.setItem('sgp_cor_sort_b', __corSortB); }catch(_){}
+        try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_cor_sort_b', __corSortB); else localStorage.setItem('sgp_cor_sort_b', __corSortB); }catch(_){}
         corRenderStats();
       });
     }else if(selB){
@@ -9207,13 +9237,13 @@ function carregarDados() {
   // 2) Fallback: formato antigo (múltiplas chaves)
   if(!loadedCore){
     try{
-      const t=localStorage.getItem('sgp_turmas'),
-            a=localStorage.getItem('sgp_alunos'),
-            au=localStorage.getItem('sgp_aulas'),
-            p=localStorage.getItem('sgp_planos_semanais'),
+      const t=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_turmas') : localStorage.getItem('sgp_turmas'),
+            a=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_alunos') : localStorage.getItem('sgp_alunos'),
+            au=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_aulas') : localStorage.getItem('sgp_aulas'),
+            p=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_planos_semanais') : localStorage.getItem('sgp_planos_semanais'),
             cp=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_correcao_provas') : localStorage.getItem('sgp_correcao_provas'),
-            c=localStorage.getItem('sgp_config'),
-            l=localStorage.getItem('sgp_layouts');
+            c=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_config') : localStorage.getItem('sgp_config'),
+            l=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_layouts') : localStorage.getItem('sgp_layouts');
 
       turmas = __safe(t, [], 'sgp_turmas'); 
       if(!Array.isArray(turmas)) turmas = [];
@@ -9263,6 +9293,20 @@ const __SGP_ATOMIC_CORE_TMP = 'sgp_state_core_tmp_v1';
 const __SGP_ATOMIC_CORE_META_KEY = 'sgp_state_core_meta_v1';
 window.__sgpIDBShadowCache = window.__sgpIDBShadowCache || {};
 
+function __isActivityBankStorageKey(key){
+  key = String(key || '');
+  return [
+    'sgp_atividades_forca_bank',
+    'sgp_atividades_vf_bank',
+    'sgp_atividades_mem_bank',
+    'sgp_atividades_fc_bank',
+    'sgp_atividades_rel_bank',
+    'sgp_atividades_roleta_bank',
+    'sgp_atividades_quiz_bank',
+    'sgp_atividades_comp_bank',
+    'sgp_atividades_ord_bank'
+  ].includes(key);
+}
 function __getIDBShadowKeys(){
   return [
     __SGP_ATOMIC_CORE_KEY,
@@ -9274,7 +9318,34 @@ function __getIDBShadowKeys(){
     'sgp_audit_log',
     'sgp_freq_events',
     'sgp_audit',
-    'sgp_autobackups'
+    'sgp_autobackups',
+    'sgp_lastBackupAt',
+    'sgp_rank_hist_cfg',
+    'sgp_last_backup',
+    'sgp_last_core_save',
+    'sgp_backup_pending',
+    'sgp_freq_version',
+    'sgp_last_freq_save',
+    'sgp_storage_alert_level',
+    'sgp_id_seq',
+    'sgp_darkmode',
+    'sgp_accent',
+    'sgp_fontsize',
+    'sgp_sidebar_hidden',
+    'sgp_mapa_grid',
+    'sgp_plano_disc_last',
+    'sgp_cor_sort_q',
+    'sgp_cor_sort_b',
+    'sgp_atividades_sorteio_turma',
+    'sgp_atividades_forca_bank',
+    'sgp_atividades_vf_bank',
+    'sgp_atividades_mem_bank',
+    'sgp_atividades_fc_bank',
+    'sgp_atividades_rel_bank',
+    'sgp_atividades_roleta_bank',
+    'sgp_atividades_quiz_bank',
+    'sgp_atividades_comp_bank',
+    'sgp_atividades_ord_bank'
   ];
 }
 function __shadowStorageIdbKey(key){ return '__shadow__::' + String(key || ''); }
@@ -9289,21 +9360,25 @@ function __shadowLegacyIdbKey(key){
     case 'sgp_freq_events': return 'freq_events';
     case 'sgp_audit': return 'audit';
     case 'sgp_autobackups': return 'autobackups';
+    case 'sgp_lastBackupAt': return 'lastBackupAt';
     default: return null;
   }
 }
 function __isIDBShadowKey(key){
-  return __getIDBShadowKeys().includes(String(key || ''));
+  key = String(key || '');
+  return __getIDBShadowKeys().includes(key) || key.startsWith('sgp_plano_prefs_');
 }
 function __shouldPreferIDBStorage(key, value){
   key = String(key || '');
-  return key === __SGP_ATOMIC_CORE_KEY || key === 'sgp_correcao_provas' || key === 'sgp_autobackups';
+  return key === __SGP_ATOMIC_CORE_KEY || key === 'sgp_correcao_provas' || key === 'sgp_autobackups' || __isActivityBankStorageKey(key);
 }
 function __shouldFallbackToIDBStorage(key, value){
   key = String(key || '');
   if(!__isIDBShadowKey(key)) return false;
+  // Para qualquer chave registrada no shadow, se o localStorage falhar por quota,
+  // o fallback deve poder usar IndexedDB mesmo para valores pequenos.
   if(__shouldPreferIDBStorage(key, value)) return true;
-  return (typeof value === 'string' && value.length >= 180000);
+  return true;
 }
 function __persistCoreMetaFromString(raw){
   try{
@@ -9367,6 +9442,18 @@ function __clearStorageKeysByPrefix(prefix){
       try{ __safeLSRemove(k); }catch(_){ }
     });
   }catch(_){ }
+}
+function __getBackupUiPrefKeys(){
+  return [
+    'sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid',
+    'sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b','sgp_atividades_sorteio_turma'
+  ];
+}
+function __clearBackupUiPrefs(){
+  try{ (__getBackupUiPrefKeys() || []).forEach((k)=>{ try{ __safeLSRemove(k); }catch(_){ } }); }catch(_){ }
+  try{ document.body.classList.remove('dark-mode'); }catch(_){ }
+  try{ document.documentElement.style.removeProperty('--primary'); }catch(_){ }
+  try{ document.documentElement.style.fontSize = ''; }catch(_){ }
 }
 function __buildAtomicCoreState(){
   return {
@@ -9610,7 +9697,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             // Preferências de interface (UI) — tema/cor/fonte/sidebar/grid
             const uiPrefs = {};
             try{
-                ['sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid','sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b'].forEach(k=>{
+                (__getBackupUiPrefKeys() || []).forEach(k=>{
                     const v = (typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k);
                     if(v !== null && typeof v !== 'undefined') uiPrefs[k] = v;
                 });
@@ -9636,7 +9723,10 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
 
             const extras = {
                 audit: (typeof __AUDIT !== 'undefined') ? (__AUDIT || []) : _lsArr('sgp_audit'),
-                autobackups: (typeof __BACKUPS !== 'undefined') ? (__BACKUPS || []) : _lsArr('sgp_autobackups')
+                autobackups: (typeof __sanitizeBackupList === 'function')
+                  ? __sanitizeBackupList((typeof __BACKUPS !== 'undefined') ? (__BACKUPS || []) : _lsArr('sgp_autobackups'))
+                  : ((typeof __BACKUPS !== 'undefined') ? (__BACKUPS || []) : _lsArr('sgp_autobackups')),
+                lastBackupAt: parseInt(((typeof __lastBackupAt !== 'undefined') ? __lastBackupAt : _lsJson('sgp_lastBackupAt', 0)) || '0', 10) || 0
             };
 
             const files = [
@@ -9652,7 +9742,8 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 ["atividades_relacoes.json", JSON.stringify(acts.relacoes, null, 2)],
                 ["atividades_roleta.json", JSON.stringify(acts.roleta, null, 2)],
                 ["extras_audit.json", JSON.stringify(extras.audit, null, 2)],
-                ["extras_autobackups.json", JSON.stringify(extras.autobackups, null, 2)]
+                ["extras_autobackups.json", JSON.stringify(extras.autobackups, null, 2)],
+                ["extras_lastBackupAt.json", JSON.stringify({ lastBackupAt: extras.lastBackupAt }, null, 2)]
             ];
 
             // Correção (Provas/Atividades)
@@ -9697,7 +9788,7 @@ return files;
 __safeLSSet('sgp_last_backup', Date.now()); 
                 try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){ }
                 try{ try{
-                const cur = parseInt(localStorage.getItem('sgp_last_core_save')||'0', 10);
+                const cur = parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_core_save') : localStorage.getItem('sgp_last_core_save'))||'0', 10);
                 const now = Date.now();
                 __safeLSSet('sgp_last_core_save', String((!isNaN(cur) && cur>0) ? cur : now));
             }catch(_){ } }catch(_){ }
@@ -9721,15 +9812,22 @@ __safeLSSet('sgp_last_backup', Date.now());
             if(name.endsWith('.zip') || (file.type && String(file.type).includes('zip'))){
                 const r = new FileReader();
                 r.onload = (e)=>{
+                    let __beforeRestore = null;
+                    let __restoreStarted = false;
                     try{
+                        try{ if(typeof __snapshotStr === 'function') __beforeRestore = __snapshotStr(); }catch(_){ __beforeRestore = null; }
                         const files = __zipReadStore(e.target.result);
                         const readJson = (fname)=>{
                             if(!files || typeof files[fname] === 'undefined') return null;
                             try{ return JSON.parse(files[fname]); }catch(err){ return null; }
                         };
 
+                        const manifest = readJson('manifest.json');
+                        if(manifest && manifest.app && String(manifest.app) !== 'SGP Pro') throw new Error("Backup ZIP incompatível com este app.");
+
                         const core = readJson('sgp_core.json');
                         if(!core) throw new Error("Backup ZIP inválido (sgp_core.json ausente).");
+                        __restoreStarted = true;
 
                         turmas = Array.isArray(core.turmas) ? core.turmas : [];
                         alunos = Array.isArray(core.alunos) ? core.alunos : [];
@@ -9737,32 +9835,34 @@ __safeLSSet('sgp_last_backup', Date.now());
                         const __ps = core.planosSemana || core.planos_semanais;
                         planosSemana = (__ps && typeof __ps === 'object' && !Array.isArray(__ps)) ? __ps : {};
                         const __cfg = core.config;
-                        if(__cfg && typeof __cfg === 'object' && !Array.isArray(__cfg)) config = __cfg;
+                        config = (__cfg && typeof __cfg === 'object' && !Array.isArray(__cfg)) ? __cfg : {};
                         layouts = (core.layouts && typeof core.layouts === 'object' && !Array.isArray(core.layouts)) ? core.layouts : {};
 
                         const pl = readJson('sgp_planner.json');
                         plannerTasks = Array.isArray(pl) ? pl : (pl && pl.tasks ? pl.tasks : []);
                         try{ plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
 // Atividades (bancos)
-                        const bkForca = readJson('atividades_forca.json');
-                        const bkVf = readJson('atividades_vf.json');
-                        const bkMem = readJson('atividades_memoria.json');
-                        const bkFc = readJson('atividades_flashcards.json');
-                        const bkRel = readJson('atividades_relacoes.json');
-                        const bkRoleta = readJson('atividades_roleta.json');
+                        const bkForca = Array.isArray(readJson('atividades_forca.json')) ? readJson('atividades_forca.json') : [];
+                        const bkVf = Array.isArray(readJson('atividades_vf.json')) ? readJson('atividades_vf.json') : [];
+                        const bkMem = Array.isArray(readJson('atividades_memoria.json')) ? readJson('atividades_memoria.json') : [];
+                        const bkFc = Array.isArray(readJson('atividades_flashcards.json')) ? readJson('atividades_flashcards.json') : [];
+                        const bkRel = Array.isArray(readJson('atividades_relacoes.json')) ? readJson('atividades_relacoes.json') : [];
+                        const bkRoleta = Array.isArray(readJson('atividades_roleta.json')) ? readJson('atividades_roleta.json') : [];
 
-                        if(typeof forcaBank !== 'undefined' && Array.isArray(bkForca)) forcaBank = bkForca;
-                        if(typeof vfBank !== 'undefined' && Array.isArray(bkVf)) vfBank = bkVf;
-                        if(typeof memBank !== 'undefined' && Array.isArray(bkMem)) memBank = bkMem;
-                        if(typeof fcBank !== 'undefined' && Array.isArray(bkFc)) fcBank = bkFc;
-                        if(typeof relBank !== 'undefined' && Array.isArray(bkRel)) relBank = bkRel;
-                        if(typeof roletaBank !== 'undefined' && Array.isArray(bkRoleta)) roletaBank = bkRoleta;
+                        if(typeof forcaBank !== 'undefined') forcaBank = bkForca;
+                        if(typeof vfBank !== 'undefined') vfBank = bkVf;
+                        if(typeof memBank !== 'undefined') memBank = bkMem;
+                        if(typeof fcBank !== 'undefined') fcBank = bkFc;
+                        if(typeof relBank !== 'undefined') relBank = bkRel;
+                        if(typeof roletaBank !== 'undefined') roletaBank = bkRoleta;
 
                         // Extras (opcional)
-                        const exAudit = readJson('extras_audit.json');
-                        const exBackups = readJson('extras_autobackups.json');
-                        if(typeof __AUDIT !== 'undefined' && Array.isArray(exAudit)) __AUDIT = exAudit;
-                        if(typeof __BACKUPS !== 'undefined' && Array.isArray(exBackups)) __BACKUPS = exBackups;
+                        const exAudit = Array.isArray(readJson('extras_audit.json')) ? readJson('extras_audit.json') : [];
+                        const exBackups = Array.isArray(readJson('extras_autobackups.json')) ? readJson('extras_autobackups.json') : [];
+                        const exLastBackupAt = readJson('extras_lastBackupAt.json');
+                        if(typeof __AUDIT !== 'undefined') __AUDIT = exAudit;
+                        if(typeof __BACKUPS !== 'undefined') __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(exBackups) : exBackups;
+                        if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && typeof exLastBackupAt === 'object') ? (parseInt(exLastBackupAt.lastBackupAt || '0', 10) || 0) : 0;
 
                         // Persiste no localStorage (mesmo formato do app)
                         try{
@@ -9773,13 +9873,14 @@ __safeLSSet('sgp_last_backup', Date.now());
                         // UI prefs (tema/cor/fonte/sidebar/grid)
                         try{
                             const ui = readJson('sgp_ui_prefs.json');
+                            try{ if(typeof __clearBackupUiPrefs === 'function') __clearBackupUiPrefs(); }catch(_){ }
                             if(ui && typeof ui === 'object'){
                                 Object.keys(ui).forEach(k=>{
                                     try{ if(k && String(k).startsWith('sgp_')) __safeLSSet(k, String(ui[k])); }catch(_){}
                                 });
-                                try{ if(localStorage.getItem('sgp_darkmode')==='1') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }catch(_){}
-                                try{ const a=localStorage.getItem('sgp_accent'); if(a) document.documentElement.style.setProperty('--primary', a); }catch(_){}
-                                try{ const fs=localStorage.getItem('sgp_fontsize'); if(fs) document.documentElement.style.fontSize=fs+'px'; }catch(_){}
+                                try{ if(String(__storageGetItem('sgp_darkmode') || '')==='1') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }catch(_){}
+                                try{ const a=__storageGetItem('sgp_accent'); if(a) document.documentElement.style.setProperty('--primary', a); }catch(_){}
+                                try{ const fs=__storageGetItem('sgp_fontsize'); if(fs) document.documentElement.style.fontSize=fs+'px'; }catch(_){}
                                 try{ if(typeof initSidebarMobile==='function') initSidebarMobile(); }catch(_){}
                             }
                         }catch(_){}
@@ -9789,8 +9890,8 @@ __safeLSSet('sgp_last_backup', Date.now());
                         // Preferências do Plano Semanal por disciplina
                         try{
                             const planoPrefs = readJson('sgp_plano_prefs.json');
+                            try{ if(typeof __clearStorageKeysByPrefix === 'function') __clearStorageKeysByPrefix('sgp_plano_prefs_'); }catch(_){ }
                             if(planoPrefs && typeof planoPrefs === 'object'){
-                                try{ if(typeof __clearStorageKeysByPrefix === 'function') __clearStorageKeysByPrefix('sgp_plano_prefs_'); }catch(_){ }
                                 Object.keys(planoPrefs).forEach(k=>{
                                     try{
                                         if(k && String(k).startsWith('sgp_plano_prefs_')) __safeLSSet(k, String(planoPrefs[k] ?? '{}'));
@@ -9802,36 +9903,30 @@ __safeLSSet('sgp_last_backup', Date.now());
 // Atividades storages
                         try{
                             if(typeof ACT_STORAGE !== 'undefined'){
-                                if(typeof bkForca !== 'undefined' && bkForca) __safeLSSet(ACT_STORAGE.forca, JSON.stringify(forcaBank||[]));
-                                if(typeof bkVf !== 'undefined' && bkVf) __safeLSSet(ACT_STORAGE.vf, JSON.stringify(vfBank||[]));
-                                if(typeof bkMem !== 'undefined' && bkMem) __safeLSSet(ACT_STORAGE.mem, JSON.stringify(memBank||[]));
-                                if(typeof bkFc !== 'undefined' && bkFc) __safeLSSet(ACT_STORAGE.fc, JSON.stringify(fcBank||[]));
-                                if(typeof bkRel !== 'undefined' && bkRel) __safeLSSet(ACT_STORAGE.rel, JSON.stringify(relBank||[]));
-                                if(typeof bkRoleta !== 'undefined' && bkRoleta) __safeLSSet(ACT_STORAGE.roleta, JSON.stringify(roletaBank||[]));
+                                __safeLSSet(ACT_STORAGE.forca, JSON.stringify(forcaBank||[]));
+                                __safeLSSet(ACT_STORAGE.vf, JSON.stringify(vfBank||[]));
+                                __safeLSSet(ACT_STORAGE.mem, JSON.stringify(memBank||[]));
+                                __safeLSSet(ACT_STORAGE.fc, JSON.stringify(fcBank||[]));
+                                if(ACT_STORAGE.rel) __safeLSSet(ACT_STORAGE.rel, JSON.stringify(relBank||[]));
+                                if(ACT_STORAGE.roleta) __safeLSSet(ACT_STORAGE.roleta, JSON.stringify(roletaBank||[]));
                             }
                         }catch(e){}
 
                         // Restore quiz/completar/ordenar banks
                         try{
-                            const bkQuiz = readJson('atividades_quiz.json');
-                            if(Array.isArray(bkQuiz)){
-                                if(typeof quizBank !== 'undefined') quizBank = bkQuiz;
-                                __safeLSSet('sgp_atividades_quiz_bank', JSON.stringify(bkQuiz));
-                            }
+                            const bkQuiz = Array.isArray(readJson('atividades_quiz.json')) ? readJson('atividades_quiz.json') : [];
+                            if(typeof quizBank !== 'undefined') quizBank = bkQuiz;
+                            __safeLSSet('sgp_atividades_quiz_bank', JSON.stringify(bkQuiz));
                         }catch(_){}
                         try{
-                            const bkComp = readJson('atividades_completar.json');
-                            if(Array.isArray(bkComp)){
-                                if(typeof compBank !== 'undefined') compBank = bkComp;
-                                __safeLSSet('sgp_atividades_comp_bank', JSON.stringify(bkComp));
-                            }
+                            const bkComp = Array.isArray(readJson('atividades_completar.json')) ? readJson('atividades_completar.json') : [];
+                            if(typeof compBank !== 'undefined') compBank = bkComp;
+                            __safeLSSet('sgp_atividades_comp_bank', JSON.stringify(bkComp));
                         }catch(_){}
                         try{
-                            const bkOrd = readJson('atividades_ordenar.json');
-                            if(Array.isArray(bkOrd)){
-                                if(typeof ordBank !== 'undefined') ordBank = bkOrd;
-                                __safeLSSet('sgp_atividades_ord_bank', JSON.stringify(bkOrd));
-                            }
+                            const bkOrd = Array.isArray(readJson('atividades_ordenar.json')) ? readJson('atividades_ordenar.json') : [];
+                            if(typeof ordBank !== 'undefined') ordBank = bkOrd;
+                            __safeLSSet('sgp_atividades_ord_bank', JSON.stringify(bkOrd));
                         }catch(_){}
 
                         try{ if(typeof __saveExtras === 'function') __saveExtras(); }catch(e){}
@@ -9839,66 +9934,60 @@ __safeLSSet('sgp_last_backup', Date.now());
                         // Restore frequência from backup
                         try{
                             const bkFreq = readJson('sgp_frequencia.json');
-                            if(bkFreq && typeof bkFreq === 'object'){
-                                window.__sgpFrequencia = bkFreq;
-                                __safeLSSet('sgp_frequencia', JSON.stringify(bkFreq));
-                            }
+                            const restoredFreq = (bkFreq && typeof bkFreq === 'object' && !Array.isArray(bkFreq)) ? bkFreq : {};
+                            window.__sgpFrequencia = restoredFreq;
+                            __safeLSSet('sgp_frequencia', JSON.stringify(restoredFreq));
                         }catch(_){}
 
                         // Restore entregas from backup
                         try{
                             const bkEntregas = readJson('sgp_entregas.json');
-                            if(bkEntregas && typeof bkEntregas === 'object'){
-                                window.__sgpEntregas = bkEntregas;
-                                __safeLSSet('sgp_entregas', JSON.stringify(bkEntregas));
-                            }
+                            const restoredEntregas = (bkEntregas && typeof bkEntregas === 'object' && !Array.isArray(bkEntregas)) ? bkEntregas : {};
+                            window.__sgpEntregas = restoredEntregas;
+                            __safeLSSet('sgp_entregas', JSON.stringify(restoredEntregas));
                         }catch(_){}
 
                         // Restore ranking from backup
                         try{
                             const bkRanking = readJson('sgp_ranking_v1.json');
-                            if(bkRanking && typeof bkRanking === 'object'){
-                                __safeLSSet('sgp_ranking_v1', JSON.stringify(bkRanking));
-                            }
+                            const restoredRanking = (bkRanking && typeof bkRanking === 'object' && !Array.isArray(bkRanking)) ? bkRanking : {};
+                            __safeLSSet('sgp_ranking_v1', JSON.stringify(restoredRanking));
                         }catch(_){}
 
                         // Restore ranking hist config from backup
                         try{
                             const bkHistCfg = readJson('sgp_rank_hist_cfg.json');
-                            if(bkHistCfg && typeof bkHistCfg === 'object'){
-                                __safeLSSet('sgp_rank_hist_cfg', JSON.stringify(bkHistCfg));
-                            }
+                            const restoredHistCfg = (bkHistCfg && typeof bkHistCfg === 'object' && !Array.isArray(bkHistCfg)) ? bkHistCfg : {};
+                            __safeLSSet('sgp_rank_hist_cfg', JSON.stringify(restoredHistCfg));
                         }catch(_){}
 
                         // Restore audit log from backup
                         try{
-                            const bkAuditLog = readJson('sgp_audit_log.json');
-                            if(Array.isArray(bkAuditLog)){
-                                window.__sgpAuditLog = bkAuditLog;
-                                __safeLSSet('sgp_audit_log', JSON.stringify(bkAuditLog));
-                            }
+                            const bkAuditLog = Array.isArray(readJson('sgp_audit_log.json')) ? readJson('sgp_audit_log.json') : [];
+                            window.__sgpAuditLog = bkAuditLog;
+                            __safeLSSet('sgp_audit_log', JSON.stringify(bkAuditLog));
                         }catch(_){}
 
                         // Restore freq events from backup
                         try{
-                            const bkFreqEvents = readJson('sgp_freq_events.json');
-                            if(Array.isArray(bkFreqEvents)){
-                                window.__sgpFreqEvents = bkFreqEvents;
-                                __safeLSSet('sgp_freq_events', JSON.stringify(bkFreqEvents));
-                            }
+                            const bkFreqEvents = Array.isArray(readJson('sgp_freq_events.json')) ? readJson('sgp_freq_events.json') : [];
+                            window.__sgpFreqEvents = bkFreqEvents;
+                            __safeLSSet('sgp_freq_events', JSON.stringify(bkFreqEvents));
                         }catch(_){}
 
                         // Restore correção de provas (sgp_correcao_provas)
                         try{
                             const bkCor = readJson('sgp_correcao_provas.json');
-                            if(bkCor && typeof bkCor === 'object'){
-                                correcaoProvas = bkCor;
-                                try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_correcao_provas', JSON.stringify(bkCor)); else localStorage.setItem('sgp_correcao_provas', JSON.stringify(bkCor)); }catch(__){}
-                            }
+                            const restoredCor = (bkCor && typeof bkCor === 'object' && !Array.isArray(bkCor)) ? bkCor : {};
+                            correcaoProvas = restoredCor;
+                            try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_correcao_provas', JSON.stringify(restoredCor)); else localStorage.setItem('sgp_correcao_provas', JSON.stringify(restoredCor)); }catch(__){}
                         }catch(_){ }
 
                         garantirEstruturaNova();
+                        try{ if(typeof ensureConfigSchema === 'function') ensureConfigSchema(); }catch(_){ }
+                        try{ if(typeof _syncAllStudents === 'function') _syncAllStudents(); }catch(_){ }
                         salvarDadosLocal();
+                        try{ __HIST.lastSnapshot = __snapshotStr(); }catch(_){ }
                         renderizarMenu(); 
                         renderizarVisao(); 
                         atualizarLabelsConfig(); 
@@ -9906,6 +9995,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                         if(typeof initAtividades === 'function') initAtividades();
                         if(typeof initPlanner === 'function') initPlanner();
                         if(typeof initCorrecao === 'function') initCorrecao();
+                        try{ if(typeof __freqBumpVersion === 'function') __freqBumpVersion(); }catch(_){ }
                         // Reload quiz/comp/ord banks (not covered by initAtividades)
                         try{ if(typeof quizLoad==='function'){ quizLoad(); quizRenderBank(); } }catch(_){}
                         try{ if(typeof compLoad==='function'){ compLoad(); compRenderBank(); } }catch(_){}
@@ -9913,7 +10003,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                         try{ __safeLSSet('sgp_last_backup', Date.now()); }catch(_){}
                         try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){}
                         try{ try{
-                const cur = parseInt(localStorage.getItem('sgp_last_core_save')||'0', 10);
+                const cur = parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_core_save') : localStorage.getItem('sgp_last_core_save'))||'0', 10);
                 const now = Date.now();
                 __safeLSSet('sgp_last_core_save', String((!isNaN(cur) && cur>0) ? cur : now));
             }catch(_){ } }catch(_){}
@@ -9922,7 +10012,14 @@ __safeLSSet('sgp_last_backup', Date.now());
                         showToast("Backup ZIP carregado!");
                     }catch(err){
                         console.error(err);
-                        showToast("Erro ao carregar backup ZIP.", "error");
+                        let __rolledBack = false;
+                        try{
+                            if(__restoreStarted && __beforeRestore && typeof __applySnapshot === 'function'){
+                                __applySnapshot(__beforeRestore, 'Falha na importação — estado anterior restaurado');
+                                __rolledBack = true;
+                            }
+                        }catch(_){ __rolledBack = false; }
+                        if(!__rolledBack) showToast("Erro ao carregar backup ZIP.", "error");
                     }finally{
                         i.value='';
                     }
@@ -9934,41 +10031,71 @@ __safeLSSet('sgp_last_backup', Date.now());
             // --- JSON (legado) ---
             const r=new FileReader(); 
             r.onload=e=>{
+                let __beforeRestore = null;
+                let __restoreStarted = false;
                 try{
+                    try{ if(typeof __snapshotStr === 'function') __beforeRestore = __snapshotStr(); }catch(_){ __beforeRestore = null; }
                     const d=JSON.parse(e.target.result); 
-                    if(d.turmas){
-                        turmas=d.turmas;
-                        alunos=d.alunos;
-                        aulas=d.aulas||[]; 
-                        planosSemana=d.planosSemana||d.planos_semanais||planosSemana||{}; 
-                        config=d.config||config; 
-                        layouts=d.layouts||{};
-                        // Correção (Provas/Atividades)
-                        try{
-                          const dcp = d.correcaoProvas || d.sgp_correcao_provas || d.sgp_correcao_provas_v1 || null;
-                          if(dcp && typeof dcp === 'object'){
-                            correcaoProvas = dcp;
-                            try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_correcao_provas', JSON.stringify(correcaoProvas||{})); else localStorage.setItem('sgp_correcao_provas', JSON.stringify(correcaoProvas||{})); }catch(_){ }
-                          }
-                        }catch(_){ }
-                        // Planner (v1)
-                        if(typeof d.planner !== 'undefined') plannerTasks = Array.isArray(d.planner) ? d.planner : (d.planner?.tasks || []);
-                        else if(typeof d.plannerTasks !== 'undefined') plannerTasks = Array.isArray(d.plannerTasks) ? d.plannerTasks : [];
-                        try{ __safeLSSet('sgp_planner', JSON.stringify(plannerTasks||[])); }catch(e){}
-                        garantirEstruturaNova();
-                        salvarDadosLocal();
-                        renderizarMenu();
-                        renderizarVisao();
-                        atualizarLabelsConfig();
-                        try{ if(typeof initCorrecao === 'function') initCorrecao(); }catch(_){}
-                        showToast("Backup carregado!");
-                        try{ __safeLSSet('sgp_last_backup', Date.now()); }catch(_){ }
-                        try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){ }
-                        try{ checkBackupStatus(); }catch(_){ }
-                        try{ dadosNaoSalvosEmArquivo = false; }catch(_){ }
+                    const hasCore = !!(d && typeof d === 'object' && !Array.isArray(d) && (Array.isArray(d.turmas) || Array.isArray(d.alunos) || Array.isArray(d.aulas) || d.planosSemana || d.planos_semanais));
+                    if(!hasCore) throw new Error('Backup JSON incompatível ou sem dados principais.');
+
+                    const legacySnapshot = {
+                        turmas: Array.isArray(d.turmas) ? d.turmas : [],
+                        alunos: Array.isArray(d.alunos) ? d.alunos : [],
+                        aulas: Array.isArray(d.aulas) ? d.aulas : [],
+                        planosSemana: (d.planosSemana && typeof d.planosSemana === 'object' && !Array.isArray(d.planosSemana))
+                          ? d.planosSemana
+                          : ((d.planos_semanais && typeof d.planos_semanais === 'object' && !Array.isArray(d.planos_semanais)) ? d.planos_semanais : {}),
+                        config: (d.config && typeof d.config === 'object' && !Array.isArray(d.config)) ? d.config : {},
+                        layouts: (d.layouts && typeof d.layouts === 'object' && !Array.isArray(d.layouts)) ? d.layouts : {},
+                        correcaoProvas: (d.correcaoProvas && typeof d.correcaoProvas === 'object' && !Array.isArray(d.correcaoProvas))
+                          ? d.correcaoProvas
+                          : (((d.sgp_correcao_provas && typeof d.sgp_correcao_provas === 'object' && !Array.isArray(d.sgp_correcao_provas)) ? d.sgp_correcao_provas : (((d.sgp_correcao_provas_v1 && typeof d.sgp_correcao_provas_v1 === 'object' && !Array.isArray(d.sgp_correcao_provas_v1)) ? d.sgp_correcao_provas_v1 : {})))),
+                        planner: (typeof d.planner !== 'undefined')
+                          ? (Array.isArray(d.planner) ? d.planner : (((d.planner && Array.isArray(d.planner.tasks)) ? d.planner.tasks : [])))
+                          : ((typeof d.plannerTasks !== 'undefined') ? (Array.isArray(d.plannerTasks) ? d.plannerTasks : []) : []),
+                        atividades: (d.atividades && typeof d.atividades === 'object' && !Array.isArray(d.atividades)) ? d.atividades : {},
+                        frequencia: (d.frequencia && typeof d.frequencia === 'object' && !Array.isArray(d.frequencia))
+                          ? d.frequencia
+                          : (((d.sgp_frequencia && typeof d.sgp_frequencia === 'object' && !Array.isArray(d.sgp_frequencia)) ? d.sgp_frequencia : {})),
+                        entregas: (d.entregas && typeof d.entregas === 'object' && !Array.isArray(d.entregas))
+                          ? d.entregas
+                          : (((d.sgp_entregas && typeof d.sgp_entregas === 'object' && !Array.isArray(d.sgp_entregas)) ? d.sgp_entregas : {})),
+                        ranking: (d.ranking && typeof d.ranking === 'object' && !Array.isArray(d.ranking))
+                          ? d.ranking
+                          : (((d.sgp_ranking_v1 && typeof d.sgp_ranking_v1 === 'object' && !Array.isArray(d.sgp_ranking_v1)) ? d.sgp_ranking_v1 : {})),
+                        rankHistCfg: (d.rankHistCfg && typeof d.rankHistCfg === 'object' && !Array.isArray(d.rankHistCfg))
+                          ? d.rankHistCfg
+                          : (((d.sgp_rank_hist_cfg && typeof d.sgp_rank_hist_cfg === 'object' && !Array.isArray(d.sgp_rank_hist_cfg)) ? d.sgp_rank_hist_cfg : {})),
+                        uiPrefs: (d.uiPrefs && typeof d.uiPrefs === 'object' && !Array.isArray(d.uiPrefs)) ? d.uiPrefs : {},
+                        planoPrefs: (d.planoPrefs && typeof d.planoPrefs === 'object' && !Array.isArray(d.planoPrefs)) ? d.planoPrefs : {},
+                        auditLog: Array.isArray(d.auditLog) ? d.auditLog : (Array.isArray(d.sgp_audit_log) ? d.sgp_audit_log : []),
+                        freqEvents: Array.isArray(d.freqEvents) ? d.freqEvents : (Array.isArray(d.sgp_freq_events) ? d.sgp_freq_events : []),
+                        auditTrail: Array.isArray(d.auditTrail) ? d.auditTrail : (Array.isArray(d.audit) ? d.audit : []),
+                        autobackups: Array.isArray(d.autobackups) ? d.autobackups : [],
+                        lastBackupAt: (Object.prototype.hasOwnProperty.call(d, 'lastBackupAt')) ? (parseInt(d.lastBackupAt || '0', 10) || 0) : 0
+                    };
+
+                    __restoreStarted = true;
+                    if(typeof __applySnapshot === 'function'){
+                        __applySnapshot(JSON.stringify(legacySnapshot), 'Backup carregado!');
+                    }else{
+                        throw new Error('Função de restauração indisponível.');
                     }
-                }catch(e){
-                    showToast("Erro ao carregar.", "error");
+                    try{ __safeLSSet('sgp_last_backup', Date.now()); }catch(_){ }
+                    try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){ }
+                    try{ checkBackupStatus(); }catch(_){ }
+                    try{ dadosNaoSalvosEmArquivo = false; }catch(_){ }
+                }catch(err){
+                    console.error(err);
+                    let __rolledBack = false;
+                    try{
+                        if(__restoreStarted && __beforeRestore && typeof __applySnapshot === 'function'){
+                            __applySnapshot(__beforeRestore, 'Falha na importação — estado anterior restaurado');
+                            __rolledBack = true;
+                        }
+                    }catch(_){ __rolledBack = false; }
+                    if(!__rolledBack) showToast("Erro ao carregar.", "error");
                 }
             }; 
             r.readAsText(file); 
@@ -11104,7 +11231,7 @@ function addAulaIndividual(){
 let __cmpTurmasCache = { key:'', res:null, agg:null };
 
 function __cmpLastCoreSave(){
-    try{ return parseInt(localStorage.getItem('sgp_last_core_save')||'0',10) || 0; }catch(_){ return 0; }
+    try{ return parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_core_save') : localStorage.getItem('sgp_last_core_save'))||'0',10) || 0; }catch(_){ return 0; }
 }
 function __cmpMakeKey(bim, discId, metric){
     return [bim, String(discId||''), String(metric||''), __cmpLastCoreSave()].join('|');
@@ -12684,6 +12811,7 @@ function salvarConfig(){
 
   salvarDadosLocal();
   atualizarLabelsConfig();
+  try{ if(typeof __freqBumpVersion === 'function') __freqBumpVersion(); }catch(_){ }
   applyThemeFromConfig();
   fecharModais();
   renderizarVisaoContent();
@@ -13805,6 +13933,38 @@ let __AUDIT = [];
 let __BACKUPS = [];
 let __lastBackupAt = 0;
 
+function __sanitizeSnapshotForEmbedding(snapshotStr){
+  if(typeof snapshotStr !== 'string' || !snapshotStr) return null;
+  try{
+    const data = JSON.parse(snapshotStr);
+    if(data && typeof data === 'object'){
+      data.autobackups = [];
+      return JSON.stringify(data);
+    }
+  }catch(_){ }
+  return snapshotStr;
+}
+function __sanitizeBackupEntry(entry){
+  if(!entry || typeof entry !== 'object') return null;
+  const ts = parseInt(entry.ts || '0', 10) || 0;
+  const snap = __sanitizeSnapshotForEmbedding(entry.snapshot);
+  if(!snap) return null;
+  return {
+    id: String(entry.id || ('bkp_' + (ts || Date.now()))),
+    ts,
+    snapshot: snap
+  };
+}
+function __sanitizeBackupList(list){
+  const arr = Array.isArray(list) ? list : [];
+  const out = [];
+  for(let i=0; i<arr.length && out.length<10; i++){
+    const item = __sanitizeBackupEntry(arr[i]);
+    if(item) out.push(item);
+  }
+  return out;
+}
+
 function __snapshotObj(){
   // inclui tudo o que o usuário precisa recuperar (sem depender só das variáveis em memória)
   const __lsJson = (k, fallback)=>{
@@ -13845,7 +14005,7 @@ function __snapshotObj(){
 
   const uiPrefs = {};
   try{
-    ['sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid','sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b'].forEach((k)=>{
+    (__getBackupUiPrefKeys() || []).forEach((k)=>{
       const v = (typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k);
       if(v !== null && typeof v !== 'undefined') uiPrefs[k] = v;
     });
@@ -13866,7 +14026,10 @@ function __snapshotObj(){
     uiPrefs,
     planoPrefs,
     auditLog,
-    freqEvents
+    freqEvents,
+    auditTrail: Array.isArray(__AUDIT) ? __AUDIT.slice(-500) : [],
+    autobackups: (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(__BACKUPS) : (Array.isArray(__BACKUPS) ? __BACKUPS.slice(0, 10) : []),
+    lastBackupAt: parseInt(__lastBackupAt || '0', 10) || 0
   };
 }
 function __snapshotStr(){
@@ -13880,7 +14043,7 @@ function __loadExtras(){
   }catch(e){ __AUDIT = []; }
   try{
     const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_autobackups') : localStorage.getItem('sgp_autobackups');
-    __BACKUPS = JSON.parse(raw || '[]') || [];
+    __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(JSON.parse(raw || '[]') || []) : (JSON.parse(raw || '[]') || []);
   }catch(e){ __BACKUPS = []; }
   try{
     const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_lastBackupAt') : localStorage.getItem('sgp_lastBackupAt');
@@ -14001,103 +14164,100 @@ function __applySnapshot(snapshotStr, label){
 
   __HIST.mute = true;
   try{
-    turmas = data.turmas || [];
-    alunos = data.alunos || [];
-    aulas = data.aulas || [];
-    planosSemana = data.planosSemana || data.planos_semanais || {};
-    config = data.config || config;
-    layouts = data.layouts || layouts;
+    turmas = Array.isArray(data.turmas) ? data.turmas : [];
+    alunos = Array.isArray(data.alunos) ? data.alunos : [];
+    aulas = Array.isArray(data.aulas) ? data.aulas : [];
+    planosSemana = (data.planosSemana && typeof data.planosSemana === 'object' && !Array.isArray(data.planosSemana))
+      ? data.planosSemana
+      : ((data.planos_semanais && typeof data.planos_semanais === 'object' && !Array.isArray(data.planos_semanais)) ? data.planos_semanais : {});
+    config = (data.config && typeof data.config === 'object' && !Array.isArray(data.config)) ? data.config : {};
+    layouts = (data.layouts && typeof data.layouts === 'object' && !Array.isArray(data.layouts)) ? data.layouts : {};
 
     // Preferências de interface e plano semanal por disciplina
     try{
       const ui = (data.uiPrefs && typeof data.uiPrefs === 'object' && !Array.isArray(data.uiPrefs)) ? data.uiPrefs : null;
+      try{ if(typeof __clearBackupUiPrefs === 'function') __clearBackupUiPrefs(); }catch(_){ }
       if(ui){
-        ['sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid','sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b'].forEach((k)=>{
+        (__getBackupUiPrefKeys() || []).forEach((k)=>{
           try{
             if(Object.prototype.hasOwnProperty.call(ui, k) && ui[k] !== null && typeof ui[k] !== 'undefined') __safeLSSet(k, String(ui[k]));
           }catch(_){ }
         });
-        try{ if(String(__storageGetItem('sgp_darkmode') || '')==='1') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }catch(_){ }
-        try{ const a=__storageGetItem('sgp_accent'); if(a) document.documentElement.style.setProperty('--primary', a); }catch(_){ }
-        try{ const fs=__storageGetItem('sgp_fontsize'); if(fs) document.documentElement.style.fontSize=fs+'px'; }catch(_){ }
-        try{ if(typeof initSidebarMobile==='function') initSidebarMobile(); }catch(_){ }
       }
+      try{ if(String(__storageGetItem('sgp_darkmode') || '')==='1') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }catch(_){ }
+      try{ const a=__storageGetItem('sgp_accent'); if(a) document.documentElement.style.setProperty('--primary', a); else document.documentElement.style.removeProperty('--primary'); }catch(_){ }
+      try{ const fs=__storageGetItem('sgp_fontsize'); if(fs) document.documentElement.style.fontSize=fs+'px'; else document.documentElement.style.fontSize=''; }catch(_){ }
+      try{ if(typeof initSidebarMobile==='function') initSidebarMobile(); }catch(_){ }
     }catch(_){ }
     try{
-      const planoPrefs = (data.planoPrefs && typeof data.planoPrefs === 'object' && !Array.isArray(data.planoPrefs)) ? data.planoPrefs : null;
-      if(planoPrefs){
-        if(typeof __clearStorageKeysByPrefix === 'function') __clearStorageKeysByPrefix('sgp_plano_prefs_');
-        Object.keys(planoPrefs).forEach((k)=>{
-          try{
-            if(k && String(k).startsWith('sgp_plano_prefs_')) __safeLSSet(k, String(planoPrefs[k] ?? '{}'));
-          }catch(_){ }
-        });
-      }
+      const planoPrefs = (data.planoPrefs && typeof data.planoPrefs === 'object' && !Array.isArray(data.planoPrefs)) ? data.planoPrefs : {};
+      if(typeof __clearStorageKeysByPrefix === 'function') __clearStorageKeysByPrefix('sgp_plano_prefs_');
+      Object.keys(planoPrefs).forEach((k)=>{
+        try{
+          if(k && String(k).startsWith('sgp_plano_prefs_')) __safeLSSet(k, String(planoPrefs[k] ?? '{}'));
+        }catch(_){ }
+      });
     }catch(_){ }
 
     // Planner
-    if(typeof data.planner !== 'undefined') plannerTasks = Array.isArray(data.planner) ? data.planner : (data.planner?.tasks || []);
+    if(typeof data.planner !== 'undefined') plannerTasks = Array.isArray(data.planner) ? data.planner : (((data.planner && Array.isArray(data.planner.tasks)) ? data.planner.tasks : []));
     else if(typeof data.plannerTasks !== 'undefined') plannerTasks = Array.isArray(data.plannerTasks) ? data.plannerTasks : [];
-    else plannerTasks = (typeof plannerTasks !== 'undefined') ? (plannerTasks || []) : [];
+    else plannerTasks = [];
     try{ plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
 
     // Atividades (bancos)
-    const acts = data.atividades || {};
-    if(typeof forcaBank !== 'undefined') forcaBank = Array.isArray(acts.forca) ? acts.forca : (forcaBank || []);
-    if(typeof vfBank !== 'undefined') vfBank = Array.isArray(acts.vf) ? acts.vf : (vfBank || []);
-    if(typeof memBank !== 'undefined') memBank = Array.isArray(acts.memoria) ? acts.memoria : (memBank || []);
-    if(typeof fcBank !== 'undefined') fcBank = Array.isArray(acts.flashcards) ? acts.flashcards : (fcBank || []);
+    const acts = (data.atividades && typeof data.atividades === 'object' && !Array.isArray(data.atividades)) ? data.atividades : {};
+    if(typeof forcaBank !== 'undefined') forcaBank = Array.isArray(acts.forca) ? acts.forca : [];
+    if(typeof vfBank !== 'undefined') vfBank = Array.isArray(acts.vf) ? acts.vf : [];
+    if(typeof memBank !== 'undefined') memBank = Array.isArray(acts.memoria) ? acts.memoria : [];
+    if(typeof fcBank !== 'undefined') fcBank = Array.isArray(acts.flashcards) ? acts.flashcards : [];
 
-    
     // Atividades adicionais (relacoes/roleta/quiz/completar/ordenar)
-    if(typeof relBank !== 'undefined') relBank = Array.isArray(acts.relacoes) ? acts.relacoes : (relBank || []);
-    if(typeof roletaBank !== 'undefined') roletaBank = Array.isArray(acts.roleta) ? acts.roleta : (roletaBank || []);
-    if(typeof quizBank !== 'undefined') quizBank = Array.isArray(acts.quiz) ? acts.quiz : (quizBank || []);
-    if(typeof compBank !== 'undefined') compBank = Array.isArray(acts.completar) ? acts.completar : (compBank || []);
-    if(typeof ordBank !== 'undefined') ordBank = Array.isArray(acts.ordenar) ? acts.ordenar : (ordBank || []);
+    if(typeof relBank !== 'undefined') relBank = Array.isArray(acts.relacoes) ? acts.relacoes : [];
+    if(typeof roletaBank !== 'undefined') roletaBank = Array.isArray(acts.roleta) ? acts.roleta : [];
+    if(typeof quizBank !== 'undefined') quizBank = Array.isArray(acts.quiz) ? acts.quiz : [];
+    if(typeof compBank !== 'undefined') compBank = Array.isArray(acts.completar) ? acts.completar : [];
+    if(typeof ordBank !== 'undefined') ordBank = Array.isArray(acts.ordenar) ? acts.ordenar : [];
 
-    // Frequência / Entregas / Ranking
+    // Frequência / Entregas / Ranking / Logs
     try{
-      if(data.frequencia && typeof data.frequencia==='object'){
-        window.__sgpFrequencia = data.frequencia;
-        __safeLSSet('sgp_frequencia', JSON.stringify(data.frequencia));
-      }
-    }catch(_){}
+      const restoredFreq = (data.frequencia && typeof data.frequencia==='object' && !Array.isArray(data.frequencia)) ? data.frequencia : {};
+      window.__sgpFrequencia = restoredFreq;
+      __safeLSSet('sgp_frequencia', JSON.stringify(restoredFreq));
+    }catch(_){ }
     try{
-      if(data.entregas && typeof data.entregas==='object'){
-        window.__sgpEntregas = data.entregas;
-        __safeLSSet('sgp_entregas', JSON.stringify(data.entregas));
-      }
-    }catch(_){}
+      const restoredEntregas = (data.entregas && typeof data.entregas==='object' && !Array.isArray(data.entregas)) ? data.entregas : {};
+      window.__sgpEntregas = restoredEntregas;
+      __safeLSSet('sgp_entregas', JSON.stringify(restoredEntregas));
+    }catch(_){ }
     try{
-      if(data.ranking && typeof data.ranking==='object'){
-        __safeLSSet('sgp_ranking_v1', JSON.stringify(data.ranking));
-      }
-    }catch(_){}
+      const restoredRanking = (data.ranking && typeof data.ranking==='object' && !Array.isArray(data.ranking)) ? data.ranking : {};
+      __safeLSSet('sgp_ranking_v1', JSON.stringify(restoredRanking));
+    }catch(_){ }
     try{
-      if(data.rankHistCfg && typeof data.rankHistCfg==='object'){
-        __safeLSSet('sgp_rank_hist_cfg', JSON.stringify(data.rankHistCfg));
-      }
-    }catch(_){}
-    // Logs (opcional / truncado)
+      const restoredHistCfg = (data.rankHistCfg && typeof data.rankHistCfg==='object' && !Array.isArray(data.rankHistCfg)) ? data.rankHistCfg : {};
+      __safeLSSet('sgp_rank_hist_cfg', JSON.stringify(restoredHistCfg));
+    }catch(_){ }
     try{
-      if(Array.isArray(data.auditLog)){
-        window.__sgpAuditLog = data.auditLog.slice(-300);
-        __safeLSSet('sgp_audit_log', JSON.stringify(window.__sgpAuditLog));
-      }
-    }catch(_){}
+      window.__sgpAuditLog = Array.isArray(data.auditLog) ? data.auditLog.slice(-300) : [];
+      __safeLSSet('sgp_audit_log', JSON.stringify(window.__sgpAuditLog));
+    }catch(_){ }
     try{
-      if(Array.isArray(data.freqEvents)){
-        window.__sgpFreqEvents = data.freqEvents.slice(-300);
-        __safeLSSet('sgp_freq_events', JSON.stringify(window.__sgpFreqEvents));
-      }
-    }catch(_){}
-// Correção de provas
-    if(data.correcaoProvas && typeof data.correcaoProvas === 'object' && !Array.isArray(data.correcaoProvas)){
-      correcaoProvas = data.correcaoProvas;
-      try{ corSave(); }catch(_){}
-    }
+      window.__sgpFreqEvents = Array.isArray(data.freqEvents) ? data.freqEvents.slice(-300) : [];
+      __safeLSSet('sgp_freq_events', JSON.stringify(window.__sgpFreqEvents));
+    }catch(_){ }
+    try{
+      __AUDIT = Array.isArray(data.auditTrail) ? data.auditTrail.slice(-500) : [];
+      __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(data.autobackups) : (Array.isArray(data.autobackups) ? data.autobackups.slice(0, 10) : []);
+      __lastBackupAt = (data && Object.prototype.hasOwnProperty.call(data, 'lastBackupAt')) ? (parseInt(data.lastBackupAt || '0', 10) || 0) : 0;
+      try{ if(typeof __saveExtras === 'function') __saveExtras(); }catch(__){ }
+    }catch(_){ }
 
+    // Correção de provas
+    correcaoProvas = (data.correcaoProvas && typeof data.correcaoProvas === 'object' && !Array.isArray(data.correcaoProvas)) ? data.correcaoProvas : {};
+    try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_correcao_provas', JSON.stringify(correcaoProvas||{})); else localStorage.setItem('sgp_correcao_provas', JSON.stringify(correcaoProvas||{})); }catch(_){ }
+
+    try{ if(typeof garantirEstruturaNova === 'function') garantirEstruturaNova(); }catch(_){ }
     ensureConfigSchema();
     _syncAllStudents();
 
@@ -14107,21 +14267,24 @@ function __applySnapshot(snapshotStr, label){
 
     try{
       if(typeof ACT_STORAGE !== 'undefined'){
-        __safeLSSet(ACT_STORAGE.forca, JSON.stringify(forcaBank || []));
-        __safeLSSet(ACT_STORAGE.vf, JSON.stringify(vfBank || []));
-        __safeLSSet(ACT_STORAGE.mem, JSON.stringify(memBank || []));
-        __safeLSSet(ACT_STORAGE.fc, JSON.stringify(fcBank || []));
+        __safeLSSet(ACT_STORAGE.forca, JSON.stringify((typeof forcaBank!=='undefined') ? (forcaBank || []) : []));
+        __safeLSSet(ACT_STORAGE.vf, JSON.stringify((typeof vfBank!=='undefined') ? (vfBank || []) : []));
+        __safeLSSet(ACT_STORAGE.mem, JSON.stringify((typeof memBank!=='undefined') ? (memBank || []) : []));
+        __safeLSSet(ACT_STORAGE.fc, JSON.stringify((typeof fcBank!=='undefined') ? (fcBank || []) : []));
         try{ if(ACT_STORAGE.rel) __safeLSSet(ACT_STORAGE.rel, JSON.stringify((typeof relBank!=='undefined') ? (relBank||[]) : [])); }catch(_){ }
         try{ if(ACT_STORAGE.roleta) __safeLSSet(ACT_STORAGE.roleta, JSON.stringify((typeof roletaBank!=='undefined') ? (roletaBank||[]) : [])); }catch(_){ }
       }
     }catch(e){}
 
-    
     // Persistência adicional dos bancos (quiz/completar/ordenar) para não depender de init
-    try{ __safeLSSet('sgp_atividades_quiz_bank', JSON.stringify((typeof quizBank!=='undefined') ? (quizBank||[]) : [])); }catch(_){}
-    try{ __safeLSSet('sgp_atividades_comp_bank', JSON.stringify((typeof compBank!=='undefined') ? (compBank||[]) : [])); }catch(_){}
-    try{ __safeLSSet('sgp_atividades_ord_bank', JSON.stringify((typeof ordBank!=='undefined') ? (ordBank||[]) : [])); }catch(_){}
-__HIST.lastSnapshot = __snapshotStr();
+    try{ __safeLSSet('sgp_atividades_quiz_bank', JSON.stringify((typeof quizBank!=='undefined') ? (quizBank||[]) : [])); }catch(_){ }
+    try{ __safeLSSet('sgp_atividades_comp_bank', JSON.stringify((typeof compBank!=='undefined') ? (compBank||[]) : [])); }catch(_){ }
+    try{ __safeLSSet('sgp_atividades_ord_bank', JSON.stringify((typeof ordBank!=='undefined') ? (ordBank||[]) : [])); }catch(_){ }
+    try{ if(typeof initAtividades === 'function') initAtividades(); }catch(_){ }
+    try{ if(typeof initPlanner === 'function') initPlanner(); }catch(_){ }
+    try{ if(typeof initCorrecao === 'function') initCorrecao(); }catch(_){ }
+    try{ if(typeof __freqBumpVersion === 'function') __freqBumpVersion(); }catch(_){ }
+    __HIST.lastSnapshot = __snapshotStr();
   }finally{
     __HIST.mute = false;
   }
@@ -14130,7 +14293,9 @@ __HIST.lastSnapshot = __snapshotStr();
   fecharModais();
   renderizarMenu();
   renderizarVisao();
+  try{ if(typeof atualizarLabelsConfig === 'function') atualizarLabelsConfig(); }catch(_){ }
   renderizarVisaoContent();
+  try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
   showToast(label || "Restaurado!");
   __renderBackupsUI();
 }
@@ -14751,7 +14916,7 @@ function __planoDiscName(id){
 function __planoGetDefaultDiscId(){
   const list = __planoListDisciplinas();
   let last='';
-  try{ last = localStorage.getItem('sgp_plano_disc_last') || ''; }catch(_){ last=''; }
+  try{ last = ((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_plano_disc_last') : localStorage.getItem('sgp_plano_disc_last')) || ''; }catch(_){ last=''; }
   if(last && list.some(d=>d && d.id===last)) return last;
   const slot1 = (config && config.slot1) ? String(config.slot1) : '';
   if(slot1 && list.some(d=>d && d.id===slot1)) return slot1;
@@ -14766,7 +14931,7 @@ function __planoPrefsKey(discId){ return 'sgp_plano_prefs_' + String(discId || '
 function __planoLoadPrefs(discId){
   discId = discId || __planoGetSelectedDiscId();
   try{
-    const raw = localStorage.getItem(__planoPrefsKey(discId));
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(__planoPrefsKey(discId)) : localStorage.getItem(__planoPrefsKey(discId));
     return raw ? (JSON.parse(raw)||{}) : {};
   }catch(_){ return {}; }
 }
@@ -14896,13 +15061,13 @@ function __planoRefreshDisciplinasUI(){
   if(desired && Array.from(sel.options).some(o=>o.value===desired)) sel.value=desired;
   else if(sel.options.length) sel.value=sel.options[0].value;
   __planoDiscId = sel.value || '';
-  try{ localStorage.setItem('sgp_plano_disc_last', __planoDiscId); }catch(_){}
+  try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_plano_disc_last', __planoDiscId); else localStorage.setItem('sgp_plano_disc_last', __planoDiscId); }catch(_){}
 }
 
 function planoDisciplinaChanged(){
   const sel=document.getElementById('planoDisciplina');
   __planoDiscId = sel ? (sel.value||'') : '';
-  try{ localStorage.setItem('sgp_plano_disc_last', __planoDiscId); }catch(_){}
+  try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_plano_disc_last', __planoDiscId); else localStorage.setItem('sgp_plano_disc_last', __planoDiscId); }catch(_){}
 
   const prefs=__planoLoadPrefs(__planoDiscId);
   if(prefs && prefs.qtdAulas) planoSetQtdAulas(prefs.qtdAulas);
@@ -16836,7 +17001,7 @@ const ACT_SORTEIO_TURMA_STORAGE = 'sgp_atividades_sorteio_turma';
 let __actSorteio = { turmaKey:'', pool:[], total:0, last:null };
 
 function _actSorteioGetTurmaPref(){
-  try{ return String(localStorage.getItem(ACT_SORTEIO_TURMA_STORAGE) || '').trim(); }catch(_){ return ''; }
+  try{ return String(((typeof __storageGetItem === 'function') ? __storageGetItem(ACT_SORTEIO_TURMA_STORAGE) : localStorage.getItem(ACT_SORTEIO_TURMA_STORAGE)) || '').trim(); }catch(_){ return ''; }
 }
 
 function _actSorteioGetTurmasDisponiveis(){
@@ -16896,13 +17061,13 @@ function _actSorteioSyncTurmaUI(){
   sel.value = exists ? val : 'Todas';
 
   // Garante persistência
-  try{ localStorage.setItem(ACT_SORTEIO_TURMA_STORAGE, sel.value); }catch(_){}
+  try{ if(typeof __safeLSSet==='function') __safeLSSet(ACT_SORTEIO_TURMA_STORAGE, sel.value); else localStorage.setItem(ACT_SORTEIO_TURMA_STORAGE, sel.value); }catch(_){ }
 }
 
 function actSorteioSetTurma(v){
   try{
     const val = String(v || 'Todas');
-    try{ localStorage.setItem(ACT_SORTEIO_TURMA_STORAGE, val); }catch(_){}
+    try{ if(typeof __safeLSSet==='function') __safeLSSet(ACT_SORTEIO_TURMA_STORAGE, val); else localStorage.setItem(ACT_SORTEIO_TURMA_STORAGE, val); }catch(_){ }
     __actSorteio.last = null;
     _actSorteioBuildPool();
     _actSorteioRender();
@@ -17127,7 +17292,7 @@ function _actToast(msg, type){
 
 function _actSafeParse(key, fallback){
   try{
-    const raw = localStorage.getItem(key);
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(key) : localStorage.getItem(key);
     if(!raw) return fallback;
     const data = JSON.parse(raw);
     return data;
@@ -18656,25 +18821,67 @@ function __idbShadowDelete(key){
     return true;
   }catch(_){ return false; }
 }
+function __idbGetAllShadowRecords(){
+  return new Promise((resolve)=>{
+    if(!__sgpDB) return resolve([]);
+    try{
+      const tx = __sgpDB.transaction([__IDB_STORE], 'readonly');
+      const store = tx.objectStore(__IDB_STORE);
+      const req = store.openCursor();
+      const out = [];
+      req.onsuccess = function(e){
+        const cursor = e.target.result;
+        if(!cursor) return resolve(out);
+        const rec = cursor.value || null;
+        if(rec && typeof rec.key === 'string' && rec.key.startsWith('__shadow__::')) out.push(rec);
+        cursor.continue();
+      };
+      req.onerror = function(){ resolve(out); };
+    }catch(_){ resolve([]); }
+  });
+}
 function __idbPrimeShadowCache(){
-  const keys = __getIDBShadowKeys();
-  return Promise.all(keys.map(async (logicalKey)=>{
-    let raw = null;
-    const shadowRec = await __idbGetRecordByKey(__shadowStorageIdbKey(logicalKey));
-    if(shadowRec && typeof shadowRec.value === 'string'){
-      raw = shadowRec.value;
-    }else{
-      const legacyKey = __shadowLegacyIdbKey(logicalKey);
-      if(legacyKey){
-        const legacyRec = await __idbGetRecordByKey(legacyKey);
-        if(legacyRec){
-          if(typeof legacyRec.value === 'string') raw = legacyRec.value;
-          else if(typeof legacyRec.value !== 'undefined') raw = JSON.stringify(legacyRec.value);
+  return Promise.resolve(__idbGetAllShadowRecords()).then(async(allShadowRecs)=>{
+    try{ window.__sgpIDBShadowCache = window.__sgpIDBShadowCache || {}; }catch(_){ }
+
+    try{
+      (allShadowRecs || []).forEach((rec)=>{
+        try{
+          const shadowKey = String(rec && rec.key ? rec.key : '');
+          if(!shadowKey.startsWith('__shadow__::')) return;
+          const logicalKey = shadowKey.slice('__shadow__::'.length);
+          if(!logicalKey) return;
+          let raw = rec ? rec.value : null;
+          if(typeof raw !== 'string') raw = JSON.stringify(raw);
+          if(typeof raw === 'string') window.__sgpIDBShadowCache[logicalKey] = raw;
+        }catch(_){ }
+      });
+    }catch(_){ }
+
+    const keys = Array.from(new Set((__getIDBShadowKeys() || []).concat(Object.keys(window.__sgpIDBShadowCache || {}))));
+    return Promise.all(keys.map(async (logicalKey)=>{
+      try{
+        if(Object.prototype.hasOwnProperty.call(window.__sgpIDBShadowCache || {}, logicalKey)) return;
+      }catch(_){ }
+
+      let raw = null;
+      const shadowRec = await __idbGetRecordByKey(__shadowStorageIdbKey(logicalKey));
+      if(shadowRec){
+        if(typeof shadowRec.value === 'string') raw = shadowRec.value;
+        else if(typeof shadowRec.value !== 'undefined') raw = JSON.stringify(shadowRec.value);
+      }else{
+        const legacyKey = __shadowLegacyIdbKey(logicalKey);
+        if(legacyKey){
+          const legacyRec = await __idbGetRecordByKey(legacyKey);
+          if(legacyRec){
+            if(typeof legacyRec.value === 'string') raw = legacyRec.value;
+            else if(typeof legacyRec.value !== 'undefined') raw = JSON.stringify(legacyRec.value);
+          }
         }
       }
-    }
-    if(typeof raw === 'string') window.__sgpIDBShadowCache[logicalKey] = raw;
-  }));
+      if(typeof raw === 'string') window.__sgpIDBShadowCache[logicalKey] = raw;
+    }));
+  });
 }
 function __requestPersistentStorage(){
   try{
@@ -18756,9 +18963,9 @@ function __storageMonitorNotify(state, forceToast){
   try{
     const reached = __storageMonitorReachedLevel(state);
     const key = 'sgp_storage_alert_level';
-    const current = String(localStorage.getItem(key) || '');
+    const current = String(((typeof __storageGetItem === 'function') ? __storageGetItem(key) : localStorage.getItem(key)) || '');
     if(!reached){
-      if(isFinite(state?.percent) && state.percent < 65){ try{ localStorage.removeItem(key); }catch(_){ } }
+      if(isFinite(state?.percent) && state.percent < 65){ try{ if(typeof __safeLSRemove==='function') __safeLSRemove(key); else localStorage.removeItem(key); }catch(_){ } }
       return;
     }
     if(!forceToast && current === reached.key) return;
@@ -18768,7 +18975,7 @@ function __storageMonitorNotify(state, forceToast){
         ? ('Armazenamento em ' + state.percent.toFixed(1) + '%. Recomenda-se backup ZIP preventivo.')
         : ('Armazenamento em ' + state.percent.toFixed(1) + '%. O espaço do navegador entrou em atenção.');
     try{ if(typeof showToast === 'function') showToast(msg, reached.tone || 'warning'); }catch(_){ }
-    try{ localStorage.setItem(key, reached.key); }catch(_){ }
+    try{ if(typeof __safeLSSet==='function') __safeLSSet(key, reached.key); else localStorage.setItem(key, reached.key); }catch(_){ }
   }catch(_){ }
 }
 function __renderStorageMonitor(state){
@@ -18971,7 +19178,7 @@ salvarDadosLocal = function(){
 // Data structure: window.__sgpFrequencia = { "turma|bimestre|date": { alunoId: "P"|"F"|"J" } }
 window.__sgpFrequencia = {};
 // v15.5: Frequência — alertas + performance/cache + trilha de eventos (mantém estrutura existente)
-try{ window.__sgpFreqVersion = parseInt(localStorage.getItem('sgp_freq_version')||'0')||0; }catch(_){ window.__sgpFreqVersion=0; }
+try{ window.__sgpFreqVersion = parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_freq_version') : localStorage.getItem('sgp_freq_version'))||'0')||0; }catch(_){ window.__sgpFreqVersion=0; }
 window.__sgpFreqAggCache = window.__sgpFreqAggCache || {version:-1, byBim:{}};
 window.__sgpFreqDatesCache = window.__sgpFreqDatesCache || {version:-1, byTB:{}};
 window.__sgpFreqEvents = window.__sgpFreqEvents || [];
@@ -21006,7 +21213,7 @@ function initBackupReminder(){
 function checkBackupReminder(){
   try{
     if(alunos.length===0) return; // No data, no need
-    const lastBackup = parseInt(localStorage.getItem('sgp_last_backup')||'0',10);
+    const lastBackup = parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_backup') : localStorage.getItem('sgp_last_backup'))||'0',10);
     const now = Date.now();
     const THREE_DAYS = 3*24*60*60*1000;
     
@@ -21407,19 +21614,19 @@ function renderEntregas(){
 (function(){
   // Persist dark mode
   try{
-    const saved=localStorage.getItem('sgp_darkmode');
+    const saved=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_darkmode') : localStorage.getItem('sgp_darkmode');
     if(saved==='1') document.body.classList.add('dark-mode');
   }catch(_){}
 
   // Persist accent color
   try{
-    const accent=localStorage.getItem('sgp_accent');
+    const accent=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_accent') : localStorage.getItem('sgp_accent');
     if(accent) document.documentElement.style.setProperty('--primary', accent);
   }catch(_){}
 
   // Persist font size
   try{
-    const fs=localStorage.getItem('sgp_fontsize');
+    const fs=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_fontsize') : localStorage.getItem('sgp_fontsize');
     if(fs) document.documentElement.style.fontSize=fs+'px';
   }catch(_){}
 
@@ -21982,7 +22189,7 @@ function toggleSidebar(){
 function initSidebarMobile(){
   // Restore desktop sidebar state
   try{
-    const saved=localStorage.getItem('sgp_sidebar_hidden');
+    const saved=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_sidebar_hidden') : localStorage.getItem('sgp_sidebar_hidden');
     if(saved==='1' && window.innerWidth > 980) document.body.classList.add('sidebar-hidden');
   }catch(_){}
   // Mobile starts with drawer closed
@@ -24335,7 +24542,7 @@ try{
 // ================================================================
 let quizBank=[], quizState={started:false, idx:0, order:[], answered:false};
 const QUIZ_STORAGE='sgp_atividades_quiz_bank';
-function quizLoad(){ try{quizBank=JSON.parse(localStorage.getItem(QUIZ_STORAGE))||[];}catch(_){quizBank=[];} }
+function quizLoad(){ try{quizBank=JSON.parse(((typeof __storageGetItem === 'function') ? __storageGetItem(QUIZ_STORAGE) : localStorage.getItem(QUIZ_STORAGE)))||[];}catch(_){quizBank=[];} }
 function quizSave(){ try{__safeLSSet(QUIZ_STORAGE,JSON.stringify(quizBank));}catch(_){} }
 
 function quizAdicionar(){
@@ -24411,7 +24618,7 @@ function quizProxima(){
 // ================================================================
 let compBank=[], compState={started:false, idx:0, order:[], answered:false};
 const COMP_STORAGE='sgp_atividades_comp_bank';
-function compLoad(){ try{compBank=JSON.parse(localStorage.getItem(COMP_STORAGE))||[];}catch(_){compBank=[];} }
+function compLoad(){ try{compBank=JSON.parse(((typeof __storageGetItem === 'function') ? __storageGetItem(COMP_STORAGE) : localStorage.getItem(COMP_STORAGE)))||[];}catch(_){compBank=[];} }
 function compSave(){ try{__safeLSSet(COMP_STORAGE,JSON.stringify(compBank));}catch(_){} }
 
 function compAdicionar(){
@@ -24489,7 +24696,7 @@ function compProxima(){
 // ================================================================
 let ordBank=[], ordState={started:false, idx:0, order:[], answered:false, placed:[]};
 const ORD_STORAGE='sgp_atividades_ord_bank';
-function ordLoad(){ try{ordBank=JSON.parse(localStorage.getItem(ORD_STORAGE))||[];}catch(_){ordBank=[];} }
+function ordLoad(){ try{ordBank=JSON.parse(((typeof __storageGetItem === 'function') ? __storageGetItem(ORD_STORAGE) : localStorage.getItem(ORD_STORAGE)))||[];}catch(_){ordBank=[];} }
 function ordSave(){ try{__safeLSSet(ORD_STORAGE,JSON.stringify(ordBank));}catch(_){} }
 
 function ordAdicionar(){
@@ -25967,7 +26174,7 @@ function mapaChangeGrid(){
   const val=document.getElementById('mapaGridSize')?.value||'6x6';
   const [c,r]=val.split('x').map(Number);
   mapaGridCols=c||6; mapaGridRows=r||6;
-  try{localStorage.setItem('sgp_mapa_grid',val);}catch(_){}
+  try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_mapa_grid', val); else localStorage.setItem('sgp_mapa_grid', val); }catch(_){}
   mapaDisabledDesks.clear();
   gerarMesas();
   renderizarMapa();
@@ -26007,7 +26214,7 @@ try{
 
 // Restore saved grid
 try{
-  const saved=localStorage.getItem('sgp_mapa_grid');
+  const saved=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_mapa_grid') : localStorage.getItem('sgp_mapa_grid');
   if(saved){
     const sel=document.getElementById('mapaGridSize');
     if(sel){sel.value=saved;const [c,r]=saved.split('x').map(Number);mapaGridCols=c||6;mapaGridRows=r||6;}
@@ -26582,7 +26789,7 @@ function _rankSyncAutoForTurma(turma, bim){
         const b = bim || (bimestreAtual || 1);
 
         const freqV = window.__sgpFreqVersion || 0;
-        const coreV = parseInt(localStorage.getItem('sgp_last_core_save')||'0') || 0;
+        const coreV = parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_core_save') : localStorage.getItem('sgp_last_core_save'))||'0') || 0;
 
         const k = turma + '|' + b;
         const c = __rankAutoSyncCacheByTurma[k];
@@ -27232,7 +27439,7 @@ let __rankHistView = 'semanal';
 const DIAS_SEMANA = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 
 function _rankHistLoadCfg(){
-    try{ return JSON.parse(localStorage.getItem(RANK_HIST_CFG_KEY)) || {}; }catch(_){ return {}; }
+    try{ return JSON.parse((typeof __storageGetItem === 'function') ? (__storageGetItem(RANK_HIST_CFG_KEY) || '{}') : (localStorage.getItem(RANK_HIST_CFG_KEY) || '{}')) || {}; }catch(_){ return {}; }
 }
 function _rankHistSaveCfg(cfg){
     try{ __safeLSSet(RANK_HIST_CFG_KEY, JSON.stringify(cfg)); }catch(_){}
@@ -28121,7 +28328,7 @@ try{
             if(hasSnap){
                 let obj=null;
                 try{ obj = __snapshotObj(); }catch(e){ obj=null; }
-                const requiredTop = ['turmas','alunos','aulas','planosSemana','config','layouts','correcaoProvas','planner','atividades','frequencia','entregas','ranking','rankHistCfg','uiPrefs','planoPrefs','auditLog','freqEvents'];
+                const requiredTop = ['turmas','alunos','aulas','planosSemana','config','layouts','correcaoProvas','planner','atividades','frequencia','entregas','ranking','rankHistCfg','uiPrefs','planoPrefs','auditLog','freqEvents','auditTrail','autobackups','lastBackupAt'];
                 const missingTop = requiredTop.filter(k=>!obj || typeof obj[k]==='undefined');
                 add('AutoBackup: snapshot completo', missingTop.length===0, missingTop.length?('Faltando: '+missingTop.join(', ')):'');
                 const acts = (obj && obj.atividades) ? obj.atividades : null;
