@@ -9330,6 +9330,44 @@ function __storageGetItem(key){
   }catch(_){ }
   return null;
 }
+function __storageListKeys(prefix){
+  const out = new Set();
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(!k) continue;
+      if(prefix && !String(k).startsWith(prefix)) continue;
+      out.add(String(k));
+    }
+  }catch(_){ }
+  try{
+    const cache = window.__sgpIDBShadowCache || {};
+    Object.keys(cache).forEach((k)=>{
+      if(prefix && !String(k).startsWith(prefix)) return;
+      out.add(String(k));
+    });
+  }catch(_){ }
+  return Array.from(out.values());
+}
+function __collectStorageMapByPrefix(prefix){
+  const out = {};
+  try{
+    __storageListKeys(prefix).forEach((k)=>{
+      try{
+        const v = __storageGetItem(k);
+        if(v !== null && typeof v !== 'undefined') out[k] = v;
+      }catch(_){ }
+    });
+  }catch(_){ }
+  return out;
+}
+function __clearStorageKeysByPrefix(prefix){
+  try{
+    __storageListKeys(prefix).forEach((k)=>{
+      try{ __safeLSRemove(k); }catch(_){ }
+    });
+  }catch(_){ }
+}
 function __buildAtomicCoreState(){
   return {
     dataVersion: 1,
@@ -9573,19 +9611,16 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             const uiPrefs = {};
             try{
                 ['sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid','sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b'].forEach(k=>{
-                    const v = localStorage.getItem(k);
+                    const v = (typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k);
                     if(v !== null && typeof v !== 'undefined') uiPrefs[k] = v;
                 });
             }catch(_){ }
-            const planoPrefs = {};
-            try{
-                for(let i=0;i<localStorage.length;i++){
-                    const k = localStorage.key(i);
-                    if(!k || !String(k).startsWith('sgp_plano_prefs_')) continue;
-                    const v = localStorage.getItem(k);
-                    if(v !== null && typeof v !== 'undefined') planoPrefs[k] = v;
-                }
-            }catch(_){ }
+            let planoPrefs = (typeof __collectStorageMapByPrefix === 'function')
+              ? __collectStorageMapByPrefix('sgp_plano_prefs_')
+              : {};
+            if(!(planoPrefs && typeof planoPrefs === 'object' && !Array.isArray(planoPrefs))){
+                planoPrefs = {};
+            }
 
             const _lsJson = (k, fb)=>{ try{ const r=(typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(_){ return fb; } };
             const _lsArr = (k)=>{ const v=_lsJson(k, []); return Array.isArray(v)?v:[]; };
@@ -9755,15 +9790,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                         try{
                             const planoPrefs = readJson('sgp_plano_prefs.json');
                             if(planoPrefs && typeof planoPrefs === 'object'){
-                                try{
-                                    const prefix = 'sgp_plano_prefs_';
-                                    const toRemove = [];
-                                    for(let idx=0; idx<localStorage.length; idx++){
-                                        const k = localStorage.key(idx);
-                                        if(k && String(k).startsWith(prefix)) toRemove.push(k);
-                                    }
-                                    toRemove.forEach(k=>{ try{ localStorage.removeItem(k); }catch(_){ } });
-                                }catch(_){ }
+                                try{ if(typeof __clearStorageKeysByPrefix === 'function') __clearStorageKeysByPrefix('sgp_plano_prefs_'); }catch(_){ }
                                 Object.keys(planoPrefs).forEach(k=>{
                                     try{
                                         if(k && String(k).startsWith('sgp_plano_prefs_')) __safeLSSet(k, String(planoPrefs[k] ?? '{}'));
@@ -13816,6 +13843,15 @@ function __snapshotObj(){
     ordenar: (typeof ordBank !== 'undefined' && Array.isArray(ordBank)) ? (ordBank || []) : __lsJson('sgp_atividades_ord_bank', [])
   };
 
+  const uiPrefs = {};
+  try{
+    ['sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid','sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b'].forEach((k)=>{
+      const v = (typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k);
+      if(v !== null && typeof v !== 'undefined') uiPrefs[k] = v;
+    });
+  }catch(_){ }
+  const planoPrefs = (typeof __collectStorageMapByPrefix === 'function') ? __collectStorageMapByPrefix('sgp_plano_prefs_') : {};
+
   return {
     turmas, alunos, aulas,
     planosSemana,
@@ -13827,6 +13863,8 @@ function __snapshotObj(){
     entregas: entregasObj,
     ranking: rankingObj,
     rankHistCfg: rankHistCfgObj,
+    uiPrefs,
+    planoPrefs,
     auditLog,
     freqEvents
   };
@@ -13969,6 +14007,33 @@ function __applySnapshot(snapshotStr, label){
     planosSemana = data.planosSemana || data.planos_semanais || {};
     config = data.config || config;
     layouts = data.layouts || layouts;
+
+    // Preferências de interface e plano semanal por disciplina
+    try{
+      const ui = (data.uiPrefs && typeof data.uiPrefs === 'object' && !Array.isArray(data.uiPrefs)) ? data.uiPrefs : null;
+      if(ui){
+        ['sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid','sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b'].forEach((k)=>{
+          try{
+            if(Object.prototype.hasOwnProperty.call(ui, k) && ui[k] !== null && typeof ui[k] !== 'undefined') __safeLSSet(k, String(ui[k]));
+          }catch(_){ }
+        });
+        try{ if(String(__storageGetItem('sgp_darkmode') || '')==='1') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }catch(_){ }
+        try{ const a=__storageGetItem('sgp_accent'); if(a) document.documentElement.style.setProperty('--primary', a); }catch(_){ }
+        try{ const fs=__storageGetItem('sgp_fontsize'); if(fs) document.documentElement.style.fontSize=fs+'px'; }catch(_){ }
+        try{ if(typeof initSidebarMobile==='function') initSidebarMobile(); }catch(_){ }
+      }
+    }catch(_){ }
+    try{
+      const planoPrefs = (data.planoPrefs && typeof data.planoPrefs === 'object' && !Array.isArray(data.planoPrefs)) ? data.planoPrefs : null;
+      if(planoPrefs){
+        if(typeof __clearStorageKeysByPrefix === 'function') __clearStorageKeysByPrefix('sgp_plano_prefs_');
+        Object.keys(planoPrefs).forEach((k)=>{
+          try{
+            if(k && String(k).startsWith('sgp_plano_prefs_')) __safeLSSet(k, String(planoPrefs[k] ?? '{}'));
+          }catch(_){ }
+        });
+      }
+    }catch(_){ }
 
     // Planner
     if(typeof data.planner !== 'undefined') plannerTasks = Array.isArray(data.planner) ? data.planner : (data.planner?.tasks || []);
@@ -28056,7 +28121,7 @@ try{
             if(hasSnap){
                 let obj=null;
                 try{ obj = __snapshotObj(); }catch(e){ obj=null; }
-                const requiredTop = ['turmas','alunos','aulas','planosSemana','config','layouts','correcaoProvas','planner','atividades','frequencia','entregas','ranking','rankHistCfg','auditLog','freqEvents'];
+                const requiredTop = ['turmas','alunos','aulas','planosSemana','config','layouts','correcaoProvas','planner','atividades','frequencia','entregas','ranking','rankHistCfg','uiPrefs','planoPrefs','auditLog','freqEvents'];
                 const missingTop = requiredTop.filter(k=>!obj || typeof obj[k]==='undefined');
                 add('AutoBackup: snapshot completo', missingTop.length===0, missingTop.length?('Faltando: '+missingTop.join(', ')):'');
                 const acts = (obj && obj.atividades) ? obj.atividades : null;
