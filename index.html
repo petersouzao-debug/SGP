@@ -5046,7 +5046,7 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                 <h2>Falha ao salvar</h2>
                 <div id="saveFailMsg" style="margin-top:8px; color:#64748b; font-size:0.95rem;"></div>
                 <div style="margin-top:10px; font-size:0.85rem; color:#94a3b8;">
-                    Dica: faça um backup ZIP e, se necessário, limpe dados antigos em Configurações do navegador (armazenamento do site).
+                    O sistema agora prioriza armazenamento ampliado (IndexedDB) quando disponível. Ainda assim, faça backup ZIP periódico para maior segurança.
                 </div>
                 <div class="modal-footer-xl" style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
                     <button class="btn-primary" data-onclick="__saveFailBackupNow()"><i class="fas fa-download"></i> Baixar backup ZIP agora</button>
@@ -6604,19 +6604,41 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
             }catch(_){ return false; }
         }
         function __safeLSSet(key, value){
+            const preferIDB = (typeof __shouldPreferIDBStorage === 'function') ? __shouldPreferIDBStorage(key, value) : false;
+            const allowIDBFallback = (typeof __shouldFallbackToIDBStorage === 'function') ? __shouldFallbackToIDBStorage(key, value) : preferIDB;
+
+            if(preferIDB && typeof __idbShadowPut === 'function' && __idbShadowPut(key, value)){
+                try{ localStorage.removeItem(key); }catch(_){ }
+                try{ if(key === __SGP_ATOMIC_CORE_KEY && typeof __persistCoreMetaFromString === 'function') __persistCoreMetaFromString(value); }catch(_){ }
+                return true;
+            }
+
             try{
                 localStorage.setItem(key, value);
+                try{ if(typeof __idbShadowDelete === 'function') __idbShadowDelete(key); }catch(_){ }
+                try{ if(key === __SGP_ATOMIC_CORE_KEY && typeof __persistCoreMetaFromString === 'function') __persistCoreMetaFromString(value); }catch(_){ }
                 return true;
             }catch(e){
                 console.warn('[SGP] Falha ao salvar no localStorage:', key, e);
                 const isQuota = (typeof __isQuotaError==='function') ? __isQuotaError(e) : false;
-                try{ if(typeof __diagCapture==='function') __diagCapture(e, 'localStorage.setItem', {key, quota:isQuota}); }catch(_){}
+                try{ if(typeof __diagCapture==='function') __diagCapture(e, 'localStorage.setItem', {key, quota:isQuota}); }catch(_){ }
+
+                if((isQuota || allowIDBFallback) && typeof __idbShadowPut === 'function' && __idbShadowPut(key, value)){
+                    try{ localStorage.removeItem(key); }catch(_){ }
+                    try{ if(key === __SGP_ATOMIC_CORE_KEY && typeof __persistCoreMetaFromString === 'function') __persistCoreMetaFromString(value); }catch(_){ }
+                    try{ if(typeof __AUDIT !== 'undefined' && Array.isArray(__AUDIT)){
+                        __AUDIT.push({ ts: Date.now(), msg: 'Dados redirecionados para armazenamento ampliado (IndexedDB)' });
+                        if(__AUDIT.length > 500) __AUDIT.shift();
+                    } }catch(_){ }
+                    return true;
+                }
+
                 try{
                     if(typeof __AUDIT !== 'undefined' && Array.isArray(__AUDIT)){
                         __AUDIT.push({ ts: Date.now(), msg: isQuota ? "Falha ao salvar: armazenamento cheio (quota)" : "Falha ao salvar no armazenamento (localStorage)" });
                         if(__AUDIT.length > 500) __AUDIT.shift();
                     }
-                }catch(_){}
+                }catch(_){ }
                 try{
                     if(isQuota && typeof __showSaveFailDialog === 'function'){
                         __showSaveFailDialog("Armazenamento do navegador cheio. Para evitar perda de dados, baixe um backup ZIP agora.");
@@ -6625,7 +6647,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                             ? "Armazenamento do navegador cheio. Faça um backup (ZIP) e limpe dados antigos."
                             : "Falha ao salvar dados no navegador.", "error");
                     }
-                }catch(_){}
+                }catch(_){ }
                 return false;
             }
         }
@@ -6709,7 +6731,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
 
                     // Ranking
                     try{
-                        const R = JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}');
+                        const R = JSON.parse(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_ranking_v1') : localStorage.getItem('sgp_ranking_v1'))||'{}');
                         if(R && typeof R === 'object'){
                             Object.keys(R).forEach(turma=>{
                                 const byB = R[turma];
@@ -6754,12 +6776,15 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
 
         // === Helpers adicionais: storage remove + detecção de modo temporário + bibliotecas externas + arquivo de estado ===
         function __safeLSRemove(key){
-            try{ localStorage.removeItem(key); return true; }
+            let ok = true;
+            try{ localStorage.removeItem(key); }
             catch(e){
+                ok = false;
                 console.warn('[SGP] Falha ao remover do localStorage:', key, e);
-                try{ if(typeof __diagCapture==='function') __diagCapture(e, 'localStorage.removeItem', {key}); }catch(_){}
-                return false;
+                try{ if(typeof __diagCapture==='function') __diagCapture(e, 'localStorage.removeItem', {key}); }catch(_){ }
             }
+            try{ if(typeof __idbShadowDelete === 'function') __idbShadowDelete(key); }catch(_){ }
+            return ok;
         }
 
         function __isTempPath(){
@@ -6977,7 +7002,7 @@ function checkBackupStatus(){
     if(!lastSave){
       try{
         const k = (typeof __SGP_ATOMIC_CORE_KEY === 'string') ? __SGP_ATOMIC_CORE_KEY : 'sgp_state_core_v1';
-        const raw = localStorage.getItem(k);
+        const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k);
         if(raw){
           const obj = JSON.parse(raw);
           const ts = parseInt(obj && obj.ts ? obj.ts : 0, 10);
@@ -8849,8 +8874,37 @@ function initCorrecao(){
 }
 
 function __sgpMainOnLoad(){ 
-            carregarDados(); try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){ }
-            try{ __warnTempPath(); }catch(_){ } try{ __checkExternalLibs(); }catch(_){ } checkBackupStatus(); garantirEstruturaNova(); initMenuTurmas(); renderizarMenu(); gerarMesas(); renderizarVisao(); atualizarLabelsConfig(); initKeyboardShortcuts(); initOcorrenciasUI(); initElegivelUI(); initPlanner(); initAtividades(); initCorrecao(); }
+            const __boot = ()=>{
+                carregarDados();
+                try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){ }
+                try{ __warnTempPath(); }catch(_){ }
+                try{ __checkExternalLibs(); }catch(_){ }
+                checkBackupStatus();
+                garantirEstruturaNova();
+                initMenuTurmas();
+                renderizarMenu();
+                gerarMesas();
+                renderizarVisao();
+                atualizarLabelsConfig();
+                initKeyboardShortcuts();
+                initOcorrenciasUI();
+                initElegivelUI();
+                initPlanner();
+                initAtividades();
+                initCorrecao();
+                try{ __HIST.lastSnapshot = __snapshotStr(); }catch(_){ }
+            };
+            try{
+                const p = (typeof initIndexedDB === 'function') ? initIndexedDB() : null;
+                if(p && typeof p.then === 'function'){
+                    p.finally(__boot);
+                }else{
+                    __boot();
+                }
+            }catch(_){
+                __boot();
+            }
+        }
         window.addEventListener('load', __sgpMainOnLoad);
 
 
@@ -9089,7 +9143,7 @@ function carregarDados() {
 
   // 1) Preferência: core atômico (uma chave)
   try{
-    const coreRaw = localStorage.getItem(__SGP_ATOMIC_CORE_KEY);
+    const coreRaw = (typeof __storageGetItem === 'function') ? __storageGetItem(__SGP_ATOMIC_CORE_KEY) : localStorage.getItem(__SGP_ATOMIC_CORE_KEY);
     const core = __safe(coreRaw, null, __SGP_ATOMIC_CORE_KEY);
     if(core && typeof core === 'object' && !Array.isArray(core)){
       turmas = Array.isArray(core.turmas) ? core.turmas : [];
@@ -9098,7 +9152,7 @@ function carregarDados() {
       planosSemana = core.planosSemana || core.planos_semanais || {};
       if(!planosSemana || typeof planosSemana !== 'object' || Array.isArray(planosSemana)) planosSemana = {};
 
-	      correcaoProvas = __safe(localStorage.getItem('sgp_correcao_provas'), null, 'sgp_correcao_provas');
+	      correcaoProvas = __safe((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_correcao_provas') : localStorage.getItem('sgp_correcao_provas'), null, 'sgp_correcao_provas');
       // Fallback: se chave separada falhou/vazia, tenta recuperar do blob atômico
       if(!correcaoProvas || typeof correcaoProvas !== 'object' || Array.isArray(correcaoProvas)){
         if(core.correcaoProvas && typeof core.correcaoProvas === 'object' && !Array.isArray(core.correcaoProvas)){
@@ -9128,7 +9182,7 @@ function carregarDados() {
             a=localStorage.getItem('sgp_alunos'),
             au=localStorage.getItem('sgp_aulas'),
             p=localStorage.getItem('sgp_planos_semanais'),
-            cp=localStorage.getItem('sgp_correcao_provas'),
+            cp=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_correcao_provas') : localStorage.getItem('sgp_correcao_provas'),
             c=localStorage.getItem('sgp_config'),
             l=localStorage.getItem('sgp_layouts');
 
@@ -9160,7 +9214,7 @@ function carregarDados() {
 
   // Planner (v1): mantém em chave própria; initPlanner faz a consistência final
   try{
-    const pl=localStorage.getItem('sgp_planner');
+    const pl=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_planner') : localStorage.getItem('sgp_planner');
     plannerTasks = __safe(pl, [], 'sgp_planner');
     if(!Array.isArray(plannerTasks)) plannerTasks = [];
     if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks);
@@ -9177,7 +9231,72 @@ function carregarDados() {
 // === Persistência atômica (core) — evita estado parcial e reduz duplicação de chaves ===
 const __SGP_ATOMIC_CORE_KEY = 'sgp_state_core_v1';
 const __SGP_ATOMIC_CORE_TMP = 'sgp_state_core_tmp_v1';
+const __SGP_ATOMIC_CORE_META_KEY = 'sgp_state_core_meta_v1';
+window.__sgpIDBShadowCache = window.__sgpIDBShadowCache || {};
 
+function __getIDBShadowKeys(){
+  return [
+    __SGP_ATOMIC_CORE_KEY,
+    'sgp_correcao_provas',
+    'sgp_planner',
+    'sgp_frequencia',
+    'sgp_entregas',
+    'sgp_ranking_v1',
+    'sgp_audit_log',
+    'sgp_freq_events'
+  ];
+}
+function __shadowStorageIdbKey(key){ return '__shadow__::' + String(key || ''); }
+function __shadowLegacyIdbKey(key){
+  switch(String(key || '')){
+    case __SGP_ATOMIC_CORE_KEY: return 'core';
+    case 'sgp_planner': return 'planner';
+    case 'sgp_frequencia': return 'frequencia';
+    case 'sgp_entregas': return 'entregas';
+    case 'sgp_ranking_v1': return 'ranking';
+    case 'sgp_audit_log': return 'audit_log';
+    case 'sgp_freq_events': return 'freq_events';
+    default: return null;
+  }
+}
+function __isIDBShadowKey(key){
+  return __getIDBShadowKeys().includes(String(key || ''));
+}
+function __shouldPreferIDBStorage(key, value){
+  key = String(key || '');
+  return key === __SGP_ATOMIC_CORE_KEY || key === 'sgp_correcao_provas';
+}
+function __shouldFallbackToIDBStorage(key, value){
+  key = String(key || '');
+  if(!__isIDBShadowKey(key)) return false;
+  if(__shouldPreferIDBStorage(key, value)) return true;
+  return (typeof value === 'string' && value.length >= 180000);
+}
+function __persistCoreMetaFromString(raw){
+  try{
+    const obj = JSON.parse(raw || '{}') || {};
+    const meta = {
+      ts: parseInt(obj.ts || Date.now(), 10) || Date.now(),
+      mode: 'indexeddb',
+      turmas: Array.isArray(obj.turmas) ? obj.turmas.length : 0,
+      alunos: Array.isArray(obj.alunos) ? obj.alunos.length : 0,
+      aulas: Array.isArray(obj.aulas) ? obj.aulas.length : 0
+    };
+    try{ localStorage.setItem(__SGP_ATOMIC_CORE_META_KEY, JSON.stringify(meta)); }catch(_){ }
+  }catch(_){ }
+}
+function __storageGetItem(key){
+  try{
+    const raw = localStorage.getItem(key);
+    if(raw !== null && typeof raw !== 'undefined') return raw;
+  }catch(_){ }
+  try{
+    if(window.__sgpIDBShadowCache && typeof window.__sgpIDBShadowCache[key] === 'string'){
+      return window.__sgpIDBShadowCache[key];
+    }
+  }catch(_){ }
+  return null;
+}
 function __buildAtomicCoreState(){
   return {
     dataVersion: 1,
@@ -9194,11 +9313,12 @@ function __buildAtomicCoreState(){
 
 function __atomicSaveCore(){
   try{
-    const str = JSON.stringify(__buildAtomicCoreState());
-    if(!__safeLSSet(__SGP_ATOMIC_CORE_TMP, str)) return false;
+    const state = __buildAtomicCoreState();
+    const str = JSON.stringify(state);
     if(!__safeLSSet(__SGP_ATOMIC_CORE_KEY, str)) return false;
 
-    try{ __safeLSRemove(__SGP_ATOMIC_CORE_TMP); }catch(_){}
+    try{ __persistCoreMetaFromString(str); }catch(_){ }
+    try{ __safeLSRemove(__SGP_ATOMIC_CORE_TMP); }catch(_){ }
 
     // Migração: remove chaves antigas do core (evita duplicação e quota)
     try{
@@ -9208,11 +9328,11 @@ function __atomicSaveCore(){
       __safeLSRemove('sgp_planos_semanais');
       __safeLSRemove('sgp_config');
       __safeLSRemove('sgp_layouts');
-    }catch(_){}
+    }catch(_){ }
 
     return true;
   }catch(e){
-    try{ if(typeof __diagCapture==='function') __diagCapture(e, '__atomicSaveCore'); }catch(_){}
+    try{ if(typeof __diagCapture==='function') __diagCapture(e, '__atomicSaveCore'); }catch(_){ }
     return false;
   }
 }
@@ -9425,7 +9545,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 });
             }catch(_){ }
 
-            const _lsJson = (k, fb)=>{ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(_){ return fb; } };
+            const _lsJson = (k, fb)=>{ try{ const r=(typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(_){ return fb; } };
             const _lsArr = (k)=>{ const v=_lsJson(k, []); return Array.isArray(v)?v:[]; };
             const _lsObj = (k)=>{ const v=_lsJson(k, {}); return (v && typeof v==='object' && !Array.isArray(v))?v:{}; };
             const acts = {
@@ -13597,7 +13717,7 @@ function __snapshotObj(){
   // inclui tudo o que o usuário precisa recuperar (sem depender só das variáveis em memória)
   const __lsJson = (k, fallback)=>{
     try{
-      const raw = localStorage.getItem(k);
+      const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k);
       return raw ? JSON.parse(raw) : fallback;
     }catch(_){
       return fallback;
@@ -15863,7 +15983,7 @@ function plannerNormalizeTasks(input){
 
 function plannerLoadFromStorage(){
   try{
-    const raw = localStorage.getItem('sgp_planner');
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_planner') : localStorage.getItem('sgp_planner');
     plannerTasks = raw ? plannerNormalizeTasks(raw) : [];
   }catch(e){
     plannerTasks = [];
@@ -15879,7 +15999,7 @@ function initPlanner(){
   plannerTasks = plannerNormalizeTasks(plannerTasks);
   if(!plannerTasks.length){
     // se carregarDados não trouxe, tenta do storage
-    try{ if(localStorage.getItem('sgp_planner')) plannerLoadFromStorage(); }catch(e){}
+    try{ if((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_planner') : localStorage.getItem('sgp_planner')) plannerLoadFromStorage(); }catch(e){}
   }
   // mantém o storage consistente (array normalizado)
   plannerPersist();
@@ -18366,28 +18486,105 @@ const __IDB_NAME = 'SGP_Database';
 const __IDB_VERSION = 1;
 const __IDB_STORE = 'sgp_data';
 
-function initIndexedDB(){
-  if(!window.indexedDB) { console.warn('[SGP] IndexedDB não disponível.'); return; }
+let __sgpDBInitPromise = null;
+
+function __idbGetRecordByKey(recKey){
+  return new Promise((resolve)=>{
+    if(!__sgpDB) return resolve(null);
+    try{
+      const tx = __sgpDB.transaction([__IDB_STORE], 'readonly');
+      const store = tx.objectStore(__IDB_STORE);
+      const req = store.get(recKey);
+      req.onsuccess = function(){ resolve(req.result || null); };
+      req.onerror = function(){ resolve(null); };
+    }catch(_){ resolve(null); }
+  });
+}
+function __idbShadowPut(key, raw){
   try{
-    const req = indexedDB.open(__IDB_NAME, __IDB_VERSION);
-    req.onupgradeneeded = function(e){
-      const db = e.target.result;
-      if(!db.objectStoreNames.contains(__IDB_STORE)){
-        db.createObjectStore(__IDB_STORE, {keyPath:'key'});
-      }
-    };
-    req.onsuccess = function(e){
-      __sgpDB = e.target.result;
-      console.log('[SGP] IndexedDB inicializado.');
-      // Mirror current state to IDB
-      __idbSaveState();
-    };
-    req.onerror = function(e){
-      console.warn('[SGP] IndexedDB erro:', e.target.error);
-    };
+    if(typeof raw !== 'string') raw = String(raw ?? '');
+    window.__sgpIDBShadowCache[key] = raw;
+    if(!__sgpDB) return false;
+    const tx = __sgpDB.transaction([__IDB_STORE], 'readwrite');
+    tx.objectStore(__IDB_STORE).put({ key: __shadowStorageIdbKey(key), value: raw, ts: Date.now(), storage: 'shadow' });
+    return true;
   }catch(e){
-    console.warn('[SGP] Falha ao inicializar IndexedDB:', e);
+    try{ if(typeof __diagCapture==='function') __diagCapture(e, '__idbShadowPut', {key}); }catch(_){ }
+    return false;
   }
+}
+function __idbShadowDelete(key){
+  try{ if(window.__sgpIDBShadowCache) delete window.__sgpIDBShadowCache[key]; }catch(_){ }
+  if(!__sgpDB) return false;
+  try{
+    const tx = __sgpDB.transaction([__IDB_STORE], 'readwrite');
+    tx.objectStore(__IDB_STORE).delete(__shadowStorageIdbKey(key));
+    return true;
+  }catch(_){ return false; }
+}
+function __idbPrimeShadowCache(){
+  const keys = __getIDBShadowKeys();
+  return Promise.all(keys.map(async (logicalKey)=>{
+    let raw = null;
+    const shadowRec = await __idbGetRecordByKey(__shadowStorageIdbKey(logicalKey));
+    if(shadowRec && typeof shadowRec.value === 'string'){
+      raw = shadowRec.value;
+    }else{
+      const legacyKey = __shadowLegacyIdbKey(logicalKey);
+      if(legacyKey){
+        const legacyRec = await __idbGetRecordByKey(legacyKey);
+        if(legacyRec){
+          if(typeof legacyRec.value === 'string') raw = legacyRec.value;
+          else if(typeof legacyRec.value !== 'undefined') raw = JSON.stringify(legacyRec.value);
+        }
+      }
+    }
+    if(typeof raw === 'string') window.__sgpIDBShadowCache[logicalKey] = raw;
+  }));
+}
+function __requestPersistentStorage(){
+  try{
+    if(!navigator.storage || typeof navigator.storage.persist !== 'function') return Promise.resolve(false);
+    return Promise.resolve(
+      (typeof navigator.storage.persisted === 'function' ? navigator.storage.persisted() : false)
+    ).then((already)=>{
+      if(already) return true;
+      return navigator.storage.persist().catch(()=>false);
+    }).catch(()=>false);
+  }catch(_){ return Promise.resolve(false); }
+}
+function initIndexedDB(){
+  if(!window.indexedDB) { console.warn('[SGP] IndexedDB não disponível.'); return Promise.resolve(null); }
+  if(__sgpDB) return Promise.resolve(__sgpDB);
+  if(__sgpDBInitPromise) return __sgpDBInitPromise;
+
+  __sgpDBInitPromise = new Promise((resolve)=>{
+    try{
+      const req = indexedDB.open(__IDB_NAME, __IDB_VERSION);
+      req.onupgradeneeded = function(e){
+        const db = e.target.result;
+        if(!db.objectStoreNames.contains(__IDB_STORE)){
+          db.createObjectStore(__IDB_STORE, {keyPath:'key'});
+        }
+      };
+      req.onsuccess = function(e){
+        __sgpDB = e.target.result;
+        console.log('[SGP] IndexedDB inicializado.');
+        Promise.resolve(__idbPrimeShadowCache())
+          .then(()=>__requestPersistentStorage())
+          .finally(()=>resolve(__sgpDB));
+      };
+      req.onerror = function(e){
+        console.warn('[SGP] IndexedDB erro:', e.target.error);
+        resolve(null);
+      };
+    }catch(e){
+      console.warn('[SGP] Falha ao inicializar IndexedDB:', e);
+      resolve(null);
+    }
+  });
+
+  return __sgpDBInitPromise;
 }
 
 function __idbSaveState(){
@@ -18398,7 +18595,7 @@ function __idbSaveState(){
     store.put({key:'core', value: __buildAtomicCoreState()});
     store.put({key:'planner', value: plannerTasks});
     store.put({key:'frequencia', value: window.__sgpFrequencia || {}});
-    try{ store.put({key:'ranking', value: JSON.parse(localStorage.getItem('sgp_ranking_v1')||'{}')||{}}); }catch(_){}
+    try{ store.put({key:'ranking', value: JSON.parse(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_ranking_v1') : localStorage.getItem('sgp_ranking_v1'))||'{}')||{}}); }catch(_){}
     try{ store.put({key:'entregas', value: window.__sgpEntregas || {}}); }catch(_){}
     try{ store.put({key:'freq_events', value: window.__sgpFreqEvents || []}); }catch(_){}
     try{ store.put({key:'audit_log', value: window.__sgpAuditLog || []}); }catch(_){}
@@ -18452,7 +18649,7 @@ function __freqBumpVersion(){
 
 function __freqLoadEvents(){
   try{
-    const raw = localStorage.getItem('sgp_freq_events');
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_freq_events') : localStorage.getItem('sgp_freq_events');
     if(raw) window.__sgpFreqEvents = JSON.parse(raw) || [];
   }catch(_){ window.__sgpFreqEvents = []; }
 }
@@ -18486,7 +18683,7 @@ try{ __freqLoadEvents(); }catch(_){}
 
 function __loadFrequencia(){
   try{
-    const raw = localStorage.getItem('sgp_frequencia');
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_frequencia') : localStorage.getItem('sgp_frequencia');
     if(raw){ window.__sgpFrequencia = JSON.parse(raw) || {}; }
   }catch(_){ window.__sgpFrequencia = {}; }
 }
@@ -20671,7 +20868,7 @@ try{
 // ================================================================
 // Data: window.__sgpEntregas = { "turma|bimestre": { atividades: [{id,nome}], entregas: {alunoId: {atividadeId: true/false}} } }
 window.__sgpEntregas = {};
-function __loadEntregas(){ try{ const r=localStorage.getItem('sgp_entregas'); if(r) window.__sgpEntregas=JSON.parse(r)||{}; }catch(_){} }
+function __loadEntregas(){ try{ const r=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_entregas') : localStorage.getItem('sgp_entregas'); if(r) window.__sgpEntregas=JSON.parse(r)||{}; }catch(_){} }
 function __saveEntregas(){ try{ __safeLSSet('sgp_entregas',JSON.stringify(window.__sgpEntregas)); try{__idbSaveState();}catch(_){} }catch(_){} }
 try{__loadEntregas();}catch(_){}
 
@@ -21332,7 +21529,7 @@ document.addEventListener('input', function(e){
 window.__sgpAuditLog = [];
 
 function __loadAuditLog(){
-  try{ const r=localStorage.getItem('sgp_audit_log'); if(r) window.__sgpAuditLog=JSON.parse(r)||[]; }catch(_){ window.__sgpAuditLog=[]; }
+  try{ const r=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_audit_log') : localStorage.getItem('sgp_audit_log'); if(r) window.__sgpAuditLog=JSON.parse(r)||[]; }catch(_){ window.__sgpAuditLog=[]; }
 }
 function __saveAuditLog(){
   try{
@@ -25944,7 +26141,7 @@ function grpImprimir(){
 // --- Persistência ---
 const RANK_KEY = 'sgp_ranking_v1';
 function _rankLoad(){
-    try{ return JSON.parse(localStorage.getItem(RANK_KEY)) || {}; }catch(_){ return {}; }
+    try{ return JSON.parse((typeof __storageGetItem === 'function') ? (__storageGetItem(RANK_KEY) || '{}') : (localStorage.getItem(RANK_KEY) || '{}')) || {}; }catch(_){ return {}; }
 }
 function _rankSave(data){
     try{ __safeLSSet(RANK_KEY, JSON.stringify(data)); }catch(_){}
