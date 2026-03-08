@@ -42,9 +42,12 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
+      window.__SGP_SW_VERSION = '16.40.0';
       if('serviceWorker' in navigator){
-        navigator.serviceWorker.register('./sw.js', {scope: './'}).then(reg => {
-          console.log('[SGP] Service Worker registrado! Escopo:', reg.scope);
+        const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
+        navigator.serviceWorker.register(swUrl, {scope: './', updateViaCache: 'none'}).then(reg => {
+          try{ reg.update(); }catch(_){ }
+          console.log('[SGP] Service Worker registrado! Escopo:', reg.scope, 'Versão:', window.__SGP_SW_VERSION);
         }).catch(err => {
           console.log('[SGP] Service Worker indisponível (normal em file://):', err.message);
         });
