@@ -42,11 +42,35 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '16.40.0';
+      window.__SGP_SW_VERSION = '16.43.0';
+      window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
+        const __activateWaitingSW = (reg)=>{
+          try{ if(reg && reg.waiting) reg.waiting.postMessage('SKIP_WAITING'); }catch(_){ }
+        };
+        const __wireServiceWorkerReg = (reg)=>{
+          try{
+            if(reg && reg.waiting) __activateWaitingSW(reg);
+            reg && reg.addEventListener('updatefound', ()=>{
+              const installing = reg.installing;
+              if(!installing) return;
+              installing.addEventListener('statechange', ()=>{
+                if(installing.state === 'installed') __activateWaitingSW(reg);
+              });
+            });
+          }catch(_){ }
+          return reg;
+        };
+        navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+          if(window.__SGP_SW_RELOADING) return;
+          window.__SGP_SW_RELOADING = true;
+          try{ location.reload(); }catch(_){ }
+        });
         navigator.serviceWorker.register(swUrl, {scope: './', updateViaCache: 'none'}).then(reg => {
+          __wireServiceWorkerReg(reg);
           try{ reg.update(); }catch(_){ }
+          window.addEventListener('focus', ()=>{ try{ reg.update(); }catch(_){ } }, {passive:true});
           console.log('[SGP] Service Worker registrado! Escopo:', reg.scope, 'Versão:', window.__SGP_SW_VERSION);
         }).catch(err => {
           console.log('[SGP] Service Worker indisponível (normal em file://):', err.message);
@@ -7438,19 +7462,7 @@ function corSave(){
     try{ if(typeof __diagCapture==='function') __diagCapture(e,'corSave',{}); }catch(_){}
     try{ if(typeof showToast==='function') showToast('Erro ao salvar correção.', 'error'); }catch(_){}
   }
-  // Marca que há alterações locais mais recentes que o último backup ZIP
-  try{
-    const __now = Date.now();
-    if(typeof __safeLSSet === 'function'){
-      __safeLSSet('sgp_last_core_save', __now);
-      __safeLSSet('sgp_backup_pending', '1');
-    }else{
-      localStorage.setItem('sgp_last_core_save', String(__now));
-      localStorage.setItem('sgp_backup_pending', '1');
-    }
-  }catch(_){}
-
-  try{ checkBackupStatus(); }catch(_){}
+  try{ __markBackupRelevantChange('correcao-save'); }catch(_){}
 }
 
 function corGetTurmaSelecionada(){
@@ -9526,6 +9538,23 @@ function salvarDadosLocal() {
   }catch(e){
     try{ if(typeof __diagCapture==='function') __diagCapture(e, 'salvarDadosLocal'); }catch(_){}
   }
+}
+
+
+function __markBackupRelevantChange(source){
+  try{
+    const __now = Date.now();
+    if(typeof __safeLSSet === 'function'){
+      __safeLSSet('sgp_last_core_save', String(__now));
+      __safeLSSet('sgp_backup_pending', '1');
+    }else{
+      localStorage.setItem('sgp_last_core_save', String(__now));
+      localStorage.setItem('sgp_backup_pending', '1');
+    }
+  }catch(_){}
+  try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){}
+  try{ if(typeof __idbSaveState === 'function') __idbSaveState(); }catch(_){}
+  try{ if(typeof __scheduleLinkedStateSync === 'function') __scheduleLinkedStateSync(source || 'module-save'); }catch(_){}
 }
 
 function __pad2(n){ return String(n).padStart(2,'0'); }
@@ -18803,7 +18832,7 @@ function exportarCSV(){
 // ===============================================
 let __sgpDB = null;
 const __IDB_NAME = 'SGP_Database';
-const __IDB_VERSION = 2;
+const __IDB_VERSION = 4;
 const __IDB_STORE = 'sgp_data';
 const __IDB_HANDLE_STORE = 'sgp_handles';
 
@@ -19129,40 +19158,92 @@ function __scheduleStorageMonitorRefresh(delay){
     __updateStorageMonitor(false);
   }, Math.max(0, Number(delay)||0));
 }
+function __idbHasRequiredStores(db){
+  try{
+    return !!(db && db.objectStoreNames && db.objectStoreNames.contains(__IDB_STORE) && db.objectStoreNames.contains(__IDB_HANDLE_STORE));
+  }catch(_){ return false; }
+}
+function __openIndexedDBVersion(version, resolve, repairedOnce){
+  let __settled = false;
+  const __finish = (value)=>{
+    if(__settled) return;
+    __settled = true;
+    resolve(value || null);
+  };
+  try{
+    const req = indexedDB.open(__IDB_NAME, version);
+    req.onupgradeneeded = function(e){
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(__IDB_STORE)){
+        db.createObjectStore(__IDB_STORE, {keyPath:'key'});
+      }
+      if(!db.objectStoreNames.contains(__IDB_HANDLE_STORE)){
+        db.createObjectStore(__IDB_HANDLE_STORE, {keyPath:'id'});
+      }
+    };
+    req.onblocked = function(){
+      try{ console.warn('[SGP] IndexedDB bloqueado por outra aba/janela.'); }catch(_){ }
+      try{ if(typeof __linkedStateAudit === 'function') __linkedStateAudit('IndexedDB bloqueado por outra aba/janela.'); }catch(_){ }
+      try{ if(typeof __diagCapture === 'function') __diagCapture(new Error('IndexedDB bloqueado por outra aba/janela.'), '__openIndexedDBVersion.onblocked'); }catch(_){ }
+      __finish(null);
+    };
+    req.onsuccess = function(e){
+      const db = e.target.result;
+      __sgpDB = db;
+      try{
+        db.onversionchange = function(){
+          try{ db.close(); }catch(_){ }
+          if(__sgpDB === db) __sgpDB = null;
+          __sgpDBInitPromise = null;
+          try{ if(typeof __linkedStateAudit === 'function') __linkedStateAudit('IndexedDB reinicializado após mudança de versão.'); }catch(_){ }
+        };
+      }catch(_){ }
+      try{
+        db.onclose = function(){
+          if(__sgpDB === db) __sgpDB = null;
+          __sgpDBInitPromise = null;
+        };
+      }catch(_){ }
+      if(!__idbHasRequiredStores(__sgpDB)){
+        const currentVersion = Math.max(Number((__sgpDB && __sgpDB.version) || version) || version, Number(version) || 0);
+        try{ __sgpDB.close(); }catch(_){ }
+        __sgpDB = null;
+        if(!repairedOnce){
+          return __openIndexedDBVersion(currentVersion + 1, __finish, true);
+        }
+        console.warn('[SGP] IndexedDB aberto sem todas as stores necessárias.');
+        return __finish(null);
+      }
+      console.log('[SGP] IndexedDB inicializado.');
+      Promise.resolve(__idbPrimeShadowCache())
+        .then(()=>{ try{ __rehydrateShadowBackedStateAfterIDB(); }catch(_){ } })
+        .then(()=>__requestPersistentStorage())
+        .then(()=>{ try{ return __initLinkedStateFileSync(); }catch(_){ return null; } })
+        .finally(()=>__finish(__sgpDB));
+    };
+    req.onerror = function(e){
+      console.warn('[SGP] IndexedDB erro:', e.target.error);
+      __finish(null);
+    };
+  }catch(e){
+    console.warn('[SGP] Falha ao inicializar IndexedDB:', e);
+    __finish(null);
+  }
+}
 function initIndexedDB(){
   if(!window.indexedDB) { console.warn('[SGP] IndexedDB não disponível.'); return Promise.resolve(null); }
   if(__sgpDB) return Promise.resolve(__sgpDB);
   if(__sgpDBInitPromise) return __sgpDBInitPromise;
 
   __sgpDBInitPromise = new Promise((resolve)=>{
-    try{
-      const req = indexedDB.open(__IDB_NAME, __IDB_VERSION);
-      req.onupgradeneeded = function(e){
-        const db = e.target.result;
-        if(!db.objectStoreNames.contains(__IDB_STORE)){
-          db.createObjectStore(__IDB_STORE, {keyPath:'key'});
-        }
-        if(!db.objectStoreNames.contains(__IDB_HANDLE_STORE)){
-          db.createObjectStore(__IDB_HANDLE_STORE, {keyPath:'id'});
-        }
-      };
-      req.onsuccess = function(e){
-        __sgpDB = e.target.result;
-        console.log('[SGP] IndexedDB inicializado.');
-        Promise.resolve(__idbPrimeShadowCache())
-          .then(()=>{ try{ __rehydrateShadowBackedStateAfterIDB(); }catch(_){ } })
-          .then(()=>__requestPersistentStorage())
-          .then(()=>{ try{ return __initLinkedStateFileSync(); }catch(_){ return null; } })
-          .finally(()=>resolve(__sgpDB));
-      };
-      req.onerror = function(e){
-        console.warn('[SGP] IndexedDB erro:', e.target.error);
-        resolve(null);
-      };
-    }catch(e){
-      console.warn('[SGP] Falha ao inicializar IndexedDB:', e);
-      resolve(null);
-    }
+    __openIndexedDBVersion(__IDB_VERSION, resolve, false);
+  }).then((db)=>{
+    if(!db) __sgpDBInitPromise = null;
+    return db || null;
+  }).catch((e)=>{
+    try{ console.warn('[SGP] Falha ao abrir IndexedDB:', e); }catch(_){ }
+    __sgpDBInitPromise = null;
+    return null;
   });
 
   return __sgpDBInitPromise;
@@ -19231,6 +19312,52 @@ function __linkedStateAudit(msg){
       if(__AUDIT.length > 500) __AUDIT.shift();
     }
   }catch(_){ }
+}
+async function __idbDeleteHandle(id){
+  try{
+    if(!__sgpDB && typeof initIndexedDB === 'function') await initIndexedDB();
+    if(!__sgpDB) return false;
+    return await new Promise((resolve)=>{
+      try{
+        const tx = __sgpDB.transaction([__IDB_HANDLE_STORE], 'readwrite');
+        tx.objectStore(__IDB_HANDLE_STORE).delete(String(id || 'stateFile'));
+        tx.oncomplete = function(){ resolve(true); };
+        tx.onerror = function(){ resolve(false); };
+        tx.onabort = function(){ resolve(false); };
+      }catch(_){ resolve(false); }
+    });
+  }catch(_){ return false; }
+}
+function __linkedStateNeedsRelinkError(err){
+  try{
+    const name = String((err && err.name) || '');
+    const msg = String((err && err.message) || err || '');
+    return /NotFoundError|InvalidStateError|NotReadableError|TypeMismatchError/i.test(name) || /não foi encontrado|not found|indisponível|unavailable|moved|removed/i.test(msg);
+  }catch(_){ return false; }
+}
+async function __clearLinkedStateBinding(reason, err, opts){
+  opts = opts || {};
+  const state = window.__sgpLinkedStateSync = window.__sgpLinkedStateSync || { handle:null, timer:0, syncing:false, initialized:false };
+  const oldHandle = state.handle || null;
+  try{ if(state.timer) clearTimeout(state.timer); }catch(_){ }
+  state.timer = 0;
+  state.handle = null;
+  state.syncing = false;
+  try{ await __idbDeleteHandle('stateFile'); }catch(_){ }
+  try{ __safeLSSet('sgp_linked_file_pending', '0'); }catch(_){ }
+  const message = reason || 'Vínculo com arquivo local removido.';
+  const fileName = (opts.fileName || (oldHandle && oldHandle.name) || 'SGP_estado_principal.json');
+  __setLinkedStateFileMeta({
+    fileName,
+    pending:false,
+    autoSync:false,
+    status: opts.status || 'relink',
+    needsRelink:true,
+    lastError: (err && err.message) ? err.message : message
+  });
+  try{ if(typeof __linkedStateAudit === 'function') __linkedStateAudit(message + (fileName ? ': ' + fileName : '')); }catch(_){ }
+  try{ if(typeof __renderDiagnosticoPainel === 'function') __renderDiagnosticoPainel(true); }catch(_){ }
+  return true;
 }
 async function __idbSetHandle(id, handle){
   try{
@@ -19359,6 +19486,14 @@ async function __syncLinkedStateFile(reason, opts){
     return true;
   }catch(e){
     try{ if(typeof __diagCapture === 'function') __diagCapture(e, '__syncLinkedStateFile'); }catch(_){ }
+    if(__linkedStateNeedsRelinkError(e)){
+      await __clearLinkedStateBinding('Arquivo do HD indisponível. Faça a vinculação novamente.', e, {
+        status:'relink',
+        fileName: (handle && handle.name) ? handle.name : 'SGP_estado_principal.json'
+      });
+      if(opts.interactive && typeof showToast === 'function') showToast('O arquivo vinculado não está mais disponível. Vincule o HD novamente.', 'warning');
+      return false;
+    }
     __safeLSSet('sgp_linked_file_pending', '1');
     __setLinkedStateFileMeta({
       fileName: (handle && handle.name) ? handle.name : 'SGP_estado_principal.json',
@@ -19491,13 +19626,21 @@ async function __initLinkedStateFileSync(){
     const hasCore = !!((typeof __storageGetItem === 'function') ? __storageGetItem(__SGP_ATOMIC_CORE_KEY) : localStorage.getItem(__SGP_ATOMIC_CORE_KEY));
     const canRead = await __ensureHandlePermission(handle, 'read', false);
     if(canRead && !hasCore){
-      const payload = await __readLinkedStateObject(handle).catch(()=>null);
+      const payload = await __readLinkedStateObject(handle).catch(async(err)=>{
+        if(__linkedStateNeedsRelinkError(err)){
+          await __clearLinkedStateBinding('Arquivo do HD vinculado não foi encontrado na inicialização.', err, {
+            status:'relink',
+            fileName
+          });
+        }
+        return null;
+      });
       if(payload && payload.obj && payload.obj.storage){
         const lastSyncAt = parseInt((payload.obj && payload.obj.linkedFile && payload.obj.linkedFile.savedAtTs) || Date.now(), 10) || Date.now();
         __importStateObject(payload.obj, { clearExisting:true });
         __safeLSSet('sgp_linked_file_last_sync', String(lastSyncAt));
         __safeLSSet('sgp_linked_file_pending', '0');
-        __setLinkedStateFileMeta({ fileName, pending:false, status:'restaurado_boot', autoSync:true, lastSyncAt, lastError:'' });
+        __setLinkedStateFileMeta({ fileName, pending:false, status:'restaurado_boot', autoSync:true, lastSyncAt, lastError:'', needsRelink:false });
         setTimeout(()=>{ try{ location.reload(); }catch(_){ } }, 80);
         return true;
       }
@@ -19518,6 +19661,9 @@ async function __initLinkedStateFileSync(){
     return true;
   }catch(e){
     try{ if(typeof __diagCapture === 'function') __diagCapture(e, '__initLinkedStateFileSync'); }catch(_){ }
+    if(__linkedStateNeedsRelinkError(e)){
+      try{ await __clearLinkedStateBinding('Arquivo do HD vinculado precisa ser vinculado novamente.', e, { status:'relink' }); }catch(_){ }
+    }
     try{ if(typeof __renderDiagnosticoPainel === 'function') __renderDiagnosticoPainel(true); }catch(_){ }
     return false;
   }
@@ -19595,8 +19741,8 @@ function __loadFrequencia(){
 function __saveFrequencia(){
   try{
     __safeLSSet('sgp_frequencia', JSON.stringify(window.__sgpFrequencia));
-    try{ __idbSaveState(); }catch(_){}
     try{ __freqBumpVersion(); }catch(_){}
+    try{ __markBackupRelevantChange('frequencia-save'); }catch(_){}
   }catch(_){}
 }
 // Load on start
@@ -21774,7 +21920,12 @@ try{
 // Data: window.__sgpEntregas = { "turma|bimestre": { atividades: [{id,nome}], entregas: {alunoId: {atividadeId: true/false}} } }
 window.__sgpEntregas = {};
 function __loadEntregas(){ try{ const r=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_entregas') : localStorage.getItem('sgp_entregas'); if(r) window.__sgpEntregas=JSON.parse(r)||{}; }catch(_){} }
-function __saveEntregas(){ try{ __safeLSSet('sgp_entregas',JSON.stringify(window.__sgpEntregas)); try{__idbSaveState();}catch(_){} }catch(_){} }
+function __saveEntregas(){
+  try{
+    __safeLSSet('sgp_entregas', JSON.stringify(window.__sgpEntregas));
+    try{ __markBackupRelevantChange('entregas-save'); }catch(_){}
+  }catch(_){}
+}
 try{__loadEntregas();}catch(_){}
 
 function abrirControleEntregas(){
@@ -27426,7 +27577,7 @@ function _rankLoad(){
 }
 function _rankSave(data){
     try{ __safeLSSet(RANK_KEY, JSON.stringify(data)); }catch(_){}
-    try{ __idbSaveState(); }catch(_){}
+    try{ __markBackupRelevantChange('ranking-save'); }catch(_){}
 }
 
 // Estrutura: { [turma]: { [bimestre]: { [alunoId]: { notas:N, comportamento:N, participacao:N, bonus:N, historico:[...] } } } }
@@ -28178,6 +28329,7 @@ function _rankHistLoadCfg(){
 }
 function _rankHistSaveCfg(cfg){
     try{ __safeLSSet(RANK_HIST_CFG_KEY, JSON.stringify(cfg)); }catch(_){}
+    try{ __markBackupRelevantChange('ranking-historico-save'); }catch(_){}
 }
 
 function _rankHistGetDiaFim(diaInicio){

@@ -1,5 +1,5 @@
-// v38
-// SGP - Service Worker v16 (persistência híbrida ampliada + backup sanitizado)
+// v41
+// SGP - Service Worker v16 (persistência híbrida ampliada + atualização imediata)
 // Atualizado para garantir propagação de versão também no app instalado no Windows.
 // Melhorias:
 //  - versionamento explícito do SW
@@ -8,7 +8,7 @@
 //  - app shell offline confiável para navegação
 //  - stale-while-revalidate para recursos same-origin
 
-const SW_VERSION = '16.40.0';
+const SW_VERSION = '16.43.0';
 const CACHE_NAME = `sgp-v16-${SW_VERSION}`;
 const APP_SHELL = [
   './',
