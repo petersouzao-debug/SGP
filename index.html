@@ -5022,6 +5022,9 @@ body.dark-mode .bulk-preview{background:#1a2e1a;border-color:#166534;}
                         <button class="btn-secondary" data-onclick="baixarLog()"><i class="fas fa-file-arrow-down"></i> Baixar log</button>
                         <button class="btn-secondary" data-onclick="salvarEstadoArquivo()"><i class="fas fa-floppy-disk"></i> Salvar estado</button>
                         <button class="btn-secondary" data-onclick="abrirEstadoArquivo()"><i class="fas fa-folder-open"></i> Abrir estado</button>
+                        <button class="btn-secondary" data-onclick="vincularArquivoLocalSGP()"><i class="fas fa-hard-drive"></i> Vincular HD</button>
+                        <button class="btn-secondary" data-onclick="salvarArquivoLocalVinculado()"><i class="fas fa-file-arrow-down"></i> Salvar no HD</button>
+                        <button class="btn-secondary" data-onclick="restaurarArquivoLocalVinculado()"><i class="fas fa-rotate-left"></i> Restaurar HD</button>
                         <button class="btn-secondary" data-onclick="baixarBackup()"><i class="fas fa-download"></i> Backup ZIP</button>
                         <button class="btn-secondary" data-onclick="diagLimpar(); __renderDiagnosticoPainel();"><i class="fas fa-broom"></i> Limpar</button>
                         <button class="btn-secondary" data-onclick="fecharDiagnosticoPainel()"><i class="fas fa-xmark"></i> Fechar</button>
@@ -9778,6 +9781,11 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
 // Frequency events log
             const __bkFLog = Array.isArray(window.__sgpFreqEvents) ? window.__sgpFreqEvents : _lsArr('sgp_freq_events');
             files.push(['sgp_freq_events.json', JSON.stringify(__bkFLog || [], null, 2)]);
+// Meta do arquivo local vinculado (HD)
+            try{
+                const __linkedMeta = (typeof __getLinkedStateFileMeta === 'function') ? __getLinkedStateFileMeta() : _lsObj('sgp_linked_file_meta');
+                files.push(['sgp_linked_file_meta.json', JSON.stringify(__linkedMeta || {}, null, 2)]);
+            }catch(_){ }
 return files;
         }
 
@@ -14602,13 +14610,23 @@ function __renderDiagnosticoPainel(silent){
     const lastTs = __DIAG.lastTestsTs ? __diagTS(__DIAG.lastTestsTs) : '—';
     const stor = __estimateLocalStorageUsage();
     const storTop = (stor && stor.topKeys) ? stor.topKeys.map(x=>`<div class="diag-row"><strong>${_escHTML(x.key)}</strong><div class="diag-muted">${Math.round(x.bytes/1024)} KB</div></div>`).join('') : '';
+    const hdMeta = (typeof __getLinkedStateFileMeta === 'function') ? __getLinkedStateFileMeta() : {};
+    const hdLinked = !!(hdMeta && hdMeta.fileName);
+    const hdPending = String(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_linked_file_pending') : localStorage.getItem('sgp_linked_file_pending')) || '0') === '1';
+    const hdBadgeClass = !hdLinked ? 'warn' : (hdPending ? 'warn' : 'ok');
+    const hdBadgeText = !hdLinked ? 'HD: não vinculado' : (hdPending ? 'HD: pendente' : 'HD: sincronizado');
+    const hdDetail = !hdLinked
+      ? 'Nenhum arquivo local do HD foi vinculado ainda.'
+      : ('Arquivo: ' + _escHTML(hdMeta.fileName || 'SGP_estado_principal.json') + (hdMeta.lastSyncAt ? (' • Última gravação: ' + _escHTML(__diagTS(hdMeta.lastSyncAt))) : '') + (hdMeta.lastError ? (' • ' + _escHTML(hdMeta.lastError)) : ''));
     st.innerHTML = `
       <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
         <span class="diag-badge ${errCount? 'err':'ok'}">${errCount? ('ERROS: '+errCount) : 'SEM ERROS'}</span>
         <span class="diag-badge ok">Últimos testes: ${_escHTML(lastTs)}</span>
         <span class="diag-badge warn">Storage: ${stor && stor.totalKB ? (stor.totalKB+' KB') : '—'}</span>
+        <span class="diag-badge ${hdBadgeClass}">${hdBadgeText}</span>
       </div>
       <div class="diag-muted" style="margin-top:8px;">Se algum botão parar de responder, clique em <strong>Copiar relatório</strong> e me envie aqui.</div>
+      <div class="diag-muted" style="margin-top:6px;">${hdDetail}</div>
       <div style="margin-top:12px;">
         <strong>Maiores chaves no localStorage</strong>
         <div style="margin-top:8px;">${storTop || '<div class="diag-muted">Não foi possível estimar.</div>'}</div>
@@ -18782,8 +18800,9 @@ function exportarCSV(){
 // ===============================================
 let __sgpDB = null;
 const __IDB_NAME = 'SGP_Database';
-const __IDB_VERSION = 1;
+const __IDB_VERSION = 2;
 const __IDB_STORE = 'sgp_data';
+const __IDB_HANDLE_STORE = 'sgp_handles';
 
 let __sgpDBInitPromise = null;
 
@@ -19120,6 +19139,9 @@ function initIndexedDB(){
         if(!db.objectStoreNames.contains(__IDB_STORE)){
           db.createObjectStore(__IDB_STORE, {keyPath:'key'});
         }
+        if(!db.objectStoreNames.contains(__IDB_HANDLE_STORE)){
+          db.createObjectStore(__IDB_HANDLE_STORE, {keyPath:'id'});
+        }
       };
       req.onsuccess = function(e){
         __sgpDB = e.target.result;
@@ -19127,6 +19149,7 @@ function initIndexedDB(){
         Promise.resolve(__idbPrimeShadowCache())
           .then(()=>{ try{ __rehydrateShadowBackedStateAfterIDB(); }catch(_){ } })
           .then(()=>__requestPersistentStorage())
+          .then(()=>{ try{ return __initLinkedStateFileSync(); }catch(_){ return null; } })
           .finally(()=>resolve(__sgpDB));
       };
       req.onerror = function(e){
@@ -19174,11 +19197,335 @@ function __idbLoadState(){
   });
 }
 
+function __localFileApiSupported(){
+  try{
+    return !!(window.showSaveFilePicker && window.showOpenFilePicker && window.FileSystemFileHandle);
+  }catch(_){ return false; }
+}
+window.__sgpLinkedStateSync = window.__sgpLinkedStateSync || { handle:null, timer:0, syncing:false, initialized:false };
+
+function __getLinkedStateFileMeta(){
+  try{
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_linked_file_meta') : localStorage.getItem('sgp_linked_file_meta');
+    if(!raw) return {};
+    const obj = JSON.parse(raw);
+    return (obj && typeof obj === 'object' && !Array.isArray(obj)) ? obj : {};
+  }catch(_){ return {}; }
+}
+function __setLinkedStateFileMeta(patch){
+  try{
+    const cur = __getLinkedStateFileMeta();
+    const next = Object.assign({}, cur || {}, patch || {});
+    next.updatedAt = Date.now();
+    __safeLSSet('sgp_linked_file_meta', JSON.stringify(next));
+    return next;
+  }catch(_){ return null; }
+}
+function __linkedStateAudit(msg){
+  try{
+    if(typeof __AUDIT !== 'undefined' && Array.isArray(__AUDIT)){
+      __AUDIT.push({ ts: Date.now(), msg: msg });
+      if(__AUDIT.length > 500) __AUDIT.shift();
+    }
+  }catch(_){ }
+}
+async function __idbSetHandle(id, handle){
+  try{
+    if(!__sgpDB && typeof initIndexedDB === 'function') await initIndexedDB();
+    if(!__sgpDB || !handle) return false;
+    return await new Promise((resolve)=>{
+      try{
+        const tx = __sgpDB.transaction([__IDB_HANDLE_STORE], 'readwrite');
+        tx.objectStore(__IDB_HANDLE_STORE).put({ id: String(id || 'stateFile'), handle, ts: Date.now() });
+        tx.oncomplete = function(){ resolve(true); };
+        tx.onerror = function(){ resolve(false); };
+        tx.onabort = function(){ resolve(false); };
+      }catch(_){ resolve(false); }
+    });
+  }catch(_){ return false; }
+}
+async function __idbGetHandle(id){
+  try{
+    if(!__sgpDB && typeof initIndexedDB === 'function') await initIndexedDB();
+    if(!__sgpDB) return null;
+    return await new Promise((resolve)=>{
+      try{
+        const tx = __sgpDB.transaction([__IDB_HANDLE_STORE], 'readonly');
+        const req = tx.objectStore(__IDB_HANDLE_STORE).get(String(id || 'stateFile'));
+        req.onsuccess = function(){ resolve(req.result ? (req.result.handle || null) : null); };
+        req.onerror = function(){ resolve(null); };
+      }catch(_){ resolve(null); }
+    });
+  }catch(_){ return null; }
+}
+async function __queryHandlePermission(handle, mode){
+  try{
+    if(!handle || typeof handle.queryPermission !== 'function') return 'denied';
+    const opts = mode === 'readwrite' ? { mode:'readwrite' } : {};
+    return await handle.queryPermission(opts).catch(()=> 'prompt');
+  }catch(_){ return 'denied'; }
+}
+async function __ensureHandlePermission(handle, mode, interactive){
+  try{
+    if(!handle) return false;
+    let st = await __queryHandlePermission(handle, mode);
+    if(st === 'granted') return true;
+    if(!interactive || typeof handle.requestPermission !== 'function') return false;
+    const opts = mode === 'readwrite' ? { mode:'readwrite' } : {};
+    st = await handle.requestPermission(opts).catch(()=> 'denied');
+    return st === 'granted';
+  }catch(_){ return false; }
+}
+async function __getLinkedStateHandle(){
+  try{
+    if(window.__sgpLinkedStateSync && window.__sgpLinkedStateSync.handle) return window.__sgpLinkedStateSync.handle;
+    const handle = await __idbGetHandle('stateFile');
+    if(handle){
+      window.__sgpLinkedStateSync = window.__sgpLinkedStateSync || {};
+      window.__sgpLinkedStateSync.handle = handle;
+    }
+    return handle || null;
+  }catch(_){ return null; }
+}
+function __markLinkedStatePending(){
+  try{
+    if(!(window.__sgpLinkedStateSync && window.__sgpLinkedStateSync.handle)) return;
+    __safeLSSet('sgp_linked_file_pending', '1');
+    __setLinkedStateFileMeta({ pending:true, status:'pendente' });
+  }catch(_){ }
+}
+async function __readLinkedStateObject(handle){
+  if(!handle) throw new Error('Arquivo vinculado ausente.');
+  const file = await handle.getFile();
+  const txt = await file.text();
+  const obj = JSON.parse(txt);
+  if(!obj || typeof obj !== 'object' || !obj.storage || typeof obj.storage !== 'object') throw new Error('Arquivo vinculado inválido.');
+  return { file, obj };
+}
+async function __writeLinkedStateObject(handle, reason){
+  if(!handle) throw new Error('Arquivo vinculado ausente.');
+  const obj = __exportState();
+  obj.linkedFile = {
+    format: 'SGP_LINKED_FILE_V1',
+    savedAt: new Date().toISOString(),
+    savedAtTs: Date.now(),
+    reason: reason || 'manual',
+    app: 'SGP Pro'
+  };
+  const writable = await handle.createWritable();
+  await writable.write(JSON.stringify(obj, null, 2));
+  await writable.close();
+  return obj;
+}
+async function __syncLinkedStateFile(reason, opts){
+  opts = opts || {};
+  const state = window.__sgpLinkedStateSync = window.__sgpLinkedStateSync || { handle:null, timer:0, syncing:false, initialized:false };
+  const handle = opts.handle || state.handle || await __getLinkedStateHandle();
+  if(!handle) return false;
+  state.handle = handle;
+  if(state.syncing && !opts.force) return false;
+  state.syncing = true;
+  try{
+    __markLinkedStatePending();
+    const granted = await __ensureHandlePermission(handle, 'readwrite', !!opts.interactive);
+    if(!granted){
+      __setLinkedStateFileMeta({
+        fileName: handle.name || 'SGP_estado_principal.json',
+        pending:true,
+        status:'permissao',
+        lastError:'Permissão de leitura/gravação no arquivo local não concedida.'
+      });
+      if(opts.interactive && typeof showToast === 'function') showToast('Permissão para salvar no HD não foi concedida.', 'warning');
+      return false;
+    }
+    const out = await __writeLinkedStateObject(handle, reason || 'manual');
+    const savedAtTs = parseInt((out && out.linkedFile && out.linkedFile.savedAtTs) || Date.now(), 10) || Date.now();
+    __safeLSSet('sgp_linked_file_last_sync', String(savedAtTs));
+    __safeLSSet('sgp_linked_file_pending', '0');
+    __setLinkedStateFileMeta({
+      fileName: handle.name || 'SGP_estado_principal.json',
+      pending:false,
+      status:'ok',
+      autoSync:true,
+      lastSyncAt: savedAtTs,
+      lastError:''
+    });
+    dadosNaoSalvosEmArquivo = false;
+    __linkedStateAudit('Arquivo local sincronizado no HD' + (handle && handle.name ? ': ' + handle.name : ''));
+    try{ if(typeof __renderDiagnosticoPainel === 'function') __renderDiagnosticoPainel(true); }catch(_){ }
+    return true;
+  }catch(e){
+    try{ if(typeof __diagCapture === 'function') __diagCapture(e, '__syncLinkedStateFile'); }catch(_){ }
+    __safeLSSet('sgp_linked_file_pending', '1');
+    __setLinkedStateFileMeta({
+      fileName: (handle && handle.name) ? handle.name : 'SGP_estado_principal.json',
+      pending:true,
+      status:'erro',
+      lastError: (e && e.message) ? e.message : String(e || 'Erro desconhecido')
+    });
+    if(opts.interactive && typeof showToast === 'function') showToast('Erro ao salvar no arquivo do HD.', 'error');
+    try{ if(typeof __renderDiagnosticoPainel === 'function') __renderDiagnosticoPainel(true); }catch(_){ }
+    return false;
+  }finally{
+    state.syncing = false;
+  }
+}
+function __scheduleLinkedStateSync(reason){
+  try{
+    const state = window.__sgpLinkedStateSync = window.__sgpLinkedStateSync || { handle:null, timer:0, syncing:false, initialized:false };
+    if(!state.handle) return;
+    __markLinkedStatePending();
+    if(state.timer) clearTimeout(state.timer);
+    state.timer = setTimeout(()=>{
+      state.timer = 0;
+      Promise.resolve(__syncLinkedStateFile(reason || 'autosave', { interactive:false })).catch(()=>{});
+    }, 900);
+  }catch(_){ }
+}
+async function vincularArquivoLocalSGP(){
+  try{
+    if(!__localFileApiSupported() || typeof window.showSaveFilePicker !== 'function'){
+      if(typeof showToast === 'function') showToast('Este ambiente não oferece vínculo automático com arquivo no HD. Use Salvar estado/Backup ZIP.', 'warning');
+      return false;
+    }
+    const currentMeta = __getLinkedStateFileMeta();
+    const handle = await window.showSaveFilePicker({
+      suggestedName: (currentMeta && currentMeta.fileName) ? currentMeta.fileName : 'SGP_estado_principal.json',
+      types: [{ description: 'Arquivo JSON do SGP', accept: { 'application/json': ['.json'] } }]
+    });
+    const okStore = await __idbSetHandle('stateFile', handle);
+    window.__sgpLinkedStateSync = window.__sgpLinkedStateSync || {};
+    window.__sgpLinkedStateSync.handle = handle;
+    __setLinkedStateFileMeta({
+      fileName: handle.name || 'SGP_estado_principal.json',
+      linkedAt: Date.now(),
+      linkedPersisted: !!okStore,
+      autoSync:true,
+      lastError:''
+    });
+    const ok = await __syncLinkedStateFile('link', { handle, interactive:true, force:true });
+    if(ok && typeof showToast === 'function') showToast('Arquivo do HD vinculado e sincronizado.', 'success');
+    return ok;
+  }catch(e){
+    if(e && e.name === 'AbortError') return false;
+    try{ if(typeof __diagCapture === 'function') __diagCapture(e, 'vincularArquivoLocalSGP'); }catch(_){ }
+    if(typeof showToast === 'function') showToast('Não foi possível vincular o arquivo do HD.', 'error');
+    return false;
+  }
+}
+async function salvarArquivoLocalVinculado(){
+  try{
+    let handle = await __getLinkedStateHandle();
+    if(!handle) return await vincularArquivoLocalSGP();
+    const ok = await __syncLinkedStateFile('manual', { handle, interactive:true, force:true });
+    if(ok && typeof showToast === 'function') showToast('Dados salvos no arquivo do HD.', 'success');
+    return ok;
+  }catch(e){
+    try{ if(typeof __diagCapture === 'function') __diagCapture(e, 'salvarArquivoLocalVinculado'); }catch(_){ }
+    if(typeof showToast === 'function') showToast('Erro ao salvar no arquivo do HD.', 'error');
+    return false;
+  }
+}
+async function restaurarArquivoLocalVinculado(){
+  let __beforeState = null;
+  let __restoreStarted = false;
+  try{
+    const handle = await __getLinkedStateHandle();
+    if(!handle){
+      if(typeof showToast === 'function') showToast('Nenhum arquivo do HD está vinculado.', 'warning');
+      return false;
+    }
+    const okPerm = await __ensureHandlePermission(handle, 'read', true);
+    if(!okPerm){
+      if(typeof showToast === 'function') showToast('Permissão de leitura do arquivo do HD não foi concedida.', 'warning');
+      return false;
+    }
+    const ok = confirm('Restaurar do arquivo local vinculado irá substituir os dados atuais deste navegador. Deseja continuar?');
+    if(!ok) return false;
+    try{ __beforeState = (typeof __exportState === 'function') ? __exportState() : null; }catch(_){ __beforeState = null; }
+    const payload = await __readLinkedStateObject(handle);
+    __restoreStarted = true;
+    __importStateObject(payload.obj, { clearExisting:true });
+    const lastSyncAt = parseInt((payload.obj && payload.obj.linkedFile && payload.obj.linkedFile.savedAtTs) || Date.now(), 10) || Date.now();
+    __safeLSSet('sgp_linked_file_last_sync', String(lastSyncAt));
+    __safeLSSet('sgp_linked_file_pending', '0');
+    __setLinkedStateFileMeta({
+      fileName: (payload.file && payload.file.name) ? payload.file.name : (handle.name || 'SGP_estado_principal.json'),
+      pending:false,
+      status:'restaurado',
+      autoSync:true,
+      lastSyncAt,
+      lastError:''
+    });
+    if(typeof showToast === 'function') showToast('Dados restaurados do HD. Recarregando...', 'success');
+    setTimeout(()=>{ try{ location.reload(); }catch(_){ } }, 650);
+    return true;
+  }catch(e){
+    let __rolledBack = false;
+    try{
+      if(__restoreStarted && __beforeState && typeof __importStateObject === 'function'){
+        __importStateObject(__beforeState, { clearExisting:true });
+        __rolledBack = true;
+      }
+    }catch(_){ __rolledBack = false; }
+    try{ if(typeof __diagCapture === 'function') __diagCapture(e, 'restaurarArquivoLocalVinculado', { rolledBack:__rolledBack }); }catch(_){ }
+    if(typeof showToast === 'function') showToast('Erro ao restaurar do arquivo do HD.', 'error');
+    return false;
+  }
+}
+async function __initLinkedStateFileSync(){
+  const state = window.__sgpLinkedStateSync = window.__sgpLinkedStateSync || { handle:null, timer:0, syncing:false, initialized:false };
+  if(state.initialized) return null;
+  state.initialized = true;
+  try{
+    const handle = await __getLinkedStateHandle();
+    if(!handle){
+      try{ if(typeof __renderDiagnosticoPainel === 'function') __renderDiagnosticoPainel(true); }catch(_){ }
+      return null;
+    }
+    state.handle = handle;
+    const fileName = handle.name || 'SGP_estado_principal.json';
+    const hasCore = !!((typeof __storageGetItem === 'function') ? __storageGetItem(__SGP_ATOMIC_CORE_KEY) : localStorage.getItem(__SGP_ATOMIC_CORE_KEY));
+    const canRead = await __ensureHandlePermission(handle, 'read', false);
+    if(canRead && !hasCore){
+      const payload = await __readLinkedStateObject(handle).catch(()=>null);
+      if(payload && payload.obj && payload.obj.storage){
+        const lastSyncAt = parseInt((payload.obj && payload.obj.linkedFile && payload.obj.linkedFile.savedAtTs) || Date.now(), 10) || Date.now();
+        __importStateObject(payload.obj, { clearExisting:true });
+        __safeLSSet('sgp_linked_file_last_sync', String(lastSyncAt));
+        __safeLSSet('sgp_linked_file_pending', '0');
+        __setLinkedStateFileMeta({ fileName, pending:false, status:'restaurado_boot', autoSync:true, lastSyncAt, lastError:'' });
+        setTimeout(()=>{ try{ location.reload(); }catch(_){ } }, 80);
+        return true;
+      }
+    }
+    const lastCoreSave = parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_core_save') : localStorage.getItem('sgp_last_core_save')) || '0', 10) || 0;
+    const lastSync = parseInt(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_linked_file_last_sync') : localStorage.getItem('sgp_linked_file_last_sync')) || '0', 10) || 0;
+    __setLinkedStateFileMeta({
+      fileName,
+      pending: String(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_linked_file_pending') : localStorage.getItem('sgp_linked_file_pending')) || '0') === '1',
+      status: canRead ? 'ok' : 'permissao',
+      autoSync:true,
+      lastError: canRead ? '' : 'Permissão do arquivo local precisa ser concedida novamente.'
+    });
+    if(canRead && hasCore && lastCoreSave > lastSync){
+      __scheduleLinkedStateSync('boot-resync');
+    }
+    try{ if(typeof __renderDiagnosticoPainel === 'function') __renderDiagnosticoPainel(true); }catch(_){ }
+    return true;
+  }catch(e){
+    try{ if(typeof __diagCapture === 'function') __diagCapture(e, '__initLinkedStateFileSync'); }catch(_){ }
+    try{ if(typeof __renderDiagnosticoPainel === 'function') __renderDiagnosticoPainel(true); }catch(_){ }
+    return false;
+  }
+}
+
 // Hook into salvarDadosLocal to also save to IDB
 const __origSalvarDadosLocal = salvarDadosLocal;
 salvarDadosLocal = function(){
   __origSalvarDadosLocal();
   try{ __idbSaveState(); }catch(_){}
+  try{ __scheduleLinkedStateSync('local-save'); }catch(_){}
 };
 
 // ===============================================
@@ -22330,7 +22677,7 @@ function gerarDiarioMensal(){
   const mSel=document.getElementById('mensalMes');
   const aSel=document.getElementById('mensalAno');
   if(!mSel||!aSel) return;
-  const m=parseInt(mSel.value), y=parseInt(aSel.value);
+  const m=parseInt(mSel.value,10), y=parseInt(aSel.value,10);
   document.getElementById('mensalPicker')?.remove();
   if(isNaN(m)||isNaN(y)) return showToast("Dados inválidos.","error");
 
@@ -22339,31 +22686,144 @@ function gerarDiarioMensal(){
   const freq=window.__sgpFrequencia||{};
   const nomeMes=new Date(y,m,15).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
 
-  // Build lookup: date string -> registro
+  function __freqMensalInitTot(){
+    return {P:0,F:0,J:0,total:0};
+  }
+  function __freqMensalAdd(acc, status, qtd){
+    if(!acc || !status) return;
+    const n=Math.max(1, parseInt(qtd,10)||1);
+    if(status==='P') acc.P += n;
+    else if(status==='F') acc.F += n;
+    else if(status==='J') acc.J += n;
+    else return;
+    acc.total += n;
+  }
+  function __freqMensalPct(acc){
+    return acc && acc.total ? (((acc.P + acc.J) / acc.total) * 100) : 0;
+  }
+  function __freqMensalDiscLabel(v){
+    const txt=String(v||'').trim();
+    return txt || 'Sem disciplina';
+  }
+  function __freqMensalDiscShort(v){
+    const txt=__freqMensalDiscLabel(v);
+    if(txt==='Sem disciplina') return 'S/D';
+    const clean=txt.replace(/\s+/g,' ').trim();
+    if(clean.length<=10) return clean;
+    const parts=clean.split(' ').filter(Boolean);
+    if(parts.length>=2){
+      const sig=parts.slice(0,3).map(p=>p[0]).join('').toUpperCase();
+      if(sig.length>=2) return sig;
+    }
+    return clean.slice(0,10);
+  }
+
   const regMap={};
   Object.keys(freq).forEach(key=>{
     const p=key.split('|');
-    if(p[0]===filtroTurma) regMap[p[2]]=freq[key];
+    if(p[0]!==filtroTurma) return;
+    if((parseInt(p[1],10)||0)!==bimestreAtual) return;
+    const ds=p[2]||'';
+    const prefix=`${y}-${String(m+1).padStart(2,'0')}-`;
+    if(!ds.startsWith(prefix)) return;
+    const reg=freq[key]||{};
+    const meta=reg._meta||{};
+    regMap[ds]={
+      reg,
+      meta,
+      qtdAulas: Math.max(1, parseInt(meta.qtdAulas||1,10)||1),
+      disciplina: __freqMensalDiscLabel(meta.disciplina||'')
+    };
   });
 
-  // Find which days have data
-  const diasComDados=[];
-  for(let d=1;d<=diasNoMes;d++){
-    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    if(regMap[ds]) diasComDados.push(d);
+  const disciplinasMesSet=new Set();
+  Object.keys(regMap).sort().forEach(ds=>{
+    disciplinasMesSet.add(regMap[ds].disciplina);
+  });
+  if(!disciplinasMesSet.size){
+    try{
+      ensureConfigSchema();
+      (config.disciplinas||[]).forEach(d=>{
+        const nome=String((d && (d.nome||d.id)) || '').trim();
+        if(nome) disciplinasMesSet.add(nome);
+      });
+    }catch(_){ }
   }
+  const disciplinasMes=Array.from(disciplinasMesSet).filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+
+  const resumoDisciplinas=disciplinasMes.map(nome=>{
+    let dias=0, aulasTotal=0;
+    Object.keys(regMap).forEach(ds=>{
+      const entry=regMap[ds];
+      if(entry && entry.disciplina===nome){
+        dias++;
+        aulasTotal += entry.qtdAulas || 1;
+      }
+    });
+    return {nome, dias, aulasTotal};
+  });
+
+  const resumoPorAluno=lista.map(a=>{
+    const porDisc={};
+    disciplinasMes.forEach(nome=>{ porDisc[nome]=__freqMensalInitTot(); });
+    const geral=__freqMensalInitTot();
+    for(let d=1;d<=diasNoMes;d++){
+      const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const entry=regMap[ds];
+      if(!entry) continue;
+      const s=entry.reg ? entry.reg[a.id] : '';
+      if(!s) continue;
+      const qtd=entry.qtdAulas || 1;
+      if(!porDisc[entry.disciplina]) porDisc[entry.disciplina]=__freqMensalInitTot();
+      __freqMensalAdd(porDisc[entry.disciplina], s, qtd);
+      __freqMensalAdd(geral, s, qtd);
+    }
+    return { id:a.id, nome:a.nome||'', porDisc, geral };
+  });
+
+  const totalTurmaPorDisc={};
+  disciplinasMes.forEach(nome=>{ totalTurmaPorDisc[nome]=__freqMensalInitTot(); });
+  const totalTurmaGeral=__freqMensalInitTot();
+  resumoPorAluno.forEach(row=>{
+    disciplinasMes.forEach(nome=>{
+      if(!totalTurmaPorDisc[nome]) totalTurmaPorDisc[nome]=__freqMensalInitTot();
+      const src=row.porDisc[nome] || __freqMensalInitTot();
+      totalTurmaPorDisc[nome].P += src.P||0;
+      totalTurmaPorDisc[nome].F += src.F||0;
+      totalTurmaPorDisc[nome].J += src.J||0;
+      totalTurmaPorDisc[nome].total += src.total||0;
+    });
+    totalTurmaGeral.P += row.geral.P||0;
+    totalTurmaGeral.F += row.geral.F||0;
+    totalTurmaGeral.J += row.geral.J||0;
+    totalTurmaGeral.total += row.geral.total||0;
+  });
 
   let html=`<div class="diario-overlay mensal-overlay-wrap" id="mensalOverlay" onclick="if(event.target===this)this.remove();">
-  <div class="diario-container mensal-container-wrap" style="max-width:1200px;">
+  <div class="diario-container mensal-container-wrap" style="max-width:1400px;">
     <button style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b;" onclick="document.getElementById('mensalOverlay').remove();">&times;</button>
     <div style="text-align:center;border-bottom:2px solid #1e293b;padding-bottom:8px;margin-bottom:10px;">
       <h2 style="margin:0;"><i class="fas fa-calendar-check"></i> Diário de Classe Mensal</h2>
-      <p style="margin:2px 0;font-size:.88rem;color:#475569;">${escHTML(filtroTurma)} — ${nomeMes}</p>
-    </div>
-    <div style="overflow-x:auto;">
+      <p style="margin:2px 0;font-size:.88rem;color:#475569;">${escHTML(filtroTurma)} — ${nomeMes} — ${bimestreAtual}º bimestre</p>
+      <p style="margin:6px 0 0;font-size:.78rem;color:#64748b;">Cada célula mostra o status do dia e, quando houver mais de 1 aula, o total registrado (ex.: <b>P2</b>, <b>F2</b>). Os totais abaixo consideram a quantidade de aulas lançada em cada chamada.</p>
+    </div>`;
+
+  if(resumoDisciplinas.length){
+    html+=`<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 12px;">`;
+    resumoDisciplinas.forEach(item=>{
+      html+=`<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid rgba(148,163,184,.35);border-radius:999px;background:rgba(15,23,42,.02);font-size:.78rem;">
+        <i class="fas fa-book" style="color:#2563eb;"></i>
+        <b>${escHTML(item.nome)}</b>
+        <span style="color:#64748b;">${item.aulasTotal} aula(s) / ${item.dias} dia(s)</span>
+      </span>`;
+    });
+    html+=`</div>`;
+  }
+
+  html+=`<div style="overflow-x:auto;">
     <table class="mensal-table"><thead><tr>
-      <th style="text-align:left;min-width:120px;">#</th>
-      <th style="text-align:left;min-width:150px;">Nome</th>`;
+      <th style="text-align:left;min-width:60px;">#</th>
+      <th style="text-align:left;min-width:240px;">Nome</th>`;
 
   for(let d=1;d<=diasNoMes;d++){
     const dow=new Date(y,m,d).getDay();
@@ -22372,20 +22832,36 @@ function gerarDiarioMensal(){
   }
   html+=`<th class="total">P</th><th class="total">F</th><th class="total">J</th><th class="total">%</th></tr></thead><tbody>`;
 
-  // Day totals
-  const dayTotals={}; for(let d=1;d<=diasNoMes;d++) dayTotals[d]={P:0,F:0,J:0};
+  const dayTotals={};
+  for(let d=1;d<=diasNoMes;d++) dayTotals[d]={P:0,F:0,J:0,marcados:0,qtdAulas:0,disciplina:''};
 
   lista.forEach((a,i)=>{
     let tP=0,tF=0,tJ=0;
     html+=`<tr><td>${i+1}</td><td style="text-align:left;white-space:nowrap;">${escHTML(a.nome)}</td>`;
     for(let d=1;d<=diasNoMes;d++){
       const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const reg=regMap[ds];
-      const s=reg?reg[a.id]:'';
+      const entry=regMap[ds];
+      const s=entry && entry.reg ? (entry.reg[a.id]||'') : '';
+      const qtd=entry ? (entry.qtdAulas||1) : 0;
       const dow=new Date(y,m,d).getDay();
       const isWeekend=dow===0||dow===6;
-      if(s==='P'){tP++;dayTotals[d].P++;} else if(s==='F'){tF++;dayTotals[d].F++;} else if(s==='J'){tJ++;dayTotals[d].J++;}
-      html+=`<td class="${s||''}" style="${isWeekend&&!s?'background:#fef3c7;':''}">${s||''}</td>`;
+      if(entry){
+        dayTotals[d].qtdAulas = entry.qtdAulas || 1;
+        dayTotals[d].disciplina = entry.disciplina || '';
+      }
+      if(s==='P'){ tP+=qtd; dayTotals[d].P+=qtd; dayTotals[d].marcados++; }
+      else if(s==='F'){ tF+=qtd; dayTotals[d].F+=qtd; dayTotals[d].marcados++; }
+      else if(s==='J'){ tJ+=qtd; dayTotals[d].J+=qtd; dayTotals[d].marcados++; }
+      const cellText=s ? (qtd>1 ? `${s}${qtd}` : s) : '';
+      const titleParts=[];
+      if(entry){
+        if(entry.disciplina) titleParts.push(entry.disciplina);
+        titleParts.push(`${qtd} aula(s)`);
+      }
+      if(s==='P') titleParts.push('Presente');
+      else if(s==='F') titleParts.push('Falta');
+      else if(s==='J') titleParts.push('Justificada');
+      html+=`<td class="${s||''}" title="${escHTML(titleParts.join(' • '))}" style="${isWeekend&&!s?'background:#fef3c7;':''}">${cellText}</td>`;
     }
     const total=tP+tF+tJ;
     const pct=total?(((tP+tJ)/total)*100):0;
@@ -22393,16 +22869,67 @@ function gerarDiarioMensal(){
     html+=`<td class="total" style="color:${pct>=75?'#16a34a':(pct>=50?'#f59e0b':'#dc2626')};">${pct.toFixed(0)}%</td></tr>`;
   });
 
-  // Totals row
-  html+=`<tr style="font-weight:700;background:#f1f5f9;"><td colspan="2">Totais do dia</td>`;
+  html+=`<tr style="font-weight:700;background:#f8fafc;"><td colspan="2">Aulas do dia</td>`;
   for(let d=1;d<=diasNoMes;d++){
-    const t=dayTotals[d];
-    html+=`<td style="font-size:.55rem;">${t.P+t.F+t.J>0?(t.P+'P'):'—'}</td>`;
+    const t=dayTotals[d]||{};
+    const v=t.qtdAulas||0;
+    html+=`<td title="${escHTML((t.disciplina||'Sem disciplina') + (v?(' • ' + v + ' aula(s)'):'') )}" style="font-size:.58rem;">${v||'—'}</td>`;
   }
   html+=`<td colspan="4"></td></tr>`;
 
-  html+=`</tbody></table></div>
-    <div style="text-align:center;margin-top:14px;display:flex;gap:8px;justify-content:center;">
+  html+=`<tr style="font-weight:700;background:#f1f5f9;"><td colspan="2">Disciplina</td>`;
+  for(let d=1;d<=diasNoMes;d++){
+    const t=dayTotals[d]||{};
+    const lbl=t.disciplina?__freqMensalDiscShort(t.disciplina):'—';
+    html+=`<td title="${escHTML(t.disciplina||'Sem registro')}" style="font-size:.55rem;">${escHTML(lbl)}</td>`;
+  }
+  html+=`<td colspan="4"></td></tr>`;
+
+  html+=`</tbody></table></div>`;
+
+  if(disciplinasMes.length){
+    html+=`<div style="margin-top:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <h3 style="margin:0;font-size:1rem;"><i class="fas fa-layer-group"></i> Resumo por disciplina</h3>
+        <span style="font-size:.78rem;color:#64748b;">Contagem ponderada pela quantidade de aulas marcada em cada chamada.</span>
+      </div>
+      <div style="overflow-x:auto;">
+      <table class="mensal-table"><thead>
+        <tr>
+          <th rowspan="2" style="text-align:left;min-width:60px;">#</th>
+          <th rowspan="2" style="text-align:left;min-width:240px;">Nome</th>`;
+    disciplinasMes.forEach(nome=>{
+      html+=`<th colspan="4">${escHTML(nome)}</th>`;
+    });
+    html+=`<th colspan="4">Geral</th></tr><tr>`;
+    disciplinasMes.forEach(()=>{ html+=`<th>P</th><th>F</th><th>J</th><th>%</th>`; });
+    html+=`<th>P</th><th>F</th><th>J</th><th>%</th></tr></thead><tbody>`;
+
+    resumoPorAluno.forEach((row,idx)=>{
+      html+=`<tr><td>${idx+1}</td><td style="text-align:left;white-space:nowrap;">${escHTML(row.nome)}</td>`;
+      disciplinasMes.forEach(nome=>{
+        const t=row.porDisc[nome] || __freqMensalInitTot();
+        const pct=__freqMensalPct(t);
+        html+=`<td>${t.P||0}</td><td>${t.F||0}</td><td>${t.J||0}</td><td style="font-weight:700;color:${pct>=75?'#16a34a':(pct>=50?'#f59e0b':'#dc2626')};">${pct.toFixed(0)}%</td>`;
+      });
+      const g=row.geral || __freqMensalInitTot();
+      const pctG=__freqMensalPct(g);
+      html+=`<td class="total">${g.P||0}</td><td class="total">${g.F||0}</td><td class="total">${g.J||0}</td><td class="total" style="font-weight:700;color:${pctG>=75?'#16a34a':(pctG>=50?'#f59e0b':'#dc2626')};">${pctG.toFixed(0)}%</td></tr>`;
+    });
+
+    html+=`<tr style="font-weight:700;background:#eff6ff;"><td colspan="2">Totais da turma</td>`;
+    disciplinasMes.forEach(nome=>{
+      const t=totalTurmaPorDisc[nome] || __freqMensalInitTot();
+      const pct=__freqMensalPct(t);
+      html+=`<td>${t.P||0}</td><td>${t.F||0}</td><td>${t.J||0}</td><td style="font-weight:700;color:${pct>=75?'#16a34a':(pct>=50?'#f59e0b':'#dc2626')};">${pct.toFixed(0)}%</td>`;
+    });
+    const pctG=__freqMensalPct(totalTurmaGeral);
+    html+=`<td class="total">${totalTurmaGeral.P||0}</td><td class="total">${totalTurmaGeral.F||0}</td><td class="total">${totalTurmaGeral.J||0}</td><td class="total" style="font-weight:700;color:${pctG>=75?'#16a34a':(pctG>=50?'#f59e0b':'#dc2626')};">${pctG.toFixed(0)}%</td></tr>`;
+
+    html+=`</tbody></table></div></div>`;
+  }
+
+  html+=`<div style="text-align:center;margin-top:14px;display:flex;gap:8px;justify-content:center;">
       <button style="background:#0d9488;color:#fff;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
       <button style="background:#475569;color:#fff;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;" onclick="document.getElementById('mensalOverlay').remove();">Fechar</button>
     </div>
@@ -28346,6 +28873,17 @@ try{
             }
         }catch(e){
             add('Armazenamento: monitor executa', false, 'Erro: '+(e && e.message ? e.message : e));
+        }
+
+        // 1.3) Arquivo local vinculado (HD)
+        try{
+            const hdSupported = (typeof __localFileApiSupported === 'function') ? __localFileApiSupported() : false;
+            add('HD local: suporte de arquivo vinculado', hdSupported, hdSupported ? '' : 'File System Access API indisponível neste ambiente.');
+            const hdMeta = (typeof __getLinkedStateFileMeta === 'function') ? __getLinkedStateFileMeta() : {};
+            const hdLinked = !!(hdMeta && hdMeta.fileName);
+            add('HD local: vínculo configurado', hdLinked, hdLinked ? ('Arquivo: ' + hdMeta.fileName) : 'Nenhum arquivo do HD vinculado ainda.');
+        }catch(e){
+            add('HD local: vínculo/configuração', false, 'Erro: '+(e && e.message ? e.message : e));
         }
 
         // 2) Dashboard + bimestre
