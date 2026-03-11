@@ -1,4 +1,4 @@
-// SGP - Service Worker v16.53.3
+// SGP - Service Worker v17.0.0
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -11,8 +11,8 @@
 //  - FIX v16.53.3: remoção de bloco duplicado abrirDiarioMensal/gerarDiarioMensal (348 linhas mortas)
 //  - FIX v16.53.3: XSS em _sortRenderHistorico (nomes de alunos sem escapeHTML no innerHTML)
 
-const SW_VERSION = '16.53.3';
-const CACHE_NAME = `sgp-v16-${SW_VERSION}`;
+const SW_VERSION = '17.0.0';
+const CACHE_NAME = `sgp-v17-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
 const CACHE_MAX_ENTRIES = 60;          // máximo de entradas no cache geral
