@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '16.46.2';
+      window.__SGP_SW_VERSION = '16.53.3';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -1471,7 +1471,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         }
 
         /* GRIDS & CARDS */
-        .grid-alunos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: 1.5rem; }
+        .grid-alunos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: 1.5rem; contain: layout; }
         .card-aluno { 
             background: var(--card-bg); 
             border-radius: 16px; 
@@ -1479,8 +1479,15 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
             border: 2px solid var(--border-color);
             position: relative; 
-            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, opacity 0.3s ease;
+            /* PERF FIX: transição reduzida a transform+opacity — são as únicas propriedades
+               promovidas para camada GPU sem forçar reflow/repaint do layout.
+               box-shadow e border-color animadas causavam repaint em todos os 30+ cards.
+               will-change:transform adicionado no :hover para criar camada antes da animação. */
+            transition: transform 0.2s ease, opacity 0.3s ease;
             overflow: hidden;
+            /* PERF FIX: contain isola o card do fluxo global — mudanças internas não disparam
+               reflow no documento inteiro. 'paint' evita repaint fora dos limites do card. */
+            contain: layout style paint;
         }
         .card-aluno::before {
             content: '';
@@ -2258,6 +2265,7 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
             transform: translateY(-4px);
             box-shadow: 0 12px 24px -4px rgba(0,0,0,0.1), 0 8px 16px -4px rgba(0,0,0,0.06);
             border-color: var(--primary);
+            will-change: transform;
         }
         
         .top-bar {
@@ -4020,7 +4028,7 @@ body.sidebar-hidden main{margin-left:0;}
 .mcheck .lbl{display:flex;align-items:center;gap:10px;font-weight:700;font-size:.85rem;}
 @media(max-width:768px){
   /* Keep table scroll contained (when still used) */
-  .tabela-dados{display:block!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;max-width:100%!important;}
+  .tabela-dados{overflow-x:auto!important;-webkit-overflow-scrolling:touch;max-width:100%!important;}
   .tabela-dados thead,.tabela-dados tbody{white-space:nowrap;}
   .tabela-dados th:first-child,.tabela-dados td:first-child{position:sticky;left:0;background:var(--card-bg);z-index:2;}
   /* Map gestures: pinch-to-zoom + pan */
@@ -7001,6 +7009,21 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                     if(typeof rawMeta === 'string' && rawMeta) importedLinkedMeta = JSON.parse(rawMeta) || {};
                     else if(rawMeta && typeof rawMeta === 'object' && !Array.isArray(rawMeta)) importedLinkedMeta = rawMeta;
                 }catch(_){ importedLinkedMeta = {}; }
+                // FIX: neutraliza pending em QUALQUER arquivo importado (novo ou legado).
+                // Os fixes upstream (salvarEstadoArquivo, __collectBackupFiles, etc.) garantem
+                // que arquivos NOVOS já cheguem com pending=false. Este guard cobre arquivos
+                // antigos criados antes dos fixes, nos quais sgp_linked_file_pending='1' e
+                // sgp_linked_file_meta.pending=true podem ter sido preservados na exportação.
+                // Dois vetores de infecção são neutralizados aqui:
+                // 1) sgp_linked_file_pending já escrito pelo loop acima → sobrescreve para '0'
+                // 2) importedLinkedMeta.pending → força false antes de __syncImportedLinkedStateMeta
+                try{ __safeLSRemove('sgp_linked_file_pending'); __safeLSSet('sgp_linked_file_pending', '0'); }catch(_){}
+                if(importedLinkedMeta && importedLinkedMeta.pending){
+                    importedLinkedMeta = Object.assign({}, importedLinkedMeta, {
+                        pending: false,
+                        status: importedLinkedMeta.status === 'pendente' ? 'ok' : (importedLinkedMeta.status || 'ok')
+                    });
+                }
                 if(typeof __syncImportedLinkedStateMeta === 'function') __syncImportedLinkedStateMeta(importedLinkedMeta || {});
             }catch(_){ }
         }
@@ -7027,6 +7050,25 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
         async function salvarEstadoArquivo(){
             try{
                 const obj = __exportState();
+                // FIX: neutraliza sgp_linked_file_pending no snapshot exportado.
+                // Um arquivo exportado enquanto um sync está pendente capturaria pending=true.
+                // Na reimportação, __importStateObject restauraria pending=true, fazendo o
+                // painel mostrar "HD: pendente" espuriamente. O arquivo exportado é um
+                // snapshot completo e consistente — deve refletir estado pós-sync.
+                if(obj && obj.storage && typeof obj.storage === 'object'){
+                    try{
+                        obj.storage['sgp_linked_file_pending'] = '0';
+                        const rawMeta = obj.storage['sgp_linked_file_meta'];
+                        if(rawMeta){
+                            const m = JSON.parse(rawMeta);
+                            if(m && typeof m === 'object' && !Array.isArray(m)){
+                                m.pending = false;
+                                m.status = m.status === 'pendente' ? 'ok' : (m.status || 'ok');
+                                obj.storage['sgp_linked_file_meta'] = JSON.stringify(m);
+                            }
+                        }
+                    }catch(_){}
+                }
                 const jsonStr = JSON.stringify(obj, null, 2);
                 const suggested = 'sgp_estado_' + new Date().toISOString().slice(0,10) + '.json';
 
@@ -7112,8 +7154,9 @@ function checkBackupStatus(){
         const k = (typeof __SGP_ATOMIC_CORE_KEY === 'string') ? __SGP_ATOMIC_CORE_KEY : 'sgp_state_core_v1';
         const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k);
         if(raw){
-          const obj = JSON.parse(raw);
-          const ts = parseInt(obj && obj.ts ? obj.ts : 0, 10);
+          // PERF FIX: regex extrai só o campo "ts" sem JSON.parse do estado inteiro (pode ter MBs)
+          const m = raw.match(/"ts"\s*:\s*(\d+)/);
+          const ts = m ? parseInt(m[1], 10) : 0;
           if(!isNaN(ts) && ts>0) lastSave = ts;
         }
       }catch(_){}
@@ -7193,14 +7236,21 @@ function checkBackupStatus(){
         function _isModalOpenById(id){
             const el = document.getElementById(id);
             if(!el) return false;
+            // PERF FIX: style.display direto em vez de getComputedStyle (sem forçar style recalc)
+            if(el.style.display && el.style.display !== 'none') return true;
+            // fallback para elementos sem style inline
             const st = getComputedStyle(el);
             return st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0';
         }
         function _anyModalOpen(){
-            return Array.from(document.querySelectorAll('.modal-overlay')).some(m=>{
-                const st = getComputedStyle(m);
-                return st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0';
-            });
+            // PERF FIX: evita querySelectorAll a cada keydown — verifica display diretamente
+            // nos elementos já no DOM com a classe .modal-overlay.
+            const modals = document.getElementsByClassName('modal-overlay');
+            for(let i=0;i<modals.length;i++){
+                const m=modals[i];
+                if(m.style.display && m.style.display!=='none') return true;
+            }
+            return false;
         }
 
         function initKeyboardShortcuts(){
@@ -7346,9 +7396,10 @@ function __corScheduleUiSync(){
 
 function __corApplyUiSync(){
   try{
+    // PERF FIX: style.display direto em vez de getComputedStyle — evita 3 recalcs de estilo por sync.
     // 1) Edição em massa (não destrói edições não salvas; só atualiza células não modificadas)
     const massaView = document.getElementById('viewMassa');
-    const massaVisible = !!(massaView && getComputedStyle(massaView).display !== 'none');
+    const massaVisible = !!(massaView && massaView.style.display && massaView.style.display !== 'none');
     if(massaVisible){
       __corPendingUIUpdates.forEach(u=>{
         try{ __corSyncOneMassaCell(u); }catch(_){}
@@ -7358,11 +7409,11 @@ function __corApplyUiSync(){
 
     // 2) Cards (grid) e Lista SED, apenas se estiverem visíveis
     const grid = document.getElementById('gridAlunos');
-    if(grid && getComputedStyle(grid).display !== 'none'){
+    if(grid && grid.style.display && grid.style.display !== 'none'){
       try{ if(typeof renderizarGrid === 'function') renderizarGrid(); }catch(_){}
     }
     const tabela = document.getElementById('tabelaFechamento');
-    if(tabela && getComputedStyle(tabela).display !== 'none'){
+    if(tabela && tabela.style.display && tabela.style.display !== 'none'){
       try{ if(typeof renderizarListaSED === 'function') renderizarListaSED(); }catch(_){}
     }
   }catch(_){}
@@ -7399,6 +7450,11 @@ function __corSyncOneMassaCell(u){
 function escAttr(s){ return escHTML(s); }
 
 let __corApplyAllTimer = null;
+let __corApplyAllPayload = null;
+let __corAnswerCommitTimer = null;
+let __corStatsRenderTimer = null;
+let __corPendingCommitPayload = null;
+let __corStatsDirty = false;
 
 function corIsApplyAllEnabled(){
   const cb = document.getElementById('corApplyAll');
@@ -7462,12 +7518,18 @@ function corApplyTemplateToAllTurmas(baseTurma, prova){
 function corScheduleApplyAll(baseTurma, prova){
   try{
     if(!corIsApplyAllEnabled()) return;
+    __corApplyAllPayload = { baseTurma, prova };
     clearTimeout(__corApplyAllTimer);
     __corApplyAllTimer = setTimeout(()=>{
+      const payload = __corApplyAllPayload;
+      __corApplyAllPayload = null;
       try{
-        corApplyTemplateToAllTurmas(baseTurma, prova);
-        corSave();
+        if(payload && payload.baseTurma && payload.prova){
+          corApplyTemplateToAllTurmas(payload.baseTurma, payload.prova);
+          corSave();
+        }
       }catch(_){}
+      __corApplyAllTimer = null;
     }, 350);
   }catch(_){}
 }
@@ -7853,6 +7915,100 @@ function corCalcAcertos(prova, alunoId){
   return ac;
 }
 
+function corRefreshAlunoSummary(prova, alunoId){
+  try{
+    const ac = corCalcAcertos(prova, alunoId);
+    const lbl = document.getElementById('corAcertosLbl');
+    if(lbl) lbl.textContent = `${ac}/10`;
+    corUpdateNotaFinal(prova, alunoId);
+  }catch(_){ }
+}
+
+function corScheduleCommit(prova, alunoId){
+  try{
+    if(!prova || !alunoId) return;
+    __corPendingCommitPayload = { prova, alunoId };
+    clearTimeout(__corAnswerCommitTimer);
+    __corAnswerCommitTimer = setTimeout(()=>{
+      const payload = __corPendingCommitPayload;
+      __corPendingCommitPayload = null;
+      if(!payload || !payload.prova || !payload.alunoId) return;
+      try{ corSave(); }catch(_){ }
+      try{ corAutoPostGrade(payload.prova, payload.alunoId); }catch(_){ }
+      try{
+        if(__corStatsDirty){
+          corScheduleStatsRender(false);
+        }
+      }catch(_){ }
+    }, 280);
+  }catch(_){ }
+}
+
+function corFlushCommit(prova, alunoId){
+  try{
+    if(prova && alunoId) __corPendingCommitPayload = { prova, alunoId };
+    clearTimeout(__corAnswerCommitTimer);
+    const payload = __corPendingCommitPayload;
+    __corPendingCommitPayload = null;
+    if(!payload || !payload.prova || !payload.alunoId) return;
+    try{ corSave(); }catch(_){ }
+    try{ corAutoPostGrade(payload.prova, payload.alunoId); }catch(_){ }
+    try{
+      if(__corStatsDirty){
+        corScheduleStatsRender(false);
+      }
+    }catch(_){ }
+  }catch(_){ }
+}
+
+function corScheduleStatsRender(forceNow){
+  try{
+    clearTimeout(__corStatsRenderTimer);
+    if(forceNow === true){
+      __corStatsDirty = false;
+      corRenderStats();
+      return;
+    }
+    if(forceNow === 'paint'){
+      __corStatsDirty = false;
+      if(typeof __scheduleUiAfterPaint === 'function'){
+        __scheduleUiAfterPaint('cor-stats', function(){ try{ corRenderStats(); }catch(_){} });
+      }else{
+        __corStatsRenderTimer = setTimeout(()=>{ try{ corRenderStats(); }catch(_){ } }, 0);
+      }
+      return;
+    }
+    __corStatsRenderTimer = setTimeout(()=>{
+      try{
+        __corStatsDirty = false;
+        corRenderStats();
+      }catch(_){ }
+    }, 650);
+  }catch(_){ }
+}
+
+function corShouldFlushOnAnswerBlur(nextTarget){
+  try{
+    if(!nextTarget || !(nextTarget instanceof Element)) return false;
+    return !nextTarget.closest('#corRespostasGrid .cor-resp-input');
+  }catch(_){ return false; }
+}
+
+function corMoveAnswerFocus(currentInput, delta){
+  try{
+    const grid = currentInput ? currentInput.closest('#corRespostasGrid') : null;
+    const cached = grid && Array.isArray(grid.__corInputsCache) ? grid.__corInputsCache : null;
+    const inputs = cached || Array.from(document.querySelectorAll('#corRespostasGrid .cor-resp-input'));
+    const idx = inputs.indexOf(currentInput);
+    if(idx < 0) return false;
+    const next = inputs[idx + delta];
+    if(next){ next.focus(); next.select && next.select(); return true; }
+    const alunoSel = document.getElementById('corAlunoSelect');
+    if(alunoSel && delta > 0){ alunoSel.focus(); return true; }
+  }catch(_){ }
+  return false;
+}
+
 function corRenderAluno(){
   const prova = corGetSelectedProva();
   const alunoId = corGetAlunoSelecionadoId();
@@ -7860,6 +8016,7 @@ function corRenderAluno(){
   if(!grid || !prova) return;
 
   grid.innerHTML = '';
+  grid.__corInputsCache = [];
   if(!alunoId){
     document.getElementById('corAcertosLbl') && (document.getElementById('corAcertosLbl').textContent='0/10');
     const _nfLbl = document.getElementById('corNotaFinalLbl');
@@ -7870,6 +8027,8 @@ function corRenderAluno(){
   }
 
   const ans = corEnsureAlunoAnswers(prova, alunoId);
+  const frag = document.createDocumentFragment();
+  const inputsCache = [];
 
   for(let i=0;i<10;i++){
     const card = document.createElement('div');
@@ -7895,8 +8054,6 @@ function corRenderAluno(){
                       <div>${escHTML((prova.questions[i]||{}).ref || '')}</div>`;
     card.appendChild(meta);
 
-    grid.appendChild(card);
-
     function updateClass(){
       const g = corNormalizeAlt((prova.questions[i]||{}).g);
       const r = corNormalizeAlt(input.value);
@@ -7909,28 +8066,52 @@ function corRenderAluno(){
 
     input.addEventListener('input', function(){
       const v = corNormalizeAlt(this.value);
-      this.value = v;
+      if(this.value !== v) this.value = v;
+      if((ans[i]||'') === v){
+        updateClass();
+        return;
+      }
       ans[i] = v;
-      corSave();
       updateClass();
-      // acertos + nota final
-      const ac = corCalcAcertos(prova, alunoId);
-      const lbl = document.getElementById('corAcertosLbl');
-      if(lbl) lbl.textContent = `${ac}/10`;
-      corUpdateNotaFinal(prova, alunoId);
-      corAutoPostGrade(prova, alunoId);
-      corRenderStats();
+      corRefreshAlunoSummary(prova, alunoId);
+      __corStatsDirty = true;
+      corScheduleCommit(prova, alunoId);
     });
+
+    input.addEventListener('keydown', function(ev){
+      if(ev.key === 'Enter'){
+        ev.preventDefault();
+        __corStatsDirty = true;
+        corFlushCommit(prova, alunoId);
+        corMoveAnswerFocus(this, 1);
+        return;
+      }
+      if(ev.key === 'Tab'){
+        __corStatsDirty = true;
+        corFlushCommit(prova, alunoId);
+      }
+    });
+
+    input.addEventListener('blur', function(ev){
+      const nextTarget = ev.relatedTarget || null;
+      __corStatsDirty = true;
+      if(corShouldFlushOnAnswerBlur(nextTarget)){
+        setTimeout(()=>{ try{ corFlushCommit(prova, alunoId); }catch(_){} }, 0);
+      }else{
+        corScheduleCommit(prova, alunoId);
+      }
+    });
+
+    frag.appendChild(card);
+    inputsCache.push(input);
   }
 
-  const ac = corCalcAcertos(prova, alunoId);
-  const lbl = document.getElementById('corAcertosLbl');
-  if(lbl) lbl.textContent = `${ac}/10`;
-  corUpdateNotaFinal(prova, alunoId);
+  grid.appendChild(frag);
+  grid.__corInputsCache = inputsCache;
+  corRefreshAlunoSummary(prova, alunoId);
 }
 
 function corComputeStats(prova, turma){
-  const alunosTurma = alunos.filter(a=>a && a.turma===turma);
   const answeredIds = Object.keys(prova.answers||{}).filter(id=>Array.isArray(prova.answers[id]));
   const validIds = answeredIds.filter(id=>{
     const arr = prova.answers[id]||[];
@@ -7983,6 +8164,54 @@ function corBarColors(labels, alpha){
     return ['rgba(37,99,235,0.75)'];
   }
 }
+
+function corUpsertBarChart(kind, canvasId, labels, data, datasetLabel){
+  try{
+    const canvas = document.getElementById(canvasId);
+    if(!canvas || !canvas.getContext || typeof Chart === 'undefined') return;
+    const safeLabels = (Array.isArray(labels) && labels.length) ? labels : ['—'];
+    const safeData = (Array.isArray(data) && data.length) ? data : [0];
+    const colors = corBarColors(safeLabels, 0.75);
+    const borders = corBarColors(safeLabels, 1);
+
+    let chart = (kind === 'q') ? __corChartQ : __corChartB;
+    const canUpdate = !!(chart && chart.canvas === canvas && chart.data && Array.isArray(chart.data.datasets) && chart.data.datasets[0]);
+
+    if(canUpdate){
+      chart.data.labels = safeLabels;
+      chart.data.datasets[0].label = datasetLabel;
+      chart.data.datasets[0].data = safeData;
+      chart.data.datasets[0].backgroundColor = colors;
+      chart.data.datasets[0].borderColor = borders;
+      chart.data.datasets[0].borderWidth = 1;
+      chart.update('none');
+      return;
+    }
+
+    try{ if(chart) chart.destroy(); }catch(_){}
+
+    chart = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: safeLabels,
+        datasets: [{
+          label: datasetLabel,
+          data: safeData,
+          backgroundColor: colors,
+          borderColor: borders,
+          borderWidth: 1
+        }]
+      },
+      options: { responsive:true, maintainAspectRatio:false, animation:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
+    });
+
+    if(kind === 'q') __corChartQ = chart;
+    else __corChartB = chart;
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corUpsertBarChart',{kind, canvasId}); }catch(_){}
+  }
+}
+
 
 function corRenderStats(){
   const turma = corGetTurmaSelecionada();
@@ -8057,58 +8286,11 @@ function corRenderStats(){
 
   // Charts (usa Chart.js ou o miniChart interno)
   try{
-    const c1 = document.getElementById('corChartQuestoes');
-    if(c1 && c1.getContext){
-      if(__corChartQ) __corChartQ.destroy();
-
-      const qLabels = perQSorted.map(o=>String(o.idx));
-      const qColors = corBarColors(qLabels, 0.75);
-      const qBorders = corBarColors(qLabels, 1);
-
-      __corChartQ = new Chart(c1.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: qLabels,
-          datasets: [{
-            label: '% Acerto (Questão)',
-            data: perQSorted.map(o=>o.pct),
-            backgroundColor: qColors,
-            borderColor: qBorders,
-            borderWidth: 1
-          }]
-        },
-        options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
-      });
-    }
+    corUpsertBarChart('q', 'corChartQuestoes', perQSorted.map(o=>String(o.idx)), perQSorted.map(o=>o.pct), '% Acerto (Questão)');
   }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'corChartQ',{}); }catch(_){} }
 
   try{
-    const c2 = document.getElementById('corChartBNCC');
-    if(c2 && c2.getContext){
-      const labels = refSorted.map(o=>o.k);
-      const data = refSorted.map(o=>o.pct);
-      if(__corChartB) __corChartB.destroy();
-
-      const bLabels = labels.length ? labels : ['—'];
-      const bData = data.length ? data : [0];
-      const bColors = corBarColors(bLabels, 0.75);
-      const bBorders = corBarColors(bLabels, 1);
-
-      __corChartB = new Chart(c2.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: bLabels,
-          datasets: [{
-            label: '% Acerto (BNCC/Aula)',
-            data: bData,
-            backgroundColor: bColors,
-            borderColor: bBorders,
-            borderWidth: 1
-          }]
-        },
-        options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, suggestedMax:100 } } }
-      });
-    }
+    corUpsertBarChart('b', 'corChartBNCC', refSorted.map(o=>o.k), refSorted.map(o=>o.pct), '% Acerto (BNCC/Aula)');
   }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'corChartB',{}); }catch(_){} }
 }
 
@@ -8120,22 +8302,28 @@ function corBindEvents(){
   if(turmaSel && !turmaSel.dataset.bound){
     turmaSel.dataset.bound='1';
     turmaSel.addEventListener('change', function(){
+      try{ corFlushCommit(corGetSelectedProva(), corGetAlunoSelecionadoId()); }catch(_){ }
+      corScheduleStatsRender(false);
       corEnsureProva(this.value);
-      corRenderAll();
+      requestAnimationFrame(()=>{ try{ corRenderAll(); }catch(_){ } });
     });
   }
   if(provaSel && !provaSel.dataset.bound){
     provaSel.dataset.bound='1';
     provaSel.addEventListener('change', function(){
+      try{ corFlushCommit(corGetSelectedProva(), corGetAlunoSelecionadoId()); }catch(_){ }
+      corScheduleStatsRender(false);
       const turma = corGetTurmaSelecionada();
       corSetActiveProva(turma, this.value);
-      corRenderAll();
+      requestAnimationFrame(()=>{ try{ corRenderAll(); }catch(_){ } });
     });
   }
   if(alunoSel && !alunoSel.dataset.bound){
     alunoSel.dataset.bound='1';
     alunoSel.addEventListener('change', function(){
-      corRenderAluno();
+      try{ corFlushCommit(corGetSelectedProva(), corGetAlunoSelecionadoId()); }catch(_){ }
+      corScheduleStatsRender(false);
+      requestAnimationFrame(()=>{ try{ corRenderAluno(); }catch(_){ } });
     });
   }
 }
@@ -8288,8 +8476,16 @@ function corRenderAll(){
   corRenderLinkSelectors();
   corRenderGabarito();
   corRenderAluno();
-  corRenderStats();
   corRenderDiscBadge();
+  try{
+    if(typeof __scheduleUiAfterPaint === 'function'){
+      __scheduleUiAfterPaint('cor-stats', function(){ try{ corRenderStats(); }catch(_){} });
+    }else{
+      corScheduleStatsRender(false);
+    }
+  }catch(_){
+    try{ corScheduleStatsRender(false); }catch(__){}
+  }
 }
 
 /* ======= SINCRONIZAÇÃO AUTOMÁTICA: Disciplinas -> Correção ======= */
@@ -8877,9 +9073,9 @@ function corPrintList(){
         }
         rows += `<tr>
           <td style="text-align:left;font-weight:600;">${idx+1}. ${escHTML(a.nome||'Aluno')}</td>
+          <td class="${cls}" style="width:70px;"><strong>${nota.toFixed(1)}</strong></td>
+          <td style="width:82px;"><strong>${ac}/${nQ}</strong></td>
           ${tds}
-          <td><strong>${ac}/${nQ}</strong></td>
-          <td class="${cls}"><strong>${nota.toFixed(1)}</strong></td>
         </tr>`;
       });
     }else{
@@ -8935,7 +9131,7 @@ function corPrintList(){
       <div class="print-section pb">
         <div class="print-h2">3) Resultados por aluno</div>
         <table>
-          <thead><tr><th style="text-align:left;min-width:160px;">Aluno</th>${thQ}<th>Acertos</th><th>Nota</th></tr></thead>
+          <thead><tr><th style="text-align:left;min-width:160px;">Aluno</th><th style="width:70px;">Nota</th><th style="width:82px;">Acertos</th>${thQ}</tr></thead>
           <tbody>${rows}</tbody>
         </table>
 
@@ -8969,7 +9165,54 @@ function initCorrecao(){
   }
 }
 
+function __flushPendingPersistenceWork(){
+  try{
+    if(window.__freqSaveTimer){
+      clearTimeout(window.__freqSaveTimer);
+      window.__freqSaveTimer = null;
+      if(typeof __saveFrequencia === 'function') __saveFrequencia();
+    }
+  }catch(_){ }
+  try{
+    if(typeof __freqSaveEventsTimer !== 'undefined' && __freqSaveEventsTimer){
+      clearTimeout(__freqSaveEventsTimer);
+      __freqSaveEventsTimer = null;
+      if(typeof __freqSaveEvents === 'function') __freqSaveEvents();
+    }
+  }catch(_){ }
+  try{
+    if(__corAnswerCommitTimer || __corPendingCommitPayload){
+      clearTimeout(__corAnswerCommitTimer);
+      __corAnswerCommitTimer = null;
+      if(typeof corFlushCommit === 'function') corFlushCommit();
+    }
+  }catch(_){ }
+  try{
+    if(__corApplyAllTimer || __corApplyAllPayload){
+      clearTimeout(__corApplyAllTimer);
+      __corApplyAllTimer = null;
+      const payload = __corApplyAllPayload;
+      __corApplyAllPayload = null;
+      if(payload && payload.baseTurma && payload.prova && typeof corApplyTemplateToAllTurmas === 'function'){
+        corApplyTemplateToAllTurmas(payload.baseTurma, payload.prova);
+        if(typeof corSave === 'function') corSave();
+      }
+    }
+  }catch(_){ }
+  try{
+    if(typeof __massaAutoSaveTimer !== 'undefined' && __massaAutoSaveTimer){
+      clearTimeout(__massaAutoSaveTimer);
+      __massaAutoSaveTimer = null;
+      if(typeof salvarEdicaoMassa === 'function' && typeof notasModificadas !== 'undefined' && notasModificadas){
+        salvarEdicaoMassa(false);
+      }
+    }
+  }catch(_){ }
+}
+
 function __sgpMainOnLoad(){ 
+            if(window.__sgpBootDone) return;
+            window.__sgpBootDone = true;
             const __boot = ()=>{
                 carregarDados();
                 try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){ }
@@ -8979,6 +9222,7 @@ function __sgpMainOnLoad(){
                 garantirEstruturaNova();
                 initMenuTurmas();
                 renderizarMenu();
+                try{ __sgpBindDataOnclick(document); }catch(_){ }
                 gerarMesas();
                 renderizarVisao();
                 atualizarLabelsConfig();
@@ -9002,10 +9246,18 @@ function __sgpMainOnLoad(){
                 __boot();
             }
         }
-        window.addEventListener('load', __sgpMainOnLoad);
+        if(document.readyState === 'loading'){
+            document.addEventListener('DOMContentLoaded', __sgpMainOnLoad, { once:true });
+            window.addEventListener('load', __sgpMainOnLoad, { once:true });
+        }else{
+            setTimeout(__sgpMainOnLoad, 0);
+        }
 
 
         window.onbeforeunload = function() {
+            // Garante persistência de alterações com debounce pendente antes de fechar
+            // (frequência, correção, histórico de frequência e edição em massa).
+            try{ if(typeof __flushPendingPersistenceWork === 'function') __flushPendingPersistenceWork(); }catch(_){}
             if(dadosNaoSalvosEmArquivo) return "Você tem alterações não salvas em arquivo. Deseja sair?";
         };
         window.addEventListener('focus', ()=>{ try{ __scheduleStorageMonitorRefresh(250); }catch(_){ } });
@@ -9429,9 +9681,10 @@ function __shouldFallbackToIDBStorage(key, value){
   if(__shouldPreferIDBStorage(key, value)) return true;
   return true;
 }
-function __persistCoreMetaFromString(raw){
+// PERF FIX: aceita objeto já parseado (parsedObj) para evitar JSON.parse duplo a cada save.
+function __persistCoreMetaFromString(raw, parsedObj){
   try{
-    const obj = JSON.parse(raw || '{}') || {};
+    const obj = parsedObj || JSON.parse(raw || '{}') || {};
     const meta = {
       ts: parseInt(obj.ts || Date.now(), 10) || Date.now(),
       mode: 'indexeddb',
@@ -9531,7 +9784,8 @@ function __atomicSaveCore(){
     const str = JSON.stringify(stateSemCor);
     if(!__safeLSSet(__SGP_ATOMIC_CORE_KEY, str)) return false;
 
-    try{ __persistCoreMetaFromString(str); }catch(_){ }
+    // PERF FIX: passa stateSemCor (já parseado) para evitar JSON.parse duplo
+    try{ __persistCoreMetaFromString(str, stateSemCor); }catch(_){ }
     try{ __safeLSRemove(__SGP_ATOMIC_CORE_TMP); }catch(_){ }
 
     // Migração: remove chaves antigas do core (evita duplicação e quota)
@@ -9861,15 +10115,22 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             const __bkEntDocPrazos = _lsObj('sgp_entregas_doc_prazos_v1');
             files.push(['sgp_entregas_doc_prazos_v1.json', JSON.stringify(__bkEntDocPrazos || {}, null, 2)]);
 // Meta do arquivo local vinculado (HD)
+            // FIX: exporta sempre com pending=false — o ZIP é um snapshot completo e consistente;
+            // restaurar um ZIP com pending=true causaria "HD: pendente" espúrio na UI após restore,
+            // idêntico ao bug corrigido em __writeLinkedStateObject para o arquivo HD.
             try{
-                const __linkedMeta = (typeof __getLinkedStateFileMeta === 'function') ? __getLinkedStateFileMeta() : _lsObj('sgp_linked_file_meta');
-                files.push(['sgp_linked_file_meta.json', JSON.stringify(__linkedMeta || {}, null, 2)]);
+                const __linkedMetaRaw = (typeof __getLinkedStateFileMeta === 'function') ? __getLinkedStateFileMeta() : _lsObj('sgp_linked_file_meta');
+                const __linkedMeta = (__linkedMetaRaw && typeof __linkedMetaRaw === 'object' && !Array.isArray(__linkedMetaRaw))
+                    ? Object.assign({}, __linkedMetaRaw, { pending: false, status: (__linkedMetaRaw.status === 'pendente' ? 'ok' : (__linkedMetaRaw.status || 'ok')) })
+                    : (__linkedMetaRaw || {});
+                files.push(['sgp_linked_file_meta.json', JSON.stringify(__linkedMeta, null, 2)]);
             }catch(_){ }
 return files;
         }
 
         function baixarBackup() { 
             try{
+                try{ if(typeof __flushPendingPersistenceWork === 'function') __flushPendingPersistenceWork(); }catch(_){ }
                 const zipBlob = __zipStore(__collectBackupFiles());
                 __downloadBlob(zipBlob, __backupFileName());
 __safeLSSet('sgp_last_backup', Date.now()); 
@@ -10088,7 +10349,15 @@ __safeLSSet('sgp_last_backup', Date.now());
                         // Restore meta do arquivo local vinculado (HD)
                         try{
                             const bkLinkedMeta = readJson('sgp_linked_file_meta.json');
-                            const restoredLinkedMeta = (bkLinkedMeta && typeof bkLinkedMeta === 'object' && !Array.isArray(bkLinkedMeta)) ? bkLinkedMeta : {};
+                            let restoredLinkedMeta = (bkLinkedMeta && typeof bkLinkedMeta === 'object' && !Array.isArray(bkLinkedMeta)) ? bkLinkedMeta : {};
+                            // FIX: neutraliza pending em ZIPs antigos criados antes do fix em __collectBackupFiles.
+                            // Novos ZIPs já chegam com pending=false; este guard cobre arquivos legados.
+                            if(restoredLinkedMeta && restoredLinkedMeta.pending){
+                                restoredLinkedMeta = Object.assign({}, restoredLinkedMeta, {
+                                    pending: false,
+                                    status: restoredLinkedMeta.status === 'pendente' ? 'ok' : (restoredLinkedMeta.status || 'ok')
+                                });
+                            }
                             if(typeof __syncImportedLinkedStateMeta === 'function') __syncImportedLinkedStateMeta(restoredLinkedMeta);
                         }catch(_){ }
 
@@ -10176,9 +10445,18 @@ __safeLSSet('sgp_last_backup', Date.now());
                         entregasDocPrazos: (d.entregasDocPrazos && typeof d.entregasDocPrazos === 'object' && !Array.isArray(d.entregasDocPrazos))
                           ? d.entregasDocPrazos
                           : (((d.sgp_entregas_doc_prazos_v1 && typeof d.sgp_entregas_doc_prazos_v1 === 'object' && !Array.isArray(d.sgp_entregas_doc_prazos_v1)) ? d.sgp_entregas_doc_prazos_v1 : {})),
-                        linkedFileMeta: (d.linkedFileMeta && typeof d.linkedFileMeta === 'object' && !Array.isArray(d.linkedFileMeta))
-                          ? d.linkedFileMeta
-                          : (((d.sgp_linked_file_meta && typeof d.sgp_linked_file_meta === 'object' && !Array.isArray(d.sgp_linked_file_meta)) ? d.sgp_linked_file_meta : {})),
+                        linkedFileMeta: (()=>{
+                          // FIX: neutraliza pending no linkedFileMeta do backup JSON legado.
+                          // Um backup exportado com pending=true restauraria sgp_linked_file_pending='1'
+                          // via __applySnapshot → __syncImportedLinkedStateMeta, causando 'HD: pendente'
+                          // espúrio. Mesma classe de bug corrigida em __writeLinkedStateObject,
+                          // __collectBackupFiles, salvarEstadoArquivo e __snapshotObj.
+                          const _lm = (d.linkedFileMeta && typeof d.linkedFileMeta === 'object' && !Array.isArray(d.linkedFileMeta))
+                            ? d.linkedFileMeta
+                            : (((d.sgp_linked_file_meta && typeof d.sgp_linked_file_meta === 'object' && !Array.isArray(d.sgp_linked_file_meta)) ? d.sgp_linked_file_meta : {}));
+                          if(_lm && _lm.pending) return Object.assign({}, _lm, { pending: false, status: _lm.status === 'pendente' ? 'ok' : (_lm.status || 'ok') });
+                          return _lm;
+                        })(),
                         ranking: (d.ranking && typeof d.ranking === 'object' && !Array.isArray(d.ranking))
                           ? d.ranking
                           : (((d.sgp_ranking_v1 && typeof d.sgp_ranking_v1 === 'object' && !Array.isArray(d.sgp_ranking_v1)) ? d.sgp_ranking_v1 : {})),
@@ -10291,14 +10569,64 @@ __safeLSSet('sgp_last_backup', Date.now());
             showToast("Lista copiada!");
         }
 
+        const __sgpUiPaintJobs = Object.create(null);
+        function __scheduleUiAfterPaint(name, fn){
+            if(typeof fn !== 'function') return;
+            const key = String(name || 'default');
+            const prev = __sgpUiPaintJobs[key];
+            try{ if(prev && prev.raf) cancelAnimationFrame(prev.raf); }catch(_){ }
+            try{ if(prev && prev.tm) clearTimeout(prev.tm); }catch(_){ }
+            const job = { raf: 0, tm: 0 };
+            job.raf = requestAnimationFrame(function(){
+                job.tm = setTimeout(function(){
+                    try{ fn(); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'ui.afterPaint',{key}); }catch(_){ console.error(e); } }
+                    finally{ if(__sgpUiPaintJobs[key] === job) delete __sgpUiPaintJobs[key]; }
+                }, 0);
+            });
+            __sgpUiPaintJobs[key] = job;
+        }
+
+        function __freqSetTurmaFast(n){
+            if(!n || n==='Todas' || filtroTurma===n) return false;
+            filtroTurma=n;
+            const titleEl = document.getElementById('tituloPrincipal');
+            if(titleEl) titleEl.innerText = n;
+            renderizarMenu();
+            return true;
+        }
+
+        function abrirFrequenciaRapido(turma, opts){
+            const options = (opts && typeof opts === 'object') ? opts : {};
+            let changed = false;
+            try{ changed = __freqSetTurmaFast(turma); }catch(_){ changed = false; }
+            try{ if(options.closeOverlayId) __sgpRemoveEl(options.closeOverlayId); }catch(_){ }
+            abrirFrequencia();
+            if(changed){
+                __scheduleUiAfterPaint('freq-post-open-refresh', function(){
+                    try{
+                        if(visaoAtual==='dash') renderizarDashboard();
+                        else if(options.refreshView !== false) renderizarVisaoContent();
+                    }catch(_){ }
+                });
+            }
+        }
+
         function mudarBimestre(n){bimestreAtual=n; document.querySelectorAll('.btn-bim').forEach(b=>b.classList.remove('active')); document.getElementById('btnBim'+n).classList.add('active'); renderizarVisao();}
+
+        // PERF FIX: cache de elementos para mudarVisao — evita getElementById repetido a cada clique de aba.
+        const __viewBtnIds = ['btnViewCards','btnViewLista','btnViewMassa','btnViewEntregas','btnViewAulas','btnViewDash','btnViewCorrecao','btnViewMapa','btnViewCalendar','btnViewAnual','btnViewRanking'];
+        const __viewPanelIds = ['gridAlunos','tabelaFechamento','viewMassa','tabelaEntregas','viewAulas','viewDashboard','viewCorrecao','viewMapa','viewCalendar','viewAnual','viewRanking'];
+        let __viewBtnCache = null, __viewPanelCache = null;
+        function __getViewBtns(){ return __viewBtnCache || (__viewBtnCache = __viewBtnIds.map(id=>document.getElementById(id))); }
+        function __getViewPanels(){ return __viewPanelCache || (__viewPanelCache = __viewPanelIds.map(id=>document.getElementById(id))); }
+
         function mudarVisao(t){
             visaoAtual=t; 
             document.body.classList.remove('ranking-view');
             if(t!=='ranking') document.body.classList.remove('ranking-is-fullscreen');
 
-            ['btnViewCards','btnViewLista','btnViewMassa','btnViewEntregas','btnViewAulas','btnViewDash','btnViewCorrecao','btnViewMapa','btnViewCalendar','btnViewAnual','btnViewRanking'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('active');}); 
-            ['gridAlunos','tabelaFechamento','viewMassa','tabelaEntregas','viewAulas','viewDashboard','viewCorrecao','viewMapa','viewCalendar','viewAnual','viewRanking'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';}); 
+            __getViewBtns().forEach(el=>{if(el)el.classList.remove('active');});
+            __getViewPanels().forEach(el=>{if(el)el.style.display='none';}); 
             const btnEl=document.getElementById('btnView'+(t.charAt(0).toUpperCase()+t.slice(1)));
             if(btnEl) btnEl.classList.add('active'); 
             
@@ -10308,13 +10636,20 @@ __safeLSSet('sgp_last_backup', Date.now());
             else if(t==='entregas')document.getElementById('tabelaEntregas').style.display='table';
             else if(t==='anual')document.getElementById('viewAnual').style.display='block';
             else if(t==='aulas')document.getElementById('viewAulas').style.display='flex';
-            else if(t==='calendar'){document.getElementById('viewCalendar').style.display='flex'; renderizarCalendario();}
+            else if(t==='calendar')document.getElementById('viewCalendar').style.display='flex';
             else if(t==='dash')document.getElementById('viewDashboard').style.display='grid';
-            else if(t==='correcao'){document.getElementById('viewCorrecao').style.display='flex'; corRenderAll();}
-            else if(t==='mapa'){document.getElementById('viewMapa').style.display='flex'; carregarSelectLayouts(); mapaUpdateFullscreenUI();}
-            else if(t==='ranking'){document.getElementById('viewRanking').style.display='flex'; document.body.classList.add('ranking-view'); if(typeof rankUpdateFullscreenUI==='function') rankUpdateFullscreenUI();}
-            renderizarVisaoContent();
-            if(visaoAtual==='correcao'){ try{ corRenderAll(); }catch(_){ } }
+            else if(t==='correcao')document.getElementById('viewCorrecao').style.display='flex';
+            else if(t==='mapa')document.getElementById('viewMapa').style.display='flex';
+            else if(t==='ranking'){document.getElementById('viewRanking').style.display='flex'; document.body.classList.add('ranking-view');}
+
+            __scheduleUiAfterPaint('main-view', function(){
+                if(visaoAtual !== t) return;
+                if(t==='calendar') renderizarCalendario();
+                else if(t==='correcao') corRenderAll();
+                else if(t==='mapa'){ carregarSelectLayouts(); mapaUpdateFullscreenUI(); }
+                else if(t==='ranking' && typeof rankUpdateFullscreenUI==='function') rankUpdateFullscreenUI();
+                renderizarVisaoContent();
+            });
         }
         function renderizarVisaoContent(){ 
             if(visaoAtual==='cards')renderizarGrid(); 
@@ -10385,11 +10720,14 @@ function renderizarMenu(){
 }
 
 function selTurma(n){
+            if(filtroTurma===n) return;
             filtroTurma=n; 
             document.getElementById('tituloPrincipal').innerText=n; 
             renderizarMenu(); 
-            renderizarVisaoContent();
-            if(visaoAtual==='correcao'){ try{ corRenderAll(); }catch(_){ } }
+            __scheduleUiAfterPaint('main-view', function(){
+                renderizarVisaoContent();
+                if(visaoAtual==='correcao'){ try{ corRenderAll(); }catch(_){ } }
+            });
         }
 
         function getCorFarol(m){m=parseFloat(m); if(m>=7)return'var(--farol-verde)'; if(m>=5)return'var(--farol-amarelo)'; return'var(--farol-vermelho)';}
@@ -10492,6 +10830,9 @@ function selTurma(n){
                 }
             });
 
+            // PERF FIX: usa Map de referências de elementos para sparklines (O(n) em vez de O(n²)).
+            // Antes: d.querySelector(`.card-aluno[data-id="${a.id}"] ...`) dentro de forEach = O(n²).
+            const sparkCardMap = new Map();
             // Build or update each card
             const fragment = document.createDocumentFragment();
             l.forEach((a, idx) => {
@@ -10507,16 +10848,33 @@ function selTurma(n){
                     card = _createCardElement(a, b, idx);
                     _cardRevealObserver.observe(card);
                 }
+                sparkCardMap.set(cardId, card);
                 fragment.appendChild(card);
             });
+
+            // PERF FIX: pausa os dois MutationObservers (ícones + data-handlers) durante o
+            // batch de DOM. Sem isso, cada nó inserido/removido disparava uma callback
+            // que fazia querySelectorAll() na subárvore inteira — O(n) por nó.
+            try{ if(window.__sgpIconMO) window.__sgpIconMO.disconnect(); }catch(_){}
+            try{ if(window.__sgpDataHandlerObs) window.__sgpDataHandlerObs.disconnect(); }catch(_){}
 
             d.innerHTML = '';
             d.appendChild(fragment);
 
+            // Reconecta observers após o batch completo
+            try{
+              if(window.__sgpIconMO) window.__sgpIconMO.observe(document.documentElement,{childList:true,subtree:true});
+            }catch(_){}
+            try{
+              if(window.__sgpDataHandlerObs) window.__sgpDataHandlerObs.observe(document.documentElement,{childList:true,subtree:true});
+            }catch(_){}
+
             // Draw sparklines on canvas elements (must be in DOM)
             // Reuse cached sparkline data stored during _fillCardHTML via _sparkCache
+            // PERF FIX: busca canvas diretamente no card via sparkCardMap (O(1) por card)
             l.forEach(a => {
-                const cvs = d.querySelector(`.card-aluno[data-id="${a.id}"] .sparkline-canvas`);
+                const card = sparkCardMap.get(String(a.id));
+                const cvs = card && card.querySelector('.sparkline-canvas');
                 if(cvs){
                     const vals = _sparkCache.get(String(a.id));
                     if(vals && vals.length >= 2) drawSparkline(cvs, vals, 80, 28);
@@ -10684,7 +11042,7 @@ function selTurma(n){
                         </div>
                       </div>`;
                 });
-                cards.innerHTML = `<div class=\"entregas-counter-bar entregas-counter-mobile\">${itemsHTML}</div>` + (cbuf || `<div class=\"mcard\" style=\"text-align:center;color:#64748b;\">Nenhum aluno.</div>`);
+                cards.innerHTML = cbuf || `<div class=\"mcard\" style=\"text-align:center;color:#64748b;\">Nenhum aluno.</div>`;
             }else{
                 if(cards) cards.style.display='none';
                 try{ if(table && visaoAtual==='lista') table.style.display='table'; }catch(_){}
@@ -11137,8 +11495,9 @@ try{
                 let bimestresFechados = 0;
                 
                 [1,2,3,4].forEach(b => {
-                    const media = parseFloat(a.bimestres[b].media_lp) || 0;
-                    if(a.bimestres[b].media_lp !== "0.0") bimestresFechados++; 
+                    const bimObj = a.bimestres && a.bimestres[b];
+                    const media = bimObj ? (parseFloat(bimObj.media_lp) || 0) : 0;
+                    if(bimObj && bimObj.media_lp !== "0.0") bimestresFechados++; 
                     soma += media;
                     const cor = getCorFarol(media);
                     cols += `<td style="color:${cor};">${media.toFixed(1)}</td>`;
@@ -11421,31 +11780,32 @@ function addAulaIndividual(){
               });
             }catch(_){}
 
-            // Build frequency lookup by date
+            // PERF FIX: passagem única sobre freq para construir freqByDate E registroByDate.
+            // Antes: dois loops idênticos sobre Object.keys(freq) = dobro de iterações.
             const freqByDate={};
-            try{
-              const freq=window.__sgpFrequencia||{};
-              Object.keys(freq).forEach(key=>{
-                const p=key.split('|');
-                if(filtroTurma!=='Todas' && p[0]!==filtroTurma) return;
-                const dt=p[2]; if(!dt) return;
-                const reg=freq[key]||{};
-                let countP=0,countF=0;
-                Object.keys(reg).forEach(k=>{ if(k==='_meta') return; if(reg[k]==='P') countP++; else if(reg[k]==='F') countF++; });
-                if(countP+countF>0) freqByDate[dt]={P:countP,F:countF,turma:p[0]};
-              });
-            }catch(_){}
-
-            // Build registro de aula lookup
             const registroByDate={};
             try{
               const freq=window.__sgpFrequencia||{};
-              Object.keys(freq).forEach(key=>{
+              const freqKeys=Object.keys(freq);
+              for(let _fi=0;_fi<freqKeys.length;_fi++){
+                const key=freqKeys[_fi];
                 const p=key.split('|');
-                if(filtroTurma!=='Todas' && p[0]!==filtroTurma) return;
-                const meta=(freq[key]||{})._meta;
-                if(meta && meta.registroAula) registroByDate[p[2]]=meta.registroAula;
-              });
+                if(filtroTurma!=='Todas' && p[0]!==filtroTurma) continue;
+                const dt=p[2]; if(!dt) continue;
+                const reg=freq[key]||{};
+                // frequência do dia
+                let countP=0,countF=0;
+                const rkeys=Object.keys(reg);
+                for(let _rk=0;_rk<rkeys.length;_rk++){
+                  const k=rkeys[_rk];
+                  if(k==='_meta') continue;
+                  if(reg[k]==='P') countP++; else if(reg[k]==='F') countF++;
+                }
+                if(countP+countF>0) freqByDate[dt]={P:countP,F:countF,turma:p[0]};
+                // registro de aula do mesmo registro
+                const meta=reg._meta;
+                if(meta && meta.registroAula) registroByDate[dt]=meta.registroAula;
+              }
             }catch(_){}
             
             for(let d=1;d<=dim;d++){
@@ -11509,9 +11869,19 @@ function addAulaIndividual(){
         }
 
         let __dashChartBim = null;
+        let __dashRenderToken = 0;
+        let __dashLastSummary = null;
 
         function renderizarDashboard(){
             ensureConfigSchema();
+            // Frequência: se houver salvamento pendente (debounce), força persistência antes de calcular alertas
+            try{
+                if(window.__freqSaveTimer){
+                    clearTimeout(window.__freqSaveTimer);
+                    window.__freqSaveTimer = null;
+                    if(typeof __saveFrequencia === 'function') __saveFrequencia();
+                }
+            }catch(_){ }
             const lista = getAlunosFiltrados();
             const total = lista.length;
 
@@ -11563,65 +11933,104 @@ function addAulaIndividual(){
                 return;
             }
 
-            const labels = ['1º Bim','2º Bim','3º Bim','4º Bim'];
-            const data1 = [], data2 = [];
+            __dashLastSummary = {
+                total,
+                c1: { ...c1 },
+                c2: { ...c2 },
+                turma: filtroTurma,
+                bim: bimestreAtual,
+                slot1: config.slot1,
+                slot2: config.slot2
+            };
 
-            [1,2,3,4].forEach(bim=>{
-                let s1=0, n1=0, s2=0, n2=0;
-                lista.forEach(a=>{
-                    const b = a?.bimestres?.[bim];
-                    if(!b) return;
-                    _syncBimestreRefs(b);
+            const dashToken = ++__dashRenderToken;
 
-                    const m1 = clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
-                    const m2 = clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+            __scheduleUiAfterPaint('dash-line-chart', function(){
+                if(visaoAtual!=='dash' || dashToken !== __dashRenderToken) return;
 
-                    s1 += m1; n1++;
-                    s2 += m2; n2++;
+                const labels = ['1º Bim','2º Bim','3º Bim','4º Bim'];
+                const data1 = [], data2 = [];
+
+                [1,2,3,4].forEach(bim=>{
+                    let s1=0, n1=0, s2=0, n2=0;
+                    lista.forEach(a=>{
+                        const b = a?.bimestres?.[bim];
+                        if(!b) return;
+                        _syncBimestreRefs(b);
+
+                        const m1 = clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
+                        const m2 = clampNota(calcularMediaDisc(config.slot2, b.notas_red));
+
+                        s1 += m1; n1++;
+                        s2 += m2; n2++;
+                    });
+                    data1.push(n1 ? +(s1/n1).toFixed(2) : 0);
+                    data2.push(n2 ? +(s2/n2).toFixed(2) : 0);
                 });
-                data1.push(n1 ? +(s1/n1).toFixed(2) : 0);
-                data2.push(n2 ? +(s2/n2).toFixed(2) : 0);
-            });
 
-            const lbl1 = getDiscById(config.slot1)?.nome || 'Matéria 1';
-            const lbl2 = getDiscById(config.slot2)?.nome || 'Matéria 2';
+                const lbl1 = getDiscById(config.slot1)?.nome || 'Matéria 1';
+                const lbl2 = getDiscById(config.slot2)?.nome || 'Matéria 2';
 
-            // Cores a partir do tema
-            const rootStyle = getComputedStyle(document.documentElement);
-            const col1 = (rootStyle.getPropertyValue('--primary') || '#2563eb').trim();
-            const col2 = '#ec4899';
+                // PERF FIX: cache da cor do tema — getComputedStyle(documentElement) força recalc
+                // de estilo completo; lemos uma vez por render e reutilizamos.
+                const __rootStyleDash = getComputedStyle(document.documentElement);
+                const col1 = (__rootStyleDash.getPropertyValue('--primary') || '#2563eb').trim();
+                const col2 = '#ec4899';
 
-            if(typeof Chart !== 'function'){
-                try{ if(typeof showToast==='function') showToast('Gráficos indisponíveis (Chart.js não carregou).', 'warning'); }catch(_){ }
-                try{ canvas.style.display='none'; const msg=document.createElement('div'); msg.className='muted'; msg.style.cssText='padding:8px; color:#64748b; font-size:0.9rem;'; msg.textContent='Gráficos indisponíveis offline.'; canvas.parentElement && canvas.parentElement.appendChild(msg); }catch(_){ }
-                return;
-            }
+                if(typeof Chart !== 'function'){
+                    try{ if(typeof showToast==='function') showToast('Gráficos indisponíveis (Chart.js não carregou).', 'warning'); }catch(_){ }
+                    try{ canvas.style.display='none'; const msg=document.createElement('div'); msg.className='muted'; msg.style.cssText='padding:8px; color:#64748b; font-size:0.9rem;'; msg.textContent='Gráficos indisponíveis offline.'; canvas.parentElement && canvas.parentElement.appendChild(msg); }catch(_){ }
+                    return;
+                }
 
-            if(__dashChartBim) __dashChartBim.destroy();
-            __dashChartBim = new Chart(canvas.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [
-                        { label: lbl1, data: data1, tension: 0.25, borderColor: col1, backgroundColor: col1, pointRadius: 3 },
-                        { label: lbl2, data: data2, tension: 0.25, borderColor: col2, backgroundColor: col2, pointRadius: 3 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { position: 'top' },
-                        tooltip: { mode: 'index', intersect: false }
-                    },
-                    scales: {
-                        y: { min: 0, max: 10, ticks: { stepSize: 1 } }
+                if(__dashChartBim){
+                    try{
+                        __dashChartBim.data.labels = labels;
+                        __dashChartBim.data.datasets[0].label = lbl1;
+                        __dashChartBim.data.datasets[0].data = data1;
+                        __dashChartBim.data.datasets[0].borderColor = col1;
+                        __dashChartBim.data.datasets[0].backgroundColor = col1;
+                        __dashChartBim.data.datasets[1].label = lbl2;
+                        __dashChartBim.data.datasets[1].data = data2;
+                        __dashChartBim.data.datasets[1].borderColor = col2;
+                        __dashChartBim.data.datasets[1].backgroundColor = col2;
+                        __dashChartBim.update('none');
+                    }catch(_){
+                        try{ __dashChartBim.destroy(); }catch(__){}
+                        __dashChartBim = null;
                     }
                 }
+
+                if(!__dashChartBim){
+                    __dashChartBim = new Chart(canvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels,
+                            datasets: [
+                                { label: lbl1, data: data1, tension: 0.25, borderColor: col1, backgroundColor: col1, pointRadius: 3 },
+                                { label: lbl2, data: data2, tension: 0.25, borderColor: col2, backgroundColor: col2, pointRadius: 3 }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { position: 'top' },
+                                tooltip: { mode: 'index', intersect: false }
+                            },
+                            scales: {
+                                y: { min: 0, max: 10, ticks: { stepSize: 1 } }
+                            }
+                        }
+                    });
+                }
             });
-        
-            try{ renderDashCompareTurmas(); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'dash.compare'); }catch(_){} }
+
+            __scheduleUiAfterPaint('dash-compare', function(){
+                if(visaoAtual!=='dash' || dashToken !== __dashRenderToken) return;
+                try{ renderDashCompareTurmas(); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'dash.compare'); }catch(_){} }
+            });
 }
         
 
@@ -12035,7 +12444,7 @@ function __cmpBinIndex(v){
             document.querySelectorAll('.mesa').forEach(m=>{m.innerHTML='';m.style.borderStyle='dashed'; m.classList.remove('mobile-target');});
             
             ls.forEach(a=>{
-                const c=getCorFarol(a.bimestres[bimestreAtual].media_lp); 
+                const c=getCorFarol((a.bimestres&&a.bimestres[bimestreAtual]&&a.bimestres[bimestreAtual].media_lp)||0); 
                 const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${alunoSelecionadoParaMover===a.id ? 'mobile-selected' : ''}" draggable="true" ondragstart="drag(event)" data-onclick="touchSelectAluno(${__u(a.id)})" style="border-left-color:${c}">${_escHTML(_mapaNomeCurto(a.nome))}</div>`; 
                 if(a.mesa!==null && a.mesa<36){
                     const m=document.getElementById('mesa_'+a.mesa); 
@@ -12081,15 +12490,71 @@ function __cmpBinIndex(v){
         }
 
         function salvarTurma(){const n=document.getElementById('inputNomeTurma').value;if(n&&!turmas.includes(n)){turmas.push(n);salvarDadosLocal();document.getElementById('inputNomeTurma').value='';fecharModais();selTurma(n); showToast("Turma criada!");}}
-        function delTurma(n,e){e.stopPropagation();if(confirm("Excluir?")){turmas=turmas.filter(t=>t!==n);alunos=alunos.filter(a=>a.turma!==n);filtroTurma='Todas';salvarDadosLocal();renderizarMenu();renderizarVisaoContent(); showToast("Turma excluída.");}}
+        function delTurma(n,e){
+            e.stopPropagation();
+            if(confirm("Excluir?")){
+                turmas = turmas.filter(t => t !== n);
+                alunos = alunos.filter(a => a.turma !== n);
+                filtroTurma = 'Todas';
+                try{
+                    const freq = window.__sgpFrequencia || {};
+                    Object.keys(freq).forEach(k => { if(k.startsWith(n + '|')) delete freq[k]; });
+                    __saveFrequencia();
+                }catch(_){}
+                try{
+                    if(Array.isArray(aulas)) aulas = aulas.filter(au => au.turma !== n);
+                }catch(_){}
+                try{
+                    if(Array.isArray(plannerTasks)) plannerTasks = plannerTasks.filter(t => !t.turma || t.turma !== n);
+                    __safeLSSet('sgp_planner', JSON.stringify(plannerTasks));
+                }catch(_){}
+                try{
+                    const rk = _rankLoad();
+                    if(rk[n]){ delete rk[n]; _rankSave(rk); }
+                }catch(_){}
+                salvarDadosLocal();
+                renderizarMenu();
+                renderizarVisaoContent();
+                showToast("Turma excluída.");
+            }
+        }
         function abrirModalAluno(){if(turmas.length===0)return showToast("Crie Turma", "error"); const s=document.getElementById('selectTurmaAluno');s.innerHTML='';turmas.forEach(t=>s.innerHTML+=`<option value="${_escHTML(t)}">${_escHTML(t)}</option>`);if(filtroTurma!=='Todas')s.value=filtroTurma;abrirModal('modalNovoAluno');}
         function salvarAlunos(){const t=document.getElementById('selectTurmaAluno').value, ns=document.getElementById('inputNomes').value.split('\n'); const dL=()=>({a1:0,a2:0,a3:0,a4:0,a5:0,rec:0}); const dR=()=>({r1:0,r2:0,leit:0}); ns.forEach(n=>{if(n.trim())alunos.push({id:__newId(),nome:n.trim(),turma:t,mesa:null,inteligencias:[],bimestres:{1:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},2:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},3:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},4:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""}}})});salvarDadosLocal();document.getElementById('inputNomes').value='';fecharModais();selTurma(t); showToast("Alunos cadastrados!");}
         function delAluno(id){if(confirm("Excluir?")){alunos=alunos.filter(a=>a.id!==id);salvarDadosLocal();renderizarVisaoContent();}}
         function confirmarDelAluno(id){
             const a = alunos.find(al => al.id === id);
             const nomeCurto = a ? (a.nome || '').split(' ')[0] : 'este aluno';
-            if(confirm(`Tem certeza que deseja excluir "${nomeCurto}"?\n\nEsta ação não pode ser desfeita.`)){
+            if(confirm(`Tem certeza que deseja excluir "${nomeCurto}"?
+
+Esta ação não pode ser desfeita.`)){
                 alunos = alunos.filter(al => al.id !== id);
+                try{
+                  const sid = String(id);
+                  const freq = window.__sgpFrequencia || {};
+                  Object.keys(freq).forEach(k => { if(freq[k] && freq[k][sid]) delete freq[k][sid]; });
+                  __saveFrequencia();
+                }catch(_){}
+                try{
+                  const ba = window.__sgpBuscaAtiva || {};
+                  if(ba[String(id)]){
+                    delete ba[String(id)];
+                    window.__sgpBuscaAtiva = ba;
+                    __safeLSSet('sgp_busca_ativa', JSON.stringify(ba));
+                  }
+                }catch(_){}
+                try{
+                  const rk = _rankLoad();
+                  let changed = false;
+                  Object.keys(rk).forEach(turma => {
+                    Object.keys(rk[turma] || {}).forEach(bim => {
+                      if(rk[turma][bim] && rk[turma][bim][String(id)]){
+                        delete rk[turma][bim][String(id)];
+                        changed = true;
+                      }
+                    });
+                  });
+                  if(changed) _rankSave(rk);
+                }catch(_){}
                 salvarDadosLocal();
                 showToast(`${nomeCurto} removido(a)`);
                 renderizarVisaoContent();
@@ -12303,7 +12768,7 @@ function initElegivelUI(){
 }
 
 
-        function gerarParecer() { const a=alunos.find(al=>al.id===alunoEdicaoID);const b=a.bimestres[bimestreAtual];const mlp=parseFloat(b.media_lp)||0;const mred=parseFloat(b.media_red)||0;const comp=b.comportamento;const classificar=(n)=>{if(n>=7)return"bom desempenho";if(n>=5)return"desempenho mediano";return"dificuldades de assimilação"};let txt=`No ${bimestreAtual}º Bimestre, ${__u(a.nome)} apresenta ${classificar(mlp)} em ${__u(config.materia1)} (Média: ${mlp}). Em ${__u(config.materia2)}, demonstra ${classificar(mred)} (Média: ${mred}). `; if(comp>=8)txt+=`Excelente comportamento (Avaliação: ${comp}). `; else txt+=`Comportamento regular (Avaliação: ${comp}). `; document.getElementById('txtParecer').value=txt; }
+        function gerarParecer() { const a=alunos.find(al=>al.id===alunoEdicaoID); if(!a) return; const b=a.bimestres&&a.bimestres[bimestreAtual]; if(!b) return; const mlp=parseFloat(b.media_lp)||0;const mred=parseFloat(b.media_red)||0;const comp=b.comportamento;const classificar=(n)=>{if(n>=7)return"bom desempenho";if(n>=5)return"desempenho mediano";return"dificuldades de assimilação"};let txt=`No ${bimestreAtual}º Bimestre, ${__u(a.nome)} apresenta ${classificar(mlp)} em ${__u(config.materia1)} (Média: ${mlp}). Em ${__u(config.materia2)}, demonstra ${classificar(mred)} (Média: ${mred}). `; if(comp>=8)txt+=`Excelente comportamento (Avaliação: ${comp}). `; else txt+=`Comportamento regular (Avaliação: ${comp}). `; document.getElementById('txtParecer').value=txt; }
         
         function addTagParecer(tipo) {
             const frases = {
@@ -12320,9 +12785,26 @@ function initElegivelUI(){
 
         
 /* (removido) Função duplicada antiga: imprimirFicha */
-function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
+function abrirModal(id) {
+            const el = document.getElementById(id);
+            if(!el) return;
+            if(el.style.display === 'flex') return;
+            el.style.display = 'flex';
+            try{
+                if(typeof __scheduleUiAfterPaint === 'function'){
+                    __scheduleUiAfterPaint('modal:'+id, function(){
+                        try{
+                            const af = el.querySelector('[autofocus], input, select, textarea, button');
+                            if(af && typeof af.focus === 'function') af.focus({ preventScroll:true });
+                        }catch(_){}
+                    });
+                }
+            }catch(_){}
+        }
         function fecharModais() {
             // Fecha todos os modais
+            // Persistência: garante que alterações com debounce sejam gravadas antes de fechar
+            try{ if(typeof __flushPendingPersistenceWork === 'function') __flushPendingPersistenceWork(); }catch(_){ }
             document.querySelectorAll('.modal-overlay').forEach(e => e.style.display = 'none');
             // Se estiver em tela cheia (ex: Atividades), sai para evitar ficar preso
             try{
@@ -12702,11 +13184,20 @@ function __j(v){
     throw new Error('Handler não suportado: '+stmt.slice(0,200));
   }
 
+  // PERF FIX: cache de statements pré-parseados por string de código.
+  // Antes: cada clique re-executava _splitTopLevel + trim + filter (O(n) parsing).
+  // Agora: parse só na primeira execução; demais são O(1) lookup.
+  const _stmtCache = new Map();
+
   function _runCode(code, event, el){
     const raw = String(code||'');
     if(raw.length>5000) throw new Error('Handler muito grande');
 
-    const statements=_splitTopLevel(raw,';').map(_trim).filter(Boolean);
+    let statements = _stmtCache.get(raw);
+    if(!statements){
+      statements = _splitTopLevel(raw,';').map(_trim).filter(Boolean);
+      _stmtCache.set(raw, statements);
+    }
     let ret;
     for(const st of statements){
       const s=_trim(st);
@@ -12745,43 +13236,69 @@ function __j(v){
         if(r === false){
           event.preventDefault();
           event.stopPropagation();
+        } else {
+          // FIX: marca o evento como já tratado para o delegate __sgpDataOnclickBridgeInit
+          // não disparar a mesma ação novamente (double-fire em funções toggle)
+          event.__sgp_handled = true;
         }
       }catch(e){
         _capErr(e, 'handler.run.safe', {evt, code: String(code||'').slice(0,500)});
+        // Não marca como handled: fallback para o delegate (ex.: expressões complexas)
       }
     }, (evt==='submit'));
 
     el[mark] = true;
   }
 
+  // PERF FIX: seletor combinado — 1 querySelectorAll em vez de 7 (um por evento).
+  // Antes: 7 × querySelectorAll por nó adicionado. Agora: 1 × querySelectorAll.
+  const _EVT_COMBINED_SELECTOR = EVT.map(function(e){ return '[data-on'+e+']'; }).join(',');
+
   function _scan(root){
     try{
       const scope = root && root.querySelectorAll ? root : document;
-      EVT.forEach(function(evt){
-        const attr = 'data-on'+evt;
-        // Also check the root element itself (querySelectorAll only searches descendants)
-        if(scope !== document && scope.matches && scope.matches('['+attr+']')){
-          const code = scope.getAttribute(attr);
-          if(code) _bindOne(scope, evt, code);
-        }
-        const nodes = scope.querySelectorAll('['+attr+']');
-        nodes.forEach(function(el){
-          const code = el.getAttribute(attr);
-          if(!code) return;
-          _bindOne(el, evt, code);
+
+      // Verifica o próprio root element (querySelectorAll só busca descendentes)
+      if(scope !== document && scope.matches){
+        try{
+          if(scope.matches(_EVT_COMBINED_SELECTOR)){
+            EVT.forEach(function(evt){
+              const code = scope.getAttribute('data-on'+evt);
+              if(code) _bindOne(scope, evt, code);
+            });
+          }
+        }catch(_){}
+      }
+
+      const nodes = scope.querySelectorAll(_EVT_COMBINED_SELECTOR);
+      nodes.forEach(function(el){
+        EVT.forEach(function(evt){
+          const code = el.getAttribute('data-on'+evt);
+          if(code) _bindOne(el, evt, code);
         });
       });
     }catch(e){ _capErr(e, 'handler.scan', {}); }
   }
 
-  function _setup(){
-    _scan(document);
+  function _setup(root){
+    const scopedRoot = (root && root.querySelectorAll) ? root : null;
+    if(scopedRoot){
+      _scan(scopedRoot);
+      return;
+    }
     if(window.__sgpDataHandlerObs) return;
+    _scan(document);
     try{
       window.__sgpDataHandlerObs = new MutationObserver(function(muts){
+        // PERF FIX: usa flag __sgpBound para não re-escanear nós já vinculados.
+        // renderizarGrid move nós existentes para um fragment e os re-adiciona;
+        // sem esse guard, _scan() dispararia para cada nó re-inserido a cada render.
         muts.forEach(function(mu){
           mu.addedNodes && mu.addedNodes.forEach(function(n){
-            if(n && n.nodeType === 1) _scan(n);
+            if(n && n.nodeType === 1 && !n.__sgpBound){
+              _scan(n);
+              n.__sgpBound = true;
+            }
           });
         });
       });
@@ -12973,8 +13490,8 @@ function calcularMediaRED(notas){ return calcularMediaDisc(config.slot2, notas).
 function abrirConfig(){
   ensureConfigSchema();
   __cfgDraft = _deepClone(config);
-  renderConfigModal();
   abrirModal('modalConfig');
+  __scheduleUiAfterPaint('modal-config', function(){ renderConfigModal(); });
 }
 
 function renderConfigModal(){
@@ -13485,18 +14002,27 @@ function __massaUpdateColStats(){
   const disc = getDiscById(discId);
   if(!disc){ tr.innerHTML = ''; return; }
   const avs = disc.avaliacoes || [];
-  
+
+  // PERF FIX: uma única querySelectorAll para todos os inputs, indexados por evalId num Map.
+  // Antes: uma querySelectorAll por coluna/avaliação = O(colunas × DOM). Agora: O(1) DOM + O(n) iteração.
+  const allInputs = document.querySelectorAll('.nota-input-massa[data-disc="'+discId+'"]');
+  const byEval = new Map(); // evalId -> { sum, n, min, max }
+  allInputs.forEach(inp => {
+    const eid = inp.dataset.eval;
+    if(!eid) return;
+    if(!byEval.has(eid)) byEval.set(eid, { sum:0, n:0, min:10, max:0 });
+    const s = byEval.get(eid);
+    const v = clampNota(inp.value);
+    if(v > 0 || inp.value !== '0'){ s.sum += v; s.n++; s.min = Math.min(s.min, v); s.max = Math.max(s.max, v); }
+  });
+
   let cols = '<td></td><td></td><td></td>';
-  avs.forEach((av, ci) => {
-    const inputs = document.querySelectorAll('.nota-input-massa[data-eval="'+av.id+'"][data-disc="'+discId+'"]');
-    let sum=0, n=0, min=10, max=0;
-    inputs.forEach(inp => {
-      const v = clampNota(inp.value);
-      if(v > 0 || inp.value !== '0'){ sum += v; n++; min = Math.min(min, v); max = Math.max(max, v); }
-    });
-    const avg = n > 0 ? (sum/n).toFixed(1) : '—';
-    if(n === 0){ min = 0; max = 0; }
-    cols += '<td style="text-align:center;"><span class="massa-col-stat">μ '+avg+' ('+min.toFixed(0)+'–'+max.toFixed(0)+')</span>' +
+  avs.forEach((av) => {
+    const s = byEval.get(String(av.id)) || { sum:0, n:0, min:0, max:0 };
+    const avg = s.n > 0 ? (s.sum/s.n).toFixed(1) : '—';
+    const minV = s.n > 0 ? s.min : 0;
+    const maxV = s.n > 0 ? s.max : 0;
+    cols += '<td style="text-align:center;"><span class="massa-col-stat">μ '+avg+' ('+minV.toFixed(0)+'–'+maxV.toFixed(0)+')</span>' +
       '<div class="massa-col-actions"><button class="massa-col-btn" onclick="__massaFillColumn(\''+av.id+'\',\''+discId+'\')" title="Preencher coluna">Preencher</button>' +
       '<button class="massa-col-btn" onclick="__massaSortByCol(\''+av.id+'\')" title="Ordenar">Ordenar</button></div></td>';
   });
@@ -13943,14 +14469,18 @@ function renderizarEdicaoMassa(){
     avs.forEach(av=>{
       const v=(notas?.[av.id] ?? 0);
       const emptyClass = (!hasAnyFilled || v === 0) ? ' massa-empty' : '';
-      buf += '<td><input type="number" class="nota-input-massa'+emptyClass+'" data-aluno="'+__u(a.id)+'" data-disc="'+discId+'" data-eval="'+__u(av.id)+'" value="'+v+'" min="0" max="10" step="0.5" data-oninput="handleNotaInput(this); marcarModificacao(this)" onkeydown="__massaKeyboardNav(event, this)" onpaste="__massaHandlePaste(event)"></td>';
+      // PERF FIX: calcula a classe de farol inline ao construir o buffer HTML,
+      // eliminando o loop post-render tbody.querySelectorAll('.nota-input-massa').forEach(handleNotaInput)
+      // que fazia uma operação de classList por cada input após o innerHTML ser inserido no DOM.
+      const farolClass = ' ' + getFarolClassByNota(clampNota(v));
+      buf += '<td><input type="number" class="nota-input-massa'+emptyClass+farolClass+'" data-aluno="'+__u(a.id)+'" data-disc="'+discId+'" data-eval="'+__u(av.id)+'" value="'+v+'" min="0" max="10" step="0.5" data-oninput="handleNotaInput(this); marcarModificacao(this)" onkeydown="__massaKeyboardNav(event, this)" onpaste="__massaHandlePaste(event)"></td>';
     });
     
     buf += '<td><strong style="color:'+cor+'">'+(isFinite(media) ? media.toFixed(1) : media)+'</strong></td></tr>';
   });
   
   tbody.innerHTML = buf;
-  tbody.querySelectorAll('.nota-input-massa').forEach(inp=>handleNotaInput(inp));
+  // PERF FIX: farol classes já inseridas inline no buffer acima — loop post-render removido.
   
   // Reset unsaved state
   const bar = document.getElementById('massaUnsavedBar');
@@ -14427,7 +14957,17 @@ function __snapshotObj(){
     rankHistCfg: rankHistCfgObj,
     buscaAtiva: buscaAtivaObj,
     entregasDocPrazos: entregasDocPrazosObj,
-    linkedFileMeta: (typeof __getLinkedStateFileMeta === 'function') ? __getLinkedStateFileMeta() : __lsJson('sgp_linked_file_meta', {}),
+    linkedFileMeta: (()=>{
+      // FIX: neutraliza pending no snapshot em memória — consistente com os fixes
+      // em __writeLinkedStateObject, __collectBackupFiles e salvarEstadoArquivo.
+      // Evita que um undo/redo de snapshot tirado durante um sync restaure pending=true,
+      // deixando o painel mostrar "HD: pendente" espuriamente na sessão corrente.
+      try{
+        const _m = (typeof __getLinkedStateFileMeta === 'function') ? __getLinkedStateFileMeta() : __lsJson('sgp_linked_file_meta', {});
+        if(_m && _m.pending) return Object.assign({}, _m, { pending: false, status: _m.status === 'pendente' ? 'ok' : (_m.status || 'ok') });
+        return _m || {};
+      }catch(_){ return {}; }
+    })(),
     uiPrefs,
     planoPrefs,
     auditLog,
@@ -14498,10 +15038,12 @@ function __countChangedAlunos(beforeArr, afterArr){
 function __logChange(beforeStr, afterStr){
   const ts = Date.now();
   let changed=null;
+  // PERF FIX: evitar JSON.parse(beforeStr) + JSON.parse(afterStr) (dois parses do estado inteiro).
+  // Usa o array `alunos` em memória para contar mudanças (afterStr já reflete o estado atual).
+  // beforeStr ainda é parseado uma única vez apenas para o array de alunos anterior.
   try{
     const b=JSON.parse(beforeStr||'{}');
-    const a=JSON.parse(afterStr||'{}');
-    changed = __countChangedAlunos(b.alunos, a.alunos);
+    changed = __countChangedAlunos(b.alunos, alunos);
   }catch(e){}
   const msg = (changed===null)
     ? "Alteração salva"
@@ -14653,7 +15195,16 @@ function __applySnapshot(snapshotStr, label){
       __safeLSSet('sgp_entregas_doc_prazos_v1', JSON.stringify(restoredEntregasDocPrazos));
     }catch(_){ }
     try{
-      const restoredLinkedMeta = (data.linkedFileMeta && typeof data.linkedFileMeta==='object' && !Array.isArray(data.linkedFileMeta)) ? data.linkedFileMeta : {};
+      let restoredLinkedMeta = (data.linkedFileMeta && typeof data.linkedFileMeta==='object' && !Array.isArray(data.linkedFileMeta)) ? data.linkedFileMeta : {};
+      // FIX: neutraliza pending em snapshots antigos (criados antes dos fixes upstream).
+      // Snapshots novos via __snapshotObj já chegam com pending=false;
+      // este guard é uma linha de defesa final para snapshots legados.
+      if(restoredLinkedMeta && restoredLinkedMeta.pending){
+        restoredLinkedMeta = Object.assign({}, restoredLinkedMeta, {
+          pending: false,
+          status: restoredLinkedMeta.status === 'pendente' ? 'ok' : (restoredLinkedMeta.status || 'ok')
+        });
+      }
       if(typeof __syncImportedLinkedStateMeta === 'function') __syncImportedLinkedStateMeta(restoredLinkedMeta);
     }catch(_){ }
     try{
@@ -14710,9 +15261,9 @@ function __applySnapshot(snapshotStr, label){
   applyThemeFromConfig();
   fecharModais();
   renderizarMenu();
-  renderizarVisao();
+  renderizarVisao(); // renderizarVisao() já chama renderizarVisaoContent() internamente
+  // PERF FIX: removida chamada redundante a renderizarVisaoContent() logo após renderizarVisao()
   try{ if(typeof atualizarLabelsConfig === 'function') atualizarLabelsConfig(); }catch(_){ }
-  renderizarVisaoContent();
   try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
   showToast(label || "Restaurado!");
   __renderBackupsUI();
@@ -14774,36 +15325,46 @@ function baixarLog(){
 // === Hooks (substitui monkey-patch de funções globais) ===
 
 // Após salvar no localStorage: registra undo/redo, log e auto-backup
+// PERF FIX: trabalho pesado (JSON.stringify do estado inteiro, __logChange com double-parse,
+// __saveExtras, __renderBackupsUI) é adiado via setTimeout(0) para não bloquear
+// o clique/input que disparou o save. O usuário percebe o feedback imediato;
+// o histórico é atualizado no próximo ciclo do event loop.
 __SGP_EVT.on('afterSave', ()=>{
   try{ __scheduleStorageMonitorRefresh(400); }catch(_){ }
-  try{
-    if(typeof __HIST !== 'object' || !__HIST) return;
-    if(__HIST.mute) return;
-    if(typeof __snapshotStr !== 'function') return;
+  setTimeout(()=>{
+    try{
+      if(typeof __HIST !== 'object' || !__HIST) return;
+      if(__HIST.mute) return;
+      if(typeof __snapshotStr !== 'function') return;
 
-    const after = __snapshotStr();
-    if(!after) return;
+      const after = __snapshotStr();
+      if(!after) return;
 
-    if(!__HIST.lastSnapshot){
+      if(!__HIST.lastSnapshot){
+        __HIST.lastSnapshot = after;
+        return;
+      }
+      if(after === __HIST.lastSnapshot) return;
+
+      const before = __HIST.lastSnapshot;
+
+      // PERF FIX: guarda apenas 'before' por entrada de undo — 'after' sempre pode ser
+      // derivado do 'before' da entrada seguinte ou de __HIST.lastSnapshot para a entrada
+      // mais recente. Antes: { before, after } = 2 snapshots completos por entrada x 50
+      // entradas = até 100 snapshots simultâneos na RAM (potencialmente 20+ MB).
+      __HIST.undo.push({ ts: Date.now(), before });
+      if(__HIST.undo.length > __HIST.max) __HIST.undo.shift();
+      __HIST.redo = [];
       __HIST.lastSnapshot = after;
-      return;
+
+      try{ if(typeof __logChange === 'function') __logChange(before, after); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'__logChange'); }catch(_){} }
+      try{ if(typeof __maybeAutoBackup === 'function') __maybeAutoBackup(after); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'__maybeAutoBackup'); }catch(_){} }
+      try{ if(typeof __saveExtras === 'function') __saveExtras(); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'__saveExtras'); }catch(_){} }
+      try{ if(typeof __renderBackupsUI === 'function') __renderBackupsUI(); }catch(_){}
+    }catch(e){
+      try{ if(typeof __diagCapture==='function') __diagCapture(e,'afterSave'); }catch(_){}
     }
-    if(after === __HIST.lastSnapshot) return;
-
-    const before = __HIST.lastSnapshot;
-
-    __HIST.undo.push({ ts: Date.now(), before, after });
-    if(__HIST.undo.length > __HIST.max) __HIST.undo.shift();
-    __HIST.redo = [];
-    __HIST.lastSnapshot = after;
-
-    try{ if(typeof __logChange === 'function') __logChange(before, after); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'__logChange'); }catch(_){} }
-    try{ if(typeof __maybeAutoBackup === 'function') __maybeAutoBackup(after); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'__maybeAutoBackup'); }catch(_){} }
-    try{ if(typeof __saveExtras === 'function') __saveExtras(); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'__saveExtras'); }catch(_){} }
-    try{ if(typeof __renderBackupsUI === 'function') __renderBackupsUI(); }catch(_){}
-  }catch(e){
-    try{ if(typeof __diagCapture==='function') __diagCapture(e,'afterSave'); }catch(_){}
-  }
+  }, 0);
 });
 
 // Ao fechar modais: garante restauração de tema e UI de Bloom
@@ -15434,6 +15995,65 @@ function __sgpShowCopyDialog(message, value, title='Copiar texto'){
   return __sgpOpenTransientDialog({ mode:'info', title, message, value });
 }
 
+
+
+// === Bridge universal para elementos com data-onclick ===
+function __sgpRunDataOnclick(code, event, element){
+  try{
+    if(!code) return undefined;
+    const runner = new Function('event','element', `with(window){ return (function(){ ${code}
+ }).call(element); }`);
+    return runner.call(element, event, element);
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e, 'data-onclick', { code: String(code||'').slice(0,180) }); }catch(_){ }
+    try{ console.error('[SGP] Falha em data-onclick:', code, e); }catch(_){ }
+    try{ if(typeof showToast==='function') showToast('Falha ao executar ação. Consulte o AutoTeste/Diagnóstico.', 'error'); }catch(_){ }
+    return undefined;
+  }
+}
+function __sgpBindDataOnclick(root){
+  try{
+    const scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll('[data-onclick]').forEach((el)=>{
+      if(!el) return;
+      if(!el.hasAttribute('tabindex') && (el.tagName==='DIV' || el.tagName==='SPAN')) el.setAttribute('tabindex','0');
+      if(!el.hasAttribute('role') && (el.tagName==='DIV' || el.tagName==='SPAN')) el.setAttribute('role','button');
+      el.style.cursor = el.style.cursor || 'pointer';
+    });
+  }catch(_){ }
+}
+(function __sgpDataOnclickBridgeInit(){
+  if(window.__sgpDataOnclickBridgeReady) return;
+  window.__sgpDataOnclickBridgeReady = true;
+
+  document.addEventListener('click', function(ev){
+    if(ev.__sgp_handled) return; // FIX: já tratado pelo listener direto (_bindOne) — evita double-fire
+    const el = ev.target && ev.target.closest ? ev.target.closest('[data-onclick]') : null;
+    if(!el) return;
+    if(el.disabled || el.getAttribute('aria-disabled')==='true') return;
+    const code = el.getAttribute('data-onclick');
+    if(!code) return;
+    const out = __sgpRunDataOnclick(code, ev, el);
+    if(out === false){
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+  }, false);
+
+  document.addEventListener('keydown', function(ev){
+    if(ev.key !== 'Enter' && ev.key !== ' ') return;
+    const el = ev.target && ev.target.closest ? ev.target.closest('[data-onclick]') : null;
+    if(!el) return;
+    if(el.disabled || el.getAttribute('aria-disabled')==='true') return;
+    if(el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.tagName==='SELECT') return;
+    ev.preventDefault();
+    const out = __sgpRunDataOnclick(el.getAttribute('data-onclick'), ev, el);
+    if(out === false) ev.stopPropagation();
+  }, false);
+
+  try{ __sgpBindDataOnclick(document); }catch(_){ }
+})();
+
 /* === Safety wrapper: não deixa erros em cliques quebrarem o app === */
 function __wrapSafeGlobal(fnName){
   try{
@@ -15907,7 +16527,7 @@ function initPlanoSemanalUI(){
         try{
           const d = new Date(ini.value + 'T00:00:00');
           d.setDate(d.getDate() + 6);
-          fim.value = d.toISOString().slice(0,10);
+          fim.value = __localISODate(d);
         }catch(e){}
       }
       __updatePlanoKeyPreview();
@@ -16904,10 +17524,12 @@ function initPlanner(){
 
 function abrirPlanner(){
   abrirModal('modalPlanner');
-  plannerRefreshTurmasUI();
-  plannerClearForm();
-  plannerRender();
-  plannerUpdateFullscreenUI();
+  __scheduleUiAfterPaint('modal-planner', function(){
+    plannerRefreshTurmasUI();
+    plannerClearForm();
+    plannerRender();
+    plannerUpdateFullscreenUI();
+  });
 }
 
 function plannerUpdateFullscreenUI(){
@@ -17990,19 +18612,21 @@ function initAtividades(){
 
 function abrirAtividades(){
   abrirModal('modalAtividades');
-  // Segurança: ao abrir, começa no modo aluno (banco/config ocultos)
-  atividadesSetLocked(true);
+  __scheduleUiAfterPaint('modal-atividades', function(){
+    // Segurança: ao abrir, começa no modo aluno (banco/config ocultos)
+    atividadesSetLocked(true);
 
-  // Reset do modo apresentação (o professor pode ativar depois)
-  actPresent = false;
-  const modal = document.getElementById('modalAtividades');
-  if(modal) modal.classList.remove('act-present');
+    // Reset do modo apresentação (o professor pode ativar depois)
+    actPresent = false;
+    const modal = document.getElementById('modalAtividades');
+    if(modal) modal.classList.remove('act-present');
 
-  const b = document.getElementById('actBtnPresent');
-  if(b) b.innerHTML = '<i class="fas fa-tv"></i> Apresentar';
+    const b = document.getElementById('actBtnPresent');
+    if(b) b.innerHTML = '<i class="fas fa-tv"></i> Apresentar';
 
-  atividadesSetTab(actTab || 'forca');
-  try{ _actSorteioSyncTurmaUI(); _actSorteioEnsurePool(); _actSorteioRender(); }catch(_){ }
+    atividadesSetTab(actTab || 'forca');
+    try{ _actSorteioSyncTurmaUI(); _actSorteioEnsurePool(); _actSorteioRender(); }catch(_){ }
+  });
 }
 
 
@@ -20086,6 +20710,25 @@ async function __readLinkedStateObject(handle){
 async function __writeLinkedStateObject(handle, reason){
   if(!handle) throw new Error('Arquivo vinculado ausente.');
   const obj = __exportState();
+  // FIX: neutraliza sgp_linked_file_pending no snapshot antes de gravar.
+  // __markLinkedStatePending() já setou pending='1' no storage ANTES do exportState,
+  // então o snapshot sempre captura pending=true. Na restauração isso faz o painel
+  // mostrar "HD: pendente" mesmo após um restore bem-sucedido. A gravação em si
+  // É a sincronização — o snapshot deve refletir o estado pós-sync, não pré-sync.
+  if(obj && obj.storage && typeof obj.storage === 'object'){
+    try{
+      obj.storage['sgp_linked_file_pending'] = '0';
+      const rawMeta = obj.storage['sgp_linked_file_meta'];
+      if(rawMeta){
+        const m = JSON.parse(rawMeta);
+        if(m && typeof m === 'object' && !Array.isArray(m)){
+          m.pending = false;
+          m.status = m.status === 'pendente' ? 'ok' : (m.status || 'ok');
+          obj.storage['sgp_linked_file_meta'] = JSON.stringify(m);
+        }
+      }
+    }catch(_){}
+  }
   obj.linkedFile = {
     format: 'SGP_LINKED_FILE_V1',
     savedAt: new Date().toISOString(),
@@ -20415,6 +21058,12 @@ function __freqLoadEvents(){
 function __freqSaveEvents(){
   try{ __safeLSSet('sgp_freq_events', JSON.stringify(window.__sgpFreqEvents||[])); }catch(_){}
 }
+// Salva eventos com debounce (300ms) para não serializar ~2000 entradas em cada clique P/F/J
+let __freqSaveEventsTimer = null;
+function __freqSaveEventsDebounced(){
+  clearTimeout(__freqSaveEventsTimer);
+  __freqSaveEventsTimer = setTimeout(__freqSaveEvents, 300);
+}
 function __freqPruneEvents(){
   try{
     const ev = window.__sgpFreqEvents || [];
@@ -20434,7 +21083,7 @@ function __freqLogEvent(e){
     window.__sgpFreqEvents = window.__sgpFreqEvents || [];
     window.__sgpFreqEvents.push(e);
     __freqPruneEvents();
-    __freqSaveEvents();
+    __freqSaveEventsDebounced(); // PERF FIX: debounced — evita serializar 2000 eventos a cada clique P/F/J
   }catch(_){}
 }
 try{ __freqLoadEvents(); }catch(_){}
@@ -20444,7 +21093,12 @@ function __loadFrequencia(){
   try{
     const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_frequencia') : localStorage.getItem('sgp_frequencia');
     if(raw){ window.__sgpFrequencia = JSON.parse(raw) || {}; }
+    else { window.__sgpFrequencia = window.__sgpFrequencia || {}; }
   }catch(_){ window.__sgpFrequencia = {}; }
+  // IMPORTANTE: invalida caches de frequência após (re)carregar dados,
+  // evitando status inconsistente no dashboard (Hoje/Último divergindo).
+  try{ if(window.__sgpFreqAggCache) window.__sgpFreqAggCache.version = -1; }catch(_){}
+  try{ if(window.__sgpFreqDatesCache) window.__sgpFreqDatesCache.version = -1; }catch(_){}
 }
 function __saveFrequencia(){
   try{
@@ -21533,15 +22187,25 @@ function __freqPendenciaHojeTurma(turma, bim){
   if(__freqIsWeekend(today)) return {skip:true, today};
   const lista = alunos.filter(a=>a.turma===turma);
   const total = lista.length;
-  const key = `${turma}|${bim}|${today}`;
-  const reg = (window.__sgpFrequencia||{})[key] || null;
-  if(!reg){
-    return {skip:false, today, total, missing:true, filled:0, incomplete:total, key};
+  const legacyKey = __freqLegacyKeyFor(turma, bim, today);
+  const keys = __freqListKeysForDate(turma, bim, today);
+  if(!keys.length){
+    return {skip:false, today, total, missing:true, filled:0, incomplete:total, key:legacyKey, keys:[]};
   }
-  let filled=0;
-  lista.forEach(a=>{ if(reg[a.id]) filled++; });
+  const ids = new Set(lista.map(a=>String(a.id||'')).filter(Boolean));
+  const filledIds = new Set();
+  const freq = window.__sgpFrequencia || {};
+  keys.forEach(key=>{
+    const reg = freq[key] || {};
+    Object.keys(reg).forEach(k=>{
+      if(k==='_meta') return;
+      if(!ids.has(String(k))) return;
+      if(reg[k]) filledIds.add(String(k));
+    });
+  });
+  const filled = filledIds.size;
   const incomplete = Math.max(0, total - filled);
-  return {skip:false, today, total, missing:false, filled, incomplete, key};
+  return {skip:false, today, total, missing:false, filled, incomplete, key:keys[0] || legacyKey, keys};
 }
 
 function __freqUltimoRegistroTurma(turma, bim){
@@ -21563,17 +22227,14 @@ function __freqAlunosStreakF(turma, bim, streakLen){
   const len = streakLen||3;
   const dates = __freqGetDatesTurmaBim(turma, bim);
   if(!dates.length) return [];
-  const freq = window.__sgpFrequencia||{};
   const lista = alunos.filter(a=>a.turma===turma);
   const out=[];
   lista.forEach(a=>{
     let streak=0;
     for(let i=dates.length-1;i>=0;i--){
-      const key = `${turma}|${bim}|${dates[i]}`;
-      const reg = freq[key] || {};
-      const v = reg[a.id];
-      if(!v){ streak=0; break; }
-      if(v==='F'){
+      const resumo = __freqAlunoResumoDia(turma, bim, dates[i], a.id);
+      if(!resumo || !resumo.total){ streak=0; break; }
+      if(resumo.display==='F'){
         streak++;
         if(streak>=len){
           out.push({id:a.id, nome:a.nome, streak});
@@ -21656,7 +22317,7 @@ function renderFreqAlertsDashboard(){
         <td style="padding:8px 10px; border-bottom:1px solid var(--border-color); text-align:center;">${last?escHTML(last):'—'}</td>
         <td style="padding:8px 10px; border-bottom:1px solid var(--border-color); text-align:center;">${last?diasSem:'—'}</td>
         <td style="padding:8px 10px; border-bottom:1px solid var(--border-color); text-align:right; white-space:nowrap;">
-          <button class="btn-secondary" onclick="selTurma(${__j(turma)}); mudarVisao('dash'); setTimeout(()=>{ try{abrirFrequencia();}catch(_){} }, 50);" title="Abrir chamada"><i class="fas fa-clipboard-check"></i></button>
+          <button class="btn-secondary" onclick="abrirFrequenciaRapido(${__j(turma)})" title="Abrir chamada"><i class="fas fa-clipboard-check"></i></button>
           <button class="btn-secondary" onclick="abrirFreqAlertasDetalhes(${__j(turma)}, ${bim})" title="Detalhes"><i class="fas fa-list"></i></button>
         </td>
       </tr>`;
@@ -21701,8 +22362,10 @@ function abrirFreqAlertasDetalhes(turma, bim){
       if(pend.missing){
         pendList = lista.map(a=>({id:a.id, nome:a.nome}));
       }else{
-        const reg = (window.__sgpFrequencia||{})[pend.key] || {};
-        pendList = lista.filter(a=>!reg[a.id]).map(a=>({id:a.id, nome:a.nome}));
+        pendList = lista.filter(a=>{
+          const resumo = __freqAlunoResumoDia(turma, bim, today, a.id);
+          return !(resumo && resumo.total);
+        }).map(a=>({id:a.id, nome:a.nome}));
       }
     }
 
@@ -21723,7 +22386,7 @@ function abrirFreqAlertasDetalhes(turma, bim){
         </div>
 
         <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-          <button class="btn-primary" onclick="selTurma(${__j(turma)}); __sgpRemoveEl('freqAlertsOverlay'); setTimeout(function(){ try{abrirFrequencia();}catch(_){} }, 50);">
+          <button class="btn-primary" onclick="abrirFrequenciaRapido(${__j(turma)},{closeOverlayId:'freqAlertsOverlay'})">
             <i class="fas fa-clipboard-check"></i> Abrir chamada
           </button>
         </div>
@@ -21832,21 +22495,29 @@ function abrirFrequencia(){
       </div>
       <div id="freqTableContainer"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px;">
-        <button data-onclick="abrirHistoricoChamadas()" style="padding:8px 15px;border:1px solid var(--primary);background:transparent;color:var(--primary);border-radius:8px;cursor:pointer;font-size:.82rem;"><i class="fas fa-history"></i> Histórico de Chamadas</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button data-onclick="abrirHistoricoChamadas()" style="padding:8px 15px;border:1px solid var(--primary);background:transparent;color:var(--primary);border-radius:8px;cursor:pointer;font-size:.82rem;"><i class="fas fa-history"></i> Histórico de Chamadas</button>
+          <button id="freqDeleteBtn" data-onclick="freqExcluirChamadaAtual()" style="padding:8px 15px;border:1px solid #dc2626;background:transparent;color:#dc2626;border-radius:8px;cursor:pointer;font-size:.82rem;display:none;"><i class="fas fa-trash"></i> Excluir esta chamada</button>
+        </div>
         <button data-onclick="fecharModais()" style="padding:8px 15px;border:none;background:transparent;cursor:pointer;">Fechar</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);
-  if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
+    if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(overlay);
     document.getElementById('freqDate').addEventListener('change', renderFrequencia);
   }
   overlay.style.display='flex';
-  // Bug fix: always reset date to today when reopening
   const freqDateInput = document.getElementById('freqDate');
   if(freqDateInput) freqDateInput.value = __freqTodayStr();
-  // Clear search filter on open
   window.__freqSearchFilter = '';
-  renderFrequencia();
+  const freqContainer = document.getElementById('freqTableContainer');
+  if(freqContainer){
+    freqContainer.innerHTML = '<div style="padding:18px 14px;border:1px solid var(--border-color);border-radius:12px;color:#64748b;display:flex;align-items:center;gap:10px;"><i class="fas fa-spinner fa-spin"></i><span>Carregando chamada...</span></div>' ;
+  }
+  __scheduleUiAfterPaint('modal-frequencia', function(){
+    try{ __freqEnsureAggForBim(bimestreAtual); }catch(_){ }
+    renderFrequencia();
+  });
 }
 
 function renderFrequencia(){
@@ -21855,6 +22526,8 @@ function renderFrequencia(){
   const keysDate = __freqListKeysForDate(filtroTurma, bimestreAtual, date);
 
   const lista = alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  const listaOrder = Object.create(null);
+  for(let i=0;i<lista.length;i++) listaOrder[lista[i].id] = i + 1;
 
   // Populate discipline dropdown
   const selDisc = document.getElementById('freqDisciplina');
@@ -21912,10 +22585,11 @@ function renderFrequencia(){
   listaFiltrada.forEach((a,i)=>{
     const status = registro[a.id] || '';
     const freqAluno = calcFreqAluno(a.id, bimestreAtual);
-    const globalIdx = lista.indexOf(a);
+    const globalIdx = (listaOrder[a.id] || (i+1)) - 1;
     const unmarkedClass = status ? '' : ' freq-unmarked';
     const pctClass = freqAluno.pct>=75?'good':(freqAluno.pct>=50?'warn':'danger');
-    html+=`<tr class="${unmarkedClass}">
+    // data-aluno-id permite atualização cirúrgica da linha sem reconstruir toda a tabela
+    html+=`<tr class="${unmarkedClass}" data-aluno-id="${a.id}">
       <td>${globalIdx+1}</td>
       <td style="text-align:left;">${escHTML(a.nome)}</td>
       <td>
@@ -21928,6 +22602,13 @@ function renderFrequencia(){
   });
   html+=`</tbody></table>`;
   document.getElementById('freqTableContainer').innerHTML=html;
+  const deleteBtn = document.getElementById('freqDeleteBtn');
+  if(deleteBtn){
+    const hasCurrentRecord = !!(window.__sgpFrequencia && window.__sgpFrequencia[key]);
+    deleteBtn.style.display = hasCurrentRecord ? 'inline-flex' : 'none';
+    const discTxt = selectedDisc ? ` • ${selectedDisc}` : '';
+    deleteBtn.title = hasCurrentRecord ? `Excluir chamada de ${date}${discTxt}` : '';
+  }
   // Preserve search input focus
   try{
     const si=document.getElementById('freqSearchInput');
@@ -21950,6 +22631,58 @@ function freqSaveMeta(){
   };
   __saveFrequencia();
   try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
+}
+
+function freqExcluirChamadaAtual(){
+  const date = document.getElementById('freqDate')?.value || __freqTodayStr();
+  return freqExcluirChamada(__freqCurrentKey(date), { forceRenderCurrent: true });
+}
+
+function freqExcluirChamada(key, options){
+  try{
+    const opts = (options && typeof options === 'object') ? options : {};
+    key = String(key || '').trim();
+    if(!key) return showToast('Chamada inválida.', 'error');
+
+    const freq = window.__sgpFrequencia || {};
+    const reg = freq[key];
+    if(!reg || typeof reg !== 'object') return showToast('Chamada não encontrada.', 'error');
+
+    const info = __freqSplitKey(key);
+    const meta = reg._meta || {};
+    const disc = String(meta.disciplina || '').trim();
+    const dataFmt = info.date ? new Date(info.date + 'T12:00:00').toLocaleDateString('pt-BR') : info.date;
+    const resumo = [info.turma || filtroTurma, info.bim ? `${info.bim}ºB` : '', dataFmt, disc || 'Sem disciplina'].filter(Boolean).join(' • ');
+
+    if(!confirm(`Excluir esta chamada?\n\n${resumo}\n\nEssa ação não pode ser desfeita.`)) return false;
+
+    delete freq[key];
+    try{ __freqLogEvent({ type:'delete', turma:info.turma, bim:info.bim, date:info.date, disciplina:disc, key:key }); }catch(_){}
+    __saveFrequencia();
+
+    try{
+      if(window.__histExpandedKeys && typeof window.__histExpandedKeys.delete === 'function'){
+        window.__histExpandedKeys.delete(key);
+      }
+      if(document.getElementById('modalHistChamadas') && typeof window.__histChamadasRebuild === 'function'){
+        window.__histChamadasRebuild(window.__histBimFilter || bimestreAtual);
+      }
+    }catch(_){}
+
+    try{
+      const currentKey = __freqCurrentKey();
+      if(opts.forceRenderCurrent || (document.getElementById('modalFrequencia') && currentKey === key)){
+        renderFrequencia();
+      }
+    }catch(_){}
+
+    try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
+    showToast('Chamada excluída com sucesso.', 'success');
+    return true;
+  }catch(e){
+    showToast('Erro ao excluir chamada: ' + e.message, 'error');
+    return false;
+  }
 }
 
 function freqToggleFullscreen(){
@@ -21978,35 +22711,103 @@ function freqNavDate(dir){
   if(!inp) return;
   let d=new Date((inp.value||__freqTodayStr())+'T12:00:00');
   let tries=0;
-  do{ d.setDate(d.getDate()+dir); tries++; }while((d.getDay()===0||d.getDay()===6)&&tries<10);
+  // BUG FIX B7: limite aumentado de 10→14 para cobrir feriados prolongados de até 2 semanas
+  do{ d.setDate(d.getDate()+dir); tries++; }while((d.getDay()===0||d.getDay()===6)&&tries<14);
   inp.value=__localISODate(d);
   renderFrequencia();
+}
+
+// Calcula frequência de um único aluno diretamente dos dados brutos,
+// sem usar nem invalidar o cache de agregação global (__freqEnsureAggForBim).
+// Usado pelo setFreq para atualizar só a linha afetada sem re-agregar todos os alunos.
+function __freqComputeAlunoDirectly(alunoId, bim){
+  const freq = window.__sgpFrequencia || {};
+  const id = String(alunoId);
+  let total = 0, presentes = 0, faltas = 0, justificadas = 0;
+  const keys = Object.keys(freq);
+  for(let i = 0; i < keys.length; i++){
+    const key = keys[i];
+    const parts = key.split('|');
+    if(parseInt(parts[1], 10) !== bim) continue;
+    const reg = freq[key];
+    const val = reg && reg[id];
+    if(!val) continue;
+    const qtd = Math.max(1, parseInt((reg._meta && reg._meta.qtdAulas) || 1, 10));
+    total += qtd;
+    if(val === 'P') presentes += qtd;
+    else if(val === 'F') faltas += qtd;
+    else if(val === 'J'){ justificadas += qtd; presentes += qtd; }
+  }
+  const pct = total > 0 ? (presentes / total * 100) : 100;
+  return { total, presentes, faltas, justificadas, pct };
 }
 
 function setFreq(alunoId, value){
   // UX: haptic feedback on mobile
   try{ if(navigator.vibrate) navigator.vibrate(50); }catch(_){}
   const date = document.getElementById('freqDate')?.value || __freqTodayStr();
-  const key = `${filtroTurma}|${bimestreAtual}|${date}`;
+
+  // BUG FIX: usa __freqCurrentKey para respeitar a disciplina selecionada.
+  // Antes: chave simples turma|bim|date ignorava a disciplina → gravava no registro errado.
+  const key = __freqCurrentKey(date);
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
   const current = window.__sgpFrequencia[key][alunoId];
-  if(current===value){
+  if(current === value){
     delete window.__sgpFrequencia[key][alunoId]; // toggle off
   } else {
     window.__sgpFrequencia[key][alunoId] = value;
   }
-  try{ __freqLogEvent({type:'set', turma:filtroTurma, bim:bimestreAtual, date:date, alunoId:alunoId, value:(window.__sgpFrequencia[key]||{})[alunoId]||''}); }catch(_){ }
-__saveFrequencia();
-  renderFrequencia();
-  try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
+  const newValue = (window.__sgpFrequencia[key]||{})[alunoId] || '';
+
+  try{ __freqLogEvent({type:'set', turma:filtroTurma, bim:bimestreAtual, date:date, alunoId:alunoId, value:newValue}); }catch(_){ }
+
+  // PERF FIX: atualização cirúrgica — só atualiza a linha afetada em vez de reconstruir
+  // a tabela inteira (antes: 30+ linhas × calcFreqAluno × re-agregação do cache de freq).
+  const row = document.querySelector('#freqTableContainer tr[data-aluno-id="'+alunoId+'"]');
+  if(row){
+    // 1. Classes dos botões P/F/J
+    row.querySelectorAll('.freq-btn').forEach(function(btn){
+      const bVal = btn.title === 'Presente' ? 'P' : btn.title === 'Falta' ? 'F' : 'J';
+      btn.className = 'freq-btn ' + (newValue === bVal ? bVal : 'none');
+    });
+    // 2. Classe da linha (destaque "sem marcação")
+    row.className = newValue ? '' : 'freq-unmarked';
+    row.dataset.alunoId = alunoId; // mantém o atributo após mudar className
+    // 3. Pct da frequência — cálculo direto para este aluno, sem re-agregar todos
+    const fd = __freqComputeAlunoDirectly(alunoId, bimestreAtual);
+    const pctClass = fd.pct >= 75 ? 'good' : (fd.pct >= 50 ? 'warn' : 'danger');
+    const tdFreq = row.cells[3];
+    if(tdFreq) tdFreq.innerHTML = '<span class="freq-pct '+pctClass+'">'+fd.pct.toFixed(0)+'%</span> <small>('+fd.faltas+'F)</small>';
+    // 4. Placeholder do campo de busca (contador "sem marcação")
+    const registro = window.__sgpFrequencia[key] || {};
+    const lista = alunos.filter(function(a){ return a.turma===filtroTurma; });
+    const semMarcacao = lista.filter(function(a){ return !registro[a.id]; }).length;
+    const si = document.getElementById('freqSearchInput');
+    if(si) si.placeholder = semMarcacao > 0 ? 'Buscar aluno... ('+semMarcacao+' sem marcação)' : 'Buscar aluno... (todos marcados)';
+  } else {
+    // Fallback: linha não encontrada no DOM (busca ativa filtrando), re-render completo
+    __saveFrequencia();
+    renderFrequencia();
+    try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
+    return;
+  }
+
+  // Salva com debounce para não serializar o JSON a cada toque rápido
+  clearTimeout(window.__freqSaveTimer);
+  window.__freqSaveTimer = setTimeout(function(){
+    __saveFrequencia();
+    try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
+  }, 350);
 }
 
 function freqMarcarTodosP(){
   const date = document.getElementById('freqDate')?.value || __freqTodayStr();
-  const key = `${filtroTurma}|${bimestreAtual}|${date}`;
+  // BUG FIX: usava chave simples sem disciplina → gravava no registro errado quando
+  // uma disciplina estava selecionada. __freqCurrentKey() resolve a chave correta.
+  const key = __freqCurrentKey(date);
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
   alunos.filter(a=>a.turma===filtroTurma).forEach(a=>{ window.__sgpFrequencia[key][a.id]='P'; });
-    try{ __freqLogEvent({type:'bulk', turma:filtroTurma, bim:bimestreAtual, date:date, value:'P', count:(alunos.filter(a=>a.turma===filtroTurma).length||0)}); }catch(_){}
+  try{ __freqLogEvent({type:'bulk', turma:filtroTurma, bim:bimestreAtual, date:date, value:'P', count:(alunos.filter(a=>a.turma===filtroTurma).length||0)}); }catch(_){}
   __saveFrequencia(); renderFrequencia();
   try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
 }
@@ -22014,10 +22815,11 @@ function freqMarcarTodosF(){
   const total = alunos.filter(a=>a.turma===filtroTurma).length;
   if(!confirm(`Marcar todos os ${total} alunos como AUSENTES?\n\nEssa ação pode ser desfeita individualmente.`)) return;
   const date = document.getElementById('freqDate')?.value || __freqTodayStr();
-  const key = `${filtroTurma}|${bimestreAtual}|${date}`;
+  // BUG FIX: chave correta com disciplina selecionada
+  const key = __freqCurrentKey(date);
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
   alunos.filter(a=>a.turma===filtroTurma).forEach(a=>{ window.__sgpFrequencia[key][a.id]='F'; });
-    try{ __freqLogEvent({type:'bulk', turma:filtroTurma, bim:bimestreAtual, date:date, value:'F', count:(alunos.filter(a=>a.turma===filtroTurma).length||0)}); }catch(_){}
+  try{ __freqLogEvent({type:'bulk', turma:filtroTurma, bim:bimestreAtual, date:date, value:'F', count:(alunos.filter(a=>a.turma===filtroTurma).length||0)}); }catch(_){}
   __saveFrequencia(); renderFrequencia();
   try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
 }
@@ -22339,11 +23141,14 @@ try{
               ${r.disciplina ? `<span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:700;"><i class="fas fa-book"></i> ${escHTML(r.disciplina)}</span>` : ''}
               <span style="font-size:.72rem;color:var(--text-muted);">${r.qtdAulas} aula(s)</span>
             </div>
-            <div style="display:flex;gap:6px;align-items:center;">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
               <span style="font-size:.75rem;color:#166534;font-weight:600;">${r.countP}P</span>
               <span style="font-size:.75rem;color:#991b1b;font-weight:600;">${r.countF}F</span>
               <span style="font-size:.75rem;color:#854d0e;font-weight:600;">${r.countJ}J</span>
               <span style="font-size:.75rem;color:${pctColor};font-weight:700;">${pctPresenca}%</span>
+              <button onclick="event.stopPropagation();freqExcluirChamada('${r.key.replace(/'/g,"\\'")}')" title="Excluir chamada" style="border:1px solid #fecaca;background:#fff;color:#b91c1c;border-radius:8px;padding:4px 8px;font-size:.76rem;font-weight:700;cursor:pointer;">
+                <i class="fas fa-trash"></i>
+              </button>
             </div>
           </div>`;
         
@@ -22474,7 +23279,8 @@ try{
 function freqCopiarAusentesWA(){
   try{
     const date=document.getElementById('freqDate')?.value||__freqTodayStr();
-    const key=`${filtroTurma}|${bimestreAtual}|${date}`;
+    // BUG FIX B1: chave correta respeita disciplina selecionada (antes: chave sem disciplina)
+    const key=__freqCurrentKey(date);
     const reg=window.__sgpFrequencia[key]||{};
     const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
     const ausentes=lista.filter(a=>reg[a.id]==='F').map(a=>a.nome||'Sem nome');
@@ -23417,47 +24223,64 @@ let __dashPie1=null, __dashPie2=null, __dashHist1=null, __dashHist2=null;
 const __origRenderDash = renderizarDashboard;
 renderizarDashboard = function(){
   __origRenderDash();
-  renderDashPieCharts();
-  renderDashHistograms();
+  const dashToken = __dashRenderToken;
+  __scheduleUiAfterPaint('dash-rich-charts', function(){
+    if(visaoAtual!=='dash' || dashToken !== __dashRenderToken) return;
+    renderDashPieCharts();
+    renderDashHistograms();
+  });
 };
 
 function renderDashPieCharts(){
   if(typeof Chart === 'undefined') return;
-  const lista = getAlunosFiltrados();
-  const cat = (m)=> (m>=7 ? 'verde' : (m>=5 ? 'amarelo' : 'vermelho'));
-  const c1={verde:0,amarelo:0,vermelho:0}, c2={verde:0,amarelo:0,vermelho:0};
-  
-  lista.forEach(a=>{
-    const b = a?.bimestres?.[bimestreAtual]; if(!b) return;
-    _syncBimestreRefs(b);
-    c1[cat(clampNota(calcularMediaDisc(config.slot1, b.notas_lp)))]++;
-    c2[cat(clampNota(calcularMediaDisc(config.slot2, b.notas_red)))]++;
-  });
-  
+
+  let c1=null, c2=null;
+  const summary = __dashLastSummary;
+  if(summary && summary.bim===bimestreAtual && summary.turma===filtroTurma && summary.slot1===config.slot1 && summary.slot2===config.slot2){
+    c1 = summary.c1;
+    c2 = summary.c2;
+  }
+
+  if(!c1 || !c2){
+    const lista = getAlunosFiltrados();
+    const cat = (m)=> (m>=7 ? 'verde' : (m>=5 ? 'amarelo' : 'vermelho'));
+    c1={verde:0,amarelo:0,vermelho:0};
+    c2={verde:0,amarelo:0,vermelho:0};
+
+    lista.forEach(a=>{
+      const b = a?.bimestres?.[bimestreAtual]; if(!b) return;
+      _syncBimestreRefs(b);
+      c1[cat(clampNota(calcularMediaDisc(config.slot1, b.notas_lp)))]++;
+      c2[cat(clampNota(calcularMediaDisc(config.slot2, b.notas_red)))]++;
+    });
+  }
+
   const colors = ['#16a34a','#f59e0b','#dc2626'];
   const labels = ['Verde (≥7)','Amarelo (5-6.9)','Vermelho (<5)'];
   const pieOpts = {responsive:true, maintainAspectRatio:true, plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}};
-  
-  // Pie 1
-  const cv1 = document.getElementById('dashPieMat1');
-  if(cv1){
-    if(__dashPie1) __dashPie1.destroy();
-    __dashPie1 = new Chart(cv1.getContext('2d'),{
+
+  const ensurePieChart = (cv, chartRef, data)=>{
+    if(!cv) return chartRef;
+    if(chartRef){
+      try{
+        chartRef.data.labels = labels;
+        chartRef.data.datasets[0].data = data;
+        chartRef.update('none');
+        return chartRef;
+      }catch(_){
+        try{ chartRef.destroy(); }catch(__){}
+        chartRef = null;
+      }
+    }
+    return new Chart(cv.getContext('2d'),{
       type:'doughnut',
-      data:{labels, datasets:[{data:[c1.verde,c1.amarelo,c1.vermelho], backgroundColor:colors, borderWidth:2, borderColor:'#fff'}]},
+      data:{labels, datasets:[{data, backgroundColor:colors, borderWidth:2, borderColor:'#fff'}]},
       options:pieOpts
     });
-  }
-  // Pie 2
-  const cv2 = document.getElementById('dashPieMat2');
-  if(cv2){
-    if(__dashPie2) __dashPie2.destroy();
-    __dashPie2 = new Chart(cv2.getContext('2d'),{
-      type:'doughnut',
-      data:{labels, datasets:[{data:[c2.verde,c2.amarelo,c2.vermelho], backgroundColor:colors, borderWidth:2, borderColor:'#fff'}]},
-      options:pieOpts
-    });
-  }
+  };
+
+  __dashPie1 = ensurePieChart(document.getElementById('dashPieMat1'), __dashPie1, [c1.verde,c1.amarelo,c1.vermelho]);
+  __dashPie2 = ensurePieChart(document.getElementById('dashPieMat2'), __dashPie2, [c2.verde,c2.amarelo,c2.vermelho]);
 }
 
 function renderDashHistograms(){
@@ -23469,6 +24292,9 @@ function renderDashHistograms(){
 // V13 FEATURE 8: BACKUP REMINDER
 // ===============================================
 function initBackupReminder(){
+  // Guard: evita registrar dois setInterval se chamado mais de uma vez (ex.: IDB rehydrate + DOMContentLoaded)
+  if(window.__backupReminderInitialized) return;
+  window.__backupReminderInitialized = true;
   // Check every 30 minutes
   setInterval(checkBackupReminder, 30*60*1000);
   // Also check on load after 10s
@@ -23707,11 +24533,11 @@ function abrirControleEntregas(){
       </div>
     </div>`;
     document.body.appendChild(overlay);
-    if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
+    if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(overlay);
   }
   document.getElementById('entTurmaLabel').textContent=`${filtroTurma} — ${bimestreAtual}º Bim`;
   overlay.style.display='flex';
-  renderEntregas();
+  __scheduleUiAfterPaint('modal-entregas', function(){ renderEntregas(); });
 }
 
 function _entKey(){ return `${filtroTurma}|${bimestreAtual}`; }
@@ -23961,7 +24787,7 @@ function universalSearch(query){
   // Search alunos
   alunos.forEach(a=>{
     if((a.nome||'').toLowerCase().includes(q)){
-      results.push({type:'aluno', label:a.nome, sub:`Turma: ${a.turma}`, action:`selTurma('${a.turma}')`});
+      results.push({type:'aluno', label:a.nome, sub:`Turma: ${a.turma}`, action:`selTurma(decodeURIComponent('${encodeURIComponent(a.turma)}')`+`)`});
     }
   });
 
@@ -24261,20 +25087,28 @@ try{
 // ================================================================
 function updateSidebarBadges(){
   try{
+    // PERF FIX: pré-indexa alunos por turma em Maps (O(n) total) em vez de
+    // chamar alunos.filter() duas vezes por turma (antes: O(turmas × alunos)).
+    const countMap = new Map();
+    const riscoMap = new Map();
+    alunos.forEach(a=>{
+      const t = a.turma;
+      countMap.set(t, (countMap.get(t)||0) + 1);
+      const b = a.bimestres && a.bimestres[bimestreAtual];
+      if(b && (parseFloat(b.media_lp)<5 || parseFloat(b.media_red)<5)){
+        riscoMap.set(t, (riscoMap.get(t)||0) + 1);
+      }
+    });
+
     document.querySelectorAll('.turma-item').forEach(item=>{
       const raw=item.getAttribute('data-turma')||'';
       const nome=decodeURIComponent(raw);
       if(!nome || nome==='Todas') return;
-      // Remove old badge
       const old=item.querySelector('.turma-badge');
       if(old) old.remove();
 
-      const count=alunos.filter(a=>a.turma===nome).length;
-      const risco=alunos.filter(a=>{
-        if(a.turma!==nome) return false;
-        const b=a.bimestres[bimestreAtual]; if(!b) return false;
-        return parseFloat(b.media_lp)<5 || parseFloat(b.media_red)<5;
-      }).length;
+      const count = countMap.get(nome) || 0;
+      const risco = riscoMap.get(nome) || 0;
 
       const badge=document.createElement('span');
       badge.className=`turma-badge ${risco>0?'risco':'normal'}`;
@@ -24377,10 +25211,10 @@ function abrirAuditTrail(){
       </div>
     </div>`;
     document.body.appendChild(overlay);
-    if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers();
+    if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(overlay);
   }
   overlay.style.display='flex';
-  renderAuditTrail();
+  __scheduleUiAfterPaint('modal-audit', function(){ renderAuditTrail(); });
 }
 
 function renderAuditTrail(){
@@ -24479,23 +25313,29 @@ function abrirDiarioClasse(){
   if(filtroTurma==='Todas') return showToast("Selecione uma turma.","error");
 
   const freq=window.__sgpFrequencia||{};
-  // Collect all dates with data for this turma+bimestre
-  const dates=[];
+
+  // BUG FIX B4: deduplicação de datas — com multi-disciplina, a mesma data aparece
+  // em múltiplas chaves (turma|bim|data|disc). Usar Set garante uma entrada por data.
+  const datesSet=new Set();
+  // BUG FIX B2/B8: indexar TODOS os registros de freq por data (não só a chave sem disciplina).
+  // Antes: key=`${filtroTurma}|${bimestreAtual}|${date}` só lia o registro sem disciplina.
+  // Agora: coleta todos os registros do dia por data, agregando P/F/J de todas as disciplinas.
+  const keysByDate={}; // date -> [key, key, ...]
   Object.keys(freq).forEach(key=>{
     const p=key.split('|');
-    if(p[0]===filtroTurma && parseInt(p[1])===bimestreAtual) dates.push(p[2]);
+    if(p[0]===filtroTurma && parseInt(p[1])===bimestreAtual && p[2]){
+      datesSet.add(p[2]);
+      (keysByDate[p[2]]||(keysByDate[p[2]]=[])).push(key);
+    }
   });
-  dates.sort().reverse();
 
   // Also collect aulas for this turma+bimestre
   const aulasMap={};
   (aulas||[]).filter(a=>a.turma===filtroTurma && a.bimestre===bimestreAtual).forEach(a=>{
-    if(a.data) aulasMap[a.data]=a;
+    if(a.data){ aulasMap[a.data]=a; datesSet.add(a.data); }
   });
 
-  // Merge dates from aulas too
-  Object.keys(aulasMap).forEach(d=>{ if(!dates.includes(d)) dates.push(d); });
-  dates.sort().reverse();
+  const dates=Array.from(datesSet).sort().reverse();
 
   const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
 
@@ -24512,22 +25352,42 @@ function abrirDiarioClasse(){
   }
 
   dates.forEach(date=>{
-    const key=`${filtroTurma}|${bimestreAtual}|${date}`;
-    const registro=freq[key]||{};
-    const meta=registro._meta||{};
+    // Agrega P/F/J de TODOS os registros do dia (todas as disciplinas)
+    const keysForDay=keysByDate[date]||[];
+    let countP=0,countF=0,countJ=0;
+    // Para exibir conteúdo: usa a última chave com _meta preenchido
+    let meta={}, registroDisplay={};
+    keysForDay.forEach(key=>{
+      const reg=freq[key]||{};
+      const m=reg._meta||{};
+      // meta com disciplina tem prioridade sobre legacy (sem disciplina)
+      if(m.disciplina||m.registroAula||m.qtdAulas) meta=m;
+      // Agrega chamada
+      lista.forEach(a=>{
+        const s=reg[a.id];
+        if(s==='P') countP++;
+        else if(s==='F') countF++;
+        else if(s==='J') countJ++;
+        if(s) registroDisplay[a.id]=s; // última marcação "ganha" (para mini-chamada)
+      });
+    });
+    // Se só há registro legado (sem disciplina), mantém comportamento anterior
+    if(!keysForDay.length){
+      countP=0; countF=0; countJ=0;
+    }
     const aula=aulasMap[date]||{};
     const dObj=new Date(date+'T12:00:00');
     const dataFmt=dObj.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-
-    // Count P/F/J
-    let countP=0,countF=0,countJ=0;
-    lista.forEach(a=>{
-      const s=registro[a.id]; if(s==='P')countP++; else if(s==='F')countF++; else if(s==='J')countJ++;
-    });
+    // Disciplinas do dia (pode ter mais de uma)
+    const disciplinasNoDia=[...new Set(keysForDay.map(k=>{
+      const m=(freq[k]||{})._meta||{};
+      return m.disciplina ? String(m.disciplina).trim() : '';
+    }).filter(Boolean))];
+    const discBadges=disciplinasNoDia.map(d=>`<span style="background:#e0f2fe;color:#0369a1;padding:1px 8px;border-radius:6px;font-size:.75rem;font-weight:700;"><i class="fas fa-book"></i> ${escHTML(d)}</span>`).join(' ');
 
     html+=`<div class="diario-entry">
       <div class="diario-entry-header">
-        <span>${dataFmt}${meta.disciplina ? ' — <span style="background:#e0f2fe;color:#0369a1;padding:1px 8px;border-radius:6px;font-size:.75rem;font-weight:700;"><i class="fas fa-book"></i> '+escHTML(meta.disciplina)+'</span>' : ''}</span>
+        <span>${dataFmt}${discBadges?' — '+discBadges:''}</span>
         <span style="font-size:.78rem;color:#64748b;">${meta.qtdAulas||1} aula(s) | ${countP}P ${countF}F ${countJ}J</span>
       </div>
       <div class="diario-entry-body">
@@ -24544,359 +25404,11 @@ function abrirDiarioClasse(){
           <label><i class="fas fa-users"></i> Chamada</label>
           <div class="diario-chamada-mini">`;
     lista.forEach(a=>{
-      const s=registro[a.id]||'';
+      const s=registroDisplay[a.id]||'';
       if(s) html+=`<span class="${s}" title="${escHTML(a.nome)}">${s}</span>`;
     });
     html+=`</div></div></div></div>`;
   });
-
-  html+=`<div style="text-align:center;margin-top:14px;display:flex;gap:8px;justify-content:center;">
-      <button style="background:#7c3aed;color:#fff;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
-      <button style="background:#475569;color:#fff;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;" onclick="document.getElementById('diarioOverlay').remove();">Fechar</button>
-    </div>
-  </div></div>`;
-
-  const old=document.getElementById('diarioOverlay'); if(old)old.remove();
-  document.body.insertAdjacentHTML('beforeend',html);
-}
-
-// ================================================================
-// F10: DIÁRIO MENSAL IMPRIMÍVEL
-// ================================================================
-function abrirDiarioMensal(){
-  if(filtroTurma==='Todas') return showToast("Selecione uma turma.","error");
-
-  // Show month picker first
-  const now=new Date();
-  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  let pickerHtml=`<div class="diario-overlay" id="mensalPicker" onclick="if(event.target===this)this.remove();">
-  <div class="diario-container" style="max-width:400px;text-align:center;">
-    <h3 style="margin:0 0 14px;"><i class="fas fa-calendar-check"></i> Diário Mensal — Escolha o período</h3>
-    <div style="display:flex;gap:10px;justify-content:center;margin:12px 0;">
-      <select id="mensalMes" style="padding:10px;border-radius:8px;border:1px solid #cbd5e1;font-size:.95rem;flex:1;">`;
-  meses.forEach((n,i)=>{ pickerHtml+=`<option value="${i}" ${i===now.getMonth()?'selected':''}>${n}</option>`; });
-  pickerHtml+=`</select>
-      <input type="number" id="mensalAno" value="${now.getFullYear()}" min="2020" max="2030" style="padding:10px;border-radius:8px;border:1px solid #cbd5e1;font-size:.95rem;width:100px;">
-    </div>
-    <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;">
-      <button onclick="gerarDiarioMensal()" style="background:#0d9488;color:#fff;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;"><i class="fas fa-check"></i> Gerar</button>
-      <button onclick="document.getElementById('mensalPicker').remove();" style="background:#64748b;color:#fff;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;">Cancelar</button>
-    </div>
-  </div></div>`;
-  const old=document.getElementById('mensalPicker'); if(old)old.remove();
-  document.body.insertAdjacentHTML('beforeend', pickerHtml);
-}
-
-function gerarDiarioMensal(){
-  const mSel=document.getElementById('mensalMes');
-  const aSel=document.getElementById('mensalAno');
-  if(!mSel||!aSel) return;
-  const m=parseInt(mSel.value,10), y=parseInt(aSel.value,10);
-  document.getElementById('mensalPicker')?.remove();
-  if(isNaN(m)||isNaN(y)) return showToast("Dados inválidos.","error");
-
-  const diasNoMes=new Date(y, m+1, 0).getDate();
-  const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  const freq=window.__sgpFrequencia||{};
-  const nomeMes=new Date(y,m,15).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-
-  function __freqMensalInitTot(){
-    return {P:0,F:0,J:0,total:0};
-  }
-  function __freqMensalAdd(acc, status, qtd){
-    if(!acc || !status) return;
-    const n=Math.max(1, parseInt(qtd,10)||1);
-    if(status==='P') acc.P += n;
-    else if(status==='F') acc.F += n;
-    else if(status==='J') acc.J += n;
-    else return;
-    acc.total += n;
-  }
-  function __freqMensalPct(acc){
-    return acc && acc.total ? (((acc.P + acc.J) / acc.total) * 100) : 0;
-  }
-  function __freqMensalDiscLabel(v){
-    const txt=String(v||'').trim();
-    return txt || 'Sem disciplina';
-  }
-  function __freqMensalDiscShort(v){
-    const txt=__freqMensalDiscLabel(v);
-    if(txt==='Sem disciplina') return 'S/D';
-    const clean=txt.replace(/\s+/g,' ').trim();
-    if(clean.length<=10) return clean;
-    const parts=clean.split(' ').filter(Boolean);
-    if(parts.length>=2){
-      const sig=parts.slice(0,3).map(p=>p[0]).join('').toUpperCase();
-      if(sig.length>=2) return sig;
-    }
-    return clean.slice(0,10);
-  }
-
-  const regMap={};
-  Object.keys(freq).forEach(key=>{
-    const p=__freqSplitKey(key);
-    if(p.turma!==filtroTurma) return;
-    if((parseInt(p.bim,10)||0)!==bimestreAtual) return;
-    const ds=p.date||'';
-    const prefix=`${y}-${String(m+1).padStart(2,'0')}-`;
-    if(!ds.startsWith(prefix)) return;
-    const reg=freq[key]||{};
-    const meta=reg._meta||{};
-    (regMap[ds]||(regMap[ds]=[])).push({
-      key,
-      reg,
-      meta,
-      qtdAulas: Math.max(1, parseInt(meta.qtdAulas||1,10)||1),
-      disciplina: __freqMensalDiscLabel(meta.disciplina||'')
-    });
-  });
-  Object.keys(regMap).forEach(ds=>{
-    regMap[ds].sort((a,b)=> String(a.disciplina||'').localeCompare(String(b.disciplina||''),'pt-BR'));
-  });
-
-  const disciplinasMesSet=new Set();
-  Object.keys(regMap).sort().forEach(ds=>{
-    (regMap[ds]||[]).forEach(entry=> disciplinasMesSet.add(entry.disciplina));
-  });
-  if(!disciplinasMesSet.size){
-    try{
-      ensureConfigSchema();
-      (config.disciplinas||[]).forEach(d=>{
-        const nome=String((d && (d.nome||d.id)) || '').trim();
-        if(nome) disciplinasMesSet.add(nome);
-      });
-    }catch(_){ }
-  }
-  const disciplinasMes=Array.from(disciplinasMesSet).filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
-
-  const resumoDisciplinasBase=disciplinasMes.map(nome=>{
-    let dias=0, aulasTotal=0;
-    Object.keys(regMap).forEach(ds=>{
-      const matches=(regMap[ds]||[]).filter(entry => entry && entry.disciplina===nome);
-      if(matches.length){
-        dias++;
-        aulasTotal += matches.reduce((s,entry)=>s+(entry.qtdAulas||1),0);
-      }
-    });
-    return {nome, dias, aulasTotal};
-  });
-
-  const resumoPorAluno=lista.map(a=>{
-    const porDisc={};
-    disciplinasMes.forEach(nome=>{ porDisc[nome]=__freqMensalInitTot(); });
-    const geral=__freqMensalInitTot();
-    for(let d=1;d<=diasNoMes;d++){
-      const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const entries=regMap[ds] || [];
-      entries.forEach(entry=>{
-        const s=entry.reg ? entry.reg[a.id] : '';
-        if(!s) return;
-        const qtd=entry.qtdAulas || 1;
-        if(!porDisc[entry.disciplina]) porDisc[entry.disciplina]=__freqMensalInitTot();
-        __freqMensalAdd(porDisc[entry.disciplina], s, qtd);
-        __freqMensalAdd(geral, s, qtd);
-      });
-    }
-    return { id:a.id, nome:a.nome||'', porDisc, geral };
-  });
-
-  const totalTurmaPorDisc={};
-  disciplinasMes.forEach(nome=>{ totalTurmaPorDisc[nome]=__freqMensalInitTot(); });
-  const totalTurmaGeral=__freqMensalInitTot();
-  resumoPorAluno.forEach(row=>{
-    disciplinasMes.forEach(nome=>{
-      if(!totalTurmaPorDisc[nome]) totalTurmaPorDisc[nome]=__freqMensalInitTot();
-      const src=row.porDisc[nome] || __freqMensalInitTot();
-      totalTurmaPorDisc[nome].P += src.P||0;
-      totalTurmaPorDisc[nome].F += src.F||0;
-      totalTurmaPorDisc[nome].J += src.J||0;
-      totalTurmaPorDisc[nome].total += src.total||0;
-    });
-    totalTurmaGeral.P += row.geral.P||0;
-    totalTurmaGeral.F += row.geral.F||0;
-    totalTurmaGeral.J += row.geral.J||0;
-    totalTurmaGeral.total += row.geral.total||0;
-  });
-
-  const alunosComFaltaGeral = resumoPorAluno.filter(row => ((row.geral||{}).F||0) > 0).length;
-  const pctGeralTurma = __freqMensalPct(totalTurmaGeral);
-  const totalAulasLancadasMes = resumoDisciplinasBase.reduce((s,item)=>s+(item.aulasTotal||0),0);
-
-  const resumoDisciplinas=resumoDisciplinasBase.map(item=>{
-    const totais=totalTurmaPorDisc[item.nome] || __freqMensalInitTot();
-    const pct=__freqMensalPct(totais);
-    const alunosComFalta=resumoPorAluno.filter(row => (((row.porDisc||{})[item.nome]||{}).F||0) > 0).length;
-    const alunosComJust=resumoPorAluno.filter(row => (((row.porDisc||{})[item.nome]||{}).J||0) > 0).length;
-    return {...item, totais, pct, alunosComFalta, alunosComJust};
-  });
-
-  let html=`<div class="diario-overlay mensal-overlay-wrap" id="mensalOverlay" onclick="if(event.target===this)this.remove();">
-  <div class="diario-container mensal-container-wrap" style="max-width:1440px;">
-    <button style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b;" onclick="document.getElementById('mensalOverlay').remove();">&times;</button>
-    <div style="text-align:center;border-bottom:2px solid #1e293b;padding-bottom:8px;margin-bottom:12px;">
-      <h2 style="margin:0;"><i class="fas fa-calendar-check"></i> Diário de Classe Mensal</h2>
-      <p style="margin:2px 0;font-size:.88rem;color:#475569;">${escHTML(filtroTurma)} — ${nomeMes} — ${bimestreAtual}º bimestre</p>
-      <p style="margin:6px 0 0;font-size:.78rem;color:#64748b;">Primeiro aparece um resumo rápido por disciplina. A tabela detalhada com o dia a dia dos alunos fica logo abaixo.</p>
-    </div>`;
-
-  html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:0 0 14px;">
-    <div style="border:1px solid #cbd5e1;border-radius:14px;padding:12px 14px;background:#fff;">
-      <div style="font-size:.72rem;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:.04em;">Alunos com falta</div>
-      <div style="font-size:1.7rem;font-weight:800;color:#dc2626;line-height:1.1;margin-top:4px;">${alunosComFaltaGeral}</div>
-      <div style="font-size:.78rem;color:#64748b;">de ${lista.length} aluno(s) no mês</div>
-    </div>
-    <div style="border:1px solid #cbd5e1;border-radius:14px;padding:12px 14px;background:#fff;">
-      <div style="font-size:.72rem;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:.04em;">Presença geral</div>
-      <div style="font-size:1.7rem;font-weight:800;color:${pctGeralTurma>=75?'#16a34a':(pctGeralTurma>=50?'#f59e0b':'#dc2626')};line-height:1.1;margin-top:4px;">${pctGeralTurma.toFixed(0)}%</div>
-      <div style="font-size:.78rem;color:#64748b;">considerando P + J sobre o total</div>
-    </div>
-    <div style="border:1px solid #cbd5e1;border-radius:14px;padding:12px 14px;background:#fff;">
-      <div style="font-size:.72rem;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:.04em;">Faltas lançadas</div>
-      <div style="font-size:1.7rem;font-weight:800;color:#b45309;line-height:1.1;margin-top:4px;">${totalTurmaGeral.F||0}</div>
-      <div style="font-size:.78rem;color:#64748b;">ponderadas pela quantidade de aulas</div>
-    </div>
-    <div style="border:1px solid #cbd5e1;border-radius:14px;padding:12px 14px;background:#fff;">
-      <div style="font-size:.72rem;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:.04em;">Aulas lançadas</div>
-      <div style="font-size:1.7rem;font-weight:800;color:#1d4ed8;line-height:1.1;margin-top:4px;">${totalAulasLancadasMes}</div>
-      <div style="font-size:.78rem;color:#64748b;">somando todas as disciplinas do mês</div>
-    </div>
-  </div>`;
-
-  if(resumoDisciplinas.length){
-    html+=`<div style="margin:0 0 14px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-        <h3 style="margin:0;font-size:1rem;"><i class="fas fa-layer-group"></i> Resumo por disciplina</h3>
-        <span style="font-size:.78rem;color:#64748b;">Leitura rápida para gestão antes do detalhamento por aluno.</span>
-      </div>
-      <div style="overflow-x:auto;">
-        <table class="mensal-table"><thead>
-          <tr>
-            <th style="text-align:left;min-width:180px;">Disciplina</th>
-            <th>Dia(s)</th>
-            <th>Aulas</th>
-            <th>P</th>
-            <th>F</th>
-            <th>J</th>
-            <th>% presença</th>
-            <th>Alunos c/ falta</th>
-          </tr>
-        </thead><tbody>`;
-    resumoDisciplinas.forEach(item=>{
-      html+=`<tr>
-        <td style="text-align:left;font-weight:700;">${escHTML(item.nome)}</td>
-        <td>${item.dias||0}</td>
-        <td>${item.aulasTotal||0}</td>
-        <td>${item.totais.P||0}</td>
-        <td style="color:#b91c1c;font-weight:700;">${item.totais.F||0}</td>
-        <td>${item.totais.J||0}</td>
-        <td style="font-weight:700;color:${item.pct>=75?'#16a34a':(item.pct>=50?'#f59e0b':'#dc2626')};">${item.pct.toFixed(0)}%</td>
-        <td>${item.alunosComFalta||0}</td>
-      </tr>`;
-    });
-    html+=`<tr style="font-weight:700;background:#eff6ff;">
-      <td style="text-align:left;">Geral do mês</td>
-      <td>${resumoDisciplinas.reduce((s,item)=>s+(item.dias||0),0)}</td>
-      <td>${totalAulasLancadasMes}</td>
-      <td>${totalTurmaGeral.P||0}</td>
-      <td style="color:#b91c1c;">${totalTurmaGeral.F||0}</td>
-      <td>${totalTurmaGeral.J||0}</td>
-      <td style="font-weight:700;color:${pctGeralTurma>=75?'#16a34a':(pctGeralTurma>=50?'#f59e0b':'#dc2626')};">${pctGeralTurma.toFixed(0)}%</td>
-      <td>${alunosComFaltaGeral}</td>
-    </tr>`;
-    html+=`</tbody></table></div></div>`;
-  }
-
-  html+=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 8px;">
-    <h3 style="margin:0;font-size:1rem;"><i class="fas fa-table"></i> Tabela detalhada por aluno e por dia</h3>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:.75rem;">
-      <span style="padding:4px 8px;border:1px solid #bbf7d0;border-radius:999px;background:#dcfce7;color:#166534;"><b>P</b> Presença</span>
-      <span style="padding:4px 8px;border:1px solid #fecaca;border-radius:999px;background:#fee2e2;color:#991b1b;"><b>F</b> Falta</span>
-      <span style="padding:4px 8px;border:1px solid #fde68a;border-radius:999px;background:#fef9c3;color:#854d0e;"><b>J</b> Justificada</span>
-    </div>
-  </div>`;
-
-  html+=`<div style="overflow-x:auto;">
-    <table class="mensal-table"><thead><tr>
-      <th style="text-align:left;min-width:60px;">#</th>
-      <th style="text-align:left;min-width:240px;">Nome</th>`;
-
-  for(let d=1;d<=diasNoMes;d++){
-    const dow=new Date(y,m,d).getDay();
-    const isWeekend=dow===0||dow===6;
-    html+=`<th style="${isWeekend?'background:#fef3c7;':''}font-size:.6rem;">${d}</th>`;
-  }
-  html+=`<th class="total">P</th><th class="total">F</th><th class="total">J</th><th class="total">%</th></tr></thead><tbody>`;
-
-  const dayTotals={};
-  for(let d=1;d<=diasNoMes;d++) dayTotals[d]={P:0,F:0,J:0,marcados:0,qtdAulas:0,disciplinas:[],tokens:[]};
-
-  lista.forEach((a,i)=>{
-    let tP=0,tF=0,tJ=0;
-    html+=`<tr><td>${i+1}</td><td style="text-align:left;white-space:nowrap;">${escHTML(a.nome)}</td>`;
-    for(let d=1;d<=diasNoMes;d++){
-      const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const entries=regMap[ds] || [];
-      const dow=new Date(y,m,d).getDay();
-      const isWeekend=dow===0||dow===6;
-      const titleParts=[];
-      const tokens=[];
-      entries.forEach(entry=>{
-        const qtd=entry ? (entry.qtdAulas||1) : 0;
-        if(entry){
-          dayTotals[d].qtdAulas += qtd;
-          if(entry.disciplina && !dayTotals[d].disciplinas.includes(entry.disciplina)) dayTotals[d].disciplinas.push(entry.disciplina);
-        }
-        const s=entry && entry.reg ? (entry.reg[a.id]||'') : '';
-        if(!s) return;
-        if(s==='P'){ tP+=qtd; dayTotals[d].P+=qtd; dayTotals[d].marcados++; }
-        else if(s==='F'){ tF+=qtd; dayTotals[d].F+=qtd; dayTotals[d].marcados++; }
-        else if(s==='J'){ tJ+=qtd; dayTotals[d].J+=qtd; dayTotals[d].marcados++; }
-        tokens.push({ status:s, qtd, disciplina: entry.disciplina || '' });
-        if(entry.disciplina) titleParts.push(`${entry.disciplina} • ${qtd} aula(s) • ${s==='P'?'Presente':(s==='F'?'Falta':'Justificada')}`);
-        else titleParts.push(`${qtd} aula(s) • ${s==='P'?'Presente':(s==='F'?'Falta':'Justificada')}`);
-      });
-      let cellText='';
-      let cellClass='';
-      if(tokens.length===1){
-        cellClass = tokens[0].status;
-        cellText = tokens[0].qtd>1 ? `${tokens[0].status}${tokens[0].qtd}` : tokens[0].status;
-      }else if(tokens.length>1){
-        const same = tokens.every(t => t.status===tokens[0].status);
-        if(same){
-          const totalQtd = tokens.reduce((s,t)=>s+(t.qtd||1),0);
-          cellClass = tokens[0].status;
-          cellText = totalQtd>1 ? `${tokens[0].status}${totalQtd}` : tokens[0].status;
-        }else{
-          cellText = tokens.map(t => (t.qtd>1 ? `${t.status}${t.qtd}` : t.status)).join('/');
-        }
-      }
-      html+=`<td class="${cellClass}" title="${escHTML(titleParts.join(' | '))}" style="${isWeekend&&!cellText?'background:#fef3c7;':''}">${cellText}</td>`;
-    }
-    const total=tP+tF+tJ;
-    const pct=total?(((tP+tJ)/total)*100):0;
-    html+=`<td class="total">${tP}</td><td class="total">${tF}</td><td class="total">${tJ}</td>`;
-    html+=`<td class="total" style="color:${pct>=75?'#16a34a':(pct>=50?'#f59e0b':'#dc2626')};">${pct.toFixed(0)}%</td></tr>`;
-  });
-
-  html+=`<tr style="font-weight:700;background:#f8fafc;"><td colspan="2">Aulas do dia</td>`;
-  for(let d=1;d<=diasNoMes;d++){
-    const t=dayTotals[d]||{};
-    const v=t.qtdAulas||0;
-    const discTitle=(t.disciplinas||[]).length ? t.disciplinas.join(' • ') : 'Sem disciplina';
-    html+=`<td title="${escHTML(discTitle + (v?(' • ' + v + ' aula(s)'):''))}" style="font-size:.58rem;">${v||'—'}</td>`;
-  }
-  html+=`<td colspan="4"></td></tr>`;
-
-  html+=`<tr style="font-weight:700;background:#f1f5f9;"><td colspan="2">Disciplina</td>`;
-  for(let d=1;d<=diasNoMes;d++){
-    const t=dayTotals[d]||{};
-    const labels=(t.disciplinas||[]).map(v=>__freqMensalDiscShort(v));
-    const lbl=labels.length ? labels.join('+') : '—';
-    html+=`<td title="${escHTML((t.disciplinas||[]).join(' • ') || 'Sem registro')}" style="font-size:.55rem;">${escHTML(lbl)}</td>`;
-  }
-  html+=`<td colspan="4"></td></tr>`;
-
-  html+=`</tbody></table></div>`;
 
   html+=`<div style="text-align:center;margin-top:14px;display:flex;gap:8px;justify-content:center;">
       <button style="background:#7c3aed;color:#fff;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
@@ -29385,7 +29897,7 @@ function _sortRenderHistorico(){
   const el=document.getElementById('sortHistory');
   if(!el) return;
   if(!sortHistorico.length){el.innerHTML='';return;}
-  const nomes=sortHistorico.map(id=>{const a=alunos.find(x=>x.id===id);return a?a.nome.split(' ')[0]:'?';});
+  const nomes=sortHistorico.map(id=>{const a=alunos.find(x=>x.id===id);return a?escHTML(a.nome.split(' ')[0]):'?';});
   el.innerHTML=`<b>Já sorteados (${nomes.length}):</b> ${nomes.join(', ')}`;
 }
 
@@ -29394,7 +29906,8 @@ function sortLimparHistorico(){sortHistorico=[];_sortRenderHistorico();showToast
 function _sortExcluirAusentes(lista){
   const freq=window.__sgpFrequencia||{};
   const hoje=new Date().toISOString().split('T')[0];
-  const key=`${filtroTurma}|${bimestreAtual}|${hoje}`;
+  // BUG FIX B3: chave correta respeita disciplina selecionada (antes: sem disciplina = registro errado)
+  const key=__freqCurrentKey(hoje);
   const chamada=freq[key];
   if(!chamada) return lista;
   return lista.filter(a=>{const s=chamada[a.id];return !s||s==='P'||s==='J';});
@@ -29765,16 +30278,24 @@ function gerarGrupos(){
   // F14: Sort by criteria
   if(tipo==='equilibrado'){
     lista.sort((a,b)=>{
-      const mA=(parseFloat(a.bimestres[bimestreAtual].media_lp)+parseFloat(a.bimestres[bimestreAtual].media_red))/2;
-      const mB=(parseFloat(b.bimestres[bimestreAtual].media_lp)+parseFloat(b.bimestres[bimestreAtual].media_red))/2;
+      const bA=a.bimestres&&a.bimestres[bimestreAtual]||{};
+      const bB=b.bimestres&&b.bimestres[bimestreAtual]||{};
+      const mA=(parseFloat(bA.media_lp)||0+parseFloat(bA.media_red)||0)/2;
+      const mB=(parseFloat(bB.media_lp)||0+parseFloat(bB.media_red)||0)/2;
       return mB-mA;
     });
   } else if(tipo==='comportamento'){
-    lista.sort((a,b)=>(b.bimestres[bimestreAtual].comportamento||10)-(a.bimestres[bimestreAtual].comportamento||10));
+    lista.sort((a,b)=>{
+      const bA=a.bimestres&&a.bimestres[bimestreAtual]||{};
+      const bB=b.bimestres&&b.bimestres[bimestreAtual]||{};
+      return (bB.comportamento||10)-(bA.comportamento||10);
+    });
   } else if(tipo==='misto'){
     lista.sort((a,b)=>{
-      const mA=(parseFloat(a.bimestres[bimestreAtual].media_lp)+parseFloat(a.bimestres[bimestreAtual].media_red))/2+((a.bimestres[bimestreAtual].comportamento||10)/2);
-      const mB=(parseFloat(b.bimestres[bimestreAtual].media_lp)+parseFloat(b.bimestres[bimestreAtual].media_red))/2+((b.bimestres[bimestreAtual].comportamento||10)/2);
+      const bA=a.bimestres&&a.bimestres[bimestreAtual]||{};
+      const bB=b.bimestres&&b.bimestres[bimestreAtual]||{};
+      const mA=(parseFloat(bA.media_lp)||0+parseFloat(bA.media_red)||0)/2+((bA.comportamento||10)/2);
+      const mB=(parseFloat(bB.media_lp)||0+parseFloat(bB.media_red)||0)/2+((bB.comportamento||10)/2);
       return mB-mA;
     });
   }
@@ -29924,10 +30445,21 @@ function grpImprimir(){
 
 // --- Persistência ---
 const RANK_KEY = 'sgp_ranking_v1';
+// PERF FIX: cache em memória para _rankLoad — evita JSON.parse do localStorage a cada render.
+// Invalidado pelo _rankSave. Antes: cada renderizarRanking() + _rankSyncAuto() chamava JSON.parse.
+let __rankCache = null;
+let __rankCacheDirty = true;
 function _rankLoad(){
-    try{ return JSON.parse((typeof __storageGetItem === 'function') ? (__storageGetItem(RANK_KEY) || '{}') : (localStorage.getItem(RANK_KEY) || '{}')) || {}; }catch(_){ return {}; }
+    if(!__rankCacheDirty && __rankCache !== null) return __rankCache;
+    try{
+        __rankCache = JSON.parse((typeof __storageGetItem === 'function') ? (__storageGetItem(RANK_KEY) || '{}') : (localStorage.getItem(RANK_KEY) || '{}')) || {};
+    }catch(_){ __rankCache = {}; }
+    __rankCacheDirty = false;
+    return __rankCache;
 }
 function _rankSave(data){
+    __rankCache = data;
+    __rankCacheDirty = false;
     try{ __safeLSSet(RANK_KEY, JSON.stringify(data)); }catch(_){}
     try{ __markBackupRelevantChange('ranking-save'); }catch(_){}
 }
@@ -30704,7 +31236,9 @@ function _rankHistUpdateDiaFim(){
 
 // Get the start of the week containing a given date
 function _rankHistWeekStart(date, diaInicio){
-    const d = new Date(date);
+    // BUG FIX B9: adiciona T12:00:00 para evitar bug de fuso horário UTC-3 (Brasil).
+    // new Date("2024-03-15") é interpretado como meia-noite UTC = dia anterior no Brasil.
+    const d = new Date((typeof date === 'string' && date.length === 10 ? date + 'T12:00:00' : date));
     d.setHours(0,0,0,0);
     const diff = (d.getDay() - diaInicio + 7) % 7;
     d.setDate(d.getDate() - diff);
