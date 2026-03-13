@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V17 — Frequência Avançada + Calendário + Padrões + PDF)</title>
+    <title>SGP - Gestão Final (V17.0.1 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '17.0.0';
+      window.__SGP_SW_VERSION = '17.0.2';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -10125,6 +10125,30 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                     : (__linkedMetaRaw || {});
                 files.push(['sgp_linked_file_meta.json', JSON.stringify(__linkedMeta, null, 2)]);
             }catch(_){ }
+
+            // Redundância de segurança: guarda o estado bruto completo do storage.
+            // Isso cobre chaves sgp_ novas que possam surgir no futuro sem depender
+            // de a lista curada do ZIP ter sido atualizada no mesmo release.
+            try{
+                if(typeof __exportState === 'function'){
+                    const __fullState = __exportState();
+                    if(__fullState && __fullState.storage && typeof __fullState.storage === 'object'){
+                        try{
+                            __fullState.storage['sgp_linked_file_pending'] = '0';
+                            const __rawMeta = __fullState.storage['sgp_linked_file_meta'];
+                            if(__rawMeta){
+                                const __metaObj = JSON.parse(__rawMeta);
+                                if(__metaObj && typeof __metaObj === 'object' && !Array.isArray(__metaObj)){
+                                    __metaObj.pending = false;
+                                    __metaObj.status = __metaObj.status === 'pendente' ? 'ok' : (__metaObj.status || 'ok');
+                                    __fullState.storage['sgp_linked_file_meta'] = JSON.stringify(__metaObj);
+                                }
+                            }
+                        }catch(_){ }
+                        files.push(['sgp_storage_full.json', JSON.stringify(__fullState, null, 2)]);
+                    }
+                }
+            }catch(_){ }
 return files;
         }
 
@@ -10173,7 +10197,12 @@ __safeLSSet('sgp_last_backup', Date.now());
                         const manifest = readJson('manifest.json');
                         if(manifest && manifest.app && String(manifest.app) !== 'SGP Pro') throw new Error("Backup ZIP incompatível com este app.");
 
-                        const core = readJson('sgp_core.json');
+                        const fullExport = readJson('sgp_storage_full.json');
+                        const fullStorage = (fullExport && fullExport.storage && typeof fullExport.storage === 'object' && !Array.isArray(fullExport.storage)) ? fullExport.storage : null;
+                        let core = readJson('sgp_core.json');
+                        if(!core && fullStorage && fullStorage[__SGP_ATOMIC_CORE_KEY]){
+                            try{ core = JSON.parse(fullStorage[__SGP_ATOMIC_CORE_KEY]); }catch(_){ core = null; }
+                        }
                         if(!core) throw new Error("Backup ZIP inválido (sgp_core.json ausente).");
                         __restoreStarted = true;
 
@@ -10359,6 +10388,35 @@ __safeLSSet('sgp_last_backup', Date.now());
                                 });
                             }
                             if(typeof __syncImportedLinkedStateMeta === 'function') __syncImportedLinkedStateMeta(restoredLinkedMeta);
+                        }catch(_){ }
+
+                        // Reidrata chaves sgp_ extras que não fazem parte da lista curada do ZIP.
+                        // Isso protege dados persistentes novos/futuros sem sobrescrever o que já foi
+                        // tratado explicitamente acima.
+                        try{
+                            if(fullStorage){
+                                const managedKeys = new Set([
+                                    __SGP_ATOMIC_CORE_KEY,
+                                    'sgp_planner','sgp_correcao_provas','sgp_frequencia','sgp_entregas','sgp_ranking_v1','sgp_rank_hist_cfg',
+                                    'sgp_atividades_forca_bank','sgp_atividades_vf_bank','sgp_atividades_mem_bank','sgp_atividades_fc_bank',
+                                    'sgp_atividades_rel_bank','sgp_atividades_roleta_bank','sgp_atividades_quiz_bank','sgp_atividades_comp_bank','sgp_atividades_ord_bank',
+                                    'sgp_audit_log','sgp_freq_events','sgp_busca_ativa','sgp_entregas_doc_prazos_v1',
+                                    'sgp_linked_file_meta','sgp_linked_file_last_sync','sgp_linked_file_pending',
+                                    'sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid',
+                                    'sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b','sgp_atividades_sorteio_turma',
+                                    'sgp_audit','sgp_autobackups','sgp_lastBackupAt'
+                                ]);
+                                Object.keys(fullStorage).forEach((k)=>{
+                                    try{
+                                        if(!k || !String(k).startsWith('sgp_')) return;
+                                        if(k === 'sgp_backup_pending' || k === 'sgp_last_backup' || k === 'sgp_last_core_save' || k === __SGP_ATOMIC_CORE_TMP || k === __SGP_ATOMIC_CORE_META_KEY) return;
+                                        if(managedKeys.has(k) || String(k).startsWith('sgp_plano_prefs_')) return;
+                                        const v = fullStorage[k];
+                                        if(v === null || typeof v === 'undefined') return;
+                                        __safeLSSet(k, String(v));
+                                    }catch(_){ }
+                                });
+                            }
                         }catch(_){ }
 
                         garantirEstruturaNova();
@@ -18576,6 +18634,7 @@ function initAtividades(){
 
   // UI inicial
   try{ _forcaBuildKeyboard(); }catch(_){}
+  try{ if(typeof __loadExtendedActivityBanks === 'function') __loadExtendedActivityBanks(); }catch(_){}
   forcaRenderBank();
   vfRenderBank();
   memRenderBank();
@@ -20114,6 +20173,7 @@ function __rehydrateShadowBackedStateAfterIDB(){
   try{ if(typeof initSidebarMobile === 'function') initSidebarMobile(); }catch(_){ }
   try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
   try{ if(typeof initBackupReminder === 'function') initBackupReminder(); }catch(_){ }
+  try{ if(typeof __loadExtendedActivityBanks === 'function') __loadExtendedActivityBanks(); }catch(_){ }
   try{ if(typeof __scheduleStorageMonitorRefresh === 'function') __scheduleStorageMonitorRefresh(150); }catch(_){ }
 }
 
@@ -28287,6 +28347,15 @@ try{
   }
 }catch(_){}
 
+function __loadExtendedActivityBanks(){
+  try{ if(typeof quizLoad === 'function') quizLoad(); }catch(_){ }
+  try{ if(typeof compLoad === 'function') compLoad(); }catch(_){ }
+  try{ if(typeof ordLoad === 'function') ordLoad(); }catch(_){ }
+  try{ if(typeof quizRenderBank === 'function') quizRenderBank(); }catch(_){ }
+  try{ if(typeof compRenderBank === 'function') compRenderBank(); }catch(_){ }
+  try{ if(typeof ordRenderBank === 'function') ordRenderBank(); }catch(_){ }
+}
+
 // ================================================================
 // NEW GAME: QUIZ MÚLTIPLA ESCOLHA (14)
 // ================================================================
@@ -28604,10 +28673,9 @@ try{
 // ================================================================
 // INIT NEW GAMES
 // ================================================================
-try{
-  quizLoad(); compLoad(); ordLoad();
-  quizRenderBank(); compRenderBank(); ordRenderBank();
-}catch(_){}
+// Carrega após o boot/rehydrate para evitar perder bancos salvos no IndexedDB
+// quando a UI é inicializada antes de o shadow cache ser hidratado.
+try{ if(window.__sgpBootDone && typeof __loadExtendedActivityBanks === 'function') __loadExtendedActivityBanks(); }catch(_){}
 
 // Whitelist new functions
 try{
@@ -32060,7 +32128,7 @@ try{
                     'sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
                     'extras_audit.json','extras_autobackups.json','extras_lastBackupAt.json',
                     'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
-                    'atividades_relacoes.json','atividades_roleta.json','atividades_quiz.json','atividades_completar.json','atividades_ordenar.json'
+                    'atividades_relacoes.json','atividades_roleta.json','atividades_quiz.json','atividades_completar.json','atividades_ordenar.json','sgp_storage_full.json'
                   ];
                   const missingReq = required.filter(n=>!(filesMap && Object.prototype.hasOwnProperty.call(filesMap, n)));
                   add('Backup: arquivos essenciais no ZIP', missingReq.length===0, missingReq.length?('Faltando: '+missingReq.join(', ')):'');
@@ -32078,7 +32146,7 @@ try{
                         'manifest.json','sgp_core.json','sgp_planner.json','sgp_ui_prefs.json','sgp_plano_prefs.json',
                         'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
                         'atividades_relacoes.json','atividades_roleta.json',
-                        'atividades_quiz.json','atividades_completar.json','atividades_ordenar.json',
+                        'atividades_quiz.json','atividades_completar.json','atividades_ordenar.json','sgp_storage_full.json',
                         'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_busca_ativa.json','sgp_entregas_doc_prazos_v1.json','sgp_linked_file_meta.json','sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
                         'sgp_audit_log.json','sgp_freq_events.json',
                         'extras_audit.json','extras_autobackups.json','extras_lastBackupAt.json'
