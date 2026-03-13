@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V17.0.1 — Frequência Avançada + Calendário + Padrões + PDF)</title>
+    <title>SGP - Gestão Final (V17.0.3 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,10 +42,11 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '17.0.2';
+      window.__SGP_SW_VERSION = '17.0.3';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
+        const swFallbackUrl = './sw.js';
         const __activateWaitingSW = (reg)=>{
           try{ if(reg && reg.waiting) reg.waiting.postMessage('SKIP_WAITING'); }catch(_){ }
         };
@@ -62,18 +63,43 @@
           }catch(_){ }
           return reg;
         };
+        const __safeSWUpdate = (reg, reason)=>{
+          try{
+            if(!reg || typeof reg.update !== 'function') return Promise.resolve(false);
+            return Promise.resolve(reg.update()).then(()=>true).catch(err => {
+              const msg = String((err && err.message) || err || 'falha ao atualizar o Service Worker');
+              console.warn('[SGP] Falha ao atualizar Service Worker' + (reason ? ' (' + reason + ')' : '') + ':', msg);
+              return false;
+            });
+          }catch(err){
+            console.warn('[SGP] Erro ao solicitar update do Service Worker:', err);
+            return Promise.resolve(false);
+          }
+        };
+        const __registerSW = async ()=>{
+          try{
+            return await navigator.serviceWorker.register(swUrl, {scope: './', updateViaCache: 'none'});
+          }catch(err){
+            const msg = String((err && err.message) || err || 'falha ao registrar o Service Worker');
+            console.warn('[SGP] Registro do Service Worker com versão falhou. Tentando fallback sem query string:', msg);
+            return navigator.serviceWorker.register(swFallbackUrl, {scope: './', updateViaCache: 'none'});
+          }
+        };
         navigator.serviceWorker.addEventListener('controllerchange', ()=>{
           if(window.__SGP_SW_RELOADING) return;
           window.__SGP_SW_RELOADING = true;
           try{ location.reload(); }catch(_){ }
         });
-        navigator.serviceWorker.register(swUrl, {scope: './', updateViaCache: 'none'}).then(reg => {
+        __registerSW().then(reg => {
           __wireServiceWorkerReg(reg);
-          try{ reg.update(); }catch(_){ }
-          window.addEventListener('focus', ()=>{ try{ reg.update(); }catch(_){ } }, {passive:true});
+          __safeSWUpdate(reg, 'registro inicial');
+          window.addEventListener('focus', ()=>{ __safeSWUpdate(reg, 'focus'); }, {passive:true});
+          document.addEventListener('visibilitychange', ()=>{
+            if(document.visibilityState === 'visible') __safeSWUpdate(reg, 'visibilitychange');
+          }, {passive:true});
           console.log('[SGP] Service Worker registrado! Escopo:', reg.scope, 'Versão:', window.__SGP_SW_VERSION);
         }).catch(err => {
-          console.log('[SGP] Service Worker indisponível (normal em file://):', err.message);
+          console.log('[SGP] Service Worker indisponível (normal em file:// ou rede temporariamente indisponível):', (err && err.message) || err);
         });
       }
     })();
