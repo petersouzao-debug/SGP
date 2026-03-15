@@ -1,4 +1,4 @@
-// SGP - Service Worker v17.0.6
+// SGP - Service Worker v19.0.0
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -11,10 +11,13 @@
 //  - FIX v16.53.3: remoção de bloco duplicado abrirDiarioMensal/gerarDiarioMensal (348 linhas mortas)
 //  - FIX v16.53.3: XSS em _sortRenderHistorico (nomes de alunos sem escapeHTML no innerHTML)
 //  - FIX v17.0.2: backup ZIP inclui estado bruto redundante para proteger chaves sgp_ novas/extras
-//  - FIX v17.0.6: update do Service Worker agora trata rejeições e usa fallback sem query string
+//  - FIX v17.0.7: update do Service Worker agora trata rejeições e usa fallback sem query string
+//  - FIX v17.0.9: AutoTeste agora valida backup real com marcador temporário + restauração do estado bruto
+//  - FIX v17.0.18: AutoTeste valida compatibilidade entre versões, defaults e chaves legadas
+//  - FIX v17.0.18: AutoTeste agora gera resumo executivo, impacto prático e recomendação de uso
 
-const SW_VERSION = '17.0.6';
-const CACHE_NAME = `sgp-v17-${SW_VERSION}`;
+const SW_VERSION = '19.0.0';
+const CACHE_NAME = `sgp-v19-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
 const CACHE_MAX_ENTRIES = 60;          // máximo de entradas no cache geral

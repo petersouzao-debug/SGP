@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V17.0.6 — Frequência Avançada + Calendário + Padrões + PDF)</title>
+    <title>SGP - Gestão Final (V19.0.0 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '17.0.6';
+      window.__SGP_SW_VERSION = '19.0.0';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -3622,8 +3622,8 @@ body.dark-mode #modalAtividades .fc-small{ color:#94a3b8; }
 
 /* ===== V13 NEW FEATURES CSS ===== */
 
-/* Planner Badge */
-.planner-badge{
+/* Planner Badge (notification dot on toolbar button) */
+#plannerBadge{
   position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; 
   background:#ef4444; color:#fff; font-size:0.7rem; font-weight:700;
   border-radius:99px; display:flex; align-items:center; justify-content:center;
@@ -10336,7 +10336,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v17",
+                version: "v19.0.0",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -10435,6 +10435,9 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
 // Links rápidos
             const __bkQuickLinks = (typeof __quickLinksSnapshot === 'function') ? __quickLinksSnapshot() : _lsArr('sgp_links_cards_v1');
             files.push(['sgp_links_cards_v1.json', JSON.stringify(__bkQuickLinks || [], null, 2)]);
+// Histórico do AutoTeste
+            const __bkAutoTestHistory = _lsArr('sgp_autotest_history_v1');
+            files.push(['sgp_autotest_history_v1.json', JSON.stringify(__bkAutoTestHistory || [], null, 2)]);
 // Meta do arquivo local vinculado (HD)
             // FIX: exporta sempre com pending=false — o ZIP é um snapshot completo e consistente;
             // restaurar um ZIP com pending=true causaria "HD: pendente" espúrio na UI após restore,
@@ -10697,6 +10700,13 @@ __safeLSSet('sgp_last_backup', Date.now());
                             try{ if(document.getElementById('modalLinksRapidos') && document.getElementById('modalLinksRapidos').style.display === 'flex') quickLinksRender(); }catch(__){}
                         }catch(_){ }
 
+                        // Restore histórico do AutoTeste
+                        try{
+                            const _rAutoTestHistory = readJson('sgp_autotest_history_v1.json');
+                            const restoredAutoTestHistory = Array.isArray(_rAutoTestHistory) ? _rAutoTestHistory.filter(x=>x && typeof x === 'object').slice(0,25) : [];
+                            __safeLSSet('sgp_autotest_history_v1', JSON.stringify(restoredAutoTestHistory));
+                        }catch(_){ }
+
                         // Restore correção de provas (sgp_correcao_provas)
                         try{
                             const bkCor = readJson('sgp_correcao_provas.json');
@@ -10730,7 +10740,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                                     'sgp_planner','sgp_correcao_provas','sgp_frequencia','sgp_entregas','sgp_ranking_v1','sgp_rank_hist_cfg',
                                     'sgp_atividades_forca_bank','sgp_atividades_vf_bank','sgp_atividades_mem_bank','sgp_atividades_fc_bank',
                                     'sgp_atividades_rel_bank','sgp_atividades_roleta_bank','sgp_atividades_quiz_bank','sgp_atividades_comp_bank','sgp_atividades_ord_bank',
-                                    'sgp_audit_log','sgp_freq_events','sgp_busca_ativa','sgp_entregas_doc_prazos_v1','sgp_links_cards_v1',
+                                    'sgp_audit_log','sgp_freq_events','sgp_busca_ativa','sgp_entregas_doc_prazos_v1','sgp_links_cards_v1','sgp_autotest_history_v1',
                                     'sgp_linked_file_meta','sgp_linked_file_last_sync','sgp_linked_file_pending',
                                     'sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid',
                                     'sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b','sgp_atividades_sorteio_turma',
@@ -12898,7 +12908,7 @@ function __cmpBinIndex(v){
             }
         }
 
-        function salvarTurma(){const n=document.getElementById('inputNomeTurma').value;if(n&&!turmas.includes(n)){turmas.push(n);salvarDadosLocal();document.getElementById('inputNomeTurma').value='';fecharModais();selTurma(n); showToast("Turma criada!");}}
+        function salvarTurma(){const raw=document.getElementById('inputNomeTurma').value;const n=raw.replace(/\|/g,'-').trim();if(n&&!turmas.includes(n)){turmas.push(n);salvarDadosLocal();document.getElementById('inputNomeTurma').value='';fecharModais();selTurma(n); showToast("Turma criada!");}}
         function delTurma(n,e){
             e.stopPropagation();
             if(confirm("Excluir?")){
@@ -13217,11 +13227,18 @@ function abrirModal(id) {
                 }
             }catch(_){}
         }
-        function fecharModais() {
+        function fecharModais(forceAutoTesteClose) {
             // Fecha todos os modais
             // Persistência: garante que alterações com debounce sejam gravadas antes de fechar
             try{ if(typeof __flushPendingPersistenceWork === 'function') __flushPendingPersistenceWork(); }catch(_){ }
-            document.querySelectorAll('.modal-overlay').forEach(e => e.style.display = 'none');
+            const keepAutoTeste = !forceAutoTesteClose && (window.__autoTestRunning || window.__autoTestModalLock || window.__autoTestResultVisible);
+            document.querySelectorAll('.modal-overlay').forEach(e => {
+                if(keepAutoTeste && e && e.id === 'modalAutoTeste'){
+                    e.style.display = 'flex';
+                    return;
+                }
+                e.style.display = 'none';
+            });
             // Se estiver em tela cheia (ex: Atividades), sai para evitar ficar preso
             try{
                 if(document.fullscreenElement){
@@ -13235,7 +13252,7 @@ function abrirModal(id) {
             try{ __SGP_EVT.emit('afterCloseModals'); }catch(_){}
         }
         function renderizarVisao() { renderizarVisaoContent(); }
-        window.addEventListener('click', e => { if(e.target.classList.contains('modal-overlay')) fecharModais(); });
+        window.addEventListener('click', e => { if(e.target.classList.contains('modal-overlay')) fecharModais(false); });
     
 
 /* === PATCH v12.1 — Disciplinas/Avaliações dinâmicas (slots Matéria 1/2) === */
@@ -20348,7 +20365,7 @@ function confirmarImportCSV(){
   const makeBim=()=>({notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""});
   let added=0;
   rows.forEach(r=>{
-    if(!turmas.includes(r.turma)){ turmas.push(r.turma); }
+    r.turma = r.turma.replace(/\|/g,'-').trim() || 'Sem turma'; if(!turmas.includes(r.turma)){ turmas.push(r.turma); }
     alunos.push({
       id: __newId(),
       nome: r.nome, turma: r.turma, mesa:null, inteligencias:[],
@@ -26955,227 +26972,6 @@ function __v16bRenderHeatmap(lista, bim, dashEl){
 }
 
 // ================================================================
-// V16B FEATURE 3: SCATTER COMPORTAMENTO × NOTA
-// ================================================================
-function __v16bRenderCompScatter(lista, bim, dashEl){
-  let hasComp=false;
-  lista.forEach(a=>{
-    const b=a?.bimestres?.[bim];
-    if(b&&(parseFloat(b.comportamento)>0)) hasComp=true;
-  });
-  if(!hasComp) return;
-
-  const html=`<div class="dash-card v16b-enhanced" style="order:12;">
-    <h3><i class="fas fa-star"></i> Comportamento × Nota</h3>
-    <div class="dash-scatter-wrap"><canvas id="v16bCompScatter"></canvas></div>
-    <div style="font-size:.72rem;color:#94a3b8;margin-top:6px;text-align:center;">
-      Cada ponto = 1 aluno. Eixo X = comportamento, Eixo Y = média geral.
-    </div>
-  </div>`;
-
-  const div=document.createElement('div');
-  div.className='v16b-enhanced'; div.style.gridColumn='span 1';
-  div.innerHTML=html;
-  dashEl.appendChild(div);
-
-  setTimeout(()=>{
-    const canvas=document.getElementById('v16bCompScatter');
-    if(!canvas) return;
-    const data=[];
-    lista.forEach(a=>{
-      const b=a?.bimestres?.[bim]; if(!b) return;
-      _syncBimestreRefs(b);
-      const comp=parseFloat(b.comportamento)||0;
-      if(comp<=0&&b.comportamento!==0&&b.comportamento!=='0') return;
-      const m1=clampNota(calcularMediaDisc(config.slot1, b.notas_lp));
-      const m2=clampNota(calcularMediaDisc(config.slot2, b.notas_red));
-      data.push({nome:a.nome, comp, media:(m1+m2)/2});
-    });
-    if(!data.length) return;
-
-    const W=canvas.width=canvas.offsetWidth*2, H=canvas.height=520;
-    const c=canvas.getContext('2d');
-    const pad={t:20,b:40,l:50,r:20};
-    const pW=W-pad.l-pad.r, pH=H-pad.t-pad.b;
-    c.clearRect(0,0,W,H);
-
-    // Grid
-    c.strokeStyle='rgba(148,163,184,.12)'; c.lineWidth=1;
-    [0,2,4,6,8,10].forEach(v=>{
-      const x=pad.l+(v/10)*pW;
-      c.beginPath(); c.moveTo(x,pad.t); c.lineTo(x,H-pad.b); c.stroke();
-      c.fillStyle='#94a3b8'; c.font='18px sans-serif'; c.textAlign='center';
-      c.fillText(v,x,H-pad.b+20);
-    });
-    [0,2,4,5,6,7,8,10].forEach(v=>{
-      const y=pad.t+pH-(v/10)*pH;
-      c.beginPath(); c.moveTo(pad.l,y); c.lineTo(W-pad.r,y); c.stroke();
-      c.fillStyle='#94a3b8'; c.font='18px sans-serif'; c.textAlign='right';
-      c.fillText(v,pad.l-8,y+5);
-    });
-
-    // Reference lines at 5
-    c.strokeStyle='rgba(220,38,38,.2)'; c.lineWidth=2; c.setLineDash([6,4]);
-    const y5=pad.t+pH-(5/10)*pH;
-    c.beginPath(); c.moveTo(pad.l,y5); c.lineTo(W-pad.r,y5); c.stroke();
-    const x5=pad.l+(5/10)*pW;
-    c.beginPath(); c.moveTo(x5,pad.t); c.lineTo(x5,H-pad.b); c.stroke();
-    c.setLineDash([]);
-
-    // Axis labels
-    c.fillStyle='#64748b'; c.font='bold 20px sans-serif'; c.textAlign='center';
-    c.fillText('Comportamento',pad.l+pW/2,H-5);
-    c.save(); c.translate(14,pad.t+pH/2); c.rotate(-Math.PI/2);
-    c.fillText('Média Geral',0,0); c.restore();
-
-    // Points
-    data.forEach(d=>{
-      const x=pad.l+(Math.min(10,Math.max(0,d.comp))/10)*pW;
-      const y=pad.t+pH-(Math.min(10,Math.max(0,d.media))/10)*pH;
-      const cor=d.media>=7?(d.comp>=7?'#16a34a':'#f59e0b'):(d.media>=5?'#f59e0b':'#dc2626');
-      c.beginPath(); c.arc(x,y,8,0,Math.PI*2);
-      c.fillStyle=cor+'cc'; c.fill();
-      c.strokeStyle=cor; c.lineWidth=2; c.stroke();
-    });
-
-    // Trend line (simple linear regression)
-    if(data.length>=3){
-      let sx=0,sy=0,sxy=0,sx2=0;
-      data.forEach(d=>{sx+=d.comp;sy+=d.media;sxy+=d.comp*d.media;sx2+=d.comp*d.comp;});
-      const n=data.length;
-      const denom=n*sx2-sx*sx;
-      if(Math.abs(denom)>0.001){
-        const slope=(n*sxy-sx*sy)/denom;
-        const intercept=(sy-slope*sx)/n;
-        const x0=0, x1=10, y0=intercept, y1=slope*10+intercept;
-        c.beginPath();
-        c.strokeStyle='rgba(124,58,237,.35)'; c.lineWidth=3; c.setLineDash([8,6]);
-        c.moveTo(pad.l+(x0/10)*pW, pad.t+pH-(Math.max(0,Math.min(10,y0))/10)*pH);
-        c.lineTo(pad.l+(x1/10)*pW, pad.t+pH-(Math.max(0,Math.min(10,y1))/10)*pH);
-        c.stroke(); c.setLineDash([]);
-        // R label
-        const r=Math.abs(denom)>0.001?(n*sxy-sx*sy)/Math.sqrt((n*sx2-sx*sx)*(n*data.reduce((a,d)=>a+d.media*d.media,0)-sy*sy)):0;
-        c.fillStyle='#7c3aed'; c.font='bold 18px sans-serif'; c.textAlign='right';
-        c.fillText(`r = ${r.toFixed(2)}`,W-pad.r-10,pad.t+16);
-      }
-    }
-  }, 80);
-}
-
-// ================================================================
-// V16B FEATURE 4: BOX PLOT VISUAL POR MATÉRIA
-// ================================================================
-function __v16bRenderBoxPlot(lista, bim, dashEl){
-  const s1=__v16CalcStats(lista, config.slot1, 'notas_lp', bim);
-  const s2=__v16CalcStats(lista, config.slot2, 'notas_red', bim);
-  if(!s1&&!s2) return;
-
-  const d1Name=getDiscById(config.slot1)?.nome||'Matéria 1';
-  const d2Name=getDiscById(config.slot2)?.nome||'Matéria 2';
-
-  const html=`<div class="dash-card v16b-enhanced" style="order:13;">
-    <h3><i class="fas fa-chart-bar"></i> Box Plot — Dispersão de Notas</h3>
-    <div class="dash-boxplot-wrap"><canvas id="v16bBoxPlotCanvas"></canvas></div>
-    <div style="font-size:.72rem;color:#94a3b8;margin-top:6px;text-align:center;">
-      Caixa = Q1 a Q3 (50% central) · Linha interna = Mediana · Bigodes = Min/Max · Pontos = Outliers
-    </div>
-  </div>`;
-
-  const div=document.createElement('div');
-  div.className='v16b-enhanced'; div.style.gridColumn='span 1';
-  div.innerHTML=html;
-  dashEl.appendChild(div);
-
-  setTimeout(()=>{
-    const canvas=document.getElementById('v16bBoxPlotCanvas');
-    if(!canvas) return;
-
-    function percentile(sorted,p){
-      const n=sorted.length; if(!n)return 0; if(n===1)return sorted[0];
-      const idx=(n-1)*p; const lo=Math.floor(idx),hi=Math.ceil(idx);
-      return lo===hi?sorted[lo]:sorted[lo]*(1-(idx-lo))+sorted[hi]*(idx-lo);
-    }
-
-    const datasets=[];
-    if(s1) datasets.push({name:d1Name, sorted:s1.sorted, col:'#2563eb'});
-    if(s2) datasets.push({name:d2Name, sorted:s2.sorted, col:'#ec4899'});
-
-    const W=canvas.width=canvas.offsetWidth*2, H=canvas.height=440;
-    const c=canvas.getContext('2d');
-    const pad={t:30,b:50,l:50,r:30};
-    const pW=W-pad.l-pad.r, pH=H-pad.t-pad.b;
-    c.clearRect(0,0,W,H);
-
-    // Y axis grid (0..10)
-    c.strokeStyle='rgba(148,163,184,.12)'; c.lineWidth=1;
-    for(let v=0;v<=10;v++){
-      const y=pad.t+pH-(v/10)*pH;
-      c.beginPath(); c.moveTo(pad.l,y); c.lineTo(W-pad.r,y); c.stroke();
-      c.fillStyle='#94a3b8'; c.font='18px sans-serif'; c.textAlign='right';
-      c.fillText(v,pad.l-8,y+5);
-    }
-    // Reference at 5 and 7
-    [5,7].forEach(v=>{
-      const y=pad.t+pH-(v/10)*pH;
-      c.strokeStyle=v===5?'rgba(220,38,38,.2)':'rgba(22,163,74,.2)';
-      c.lineWidth=2; c.setLineDash([6,4]);
-      c.beginPath(); c.moveTo(pad.l,y); c.lineTo(W-pad.r,y); c.stroke();
-      c.setLineDash([]);
-    });
-
-    const boxW=Math.min(120,pW/(datasets.length*2+1));
-    const spacing=pW/(datasets.length+1);
-
-    datasets.forEach((ds,i)=>{
-      const cx=pad.l+spacing*(i+1);
-      const sorted=ds.sorted;
-      const q1=percentile(sorted,.25), med=percentile(sorted,.5), q3=percentile(sorted,.75);
-      const iqr=q3-q1;
-      const wLo=Math.max(sorted[0], q1-1.5*iqr);
-      const wHi=Math.min(sorted[sorted.length-1], q3+1.5*iqr);
-      // Find actual whisker values (closest data points within range)
-      const actualLo=sorted.find(v=>v>=wLo)||sorted[0];
-      const actualHi=[...sorted].reverse().find(v=>v<=wHi)||sorted[sorted.length-1];
-
-      const toY=v=>pad.t+pH-(Math.max(0,Math.min(10,v))/10)*pH;
-
-      // Whisker lines
-      c.strokeStyle=ds.col; c.lineWidth=3;
-      c.beginPath(); c.moveTo(cx,toY(actualLo)); c.lineTo(cx,toY(actualHi)); c.stroke();
-      // Whisker caps
-      c.beginPath(); c.moveTo(cx-boxW*0.3,toY(actualLo)); c.lineTo(cx+boxW*0.3,toY(actualLo)); c.stroke();
-      c.beginPath(); c.moveTo(cx-boxW*0.3,toY(actualHi)); c.lineTo(cx+boxW*0.3,toY(actualHi)); c.stroke();
-
-      // Box (Q1 to Q3)
-      const bx=cx-boxW/2, by=toY(q3), bh=toY(q1)-toY(q3);
-      c.fillStyle=ds.col+'22'; c.fillRect(bx,by,boxW,bh);
-      c.strokeStyle=ds.col; c.lineWidth=3; c.strokeRect(bx,by,boxW,bh);
-
-      // Median line
-      c.strokeStyle='#fff'; c.lineWidth=4;
-      c.beginPath(); c.moveTo(bx+2,toY(med)); c.lineTo(bx+boxW-2,toY(med)); c.stroke();
-      c.strokeStyle=ds.col; c.lineWidth=3;
-      c.beginPath(); c.moveTo(bx+2,toY(med)); c.lineTo(bx+boxW-2,toY(med)); c.stroke();
-
-      // Outliers
-      sorted.forEach(v=>{
-        if(v<actualLo||v>actualHi){
-          c.beginPath(); c.arc(cx,toY(v),5,0,Math.PI*2);
-          c.fillStyle=ds.col+'88'; c.fill();
-          c.strokeStyle=ds.col; c.lineWidth=1.5; c.stroke();
-        }
-      });
-
-      // Label + stats
-      c.fillStyle=ds.col; c.font='bold 22px sans-serif'; c.textAlign='center';
-      c.fillText(ds.name,cx,H-pad.b+22);
-      c.font='16px sans-serif'; c.fillStyle='#64748b';
-      c.fillText(`Med: ${med.toFixed(1)} · Q1: ${q1.toFixed(1)} · Q3: ${q3.toFixed(1)}`,cx,H-pad.b+40);
-    });
-  }, 80);
-}
-
-// ================================================================
 // V16B FEATURE 5: ALUNOS MAIS VOLÁTEIS
 // ================================================================
 function __v16bRenderVolateis(lista, dashEl){
@@ -27385,16 +27181,6 @@ if(freqHtml){
 // ================================================================
 // V18: DASHBOARD ENHANCEMENTS
 // ================================================================
-
-// --- V18 Chart instance tracking for memory leak prevention ---
-window.__v18ChartInstances = window.__v18ChartInstances || {};
-function __v18DestroyChart(id){
-  try{ if(window.__v18ChartInstances[id]){ window.__v18ChartInstances[id].destroy(); delete window.__v18ChartInstances[id]; } }catch(_){}
-}
-function __v18TrackChart(id, instance){
-  __v18DestroyChart(id);
-  window.__v18ChartInstances[id] = instance;
-}
 
 // --- V18 Feature: Quick Actions Card ---
 function __v18RenderQuickActions(dashEl){
@@ -32271,15 +32057,901 @@ function __autoTestEscape(s){
         return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
     }catch(e){ return String(s); }
 }
-function abrirModalAutoTeste(){
+function __autoTestRenderFallback(body, reportText, note){
+    try{
+        if(!body) return;
+        window.__autoTestResultVisible = true;
+        const __autoModalFallback = document.getElementById('modalAutoTeste');
+        if(__autoModalFallback) __autoModalFallback.style.display = 'flex';
+        const safeReport = __autoTestEscape(reportText || 'Relatório indisponível.');
+        const safeNote = note ? `<div style="margin:0 0 10px 0;padding:10px 12px;border:1px solid rgba(245,158,11,.35);border-radius:12px;background:rgba(245,158,11,.10);color:#b45309;font-weight:700;">${__autoTestEscape(note)}</div>` : '';
+        body.innerHTML = `
+            ${safeNote}
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0 10px 0;flex-wrap:wrap;">
+                <div style="font-weight:900;color:var(--text-main);font-size:1.02rem;">Resultado do AutoTeste</div>
+                <span style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(59,130,246,.12);color:#1d4ed8;font-weight:800;">Relatório em texto</span>
+            </div>
+            <div style="margin:0 0 10px 0;color:var(--text-muted);font-size:.92rem;">
+                O resumo visual falhou ou foi bloqueado. O diagnóstico completo está disponível abaixo em texto bruto.
+            </div>
+            <details open style="border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.02);padding:10px 12px;">
+                <summary style="cursor:pointer;font-weight:900;color:var(--text-main);">Relatório completo</summary>
+                <pre style="white-space:pre-wrap;word-break:break-word;margin:12px 0 0 0;color:var(--text-main);font:500 .92rem/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">${safeReport}</pre>
+            </details>
+        `;
+    }catch(_){}
+}
+function __autoTestNormalizeSeverity(level){
+    const raw = String(level||'').toLowerCase();
+    if(raw==='critico' || raw==='crítico' || raw==='critical') return 'critical';
+    if(raw==='importante' || raw==='important') return 'important';
+    return 'warning';
+}
+function __autoTestInferSeverity(name){
+    const s = String(name||'').toLowerCase();
+    if(
+        s.includes('localstorage: leitura/escrita') ||
+        s.includes('persistência real') ||
+        s.includes('backup real') ||
+        s.includes('autobackup') ||
+        s.includes('autoteste: execução') ||
+        s.includes('storage_full') ||
+        s.includes('atividades: banco') ||
+        s.includes('atividades: fluxo de bancos')
+    ) return 'critical';
+
+    if(
+        s.includes('dashboard') ||
+        s.includes('bimestre') ||
+        s.includes('armazenamento: monitor') ||
+        s.includes('hd local') ||
+        s.includes('checkbackupstatus') ||
+        s.includes('snapshot') ||
+        s.includes('restore')
+    ) return 'important';
+
+    return 'warning';
+}
+function __autoTestSeverityMeta(level){
+    const sev = __autoTestNormalizeSeverity(level);
+    if(sev==='critical') return { label:'Crítico', short:'CRÍTICO', bg:'rgba(239,68,68,.14)', color:'var(--danger)' };
+    if(sev==='important') return { label:'Importante', short:'IMPORTANTE', bg:'rgba(245,158,11,.16)', color:'#b45309' };
+    return { label:'Aviso', short:'AVISO', bg:'rgba(59,130,246,.14)', color:'var(--primary)' };
+}
+function __autoTestInferModule(name){
+    const s = String(name||'').toLowerCase();
+    if(s.includes('localstorage') || s.includes('persistência real')) return 'persistencia';
+    if(s.includes('backup real') || s.startsWith('backup:') || s.includes('autobackup') || s.includes('storage_full')) return 'backup';
+    if(s.includes('armazenamento:')) return 'armazenamento';
+    if(s.includes('hd local:')) return 'hdlocal';
+    if(s.includes('interface:')) return 'interface';
+    if(s.includes('dashboard:')) return 'dashboard';
+    if(s.includes('bimestre ')) return 'bimestres';
+    if(s.includes('integridade:')) return 'integridade';
+    if(s.includes('compatibilidade:')) return 'compatibilidade';
+    if(s.includes('atividades:')) return 'atividades';
+    if(s.includes('service worker') || s.includes('pwa')) return 'pwa';
+    return 'geral';
+}
+function __autoTestModuleMeta(key){
+    const k = String(key||'geral').toLowerCase();
+    const map = {
+        persistencia: { key:'persistencia', label:'Persistência', short:'PERSISTÊNCIA', bg:'rgba(16,185,129,.14)', color:'var(--success)' },
+        backup: { key:'backup', label:'Backup', short:'BACKUP', bg:'rgba(59,130,246,.14)', color:'var(--primary)' },
+        armazenamento: { key:'armazenamento', label:'Armazenamento', short:'ARMAZENAMENTO', bg:'rgba(139,92,246,.14)', color:'#6d28d9' },
+        hdlocal: { key:'hdlocal', label:'HD Local', short:'HD LOCAL', bg:'rgba(234,179,8,.18)', color:'#a16207' },
+        interface: { key:'interface', label:'Interface', short:'INTERFACE', bg:'rgba(20,184,166,.14)', color:'#0f766e' },
+        dashboard: { key:'dashboard', label:'Dashboard', short:'DASHBOARD', bg:'rgba(244,114,182,.14)', color:'#be185d' },
+        bimestres: { key:'bimestres', label:'Bimestres', short:'BIMESTRES', bg:'rgba(14,165,233,.14)', color:'#0369a1' },
+        integridade: { key:'integridade', label:'Integridade', short:'INTEGRIDADE', bg:'rgba(249,115,22,.14)', color:'#c2410c' },
+        compatibilidade: { key:'compatibilidade', label:'Compatibilidade', short:'COMPATIBILIDADE', bg:'rgba(168,85,247,.14)', color:'#7e22ce' },
+        atividades: { key:'atividades', label:'Atividades', short:'ATIVIDADES', bg:'rgba(34,197,94,.14)', color:'#15803d' },
+        pwa: { key:'pwa', label:'PWA', short:'PWA', bg:'rgba(99,102,241,.14)', color:'#4338ca' },
+        geral: { key:'geral', label:'Geral', short:'GERAL', bg:'rgba(100,116,139,.14)', color:'#475569' }
+    };
+    return map[k] || map.geral;
+}
+
+const __AUTO_TEST_HISTORY_KEY = 'sgp_autotest_history_v1';
+function __autoTestHistoryRead(){
+    try{
+        const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(__AUTO_TEST_HISTORY_KEY) : localStorage.getItem(__AUTO_TEST_HISTORY_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr.filter(x=>x && typeof x === 'object') : [];
+    }catch(_){ return []; }
+}
+function __autoTestHistoryWrite(list){
+    try{
+        const safe = Array.isArray(list) ? list.filter(x=>x && typeof x === 'object').slice(0,25) : [];
+        const json = JSON.stringify(safe);
+        if(typeof __safeLSSet === 'function') __safeLSSet(__AUTO_TEST_HISTORY_KEY, json); else localStorage.setItem(__AUTO_TEST_HISTORY_KEY, json);
+        return safe;
+    }catch(_){ return []; }
+}
+function __autoTestHistoryStatus(entry){
+    const e = entry || {};
+    if((e.failCritical||0) > 0) return { key:'critical', label:'Crítico', short:'CRÍTICO', bg:'rgba(239,68,68,.14)', color:'var(--danger)' };
+    if((e.failCount||0) > 0) return { key:'attention', label:'Atenção', short:'ATENÇÃO', bg:'rgba(245,158,11,.16)', color:'#b45309' };
+    return { key:'ok', label:'OK', short:'OK', bg:'rgba(16,185,129,.15)', color:'var(--success)' };
+}
+function __autoTestHistoryCompare(curr, prev){
+    if(!prev) return { text:'Sem teste anterior para comparar.', deltaFails:0, trend:'new' };
+    const dFails = (curr.failCount||0) - (prev.failCount||0);
+    const dCritical = (curr.failCritical||0) - (prev.failCritical||0);
+    const dImportant = (curr.failImportant||0) - (prev.failImportant||0);
+    const currMods = Array.isArray(curr.failedModules) ? curr.failedModules : [];
+    const prevMods = Array.isArray(prev.failedModules) ? prev.failedModules : [];
+    const addedMods = currMods.filter(x=>!prevMods.includes(x));
+    const removedMods = prevMods.filter(x=>!currMods.includes(x));
+    const fmt = (n)=> n>0 ? ('+'+n) : String(n);
+    const parts = [
+        'Falhas '+fmt(dFails),
+        'Críticas '+fmt(dCritical),
+        'Importantes '+fmt(dImportant)
+    ];
+    if(addedMods.length) parts.push('Novos módulos com erro: '+addedMods.join(', '));
+    if(removedMods.length) parts.push('Módulos normalizados: '+removedMods.join(', '));
+    return { text: parts.join(' • '), deltaFails:dFails, trend:(dFails<0?'better':(dFails>0?'worse':'same')) };
+}
+function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLabel){
+    const arr = Array.isArray(results) ? results : [];
+    const failCritical = arr.filter(r=>!r.ok && r.severity==='critical').length;
+    const failImportant = arr.filter(r=>!r.ok && r.severity==='important').length;
+    const failWarning = arr.filter(r=>!r.ok && r.severity==='warning').length;
+    const failCount = arr.filter(r=>!r.ok).length;
+    const okCount = arr.length - failCount;
+    const modules = (Array.isArray(activeModules) ? activeModules : []).map(key=>{
+        const meta = __autoTestModuleMeta(key);
+        const modArr = Array.isArray(grouped && grouped[key]) ? grouped[key] : [];
+        const modFail = modArr.filter(r=>!r.ok).length;
+        return { key, label: meta.label, okCount: modArr.length - modFail, total: modArr.length, failCount: modFail };
+    });
+    const failedModules = modules.filter(m=>m.failCount>0).map(m=>m.label);
+    const entry = {
+        id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+        ts: new Date().toISOString(),
+        version: versionLabel || 'v19.0.0',
+        total: arr.length,
+        okCount,
+        failCount,
+        failCritical,
+        failImportant,
+        failWarning,
+        status: __autoTestHistoryStatus({ failCount, failCritical }).key,
+        failedModules,
+        modules
+    };
+    return entry;
+}
+function __autoTestHistoryStoreEntry(entry){
+    const prev = __autoTestHistoryRead();
+    const compare = __autoTestHistoryCompare(entry, prev[0] || null);
+    const full = Object.assign({}, entry, { compare });
+    const next = [full].concat(prev).slice(0,25);
+    __autoTestHistoryWrite(next);
+    return { current: full, history: next, previous: prev[0] || null };
+}
+function __autoTestHistoryRender(history){
+    const arr = Array.isArray(history) ? history.slice(0,5) : [];
+    if(!arr.length){
+        return `<section style="margin-top:14px;padding:12px;border:1px solid var(--border-color);border-radius:16px;background:rgba(255,255,255,.02);"><div style="font-weight:900;color:var(--text-main);margin-bottom:6px;">Histórico recente</div><div style="color:var(--text-muted);font-size:.92rem;">Ainda não há registros anteriores do AutoTeste.</div></section>`;
+    }
+    const items = arr.map((h, idx)=>{
+        const status = __autoTestHistoryStatus(h);
+        const when = (()=>{ try{ return new Date(h.ts).toLocaleString(); }catch(_){ return String(h.ts||''); } })();
+        const mods = Array.isArray(h.failedModules) && h.failedModules.length ? h.failedModules.join(', ') : 'Sem módulos com erro';
+        const compare = (idx===0 && h.compare && h.compare.text) ? `<div style="margin-top:4px;color:var(--text-muted);font-size:.84rem;">Comparação: ${__autoTestEscape(h.compare.text)}</div>` : '';
+        return `<li style="padding:10px 0;border-bottom:1px solid var(--border-color);"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;"><div style="flex:1;min-width:220px;"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span style="display:inline-block;padding:4px 8px;border-radius:999px;background:${status.bg};color:${status.color};font-size:.76rem;font-weight:900;">${status.short}</span><span style="font-weight:800;color:var(--text-main);">${__autoTestEscape(h.version||'-')}</span><span style="color:var(--text-muted);font-size:.84rem;">${__autoTestEscape(when)}</span></div><div style="margin-top:4px;color:var(--text-main);font-size:.92rem;">${Number(h.okCount||0)}/${Number(h.total||0)} OK • ${Number(h.failCount||0)} falha(s)</div><div style="margin-top:4px;color:var(--text-muted);font-size:.84rem;">Módulos com erro: ${__autoTestEscape(mods)}</div>${compare}</div></div></li>`;
+    }).join('');
+    return `<section style="margin-top:14px;padding:12px;border:1px solid var(--border-color);border-radius:16px;background:rgba(255,255,255,.02);"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;"><div style="font-weight:900;color:var(--text-main);">Histórico recente</div><div style="color:var(--text-muted);font-size:.84rem;font-weight:800;">Últimos ${arr.length} AutoTestes</div></div><ul style="list-style:none;padding:0;margin:0;">${items}</ul></section>`;
+}
+
+
+function __autoTestBuildExecutiveSummary(results, grouped, activeModules, historyCurrent){
+    const arr = Array.isArray(results) ? results : [];
+    const failCount = arr.filter(r=>!r.ok).length;
+    const failCritical = arr.filter(r=>!r.ok && r.severity==='critical').length;
+    const failImportant = arr.filter(r=>!r.ok && r.severity==='important').length;
+    const failWarning = arr.filter(r=>!r.ok && r.severity==='warning').length;
+    const failed = arr.filter(r=>!r.ok);
+    const failedModuleKeys = (Array.isArray(activeModules) ? activeModules : []).filter(key=>Array.isArray(grouped && grouped[key]) && grouped[key].some(r=>!r.ok));
+    const failedModules = failedModuleKeys.map(key=>__autoTestModuleMeta(key).label);
+    const criticalFailures = failed.filter(r=>r.severity==='critical').slice(0,8).map(r=>r.name);
+    const importantFailures = failed.filter(r=>r.severity==='important').slice(0,8).map(r=>r.name);
+
+    let statusKey = 'ok';
+    let statusLabel = 'Sistema saudável';
+    let headline = 'Nenhuma falha relevante foi encontrada nos módulos testados.';
+    let recommendation = 'Seguro para usar. Pode seguir com o uso normal do sistema.';
+    if(failCritical>0){
+        statusKey = 'critical';
+        statusLabel = 'Correção necessária';
+        headline = 'Foram encontradas falhas críticas que podem comprometer salvamento, backup, restauração ou uso confiável do sistema.';
+        recommendation = 'Corrigir antes de usar. Evite depender desta versão para lançar dados importantes até eliminar as falhas críticas.';
+    }else if(failCount>0){
+        statusKey = 'attention';
+        statusLabel = 'Uso com cautela';
+        headline = 'O sistema está funcional, mas há falhas não críticas que podem afetar partes do fluxo ou causar inconsistências pontuais.';
+        recommendation = 'Usar com cautela. O sistema pode ser usado, mas convém revisar os módulos com falha antes de tarefas importantes.';
+    }
+
+    const impacts = [];
+    const pushImpact = (txt)=>{ if(txt && !impacts.includes(txt)) impacts.push(txt); };
+    failedModuleKeys.forEach(key=>{
+        if(key==='persistencia') pushImpact('Persistência pode falhar: dados podem não ser gravados, relidos ou limpos corretamente.');
+        else if(key==='backup') pushImpact('Backup/restauração pode sair incompleto, inválido ou não recompor todo o estado esperado.');
+        else if(key==='atividades') pushImpact('Bancos de questões das atividades/jogos podem não salvar, recarregar ou entrar no backup como esperado.');
+        else if(key==='integridade') pushImpact('Há dados inválidos ou vínculos quebrados no core, o que pode gerar comportamento inconsistente em telas e filtros.');
+        else if(key==='compatibilidade') pushImpact('Dados de versões anteriores podem carregar com inconsistências ou sem normalização adequada.');
+        else if(key==='interface') pushImpact('Botões, modais, badges ou áreas críticas da interface podem não renderizar/abrir corretamente.');
+        else if(key==='dashboard') pushImpact('Dashboard, contadores ou gráficos podem ficar incompletos ou quebrar em partes específicas.');
+        else if(key==='bimestres') pushImpact('A troca de bimestre pode falhar ou deixar gráficos/componentes sem atualização correta.');
+        else if(key==='armazenamento') pushImpact('O monitor de armazenamento pode informar estado incorreto ou deixar de refletir a situação real do navegador.');
+        else if(key==='hdlocal') pushImpact('O vínculo com arquivo local/HD pode não estar disponível ou consistente neste ambiente.');
+        else if(key==='pwa') pushImpact('Atualização, cache, service worker ou uso offline do PWA podem falhar.');
+        else pushImpact('Há inconsistências gerais que merecem revisão antes de confiar totalmente na versão atual.');
+    });
+    if(!impacts.length) impacts.push('Nenhum impacto funcional relevante foi detectado pelo AutoTeste nesta execução.');
+
+    const statusMeta = (()=>{
+        if(statusKey==='critical') return { short:'CRÍTICO', bg:'rgba(239,68,68,.15)', color:'var(--danger)' };
+        if(statusKey==='attention') return { short:'ATENÇÃO', bg:'rgba(245,158,11,.16)', color:'#b45309' };
+        return { short:'OK', bg:'rgba(16,185,129,.15)', color:'var(--success)' };
+    })();
+
+    return {
+        statusKey,
+        statusLabel,
+        statusMeta,
+        headline,
+        recommendation,
+        failCount,
+        failCritical,
+        failImportant,
+        failWarning,
+        failedModules,
+        criticalFailures,
+        importantFailures,
+        impacts,
+        compareText: (historyCurrent && historyCurrent.compare && historyCurrent.compare.text) ? historyCurrent.compare.text : '',
+        executiveText: headline + ' Total: ' + failCount + ' falha(s) — crítico=' + failCritical + ', importante=' + failImportant + ', aviso=' + failWarning + '.'
+    };
+}
+
+function __autoTestRenderExecutivePanel(summary){
+    const s = summary || __autoTestBuildExecutiveSummary([], {}, [], null);
+    const modulesHtml = (Array.isArray(s.failedModules) && s.failedModules.length)
+        ? s.failedModules.map(label=>`<span style="display:inline-block;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border-color);color:var(--text-main);font-size:.8rem;font-weight:800;">${__autoTestEscape(label)}</span>`).join('')
+        : '<span style="color:var(--text-muted);font-size:.9rem;">Nenhum módulo com falha.</span>';
+    const criticalList = (Array.isArray(s.criticalFailures) && s.criticalFailures.length)
+        ? `<ul style="margin:8px 0 0 18px;padding:0;color:var(--text-main);">${s.criticalFailures.map(name=>`<li style="margin:4px 0;">${__autoTestEscape(name)}</li>`).join('')}</ul>`
+        : `<div style="margin-top:8px;color:var(--text-muted);font-size:.9rem;">Nenhuma falha crítica detectada nesta execução.</div>`;
+    const impactList = (Array.isArray(s.impacts) ? s.impacts : []).map(txt=>`<li style="margin:4px 0;">${__autoTestEscape(txt)}</li>`).join('');
+    const compareBox = s.compareText ? `<div style="margin-top:10px;padding:10px 12px;border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.02);color:var(--text-muted);font-size:.9rem;"><b style="color:var(--text-main);">Comparação com o teste anterior:</b> ${__autoTestEscape(s.compareText)}</div>` : '';
+    return `
+        <section style="margin-bottom:14px;padding:14px;border:1px solid var(--border-color);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:240px;">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span style="display:inline-block;padding:5px 10px;border-radius:999px;background:${s.statusMeta.bg};color:${s.statusMeta.color};font-size:.8rem;font-weight:900;">${s.statusMeta.short}</span>
+                        <span style="font-weight:900;color:var(--text-main);font-size:1rem;">Resumo executivo</span>
+                    </div>
+                    <div style="margin-top:8px;color:var(--text-main);font-size:.96rem;font-weight:800;">${__autoTestEscape(s.statusLabel)}</div>
+                    <div style="margin-top:6px;color:var(--text-muted);font-size:.92rem;line-height:1.45;">${__autoTestEscape(s.executiveText)}</div>
+                </div>
+                <div style="min-width:220px;max-width:360px;flex:1;padding:12px;border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.02);">
+                    <div style="font-weight:900;color:var(--text-main);">Recomendação</div>
+                    <div style="margin-top:6px;color:var(--text-muted);font-size:.92rem;line-height:1.45;">${__autoTestEscape(s.recommendation)}</div>
+                </div>
+            </div>
+            ${compareBox}
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px;">
+                <div style="padding:12px;border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.02);">
+                    <div style="font-weight:900;color:var(--text-main);">Falhas críticas</div>
+                    ${criticalList}
+                </div>
+                <div style="padding:12px;border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.02);">
+                    <div style="font-weight:900;color:var(--text-main);">Módulos afetados</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">${modulesHtml}</div>
+                </div>
+                <div style="padding:12px;border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.02);">
+                    <div style="font-weight:900;color:var(--text-main);">Impacto prático</div>
+                    <ul style="margin:8px 0 0 18px;padding:0;color:var(--text-main);font-size:.92rem;line-height:1.4;">${impactList}</ul>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function __autoTestCoerceNumber(v){
+    if(typeof v === 'number') return Number.isFinite(v) ? v : NaN;
+    if(typeof v === 'string'){
+        const s = v.trim();
+        if(!s) return NaN;
+        const n = Number(s.replace(',', '.'));
+        return Number.isFinite(n) ? n : NaN;
+    }
+    return NaN;
+}
+function __autoTestSampleList(list, limit){
+    const arr = Array.isArray(list) ? list.slice(0, limit || 5) : [];
+    return arr.map(v=>String(v)).join(' | ');
+}
+function __autoTestAlunoRef(a, idx){
+    const nome = (a && a.nome) ? String(a.nome) : ('Aluno#'+(idx+1));
+    const id = (a && a.id !== undefined && a.id !== null && String(a.id)!=='') ? String(a.id) : 'sem-id';
+    return nome + ' [' + id + ']';
+}
+function __autoTestRunDataIntegrity(add){
+    try{
+        const turmasOk = Array.isArray(turmas);
+        const alunosOk = Array.isArray(alunos);
+        const aulasOk = Array.isArray(aulas);
+        add('Integridade: estrutura do core', turmasOk && alunosOk && aulasOk, 'turmas:'+ (turmasOk?'ok':'x') +' • alunos:'+ (alunosOk?'ok':'x') +' • aulas:'+ (aulasOk?'ok':'x'), 'critical', 'integridade');
+        if(!turmasOk || !alunosOk || !aulasOk) return;
+
+        const turmaNames = [];
+        const turmaInvalid = [];
+        const turmaDupeMap = new Map();
+        turmas.forEach((t, idx)=>{
+            const raw = (typeof t === 'string') ? t : '';
+            const trimmed = raw.trim();
+            if(!trimmed) turmaInvalid.push('posição ' + (idx+1));
+            if(trimmed){
+                turmaNames.push(trimmed);
+                const k = trimmed.toLowerCase();
+                turmaDupeMap.set(k, (turmaDupeMap.get(k)||0) + 1);
+            }
+        });
+        const turmaDupes = Array.from(turmaDupeMap.entries()).filter(([,n])=>n>1).map(([k])=>k);
+        add('Integridade: turmas válidas', turmaInvalid.length===0, turmaInvalid.length ? ('Turmas vazias/inválidas: ' + __autoTestSampleList(turmaInvalid, 5)) : ('Total: ' + turmas.length), 'important', 'integridade');
+        add('Integridade: turmas duplicadas', turmaDupes.length===0, turmaDupes.length ? ('Duplicadas: ' + __autoTestSampleList(turmaDupes, 5)) : '', 'warning', 'integridade');
+
+        const turmaSet = new Set(turmaNames.map(t=>t.toLowerCase()));
+        const alunoIdMap = new Map();
+        const alunoNoId = [];
+        const alunoNoNome = [];
+        const alunoNoTurma = [];
+        const alunoBadTurmaRef = [];
+        const alunoBadFlags = [];
+        const alunoBadBimestres = [];
+        const alunoBadLists = [];
+        const alunoBadScores = [];
+
+        alunos.forEach((a, idx)=>{
+            const ref = __autoTestAlunoRef(a, idx);
+            const idKey = (a && a.id !== undefined && a.id !== null) ? String(a.id).trim() : '';
+            if(!idKey) alunoNoId.push(ref);
+            else alunoIdMap.set(idKey, (alunoIdMap.get(idKey)||0)+1);
+            if(!a || !String(a.nome||'').trim()) alunoNoNome.push(ref);
+            const turma = String((a && a.turma) || '').trim();
+            if(!turma) alunoNoTurma.push(ref);
+            else if(!turmaSet.has(turma.toLowerCase())) alunoBadTurmaRef.push(ref + ' → ' + turma);
+            if(a){
+                if(typeof a.elegivel !== 'undefined' && typeof a.elegivel !== 'boolean') alunoBadFlags.push(ref + ' elegivel=' + String(a.elegivel));
+                if(typeof a.tutorando !== 'undefined' && typeof a.tutorando !== 'boolean') alunoBadFlags.push(ref + ' tutorando=' + String(a.tutorando));
+            }
+            const bims = a && a.bimestres;
+            let badBim = false;
+            if(!bims || typeof bims !== 'object') badBim = true;
+            else {
+                ['1','2','3','4'].forEach(k=>{
+                    const b = bims[k];
+                    if(!b || typeof b !== 'object') badBim = true;
+                });
+            }
+            if(badBim){
+                alunoBadBimestres.push(ref);
+            }else{
+                ['1','2','3','4'].forEach(k=>{
+                    const b = bims[k] || {};
+                    const notasLp = b.notas_lp;
+                    const notasRed = b.notas_red;
+                    if(!notasLp || typeof notasLp !== 'object' || !notasRed || typeof notasRed !== 'object'){
+                        alunoBadBimestres.push(ref + ' bim ' + k);
+                        return;
+                    }
+                    ['a1','a2','a3','a4','a5','rec'].forEach(nk=>{
+                        if(!(nk in notasLp)) alunoBadScores.push(ref + ' bim ' + k + ' notas_lp.' + nk + ' ausente');
+                        else {
+                            const n = __autoTestCoerceNumber(notasLp[nk]);
+                            if(!Number.isFinite(n)) alunoBadScores.push(ref + ' bim ' + k + ' notas_lp.' + nk + '=' + String(notasLp[nk]));
+                        }
+                    });
+                    ['r1','r2','leit'].forEach(nk=>{
+                        if(!(nk in notasRed)) alunoBadScores.push(ref + ' bim ' + k + ' notas_red.' + nk + ' ausente');
+                        else {
+                            const n = __autoTestCoerceNumber(notasRed[nk]);
+                            if(!Number.isFinite(n)) alunoBadScores.push(ref + ' bim ' + k + ' notas_red.' + nk + '=' + String(notasRed[nk]));
+                        }
+                    });
+                    const comp = __autoTestCoerceNumber(b.comportamento);
+                    if(!Number.isFinite(comp) || comp < 0 || comp > 10) alunoBadScores.push(ref + ' bim ' + k + ' comportamento=' + String(b.comportamento));
+                    if(!Array.isArray(b.ocorrencias)) alunoBadLists.push(ref + ' bim ' + k + ' ocorrencias');
+                });
+            }
+            if(a){
+                if(typeof a.inteligencias !== 'undefined' && !Array.isArray(a.inteligencias)) alunoBadLists.push(ref + ' inteligencias');
+                if(typeof a.adaptacoes !== 'undefined' && !Array.isArray(a.adaptacoes)) alunoBadLists.push(ref + ' adaptacoes');
+            }
+        });
+        const alunoDupIds = Array.from(alunoIdMap.entries()).filter(([,n])=>n>1).map(([id])=>id);
+        add('Integridade: alunos com ID', alunoNoId.length===0, alunoNoId.length ? ('Sem ID: ' + __autoTestSampleList(alunoNoId, 5)) : ('Total: ' + alunos.length), 'critical', 'integridade');
+        add('Integridade: IDs duplicados de alunos', alunoDupIds.length===0, alunoDupIds.length ? ('IDs duplicados: ' + __autoTestSampleList(alunoDupIds, 5)) : '', 'critical', 'integridade');
+        add('Integridade: alunos com nome', alunoNoNome.length===0, alunoNoNome.length ? ('Sem nome: ' + __autoTestSampleList(alunoNoNome, 5)) : '', 'important', 'integridade');
+        add('Integridade: turma do aluno preenchida', alunoNoTurma.length===0, alunoNoTurma.length ? ('Sem turma: ' + __autoTestSampleList(alunoNoTurma, 5)) : '', 'important', 'integridade');
+        add('Integridade: vínculo aluno → turma', alunoBadTurmaRef.length===0, alunoBadTurmaRef.length ? ('Turma inexistente: ' + __autoTestSampleList(alunoBadTurmaRef, 5)) : '', 'important', 'integridade');
+        add('Integridade: flags booleanas do aluno', alunoBadFlags.length===0, alunoBadFlags.length ? ('Flags inválidas: ' + __autoTestSampleList(alunoBadFlags, 5)) : '', 'warning', 'integridade');
+        add('Integridade: estrutura de bimestres', alunoBadBimestres.length===0, alunoBadBimestres.length ? ('Bimestres quebrados: ' + __autoTestSampleList(alunoBadBimestres, 5)) : '', 'critical', 'integridade');
+        add('Integridade: listas do aluno', alunoBadLists.length===0, alunoBadLists.length ? ('Listas inválidas: ' + __autoTestSampleList(alunoBadLists, 5)) : '', 'important', 'integridade');
+        add('Integridade: notas e comportamento', alunoBadScores.length===0, alunoBadScores.length ? ('Campos inválidos: ' + __autoTestSampleList(alunoBadScores, 5)) : '', 'important', 'integridade');
+
+        const aulaIdMap = new Map();
+        const aulaNoId = [];
+        const aulaBadTurma = [];
+        const aulaBadBim = [];
+        aulas.forEach((a, idx)=>{
+            const ref = 'Aula#' + (idx+1) + (a && a.tema ? ' ' + String(a.tema).slice(0, 30) : '');
+            const idKey = (a && a.id !== undefined && a.id !== null) ? String(a.id).trim() : '';
+            if(!idKey) aulaNoId.push(ref);
+            else aulaIdMap.set(idKey, (aulaIdMap.get(idKey)||0)+1);
+            const turma = String((a && a.turma) || '').trim();
+            if(!turma || !turmaSet.has(turma.toLowerCase())) aulaBadTurma.push(ref + (turma ? ' → ' + turma : ''));
+            const bim = Number(a && a.bimestre);
+            if(!Number.isInteger(bim) || bim < 1 || bim > 4) aulaBadBim.push(ref + ' bimestre=' + String(a && a.bimestre));
+        });
+        const aulaDupIds = Array.from(aulaIdMap.entries()).filter(([,n])=>n>1).map(([id])=>id);
+        add('Integridade: aulas com ID', aulaNoId.length===0, aulaNoId.length ? ('Sem ID: ' + __autoTestSampleList(aulaNoId, 5)) : ('Total: ' + aulas.length), 'important', 'integridade');
+        add('Integridade: IDs duplicados de aulas', aulaDupIds.length===0, aulaDupIds.length ? ('IDs duplicados: ' + __autoTestSampleList(aulaDupIds, 5)) : '', 'important', 'integridade');
+        add('Integridade: vínculo aula → turma', aulaBadTurma.length===0, aulaBadTurma.length ? ('Turma inexistente: ' + __autoTestSampleList(aulaBadTurma, 5)) : '', 'important', 'integridade');
+        add('Integridade: bimestre das aulas', aulaBadBim.length===0, aulaBadBim.length ? ('Bimestre inválido: ' + __autoTestSampleList(aulaBadBim, 5)) : '', 'warning', 'integridade');
+    }catch(e){
+        add('Integridade: execução', false, 'Erro inesperado: ' + (e && e.message ? e.message : e), 'important', 'integridade');
+    }
+}
+
+function __autoTestDeepClone(v){
+    try{ return JSON.parse(JSON.stringify(v)); }catch(_){ return Array.isArray(v) ? v.slice() : v; }
+}
+function __autoTestArrayHasProbe(arr, matcher){
+    try{ return Array.isArray(arr) && arr.some(item=>{ try{ return !!matcher(item); }catch(_){ return false; } }); }catch(_){ return false; }
+}
+
+function __autoTestRectsOverlap(r1, r2){
+    if(!r1 || !r2) return false;
+    return !(r1.right <= r2.left || r2.right <= r1.left || r1.bottom <= r2.top || r2.bottom <= r1.top);
+}
+async function __autoTestRunCriticalUI(add){
+    const criticalButtons = [
+        { label:'AutoTeste', selector:'#btnAutoTest', fn:'executarAutoTeste' },
+        { label:'Elegível', selector:'#btnFiltroInclusao', fn:'toggleFiltroInclusao' },
+        { label:'Risco', selector:'#btnFiltroRisco', fn:'toggleFiltroRisco' },
+        { label:'Tutoria', selector:'#btnFiltroTutoria', fn:'toggleFiltroTutoria' },
+        { label:'Links rápidos', selector:'button[data-onclick="abrirLinksRapidos()"]', fn:'abrirLinksRapidos' }
+    ];
+    const missingButtons = [];
+    const brokenHandlers = [];
+    criticalButtons.forEach(def=>{
+        const el = document.querySelector(def.selector);
+        if(!el){ missingButtons.push(def.label); return; }
+        const action = String((el.getAttribute('data-onclick') || el.getAttribute('onclick') || '')).trim();
+        const fnOk = typeof window[def.fn] === 'function';
+        const actionOk = action.includes(def.fn + '(') || action === def.fn;
+        if(!(fnOk && actionOk)) brokenHandlers.push(def.label + (action ? ' → ' + action : ' → sem ação'));
+    });
+    add('Interface: botões críticos presentes', missingButtons.length===0, missingButtons.length ? ('Ausentes: ' + missingButtons.join(', ')) : '', 'important', 'interface');
+    add('Interface: handlers críticos conectados', brokenHandlers.length===0, brokenHandlers.length ? ('Problemas: ' + brokenHandlers.join(' | ')) : '', 'critical', 'interface');
+
+    try{
+        if(typeof mudarVisao === 'function') mudarVisao('cards');
+    }catch(_){ }
+    await __autoTestSleep(80);
+
+    const grid = document.getElementById('gridAlunos');
+    add('Interface: grade de cards renderiza', !!grid, grid ? '' : 'Elemento #gridAlunos não encontrado.', 'important', 'interface');
+    if(grid && !grid.children.length && typeof renderizarGrid === 'function'){
+        try{ renderizarGrid(); }catch(_){ }
+        await __autoTestSleep(80);
+    }
+
+    const firstAluno = Array.isArray(alunos) ? alunos.find(a=>a && a.id!=null) : null;
+    if(!firstAluno){
+        add('Interface: card de aluno disponível', false, 'Nenhum aluno para validar card/modal.', 'warning', 'interface');
+        return;
+    }
+
+    let prevElegivel = !!firstAluno.elegivel;
+    let prevTutorando = !!firstAluno.tutorando;
+    let restoreDone = false;
+    try{
+        firstAluno.elegivel = true;
+        firstAluno.tutorando = true;
+        if(typeof renderizarGrid === 'function') renderizarGrid();
+        await __autoTestSleep(90);
+
+        const card = grid ? Array.from(grid.querySelectorAll('.card-aluno[data-id]')).find(el => String(el.getAttribute('data-id')) === String(firstAluno.id)) : null;
+        add('Interface: card do aluno renderizado', !!card, card ? '' : 'Card do aluno de teste não encontrado.', 'important', 'interface');
+        if(card){
+            const infoRow = card.querySelector('.card-info-row');
+            const badgesWrap = card.querySelector('.aluno-badges');
+            const badgeEleg = card.querySelector('.badge-inclusao');
+            const badgeTut = card.querySelector('.badge-tutoria');
+            const actionsRow = card.querySelector('.card-actions-row');
+            const badgesOk = !!(badgesWrap && badgeEleg && badgeTut);
+            add('Interface: selos críticos do card renderizam', badgesOk, badgesOk ? '' : 'Faltou área de badges ou algum selo (Elegível/Tutoria).', 'important', 'interface');
+            if(badgesOk){
+                const wrapVisible = __autoTestIsVisible(badgesWrap) && __autoTestIsVisible(badgeEleg) && __autoTestIsVisible(badgeTut);
+                add('Interface: selos do card visíveis', wrapVisible, wrapVisible ? '' : 'Badges renderizados, mas ocultos.', 'important', 'interface');
+                try{
+                    const cardRect = card.getBoundingClientRect();
+                    const infoRect = infoRow ? infoRow.getBoundingClientRect() : null;
+                    const wrapRect = badgesWrap.getBoundingClientRect();
+                    const elegRect = badgeEleg.getBoundingClientRect();
+                    const tutRect = badgeTut.getBoundingClientRect();
+                    const actionsRect = actionsRow ? actionsRow.getBoundingClientRect() : null;
+                    const noBadgeOverlap = !__autoTestRectsOverlap(elegRect, tutRect);
+                    add('Interface: selos Elegível/Tutoria sem sobreposição', noBadgeOverlap, noBadgeOverlap ? '' : 'Os badges ainda estão se sobrepondo visualmente.', 'important', 'interface');
+                    const noHeaderOverlap = !__autoTestRectsOverlap(infoRect, wrapRect);
+                    add('Interface: nome e selos sem sobreposição', noHeaderOverlap, noHeaderOverlap ? '' : 'A área do nome ainda encosta/sobrepõe a área dos badges.', 'important', 'interface');
+                    const insideCard = wrapRect.left >= (cardRect.left - 1) && wrapRect.right <= (cardRect.right + 1);
+                    add('Interface: área de selos dentro do card', insideCard, insideCard ? '' : 'A área de badges extrapola a largura do card.', 'warning', 'interface');
+                    const noActionsOverlap = !__autoTestRectsOverlap(actionsRect, wrapRect);
+                    add('Interface: ações e selos sem sobreposição', noActionsOverlap, noActionsOverlap ? '' : 'Os badges encostam/sobrepõem a área dos botões do card.', 'warning', 'interface');
+                }catch(e){
+                    add('Interface: geometria dos selos', false, 'Erro ao medir card/badges: ' + (e && e.message ? e.message : e), 'warning', 'interface');
+                }
+            }
+        }
+
+        try{ abrirDetalhes(firstAluno.id); }catch(_){ }
+        await __autoTestSleep(90);
+        const modalDet = document.getElementById('modalDetalhes');
+        const detalheOpen = !!(modalDet && modalDet.style.display === 'flex');
+        add('Interface: modal do aluno abre', detalheOpen, detalheOpen ? '' : 'modalDetalhes não abriu.', 'critical', 'interface');
+        if(detalheOpen){
+            const detailIds = ['detNome','detTurma','checkElegivel','checkTutoria','tbodyAvalLP','tbodyAvalRED','btnTabPAEE','tabPAEE'];
+            const missingDetails = detailIds.filter(id=>!document.getElementById(id));
+            add('Interface: campos críticos do modal do aluno', missingDetails.length===0, missingDetails.length ? ('Ausentes: ' + missingDetails.join(', ')) : '', 'important', 'interface');
+        }
+        try{ fecharModais(); }catch(_){ }
+        await __autoTestSleep(40);
+
+        try{ abrirLinksRapidos(); }catch(_){ }
+        await __autoTestSleep(70);
+        const modalLinks = document.getElementById('modalLinksRapidos');
+        const linksOpen = !!(modalLinks && modalLinks.style.display === 'flex');
+        add('Interface: modal Links Rápidos abre', linksOpen, linksOpen ? '' : 'modalLinksRapidos não abriu.', 'important', 'interface');
+        if(linksOpen){
+            const linkIds = ['quickLinkTitle','quickLinkUrl','quickLinksGrid','quickLinksCount'];
+            const missingLinkIds = linkIds.filter(id=>!document.getElementById(id));
+            add('Interface: elementos críticos de Links Rápidos', missingLinkIds.length===0, missingLinkIds.length ? ('Ausentes: ' + missingLinkIds.join(', ')) : '', 'important', 'interface');
+        }
+        try{ fecharModais(); }catch(_){ }
+        await __autoTestSleep(40);
+    }finally{
+        try{
+            firstAluno.elegivel = prevElegivel;
+            firstAluno.tutorando = prevTutorando;
+            if(typeof renderizarGrid === 'function') renderizarGrid();
+            restoreDone = true;
+        }catch(_){ restoreDone = false; }
+        await __autoTestSleep(40);
+        add('Interface: restauração após teste visual', restoreDone, restoreDone ? '' : 'Não foi possível restaurar o card do aluno usado no teste.', 'warning', 'interface');
+    }
+}
+
+async function __autoTestRunVersionCompatibility(add){
+    const hasFns = (typeof ensureConfigSchema === 'function' && typeof plannerNormalizeTasks === 'function' && typeof __applySnapshot === 'function' && typeof __snapshotStr === 'function' && typeof carregarDados === 'function');
+    add('Compatibilidade: funções base disponíveis', hasFns, hasFns ? '' : 'Faltam ensureConfigSchema/plannerNormalizeTasks/__applySnapshot/__snapshotStr/carregarDados.', 'critical', 'compatibilidade');
+    if(!hasFns) return;
+
+    const beforeSnapshot = (typeof __snapshotStr === 'function') ? __snapshotStr() : null;
+    const legacyKeys = [__SGP_ATOMIC_CORE_KEY, 'sgp_turmas', 'sgp_alunos', 'sgp_aulas', 'sgp_planos_semanais', 'sgp_config', 'sgp_layouts', 'sgp_correcao_provas'];
+    const prevStorage = {};
+    legacyKeys.forEach((k)=>{
+        try{ prevStorage[k] = (typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k); }catch(_){ prevStorage[k] = null; }
+    });
+    const prevBackupPending = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_backup_pending') : null;
+    const prevLastCoreSave = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_core_save') : null;
+
+    try{
+        const nonce = 'compat_' + Date.now();
+
+        // 1) Migração de config legado -> schema novo
+        try{
+            const oldConfig = __autoTestDeepClone(config);
+            let ok = false, detail = '';
+            try{
+                config = {
+                    materia1: 'Português Compat ' + nonce,
+                    materia2: 'Redação Compat ' + nonce,
+                    pesos: { a1:10, a2:10, a3:20, a4:20, a5:30, rec:10 },
+                    rec_substitui: true
+                };
+                ensureConfigSchema();
+                const d1 = Array.isArray(config.disciplinas) ? config.disciplinas[0] : null;
+                const d2 = Array.isArray(config.disciplinas) ? config.disciplinas[1] : null;
+                ok = !!(d1 && d2 && d1.id && d2.id && Array.isArray(d1.avaliacoes) && Array.isArray(d2.avaliacoes) && config.slot1 && config.slot2 && config.materia1 === 'Português Compat ' + nonce && config.materia2 === 'Redação Compat ' + nonce && config.rec_substitui === true);
+                detail = ok ? ('slot1:' + config.slot1 + ' • slot2:' + config.slot2 + ' • disciplinas:' + config.disciplinas.length) : 'Schema novo não foi reconstruído corretamente a partir da config legada.';
+            } finally {
+                config = oldConfig;
+                try{ ensureConfigSchema(); }catch(_){ }
+            }
+            add('Compatibilidade: config legada migra para schema novo', ok, detail, 'important', 'compatibilidade');
+        }catch(e){
+            add('Compatibilidade: config legada migra para schema novo', false, 'Erro: ' + (e && e.message ? e.message : e), 'important', 'compatibilidade');
+        }
+
+        // 2) Normalização do planner legado
+        try{
+            const legacyPlanner = {
+                tasks: [{
+                    id: 'plan_' + nonce,
+                    titulo: 'Planejamento legado ' + nonce,
+                    data: '2026-03-14',
+                    hora: '08:30',
+                    turma: 'Compat 7º A',
+                    bim: 2,
+                    categoria: 'Compat',
+                    prioridade: 'Alta',
+                    concluida: true,
+                    observacoes: 'Teste legado'
+                }]
+            };
+            const normalized = plannerNormalizeTasks(legacyPlanner);
+            const item = Array.isArray(normalized) ? normalized[0] : null;
+            const ok = !!(item && item.id === 'plan_' + nonce && item.title === 'Planejamento legado ' + nonce && item.date === '2026-03-14' && item.time === '08:30' && item.priority === 'Alta' && item.status === 'done' && String(item.bimestre) === '2');
+            const detail = ok ? ('title/date/time/status/bimestre ok') : 'plannerNormalizeTasks não normalizou o formato legado esperado.';
+            add('Compatibilidade: planner legado normaliza campos', ok, detail, 'important', 'compatibilidade');
+        }catch(e){
+            add('Compatibilidade: planner legado normaliza campos', false, 'Erro: ' + (e && e.message ? e.message : e), 'important', 'compatibilidade');
+        }
+
+        // 3) Snapshot/restauração com dados antigos -> defaults/migrações
+        try{
+            let ok = false, detail = '';
+            const legacySnapshot = {
+                turmas: ['Compat 7º A'],
+                alunos: [{ id:'aluno_' + nonce, nome:'Aluno Compat ' + nonce, turma:'Compat 7º A' }],
+                aulas: [{ id:'aula_' + nonce, tema:'Aula Compat', turma:'Compat 7º A', bimestre:2 }],
+                planos_semanais: { 'Compat 7º A': { segunda: ['Leitura'] } },
+                config: { materia1:'Português Compat ' + nonce, materia2:'Redação Compat ' + nonce, pesos:{ a1:10, a2:10, a3:20, a4:20, a5:30, rec:10 }, rec_substitui:true },
+                layouts: {},
+                correcaoProvas: { provaCompat: { gabarito:['A'], turma:'Compat 7º A' } },
+                plannerTasks: [{ titulo:'Planner Compat ' + nonce, data:'2026-03-14', hora:'09:00', turma:'Compat 7º A', prioridade:'Alta', categoria:'Compat', concluida:true, bim:2 }],
+                atividades: {},
+                frequencia: {},
+                entregas: {},
+                buscaAtiva: {},
+                entregasDocPrazos: {},
+                linksRapidos: [],
+                linkedFileMeta: { fileName:'compat.db', pending:true, status:'pendente' },
+                ranking: {},
+                rankHistCfg: {},
+                uiPrefs: {},
+                planoPrefs: {},
+                auditLog: [],
+                freqEvents: [],
+                auditTrail: [],
+                autobackups: [],
+                lastBackupAt: 0
+            };
+            __applySnapshot(JSON.stringify(legacySnapshot), 'AutoTeste');
+            await __autoTestSleep(120);
+            const aluno = Array.isArray(alunos) ? alunos.find(a=>String(a.id) === 'aluno_' + nonce) : null;
+            const plannerOk = Array.isArray(plannerTasks) && plannerTasks.some(t=>String(t.title) === 'Planner Compat ' + nonce && t.status === 'done');
+            const configOk = !!(Array.isArray(config?.disciplinas) && config.disciplinas.length >= 2 && config.materia1 === 'Português Compat ' + nonce && config.materia2 === 'Redação Compat ' + nonce);
+            const alunoDefaultsOk = !!(aluno && aluno.elegivel === false && aluno.tutorando === false && aluno.bimestres && aluno.bimestres[1] && aluno.bimestres[1].notas_lp && aluno.bimestres[1].notas_red && Array.isArray(aluno.bimestres[1].ocorrencias));
+            const aulaDefaultsOk = !!(Array.isArray(aulas) && aulas.some(a=>String(a.id) === 'aula_' + nonce && a.tipo === 'aula' && typeof a.bncc !== 'undefined'));
+            let linkedOk = true;
+            try{
+                const linked = (typeof __getLinkedStateFileMeta === 'function') ? __getLinkedStateFileMeta() : {};
+                linkedOk = !!linked && linked.pending !== true && String(linked.status || '') !== 'pendente';
+            }catch(_){ linkedOk = true; }
+            ok = plannerOk && configOk && alunoDefaultsOk && aulaDefaultsOk && linkedOk;
+            detail = 'config:' + (configOk?'ok':'x') + ' • planner:' + (plannerOk?'ok':'x') + ' • defaults aluno:' + (alunoDefaultsOk?'ok':'x') + ' • defaults aula:' + (aulaDefaultsOk?'ok':'x') + ' • linked pending:' + (linkedOk?'ok':'x');
+            add('Compatibilidade: snapshot legado recebe migrações mínimas', ok, detail, 'critical', 'compatibilidade');
+        }catch(e){
+            add('Compatibilidade: snapshot legado recebe migrações mínimas', false, 'Erro: ' + (e && e.message ? e.message : e), 'critical', 'compatibilidade');
+        } finally {
+            try{ if(beforeSnapshot && typeof __applySnapshot === 'function') __applySnapshot(beforeSnapshot, 'AutoTeste'); }catch(_){ }
+            await __autoTestSleep(100);
+        }
+
+        // 4) Carregamento por chaves legadas (sem core atômico)
+        try{
+            let ok = false, detail = '';
+            const legacyTurma = 'Compat Legacy 7º A';
+            const legacyAlunoId = 'legacy_aluno_' + nonce;
+            const legacyPlanos = { [legacyTurma]: { segunda: ['Texto'] } };
+            const legacyConfig = { materia1:'LP Legacy ' + nonce, materia2:'RED Legacy ' + nonce, pesos:{ a1:15, a2:15, a3:15, a4:15, a5:30, rec:10 } };
+            const legacyCorrecao = { prova1: { turma: legacyTurma, gabarito:['A'] } };
+            try{ __safeLSRemove(__SGP_ATOMIC_CORE_KEY); }catch(_){ }
+            try{ __safeLSSet('sgp_turmas', JSON.stringify([legacyTurma])); }catch(_){ }
+            try{ __safeLSSet('sgp_alunos', JSON.stringify([{ id: legacyAlunoId, nome:'Aluno Legacy ' + nonce, turma: legacyTurma }])); }catch(_){ }
+            try{ __safeLSSet('sgp_aulas', JSON.stringify([{ id:'legacy_aula_' + nonce, tema:'Tema', turma: legacyTurma, bimestre:1 }])); }catch(_){ }
+            try{ __safeLSSet('sgp_planos_semanais', JSON.stringify(legacyPlanos)); }catch(_){ }
+            try{ __safeLSSet('sgp_config', JSON.stringify(legacyConfig)); }catch(_){ }
+            try{ __safeLSSet('sgp_layouts', JSON.stringify({})); }catch(_){ }
+            try{ __safeLSSet('sgp_correcao_provas', JSON.stringify(legacyCorrecao)); }catch(_){ }
+            carregarDados();
+            try{ if(typeof garantirEstruturaNova === 'function') garantirEstruturaNova(); }catch(_){ }
+            try{ if(typeof ensureConfigSchema === 'function') ensureConfigSchema(); }catch(_){ }
+            try{ if(typeof _syncAllStudents === 'function') _syncAllStudents(); }catch(_){ }
+            ok = Array.isArray(turmas) && turmas.includes(legacyTurma)
+              && Array.isArray(alunos) && alunos.some(a=>String(a.id) === legacyAlunoId)
+              && planosSemana && typeof planosSemana === 'object' && Array.isArray(planosSemana[legacyTurma]?.segunda)
+              && Array.isArray(config?.disciplinas) && config.materia1 === 'LP Legacy ' + nonce && config.materia2 === 'RED Legacy ' + nonce
+              && correcaoProvas && typeof correcaoProvas === 'object' && correcaoProvas.prova1;
+            detail = ok ? ('turma/aluno/config/plano/correção ok') : 'carregarDados não recompôs corretamente o formato legado por múltiplas chaves.';
+            add('Compatibilidade: chaves legadas carregam sem quebrar', ok, detail, 'critical', 'compatibilidade');
+        }catch(e){
+            add('Compatibilidade: chaves legadas carregam sem quebrar', false, 'Erro: ' + (e && e.message ? e.message : e), 'critical', 'compatibilidade');
+        } finally {
+            try{
+                Object.keys(prevStorage).forEach((k)=>{
+                    const raw = prevStorage[k];
+                    if(raw === null || typeof raw === 'undefined') __safeLSRemove(k);
+                    else __safeLSSet(k, String(raw));
+                });
+            }catch(_){ }
+            try{ carregarDados(); }catch(_){ }
+            try{ if(typeof garantirEstruturaNova === 'function') garantirEstruturaNova(); }catch(_){ }
+            try{ if(typeof ensureConfigSchema === 'function') ensureConfigSchema(); }catch(_){ }
+            try{ if(typeof _syncAllStudents === 'function') _syncAllStudents(); }catch(_){ }
+        }
+    } finally {
+        try{
+            if(prevBackupPending === null || typeof prevBackupPending === 'undefined') __safeLSRemove('sgp_backup_pending');
+            else __safeLSSet('sgp_backup_pending', String(prevBackupPending));
+        }catch(_){ }
+        try{
+            if(prevLastCoreSave === null || typeof prevLastCoreSave === 'undefined') __safeLSRemove('sgp_last_core_save');
+            else __safeLSSet('sgp_last_core_save', String(prevLastCoreSave));
+        }catch(_){ }
+        try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
+    }
+}
+
+async function __autoTestRunActivityBanks(add){
+    const hasBaseFlow = (typeof __storageGetItem === 'function' && typeof __collectBackupFiles === 'function' && typeof _actSafeParse === 'function' && typeof _actNormalizeArray === 'function');
+    const hasSaveFns = (typeof _actSaveAll === 'function' && typeof quizSave === 'function' && typeof compSave === 'function' && typeof ordSave === 'function');
+    add('Atividades: fluxo de bancos disponível', hasBaseFlow && hasSaveFns, (hasBaseFlow && hasSaveFns) ? '' : 'Faltam __storageGetItem/__collectBackupFiles/_actSafeParse/_actNormalizeArray/_actSaveAll/quizSave/compSave/ordSave.', 'critical', 'atividades');
+    if(!(hasBaseFlow && hasSaveFns)) return;
+
+    const nonce = 'actbank_' + Date.now();
+    const defs = [
+        {
+            label:'Forca', key:'sgp_atividades_forca_bank', file:'atividades_forca.json',
+            get:()=>forcaBank, set:(v)=>{ forcaBank = v; }, save:()=>_actSaveAll(),
+            load:()=>{ forcaBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.forca, [])).map(x => ({ w: String(x?.w ?? x?.word ?? x?.palavra ?? '').trim(), h: String(x?.h ?? x?.hint ?? x?.dica ?? '').trim(), t: String(x?.t ?? x?.theory ?? x?.teoria ?? x?.explicacao ?? x?.exp ?? '').trim() })).filter(x => x.w); },
+            probe:()=>({ w:'AUTOTESTE_FORCA_'+nonce, h:'Dica '+nonce, t:'Teoria '+nonce }),
+            match:(x)=> !!(x && String(x.w||'') === 'AUTOTESTE_FORCA_'+nonce)
+        },
+        {
+            label:'V/F', key:'sgp_atividades_vf_bank', file:'atividades_vf.json',
+            get:()=>vfBank, set:(v)=>{ vfBank = v; }, save:()=>_actSaveAll(),
+            load:()=>{ vfBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.vf, [])).map(x => ({ t: String(x?.t ?? x?.text ?? x?.frase ?? x?.pergunta ?? '').trim(), a: (String(x?.a ?? x?.ans ?? x?.resposta ?? 'V').toUpperCase()==='F') ? 'F' : 'V', e: String(x?.e ?? x?.exp ?? x?.teoria ?? x?.explicacao ?? x?.explain ?? '').trim() })).filter(x => x.t); },
+            probe:()=>({ t:'AUTOTESTE_VF_'+nonce, a:'V', e:'Exp '+nonce }),
+            match:(x)=> !!(x && String(x.t||'') === 'AUTOTESTE_VF_'+nonce)
+        },
+        {
+            label:'Memória', key:'sgp_atividades_mem_bank', file:'atividades_memoria.json',
+            get:()=>memBank, set:(v)=>{ memBank = v; }, save:()=>_actSaveAll(),
+            load:()=>{ memBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.mem, [])).map(x => ({ a: String(x?.a ?? x?.left ?? '').trim(), b: String(x?.b ?? x?.right ?? '').trim() })).filter(x => x.a && x.b); },
+            probe:()=>({ a:'AUTOTESTE_MEM_A_'+nonce, b:'AUTOTESTE_MEM_B_'+nonce }),
+            match:(x)=> !!(x && String(x.a||'') === 'AUTOTESTE_MEM_A_'+nonce && String(x.b||'') === 'AUTOTESTE_MEM_B_'+nonce)
+        },
+        {
+            label:'Flashcards', key:'sgp_atividades_fc_bank', file:'atividades_flashcards.json',
+            get:()=>fcBank, set:(v)=>{ fcBank = v; }, save:()=>_actSaveAll(),
+            load:()=>{ fcBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.fc, [])).map(x => ({ f: String(x?.f ?? x?.front ?? x?.frente ?? x?.pergunta ?? x?.q ?? '').trim(), b: String(x?.b ?? x?.back ?? x?.verso ?? x?.resposta ?? x?.a ?? '').trim(), g: String(x?.g ?? x?.tag ?? x?.tema ?? x?.categoria ?? '').trim() })).filter(x => x.f && x.b); },
+            probe:()=>({ f:'AUTOTESTE_FC_F_'+nonce, b:'AUTOTESTE_FC_B_'+nonce, g:'tag-'+nonce }),
+            match:(x)=> !!(x && String(x.f||'') === 'AUTOTESTE_FC_F_'+nonce && String(x.b||'') === 'AUTOTESTE_FC_B_'+nonce)
+        },
+        {
+            label:'Relacionar', key:'sgp_atividades_rel_bank', file:'atividades_relacoes.json',
+            get:()=>relBank, set:(v)=>{ relBank = v; }, save:()=>_actSaveAll(),
+            load:()=>{ relBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.rel, [])).map(x => ({ a: String(x?.a||'').trim(), b: String(x?.b||'').trim() })).filter(x => x.a && x.b); },
+            probe:()=>({ a:'AUTOTESTE_REL_A_'+nonce, b:'AUTOTESTE_REL_B_'+nonce }),
+            match:(x)=> !!(x && String(x.a||'') === 'AUTOTESTE_REL_A_'+nonce && String(x.b||'') === 'AUTOTESTE_REL_B_'+nonce)
+        },
+        {
+            label:'Roleta', key:'sgp_atividades_roleta_bank', file:'atividades_roleta.json',
+            get:()=>roletaBank, set:(v)=>{ roletaBank = v; }, save:()=>_actSaveAll(),
+            load:()=>{ roletaBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.roleta, [])).map(x => String(x||'').trim()).filter(Boolean); },
+            probe:()=>('AUTOTESTE_ROLETA_'+nonce),
+            match:(x)=> String(x||'') === 'AUTOTESTE_ROLETA_'+nonce
+        },
+        {
+            label:'Quiz', key:'sgp_atividades_quiz_bank', file:'atividades_quiz.json',
+            get:()=>quizBank, set:(v)=>{ quizBank = v; }, save:()=>quizSave(), load:()=>quizLoad(),
+            probe:()=>({ q:'AUTOTESTE_QUIZ_'+nonce, alts:['A '+nonce,'B '+nonce,'C '+nonce,'D '+nonce], corr:1, exp:'Exp '+nonce }),
+            match:(x)=> !!(x && String(x.q||'') === 'AUTOTESTE_QUIZ_'+nonce)
+        },
+        {
+            label:'Completar', key:'sgp_atividades_comp_bank', file:'atividades_completar.json',
+            get:()=>compBank, set:(v)=>{ compBank = v; }, save:()=>compSave(), load:()=>compLoad(),
+            probe:()=>({ f:'AUTOTESTE_COMP_'+nonce+' ___', r:'resposta_'+nonce, e:'Exp '+nonce }),
+            match:(x)=> !!(x && String(x.f||'') === 'AUTOTESTE_COMP_'+nonce+' ___')
+        },
+        {
+            label:'Ordenar', key:'sgp_atividades_ord_bank', file:'atividades_ordenar.json',
+            get:()=>ordBank, set:(v)=>{ ordBank = v; }, save:()=>ordSave(), load:()=>ordLoad(),
+            probe:()=>({ f:'AUTOTESTE_ORD_'+nonce+' palavras organizadas', d:'Dica '+nonce }),
+            match:(x)=> !!(x && String(x.f||'') === 'AUTOTESTE_ORD_'+nonce+' palavras organizadas')
+        }
+    ];
+
+    for(const def of defs){
+        const original = __autoTestDeepClone(def.get());
+        let existsOk = false, saveOk = false, reloadOk = false, backupOk = false;
+        let detail = '';
+        try{
+            const probe = def.probe();
+            const next = Array.isArray(original) ? original.concat([probe]) : [probe];
+            def.set(next);
+            def.save();
+            await __autoTestSleep(40);
+
+            let raw = null, parsed = [];
+            try{ raw = __storageGetItem(def.key); }catch(_){ raw = null; }
+            existsOk = typeof raw === 'string' && raw.length > 0;
+            try{ parsed = raw ? JSON.parse(raw) : []; }catch(_){ parsed = []; }
+            saveOk = __autoTestArrayHasProbe(parsed, def.match);
+
+            try{ def.set([]); }catch(_){ }
+            try{ def.load(); }catch(_){ }
+            await __autoTestSleep(20);
+            reloadOk = __autoTestArrayHasProbe(def.get(), def.match);
+
+            try{
+                const tuples = __collectBackupFiles();
+                const entry = Array.isArray(tuples) ? tuples.find(f=>f && f[0] === def.file) : null;
+                let backupArr = [];
+                if(entry && typeof entry[1] === 'string'){
+                    try{ backupArr = JSON.parse(entry[1]); }catch(_){ backupArr = []; }
+                }
+                backupOk = __autoTestArrayHasProbe(backupArr, def.match);
+            }catch(_){ backupOk = false; }
+
+            detail = 'chave:' + (existsOk?'ok':'x') + ' • save:' + (saveOk?'ok':'x') + ' • reload:' + (reloadOk?'ok':'x') + ' • backup:' + (backupOk?'ok':'x');
+        }catch(e){
+            detail = 'Erro: ' + (e && e.message ? e.message : e);
+        }finally{
+            try{ def.set(__autoTestDeepClone(original)); }catch(_){ }
+            try{ def.save(); }catch(_){ }
+            await __autoTestSleep(10);
+            try{ def.load(); }catch(_){ }
+        }
+        add('Atividades: banco ' + def.label, existsOk && saveOk && reloadOk && backupOk, detail, 'critical', 'atividades');
+    }
+}
+
+function abrirModalAutoTeste(opts){
+    const options = (opts && typeof opts === 'object') ? opts : {};
+    const preserveContent = !!options.preserveContent;
     const m = document.getElementById('modalAutoTeste');
     const b = document.getElementById('autoTesteBody');
-    if(b) b.innerHTML = '<div style="padding:10px;color:var(--text-muted);">Executando autoteste...</div>';
-    if(m) m.style.display = 'flex';
+    if(!preserveContent && b) b.innerHTML = '<div style="padding:10px;color:var(--text-muted);">Executando autoteste...</div>';
+    if(m){
+        m.style.display = 'flex';
+        m.setAttribute('data-autotest-state', window.__autoTestRunning ? 'running' : (window.__autoTestResultVisible ? 'ready' : 'idle'));
+    }
 }
-function fecharModalAutoTeste(){
+function fecharModalAutoTeste(force){
+    if(!force && (window.__autoTestRunning || window.__autoTestModalLock)){
+        try{ showToast('Aguarde o AutoTeste concluir e mostrar o resultado.','warning'); }catch(_){ }
+        return false;
+    }
     const m = document.getElementById('modalAutoTeste');
-    if(m) m.style.display = 'none';
+    if(m){
+        m.style.display = 'none';
+        m.removeAttribute('data-autotest-state');
+    }
+    window.__autoTestResultVisible = false;
+    window.__autoTestModalLock = false;
+    return true;
 }
 function autoTesteCopiar(){
     try{
@@ -32305,11 +32977,15 @@ function __autoTestIsVisible(el){
 async function executarAutoTeste(){
     if(window.__autoTestRunning){ showToast('AutoTeste já está em execução.'); return; }
     window.__autoTestRunning = true;
+    window.__autoTestModalLock = true;
+    window.__autoTestResultVisible = false;
     abrirModalAutoTeste();
 
     const results=[];
-    const add=(name, ok, detail='')=>{
-        results.push({name, ok: !!ok, detail: detail||''});
+    const add=(name, ok, detail='', severity='', module='')=>{
+        const sev = severity || __autoTestInferSeverity(name);
+        const mod = module || __autoTestInferModule(name);
+        results.push({name, ok: !!ok, detail: detail||'', severity: __autoTestNormalizeSeverity(sev), module: mod});
     };
 
     const prevVisao = (typeof visaoAtual !== 'undefined') ? visaoAtual : null;
@@ -32328,6 +33004,77 @@ async function executarAutoTeste(){
             add('LocalStorage: leitura/escrita', false, 'Exceção ao acessar localStorage: '+(e && e.message ? e.message : e));
         }
 
+        // 1.0) Persistência real do núcleo (grava, relê, confirma e limpa)
+        try{
+            const hasRealSave = (typeof salvarDadosLocal === 'function' && typeof __storageGetItem === 'function');
+            add('Persistência real: save/read disponível', hasRealSave, hasRealSave ? '' : 'Faltam salvarDadosLocal/__storageGetItem.');
+            if(hasRealSave){
+                const prevBackupPending = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_backup_pending') : null;
+                const prevLastCoreSave = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_core_save') : null;
+                const prevProbe = (config && typeof config === 'object' && !Array.isArray(config) && Object.prototype.hasOwnProperty.call(config, '__autotest_probe')) ? config.__autotest_probe : undefined;
+                const nonce = 'saveprobe_' + Date.now();
+                const counts = {
+                    turmas: Array.isArray(turmas) ? turmas.length : -1,
+                    alunos: Array.isArray(alunos) ? alunos.length : -1,
+                    aulas: Array.isArray(aulas) ? aulas.length : -1
+                };
+                let coreAfterSave = null;
+                let coreAfterCleanup = null;
+                let saveReadOk = false;
+                let cleanupOk = false;
+                let detail = '';
+
+                try{
+                    if(!config || typeof config !== 'object' || Array.isArray(config)) config = {};
+                    config.__autotest_probe = { nonce, ts: Date.now(), counts };
+                    salvarDadosLocal();
+                    await __autoTestSleep(90);
+
+                    const raw = __storageGetItem(__SGP_ATOMIC_CORE_KEY);
+                    coreAfterSave = raw ? JSON.parse(raw) : null;
+                    const probe = coreAfterSave && coreAfterSave.config && coreAfterSave.config.__autotest_probe;
+                    const savedCounts = {
+                        turmas: Array.isArray(coreAfterSave && coreAfterSave.turmas) ? coreAfterSave.turmas.length : -1,
+                        alunos: Array.isArray(coreAfterSave && coreAfterSave.alunos) ? coreAfterSave.alunos.length : -1,
+                        aulas: Array.isArray(coreAfterSave && coreAfterSave.aulas) ? coreAfterSave.aulas.length : -1
+                    };
+                    saveReadOk = !!(probe && probe.nonce === nonce && savedCounts.turmas === counts.turmas && savedCounts.alunos === counts.alunos && savedCounts.aulas === counts.aulas);
+                    detail = saveReadOk
+                      ? ('nonce ok • turmas:' + savedCounts.turmas + ' • alunos:' + savedCounts.alunos + ' • aulas:' + savedCounts.aulas)
+                      : 'O dado temporário não voltou íntegro do armazenamento principal.';
+                }catch(e){
+                    saveReadOk = false;
+                    detail = 'Erro ao gravar/reler núcleo: ' + (e && e.message ? e.message : e);
+                }finally{
+                    try{
+                        if(typeof prevProbe === 'undefined') delete config.__autotest_probe;
+                        else config.__autotest_probe = prevProbe;
+                    }catch(_){ }
+                    try{ salvarDadosLocal(); }catch(_){ }
+                    await __autoTestSleep(70);
+                    try{
+                        const raw2 = __storageGetItem(__SGP_ATOMIC_CORE_KEY);
+                        coreAfterCleanup = raw2 ? JSON.parse(raw2) : null;
+                        const probe2 = coreAfterCleanup && coreAfterCleanup.config ? coreAfterCleanup.config.__autotest_probe : undefined;
+                        cleanupOk = (typeof prevProbe === 'undefined') ? (typeof probe2 === 'undefined') : (JSON.stringify(probe2) === JSON.stringify(prevProbe));
+                    }catch(_){ cleanupOk = false; }
+                    try{
+                        if(prevBackupPending === null || typeof prevBackupPending === 'undefined') __safeLSRemove('sgp_backup_pending');
+                        else __safeLSSet('sgp_backup_pending', String(prevBackupPending));
+                    }catch(_){ }
+                    try{
+                        if(prevLastCoreSave === null || typeof prevLastCoreSave === 'undefined') __safeLSRemove('sgp_last_core_save');
+                        else __safeLSSet('sgp_last_core_save', String(prevLastCoreSave));
+                    }catch(_){ }
+                    try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
+                }
+
+                add('Persistência real: grava e relê núcleo', saveReadOk, detail);
+                add('Persistência real: limpeza do teste', cleanupOk, cleanupOk ? '' : 'O marcador temporário não foi restaurado/limpo corretamente.');
+            }
+        }catch(e){
+            add('Persistência real: grava e relê núcleo', false, 'Exceção: ' + (e && e.message ? e.message : e));
+        }
 
 // 1.1) Backup: checkBackupStatus não pode quebrar (indicador de backup pendente)
 try{
@@ -32372,6 +33119,18 @@ try{
         }catch(e){
             add('HD local: vínculo/configuração', false, 'Erro: '+(e && e.message ? e.message : e));
         }
+
+        // 1.4) Integridade dos dados
+        __autoTestRunDataIntegrity(add);
+
+        // 1.5) Bancos das atividades/jogos
+        await __autoTestRunActivityBanks(add);
+
+        // 1.6) Compatibilidade entre versões/storage legado
+        await __autoTestRunVersionCompatibility(add);
+
+        // 1.7) Interface crítica
+        await __autoTestRunCriticalUI(add);
 
         // 2) Dashboard + bimestre
         if(typeof mudarVisao === 'function'){
@@ -32493,26 +33252,6 @@ try{
                 }
                 add('Backup: core válido', coreOk, coreDetail);
 
-                // Arquivos essenciais (devem existir mesmo vazios)
-                try{
-                  const required = [
-                    'manifest.json','sgp_core.json','sgp_planner.json','sgp_ui_prefs.json','sgp_plano_prefs.json',
-                    'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_busca_ativa.json','sgp_entregas_doc_prazos_v1.json','sgp_links_cards_v1.json','sgp_linked_file_meta.json',
-                    'sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
-                    'extras_audit.json','extras_autobackups.json','extras_lastBackupAt.json',
-                    'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
-                    'atividades_relacoes.json','atividades_roleta.json','atividades_quiz.json','atividades_completar.json','atividades_ordenar.json','sgp_storage_full.json'
-                  ];
-                  const missingReq = required.filter(n=>!(filesMap && Object.prototype.hasOwnProperty.call(filesMap, n)));
-                  add('Backup: arquivos essenciais no ZIP', missingReq.length===0, missingReq.length?('Faltando: '+missingReq.join(', ')):'');
-
-                  const badJson = required.filter(n=>n.endsWith('.json') && filesMap && Object.prototype.hasOwnProperty.call(filesMap,n)).filter(n=>{
-                    try{ JSON.parse(filesMap[n]); return false; }catch(_){ return true; }
-                  });
-                  add('Backup: JSON válido (essenciais)', badJson.length===0, badJson.length?('Inválidos: '+badJson.join(', ')):'');
-                }catch(_){ }
-
-
                 // Arquivos essenciais no ZIP (inclui módulos novos)
                 try{
                     const requiredFiles = [
@@ -32520,7 +33259,7 @@ try{
                         'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
                         'atividades_relacoes.json','atividades_roleta.json',
                         'atividades_quiz.json','atividades_completar.json','atividades_ordenar.json','sgp_storage_full.json',
-                        'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_busca_ativa.json','sgp_entregas_doc_prazos_v1.json','sgp_links_cards_v1.json','sgp_linked_file_meta.json','sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
+                        'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_busca_ativa.json','sgp_entregas_doc_prazos_v1.json','sgp_links_cards_v1.json','sgp_autotest_history_v1.json','sgp_linked_file_meta.json','sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
                         'sgp_audit_log.json','sgp_freq_events.json',
                         'extras_audit.json','extras_autobackups.json','extras_lastBackupAt.json'
                     ];
@@ -32549,7 +33288,7 @@ try{
             add('Backup: geração/leitura', false, 'Erro: '+(e && e.message ? e.message : e));
         }
 
-        // 4) AutoBackup (snapshot completo + restore) — sem fechar o modal do AutoTeste
+        // 4) AutoBackup / Backup real (snapshot completo + ZIP + restauração)
         try{
             const hasSnap = (typeof __snapshotObj==='function' && typeof __snapshotStr==='function');
             add('AutoBackup: snapshot disponível', hasSnap, hasSnap?'':'Faltam __snapshotObj/__snapshotStr.');
@@ -32620,6 +33359,163 @@ try{
                     }
                     add('AutoBackup: round-trip aplica/restaura', rtOk, rtDet);
                 }
+
+                // Prioridade 2: teste real de backup + restauração
+                try{
+                    const hasRealFlow = (
+                        typeof __collectBackupFiles==='function' &&
+                        typeof __zipStore==='function' &&
+                        typeof __zipReadStore==='function' &&
+                        typeof __importStateObject==='function' &&
+                        typeof carregarDados==='function' &&
+                        typeof quickLinksLoad==='function' &&
+                        typeof quickLinksSave==='function'
+                    );
+                    add('Backup real: fluxo disponível', hasRealFlow, hasRealFlow ? '' : 'Faltam __collectBackupFiles/__zipStore/__zipReadStore/__importStateObject/carregarDados/quickLinks.');
+                    if(hasRealFlow){
+                        const beforeSnapshot = __snapshotStr();
+                        const prevBackupPending = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_backup_pending') : null;
+                        const prevLastCoreSave = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_last_core_save') : null;
+                        const nonce = 'bkprobe_' + Date.now();
+                        const quickProbeId = 'ql_' + nonce;
+                        const quickProbeTitle = 'AutoTeste Backup ' + nonce;
+                        const quickProbeUrl = 'https://example.com/autoteste/' + encodeURIComponent(nonce);
+                        let manifestOk = false;
+                        let inZipOk = false;
+                        let restoreOk = false;
+                        let cleanupOk = false;
+                        let filesMap = null;
+
+                        const _orig = {
+                            fecharModais: (typeof fecharModais==='function') ? fecharModais : null,
+                            showToast: (typeof showToast==='function') ? showToast : null,
+                            renderizarMenu: (typeof renderizarMenu==='function') ? renderizarMenu : null,
+                            renderizarVisao: (typeof renderizarVisao==='function') ? renderizarVisao : null,
+                            renderizarVisaoContent: (typeof renderizarVisaoContent==='function') ? renderizarVisaoContent : null,
+                            applyThemeFromConfig: (typeof applyThemeFromConfig==='function') ? applyThemeFromConfig : null,
+                            __renderBackupsUI: (typeof __renderBackupsUI==='function') ? __renderBackupsUI : null
+                        };
+                        const restoreFns = ()=>{
+                            try{
+                                if(_orig.fecharModais) window.fecharModais = _orig.fecharModais;
+                                if(_orig.showToast) window.showToast = _orig.showToast;
+                                if(_orig.renderizarMenu) window.renderizarMenu = _orig.renderizarMenu;
+                                if(_orig.renderizarVisao) window.renderizarVisao = _orig.renderizarVisao;
+                                if(_orig.renderizarVisaoContent) window.renderizarVisaoContent = _orig.renderizarVisaoContent;
+                                if(_orig.applyThemeFromConfig) window.applyThemeFromConfig = _orig.applyThemeFromConfig;
+                                if(_orig.__renderBackupsUI) window.__renderBackupsUI = _orig.__renderBackupsUI;
+                            }catch(_){}
+                        };
+
+                        try{
+                            if(_orig.fecharModais) window.fecharModais = ()=>{};
+                            if(_orig.showToast) window.showToast = ()=>{};
+                            if(_orig.renderizarMenu) window.renderizarMenu = ()=>{};
+                            if(_orig.renderizarVisao) window.renderizarVisao = ()=>{};
+                            if(_orig.renderizarVisaoContent) window.renderizarVisaoContent = ()=>{};
+                            if(_orig.applyThemeFromConfig) window.applyThemeFromConfig = ()=>{};
+                            if(_orig.__renderBackupsUI) window.__renderBackupsUI = ()=>{};
+
+                            try{ quickLinksLoad(); }catch(_){}
+                            if(!config || typeof config !== 'object' || Array.isArray(config)) config = {};
+                            config.__autotest_backup_probe = { nonce, ts: Date.now(), mode: 'zip-restore' };
+                            quickLinksCards = quickLinksCoerce([{ id: quickProbeId, title: quickProbeTitle, url: quickProbeUrl, createdAt: Date.now() }].concat(Array.isArray(quickLinksCards) ? quickLinksCards : []));
+                            quickLinksSave();
+                            salvarDadosLocal();
+                            await __autoTestSleep(100);
+
+                            const zipBlob = __zipStore(__collectBackupFiles());
+                            const zipOk = !!(zipBlob && typeof zipBlob.size === 'number' && zipBlob.size > 50);
+                            add('Backup real: ZIP gerado para restore', zipOk, zipOk ? ('Tamanho: ' + zipBlob.size + ' bytes') : 'ZIP temporário inválido.');
+                            if(!zipOk) throw new Error('ZIP temporário inválido.');
+
+                            const ab = await zipBlob.arrayBuffer();
+                            filesMap = __zipReadStore(ab);
+                            const readJson = (name)=>{
+                                if(!filesMap || typeof filesMap[name] === 'undefined') return null;
+                                try{ return JSON.parse(filesMap[name]); }catch(_){ return null; }
+                            };
+
+                            const manifest = readJson('manifest.json');
+                            manifestOk = !!(manifest && manifest.app === 'SGP Pro' && manifest.version && manifest.exportedAt);
+                            add('Backup real: manifesto do ZIP', manifestOk, manifestOk ? ('versão ' + manifest.version + ' • ' + manifest.exportedAt) : 'manifest.json sem app/version/exportedAt.');
+
+                            const zipCore = readJson('sgp_core.json');
+                            const zipQuick = readJson('sgp_links_cards_v1.json');
+                            const zipFull = readJson('sgp_storage_full.json');
+
+                            const coreNonce = zipCore && zipCore.config && zipCore.config.__autotest_backup_probe ? zipCore.config.__autotest_backup_probe.nonce : '';
+                            const quickFound = Array.isArray(zipQuick) && zipQuick.some(item=>item && String(item.id)===String(quickProbeId) && String(item.url||'')===String(quickProbeUrl));
+                            const fullHasCore = !!(zipFull && zipFull.storage && typeof zipFull.storage === 'object' && zipFull.storage[__SGP_ATOMIC_CORE_KEY]);
+                            inZipOk = (coreNonce === nonce) && quickFound && fullHasCore;
+                            add('Backup real: marcador entra no ZIP', inZipOk, inZipOk ? 'core + links + storage_full confirmados' : ('core:' + (coreNonce===nonce?'ok':'x') + ' quickLinks:' + (quickFound?'ok':'x') + ' storage_full:' + (fullHasCore?'ok':'x')));
+
+                            if(!(zipFull && zipFull.storage && typeof zipFull.storage === 'object')) throw new Error('sgp_storage_full.json ausente/inválido.');
+
+                            // Corrompe propositalmente dados essenciais em memória/storage e verifica se o restore recompõe
+                            try{ delete config.__autotest_backup_probe; }catch(_){}
+                            quickLinksCards = quickLinksCoerce((Array.isArray(quickLinksCards) ? quickLinksCards : []).filter(item => String(item.id) !== String(quickProbeId)));
+                            quickLinksSave();
+                            salvarDadosLocal();
+                            await __autoTestSleep(80);
+
+                            __importStateObject(zipFull, { clearExisting: true });
+                            carregarDados();
+                            try{ quickLinksLoad(); }catch(_){}
+                            try{ if(typeof __loadExtras === 'function') __loadExtras(); }catch(_){}
+                            await __autoTestSleep(120);
+
+                            let restoredCore = null;
+                            let restoredQuick = [];
+                            try{
+                                const rawCore = (typeof __storageGetItem === 'function') ? __storageGetItem(__SGP_ATOMIC_CORE_KEY) : localStorage.getItem(__SGP_ATOMIC_CORE_KEY);
+                                restoredCore = rawCore ? JSON.parse(rawCore) : null;
+                            }catch(_){ restoredCore = null; }
+                            try{
+                                const rawQuick = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_links_cards_v1') : localStorage.getItem('sgp_links_cards_v1');
+                                restoredQuick = rawQuick ? JSON.parse(rawQuick) : [];
+                            }catch(_){ restoredQuick = []; }
+
+                            const restoredNonce = restoredCore && restoredCore.config && restoredCore.config.__autotest_backup_probe ? restoredCore.config.__autotest_backup_probe.nonce : '';
+                            const restoredQuickFound = Array.isArray(restoredQuick) && restoredQuick.some(item=>item && String(item.id)===String(quickProbeId) && String(item.url||'')===String(quickProbeUrl));
+                            restoreOk = (restoredNonce === nonce) && restoredQuickFound && !!(config && config.__autotest_backup_probe && config.__autotest_backup_probe.nonce === nonce);
+                            add('Backup real: restauração recompõe dados', restoreOk, restoreOk ? 'nonce restaurado no core e nos links rápidos' : ('core:' + (restoredNonce===nonce?'ok':'x') + ' quickLinks:' + (restoredQuickFound?'ok':'x') + ' memória:' + ((config && config.__autotest_backup_probe && config.__autotest_backup_probe.nonce === nonce)?'ok':'x')));
+                        }catch(e){
+                            add('Backup real: restauração recompõe dados', false, 'Erro: ' + (e && e.message ? e.message : e));
+                        }finally{
+                            try{
+                                if(beforeSnapshot && typeof __applySnapshot === 'function') __applySnapshot(beforeSnapshot, 'AutoTeste');
+                            }catch(_){}
+                            await __autoTestSleep(90);
+                            try{ carregarDados(); }catch(_){}
+                            try{ quickLinksLoad(); }catch(_){}
+                            try{ if(typeof __loadExtras === 'function') __loadExtras(); }catch(_){}
+                            restoreFns();
+
+                            try{
+                                const rawCoreAfter = (typeof __storageGetItem === 'function') ? __storageGetItem(__SGP_ATOMIC_CORE_KEY) : localStorage.getItem(__SGP_ATOMIC_CORE_KEY);
+                                const coreAfter = rawCoreAfter ? JSON.parse(rawCoreAfter) : null;
+                                const probeAfter = coreAfter && coreAfter.config ? coreAfter.config.__autotest_backup_probe : undefined;
+                                const rawQuickAfter = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_links_cards_v1') : localStorage.getItem('sgp_links_cards_v1');
+                                const quickAfter = rawQuickAfter ? JSON.parse(rawQuickAfter) : [];
+                                cleanupOk = (typeof probeAfter === 'undefined') && (!Array.isArray(quickAfter) || !quickAfter.some(item=>item && String(item.id)===String(quickProbeId)));
+                            }catch(_){ cleanupOk = false; }
+
+                            try{
+                                if(prevBackupPending === null || typeof prevBackupPending === 'undefined') __safeLSRemove('sgp_backup_pending');
+                                else __safeLSSet('sgp_backup_pending', String(prevBackupPending));
+                            }catch(_){ }
+                            try{
+                                if(prevLastCoreSave === null || typeof prevLastCoreSave === 'undefined') __safeLSRemove('sgp_last_core_save');
+                                else __safeLSSet('sgp_last_core_save', String(prevLastCoreSave));
+                            }catch(_){ }
+                            try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
+                            add('Backup real: limpeza do teste', cleanupOk, cleanupOk ? '' : 'O marcador temporário não foi totalmente removido após restaurar o estado original.');
+                        }
+                    }
+                }catch(e){
+                    add('Backup real: fluxo', false, 'Erro: ' + (e && e.message ? e.message : e));
+                }
             }
         }catch(e){
             add('AutoBackup: snapshot/restore', false, 'Erro: '+(e && e.message ? e.message : e));
@@ -32628,53 +33524,185 @@ try{
     }catch(e){
         add('AutoTeste: execução', false, 'Erro inesperado: '+(e && e.message ? e.message : e));
     }finally{
-        try{ if(prevBim && typeof mudarBimestre==='function') mudarBimestre(prevBim); }catch(_){}
-        try{ if(prevVisao && typeof mudarVisao==='function') mudarVisao(prevVisao); }catch(_){}
+        try{ if(prevBim && typeof mudarBimestre==='function') mudarBimestre(prevBim); }catch(_){ }
+        try{ if(prevVisao && typeof mudarVisao==='function') mudarVisao(prevVisao); }catch(_){ }
         window.__autoTestRunning = false;
+        window.__autoTestModalLock = false;
     }
 
     // render relatório
     try{
         const okCount = results.filter(r=>r.ok).length;
         const failCount = results.length - okCount;
+        const failCritical = results.filter(r=>!r.ok && r.severity==='critical').length;
+        const failImportant = results.filter(r=>!r.ok && r.severity==='important').length;
+        const failWarning = results.filter(r=>!r.ok && r.severity==='warning').length;
+        const moduleOrder = ['persistencia','integridade','compatibilidade','atividades','backup','armazenamento','hdlocal','dashboard','bimestres','pwa','geral'];
+        const grouped = {};
+        results.forEach(r=>{
+            const key = __autoTestInferModule(r.module || r.name);
+            if(!grouped[key]) grouped[key] = [];
+            grouped[key].push({ ...r, module:key });
+        });
+        const activeModules = moduleOrder.filter(k=>Array.isArray(grouped[k]) && grouped[k].length)
+            .concat(Object.keys(grouped).filter(k=>!moduleOrder.includes(k)));
+        let autoTestHistory = [];
+        let autoTestHistoryCurrent = null;
+        try{
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.0'));
+            autoTestHistory = stored.history || [];
+            autoTestHistoryCurrent = stored.current || null;
+        }catch(_){ }
+
+        const summary = __autoTestBuildExecutiveSummary(results, grouped, activeModules, autoTestHistoryCurrent);
         const lines = ['executarAutoTeste','abrirModalAutoTeste','fecharModalAutoTeste','autoTesteCopiar'];
         lines.push('AutoTeste SGP');
         lines.push('Data: '+(new Date()).toLocaleString());
+        lines.push('Resumo executivo: '+summary.executiveText);
         lines.push('Resultado: '+okCount+'/'+results.length+' OK; '+failCount+' falhas');
+        lines.push('Falhas por gravidade: crítico='+failCritical+' | importante='+failImportant+' | aviso='+failWarning);
+        lines.push('Falhas críticas: '+(summary.criticalFailures.length ? summary.criticalFailures.join(' | ') : 'nenhuma'));
+        lines.push('Módulos afetados: '+(summary.failedModules.length ? summary.failedModules.join(', ') : 'nenhum'));
+        lines.push('Impacto prático:');
+        summary.impacts.forEach(txt=>lines.push('- '+txt));
+        lines.push('Recomendação: '+summary.recommendation);
+        if(autoTestHistoryCurrent && autoTestHistoryCurrent.compare) lines.push('Comparação com o teste anterior: '+autoTestHistoryCurrent.compare.text);
+        lines.push('Cobertura por módulos:');
+        activeModules.forEach(key=>{
+            const meta = __autoTestModuleMeta(key);
+            const arr = grouped[key] || [];
+            const modOk = arr.filter(r=>r.ok).length;
+            const modFail = arr.length - modOk;
+            lines.push('- '+meta.label+': '+modOk+'/'+arr.length+' OK; '+modFail+' falhas');
+        });
         lines.push('');
-        results.forEach(r=>{
-            lines.push((r.ok?'OK':'FALHA')+' - '+r.name+(r.detail?(' | '+r.detail):''));
+        if(autoTestHistory.length){
+            lines.push('Histórico recente:');
+            autoTestHistory.slice(0,5).forEach(h=>{
+                const when = (()=>{ try{ return new Date(h.ts).toLocaleString(); }catch(_){ return String(h.ts||''); } })();
+                const mods = Array.isArray(h.failedModules) && h.failedModules.length ? h.failedModules.join(', ') : 'sem módulos com erro';
+                lines.push('- '+when+' | '+(h.version||'-')+' | falhas='+Number(h.failCount||0)+' | módulos='+mods);
+            });
+            lines.push('');
+        }
+        activeModules.forEach(key=>{
+            const meta = __autoTestModuleMeta(key);
+            lines.push('['+meta.short+']');
+            (grouped[key] || []).forEach(r=>{
+                const sev = __autoTestSeverityMeta(r.severity).short;
+                lines.push((r.ok?'OK':'FALHA')+' ['+sev+'] - '+r.name+(r.detail?(' | '+r.detail):''));
+            });
+            lines.push('');
         });
         window.__autoTesteUltimoRelatorio = lines.join('\n');
 
         const body = document.getElementById('autoTesteBody');
         if(body){
-            const badge = failCount===0
-              ? '<span style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(16,185,129,.15);color:var(--success);font-weight:800;">OK</span>'
-              : '<span style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(239,68,68,.15);color:var(--danger);font-weight:800;">FALHAS</span>';
+            let badge = '<span style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(16,185,129,.15);color:var(--success);font-weight:800;">OK</span>';
+            if(failCritical>0) badge = '<span style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(239,68,68,.15);color:var(--danger);font-weight:800;">CRÍTICO</span>';
+            else if(failCount>0) badge = '<span style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(245,158,11,.16);color:#b45309;font-weight:800;">ATENÇÃO</span>';
 
-            const items = results.map(r=>{
-                const icon = r.ok ? '✅' : '❌';
-                const det = r.detail ? `<div style="color:var(--text-muted);font-size:.92rem;margin-top:2px;">${__autoTestEscape(r.detail)}</div>` : '';
-                return `<li style="padding:8px 0;border-bottom:1px solid var(--border-color);"><div style="display:flex;gap:10px;align-items:flex-start;"><div style="width:22px;">${icon}</div><div style="flex:1;"><div style="font-weight:800;color:var(--text-main);">${__autoTestEscape(r.name)}</div>${det}</div></div></li>`;
-            }).join('');
+            const sevChip = (label, count, meta) => `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:${meta.bg};color:${meta.color};font-weight:800;">${label}: ${count}</span>`;
+            let moduleCards = '';
+            let sectionHtml = '';
+            let executiveHtml = '';
+            let historyHtml = '';
+            let renderError = '';
 
-            body.innerHTML = `
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0 12px 0;">
-                    <div style="font-weight:900;color:var(--text-main);font-size:1.05rem;">Resultado do AutoTeste</div>
-                    <div style="display:flex;gap:10px;align-items:center;">
-                        ${badge}
-                        <div style="color:var(--text-muted);font-weight:800;">${okCount}/${results.length} OK</div>
-                    </div>
-                </div>
-                <ul style="list-style:none;padding:0;margin:0;">${items}</ul>
-                <div style="margin-top:10px;color:var(--text-muted);font-size:.9rem;">
-                    Dica: se alguma falha aparecer ao trocar o bimestre, normalmente é cache antigo. Atualize com Ctrl+F5 e tente novamente.
-                </div>
-            `;
+            try{
+                moduleCards = activeModules.map(key=>{
+                    const meta = __autoTestModuleMeta(key);
+                    const arr = grouped[key] || [];
+                    const modOk = arr.filter(r=>r.ok).length;
+                    const modFail = arr.length - modOk;
+                    const failColor = modFail ? 'var(--danger)' : 'var(--success)';
+                    return `<div style="min-width:160px;flex:1;padding:10px 12px;border:1px solid var(--border-color);border-radius:14px;background:var(--card-bg);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <span style="display:inline-block;padding:4px 9px;border-radius:999px;background:${meta.bg};color:${meta.color};font-size:.78rem;font-weight:900;">${meta.label}</span>
+                            <span style="color:var(--text-muted);font-size:.82rem;font-weight:800;">${modOk}/${arr.length} OK</span>
+                        </div>
+                        <div style="margin-top:6px;color:${failColor};font-weight:900;">${modFail} falha(s)</div>
+                    </div>`;
+                }).join('');
+
+                sectionHtml = activeModules.map(key=>{
+                    const meta = __autoTestModuleMeta(key);
+                    const arr = grouped[key] || [];
+                    const items = arr.map(r=>{
+                        const icon = r.ok ? '✅' : '❌';
+                        const sevMeta = __autoTestSeverityMeta(r.severity);
+                        const det = r.detail ? `<div style="color:var(--text-muted);font-size:.92rem;margin-top:2px;">${__autoTestEscape(r.detail)}</div>` : '';
+                        const sevPill = `<span style="display:inline-block;margin-top:4px;padding:3px 8px;border-radius:999px;background:${sevMeta.bg};color:${sevMeta.color};font-size:.78rem;font-weight:800;">${sevMeta.label}</span>`;
+                        return `<li style="padding:8px 0;border-bottom:1px solid var(--border-color);"><div style="display:flex;gap:10px;align-items:flex-start;"><div style="width:22px;">${icon}</div><div style="flex:1;"><div style="font-weight:800;color:var(--text-main);">${__autoTestEscape(r.name)}</div>${sevPill}${det}</div></div></li>`;
+                    }).join('');
+                    const failColor = arr.some(r=>!r.ok) ? 'var(--danger)' : 'var(--success)';
+                    return `<section style="margin-top:14px;padding:12px;border:1px solid var(--border-color);border-radius:16px;background:rgba(255,255,255,.02);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                <span style="display:inline-block;padding:5px 10px;border-radius:999px;background:${meta.bg};color:${meta.color};font-size:.8rem;font-weight:900;">${meta.label}</span>
+                                <span style="color:var(--text-muted);font-size:.84rem;font-weight:800;">${arr.filter(r=>r.ok).length}/${arr.length} OK</span>
+                            </div>
+                            <span style="color:${failColor};font-size:.84rem;font-weight:900;">${arr.filter(r=>!r.ok).length} falha(s)</span>
+                        </div>
+                        <ul style="list-style:none;padding:0;margin:0;">${items}</ul>
+                    </section>`;
+                }).join('');
+
+                executiveHtml = __autoTestRenderExecutivePanel(summary) || '';
+                historyHtml = __autoTestHistoryRender(autoTestHistory) || '';
+            }catch(renderErr){
+                renderError = renderErr && renderErr.message ? renderErr.message : String(renderErr || 'Erro desconhecido ao montar o relatório.');
+            }
+
+            const fallbackDetails = `<details style="margin-top:12px;border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.02);padding:10px 12px;">
+                <summary style="cursor:pointer;font-weight:900;color:var(--text-main);">Relatório em texto bruto</summary>
+                <div style="margin:6px 0 10px 0;color:var(--text-muted);font-size:.9rem;">Este fallback garante que o diagnóstico continue visível mesmo se a visualização rica falhar.</div>
+                <pre style="white-space:pre-wrap;word-break:break-word;margin:0;color:var(--text-main);font:500 .92rem/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">${__autoTestEscape(window.__autoTesteUltimoRelatorio || 'Relatório indisponível.')}</pre>
+            </details>`;
+
+            if(renderError){
+                window.__autoTestResultVisible = true;
+                const __autoModal1 = document.getElementById('modalAutoTeste');
+                if(__autoModal1) __autoModal1.style.display = 'flex';
+                __autoTestRenderFallback(body, window.__autoTesteUltimoRelatorio, 'A visualização rica do AutoTeste falhou ao montar o relatório: ' + renderError);
+            }else{
+                try{
+                    body.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0 12px 0;flex-wrap:wrap;">
+                            <div style="font-weight:900;color:var(--text-main);font-size:1.05rem;">Resultado do AutoTeste</div>
+                            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                                ${badge}
+                                <div style="color:var(--text-muted);font-weight:800;">${okCount}/${results.length} OK</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px 0;">
+                            ${sevChip('Crítico', failCritical, __autoTestSeverityMeta('critical'))}
+                            ${sevChip('Importante', failImportant, __autoTestSeverityMeta('important'))}
+                            ${sevChip('Aviso', failWarning, __autoTestSeverityMeta('warning'))}
+                        </div>
+                        ${executiveHtml}
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px 0;">${moduleCards}</div>
+                        ${historyHtml}
+                        ${sectionHtml}
+                        ${fallbackDetails}
+                        <div style="margin-top:10px;color:var(--text-muted);font-size:.9rem;">
+                            Dica: se alguma falha aparecer ao trocar o bimestre, normalmente é cache antigo. Atualize com Ctrl+F5 e tente novamente.
+                        </div>
+                    `;
+                    window.__autoTestResultVisible = true;
+                    const __autoModal2 = document.getElementById('modalAutoTeste');
+                    if(__autoModal2) __autoModal2.style.display = 'flex';
+                }catch(renderApplyErr){
+                    window.__autoTestResultVisible = true;
+                    const __autoModal3 = document.getElementById('modalAutoTeste');
+                    if(__autoModal3) __autoModal3.style.display = 'flex';
+                    __autoTestRenderFallback(body, window.__autoTesteUltimoRelatorio, 'A visualização rica do AutoTeste falhou ao exibir o relatório: ' + (renderApplyErr && renderApplyErr.message ? renderApplyErr.message : String(renderApplyErr)));
+                }
+            }
         }
     }catch(e){}
 }
+
 
 
 // WHITELIST ALL NEW FUNCTIONS
