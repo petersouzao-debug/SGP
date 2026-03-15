@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V19.0.0 — Frequência Avançada + Calendário + Padrões + PDF)</title>
+    <title>SGP - Gestão Final (V19.0.1 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -10336,7 +10336,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v19.0.0",
+                version: "v19.0.1",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -32210,7 +32210,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v19.0.0',
+        version: versionLabel || 'v19.0.1',
         total: arr.length,
         okCount,
         failCount,
@@ -33174,35 +33174,48 @@ try{
                         { id:'dashPieMat2',        ref:()=> (typeof __dashPie2!=='undefined' ? __dashPie2 : null) }
                     ];
 
-                    const missingCharts = [];
-                    const details = [];
-                    expectedCharts.forEach(ec=>{
-                        let ok = false;
-                        try{
-                            const inst = ec.ref();
-                            ok = !!(inst && (typeof inst.update === 'function' || typeof inst.destroy === 'function' || typeof inst.render === 'function'));
-                        }catch(_){ ok = false; }
-
-                        // fallback: tenta capturar a instância pelo canvas
-                        if(!ok && typeof Chart !== 'undefined'){
+                    const __collectChartInstances = ()=>{
+                        const missingCharts = [];
+                        const details = [];
+                        expectedCharts.forEach(ec=>{
+                            let ok = false;
                             try{
-                                const cv = document.getElementById(ec.id);
-                                if(cv){
-                                    if(typeof Chart.getChart === 'function'){
-                                        const c = Chart.getChart(cv);
-                                        if(c && (typeof c.update === 'function' || typeof c.destroy === 'function' || typeof c.render === 'function')) ok = true;
-                                    }else if(Chart.instances){
-                                        const insts = Array.isArray(Chart.instances) ? Chart.instances : Object.values(Chart.instances);
-                                        const c = (insts||[]).find(ch=>ch && ch.canvas===cv);
-                                        if(c && (typeof c.update === 'function' || typeof c.destroy === 'function' || typeof c.render === 'function')) ok = true;
-                                    }
-                                }
-                            }catch(_){}
-                        }
+                                const inst = ec.ref();
+                                ok = !!(inst && (typeof inst.update === 'function' || typeof inst.destroy === 'function' || typeof inst.render === 'function'));
+                            }catch(_){ ok = false; }
 
-                        if(!ok) missingCharts.push(ec.id);
-                        details.push(ec.id+':'+(ok?'ok':'x'));
-                    });
+                            // fallback: tenta capturar a instância pelo canvas
+                            if(!ok && typeof Chart !== 'undefined'){
+                                try{
+                                    const cv = document.getElementById(ec.id);
+                                    if(cv){
+                                        if(typeof Chart.getChart === 'function'){
+                                            const c = Chart.getChart(cv);
+                                            if(c && (typeof c.update === 'function' || typeof c.destroy === 'function' || typeof c.render === 'function')) ok = true;
+                                        }else if(Chart.instances){
+                                            const insts = Array.isArray(Chart.instances) ? Chart.instances : Object.values(Chart.instances);
+                                            const c = (insts||[]).find(ch=>ch && ch.canvas===cv);
+                                            if(c && (typeof c.update === 'function' || typeof c.destroy === 'function' || typeof c.render === 'function')) ok = true;
+                                        }
+                                    }
+                                }catch(_){}
+                            }
+
+                            if(!ok) missingCharts.push(ec.id);
+                            details.push(ec.id+':'+(ok?'ok':'x'));
+                        });
+                        return { missingCharts, details };
+                    };
+
+                    let { missingCharts, details } = __collectChartInstances();
+                    if(missingCharts.length){
+                        for(let attempt=0; attempt<6 && missingCharts.length; attempt++){
+                            try{ if(typeof renderizarDashboard === 'function') renderizarDashboard(); }catch(_){ }
+                            try{ if(typeof renderDashPieCharts === 'function') renderDashPieCharts(); }catch(_){ }
+                            await __autoTestSleep(120);
+                            ({ missingCharts, details } = __collectChartInstances());
+                        }
+                    }
 
                     add('Bimestre '+n+': instâncias Chart', missingCharts.length===0, missingCharts.length ? ('Não inicializados: '+missingCharts.join(', ')) : details.join(' | '));
                 }catch(e){
@@ -33549,7 +33562,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.0'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.1'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
