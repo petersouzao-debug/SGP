@@ -23360,7 +23360,7 @@ function abrirHistoricoChamadas(){
       const color = isOn ? colorOn : 'var(--text-muted)';
       const border = isOn ? bgOn : '#cbd5e1';
       const fw = isOn ? '700' : '500';
-      return `<button onclick="window.__histSetStatus('${val}')" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:2px solid ${border};background:${badges};color:${color};font-weight:${fw};font-size:.78rem;cursor:pointer;transition:all .2s;"><i class="fas ${icon}"></i> ${label}</button>`;
+      return `<button onclick="window.__histSetStatus('${val}')" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:2px solid ${border};background:${bg};color:${color};font-weight:${fw};font-size:.78rem;cursor:pointer;transition:all .2s;"><i class="fas ${icon}"></i> ${label}</button>`;
     }
     
     let html = `<div class="modal-box" style="max-width:950px;max-height:88vh;overflow-y:auto;">
@@ -26341,7 +26341,7 @@ function renderEvolucaoTurma(){
     const g=dataGeral[i];
     const cor=g>=7?'#16a34a':(g>=5?'#f59e0b':'#dc2626');
     const bg=g>=7?'rgba(22,163,74,.08)':(g>=5?'rgba(245,158,11,.08)':'rgba(220,38,38,.08)');
-    html+=`<div style="text-align:center;padding:10px;border-radius:8px;background:${badges};border:1px solid ${cor}22;">
+    html+=`<div style="text-align:center;padding:10px;border-radius:8px;background:${bg};border:1px solid ${cor}22;">
       <div style="font-size:.72rem;color:#64748b;">${bim}º Bimestre</div>
       <div style="font-size:1.5rem;font-weight:800;color:${cor};">${g>0?g.toFixed(1):'—'}</div>
       <div style="font-size:.68rem;color:#94a3b8;">${escHTML(nm1)}: ${data1[i]>0?data1[i].toFixed(1):'—'} | ${escHTML(nm2)}: ${data2[i]>0?data2[i].toFixed(1):'—'}</div>
