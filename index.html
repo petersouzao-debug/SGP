@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V19.0.1 — Frequência Avançada + Calendário + Padrões + PDF)</title>
+    <title>SGP - Gestão Final (V19.0.2 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -10336,7 +10336,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v19.0.1",
+                version: "v19.0.2",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -32210,7 +32210,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v19.0.1',
+        version: versionLabel || 'v19.0.2',
         total: arr.length,
         okCount,
         failCount,
@@ -32554,7 +32554,19 @@ async function __autoTestRunCriticalUI(add){
         await __autoTestSleep(80);
     }
 
-    const firstAluno = Array.isArray(alunos) ? alunos.find(a=>a && a.id!=null) : null;
+    const filteredAlunos = (typeof getAlunosFiltrados === 'function')
+        ? (()=>{ try{ return getAlunosFiltrados(); }catch(_){ return []; } })()
+        : [];
+    let firstAluno = Array.isArray(filteredAlunos) ? filteredAlunos.find(a=>a && a.id!=null) : null;
+    if(!firstAluno){
+        const firstCardId = grid ? (()=>{ try{ const el = grid.querySelector('.card-aluno[data-id]'); return el ? String(el.getAttribute('data-id')) : ''; }catch(_){ return ''; } })() : '';
+        if(firstCardId && Array.isArray(alunos)){
+            firstAluno = alunos.find(a => a && String(a.id) === firstCardId) || null;
+        }
+    }
+    if(!firstAluno){
+        firstAluno = Array.isArray(alunos) ? alunos.find(a=>a && a.id!=null) : null;
+    }
     if(!firstAluno){
         add('Interface: card de aluno disponível', false, 'Nenhum aluno para validar card/modal.', 'warning', 'interface');
         return;
@@ -32567,10 +32579,15 @@ async function __autoTestRunCriticalUI(add){
         firstAluno.elegivel = true;
         firstAluno.tutorando = true;
         if(typeof renderizarGrid === 'function') renderizarGrid();
-        await __autoTestSleep(90);
+        await __autoTestSleep(120);
 
-        const card = grid ? Array.from(grid.querySelectorAll('.card-aluno[data-id]')).find(el => String(el.getAttribute('data-id')) === String(firstAluno.id)) : null;
-        add('Interface: card do aluno renderizado', !!card, card ? '' : 'Card do aluno de teste não encontrado.', 'important', 'interface');
+        let card = grid ? Array.from(grid.querySelectorAll('.card-aluno[data-id]')).find(el => String(el.getAttribute('data-id')) === String(firstAluno.id)) : null;
+        if(!card && typeof renderizarGrid === 'function'){
+            try{ renderizarGrid(); }catch(_){ }
+            await __autoTestSleep(120);
+            card = grid ? Array.from(grid.querySelectorAll('.card-aluno[data-id]')).find(el => String(el.getAttribute('data-id')) === String(firstAluno.id)) : null;
+        }
+        add('Interface: card do aluno renderizado', !!card, card ? '' : ('Card do aluno de teste não encontrado. ID=' + String(firstAluno.id)), 'important', 'interface');
         if(card){
             const infoRow = card.querySelector('.card-info-row');
             const badgesWrap = card.querySelector('.aluno-badges');
@@ -33562,7 +33579,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.1'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.2'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
