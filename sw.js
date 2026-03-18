@@ -1,4 +1,4 @@
-// SGP - Service Worker v19.0.2
+// SGP - Service Worker v19.0.3
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -15,8 +15,9 @@
 //  - FIX v17.0.9: AutoTeste agora valida backup real com marcador temporário + restauração do estado bruto
 //  - FIX v17.0.18: AutoTeste valida compatibilidade entre versões, defaults e chaves legadas
 //  - FIX v17.0.18: AutoTeste agora gera resumo executivo, impacto prático e recomendação de uso
+//  - FIX v19.0.3: atualização do SW para forçar renovação de cache após correção de lentidão no gabarito
 
-const SW_VERSION = '19.0.2';
+const SW_VERSION = '19.0.3';
 const CACHE_NAME = `sgp-v19-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
