@@ -7882,11 +7882,12 @@ function corExcluirProva(){
 }
 
 
-function corSetActiveProva(turma, provaId){
+function corSetActiveProva(turma, provaId, opts){
   const tctx = corEnsureTurma(turma);
   if(!tctx || !tctx.provas || !tctx.provas[provaId]) return;
+  if(String(tctx.activeProvaId||'') === String(provaId||'')) return;
   tctx.activeProvaId = provaId;
-  corSave();
+  if(!(opts && opts.skipSave)) corSave();
 }
 
 function corRenderSelectors(){
@@ -7929,7 +7930,7 @@ function corGetSelectedProva(){
   const turma = corGetTurmaSelecionada();
   const provaSel = document.getElementById('corProvaSelect');
   const pid = provaSel && provaSel.value ? provaSel.value : (correcaoProvas[turma] ? correcaoProvas[turma].activeProvaId : null);
-  if(pid) corSetActiveProva(turma, pid);
+  if(pid && correcaoProvas[turma] && String(correcaoProvas[turma].activeProvaId||'') !== String(pid||'')) corSetActiveProva(turma, pid);
   return corEnsureProva(turma);
 }
 
@@ -7985,23 +7986,15 @@ function corRenderGabarito(){
         const v = (this.value||'').toUpperCase();
         p.questions[idx].g = (['A','B','C','D'].includes(v) ? v : '');
 
-        // Opcional: aplica o modelo (gabarito/ref) a todas as turmas
-        if(corIsApplyAllEnabled()) corApplyTemplateToAllTurmas(turma, p);
-
         corSave();
+        corRefreshAlunoQuestionUi(p, corGetAlunoSelecionadoId(), idx);
+        corScheduleStatsRender('paint');
 
-        // Re-renderiza para eliminar handlers "stale" quando questions é deep-copiado
-        try{ corRenderGabarito(); }catch(_){}
+        // Opcional: aplica o modelo (gabarito/ref) a todas as turmas sem travar o select
+        corScheduleApplyAll(turma, p);
 
-        corRenderAluno();
-        corRenderStats();
-
-        // Auto-post quando o gabarito muda
-        try{
-          const _turma = corGetTurmaSelecionada();
-          const _prova = corGetSelectedProva();
-          if(_prova && _prova._discId && _prova._avId) corAutoPostAllGrades(_prova, _turma);
-        }catch(_){}
+        // Auto-post quando o gabarito muda (em lote e com leve debounce)
+        corScheduleAutoPostAllGrades(p, corGetTurmaSelecionada());
       }catch(e){
         try{ if(typeof __diagCapture==='function') __diagCapture(e,'corGabarito.change',{}); }catch(_){}
       }
@@ -8019,7 +8012,8 @@ function corRenderGabarito(){
 
         p.questions[idx].ref = (this.value||'').trim();
         corSave();
-        corRenderStats();
+        corRefreshAlunoQuestionUi(p, corGetAlunoSelecionadoId(), idx);
+        corScheduleStatsRender(false);
         // Aplica a todas as turmas após pequena pausa (evita aplicar a cada tecla)
         corScheduleApplyAll(turma, p);
       }catch(e){
@@ -8139,6 +8133,53 @@ function corScheduleStatsRender(forceNow){
         corRenderStats();
       }catch(_){ }
     }, 650);
+  }catch(_){ }
+}
+
+let __corAutoPostAllTimer = null;
+let __corAutoPostAllPayload = null;
+
+function corScheduleAutoPostAllGrades(prova, turma){
+  try{
+    if(!prova || !turma) return;
+    if(!prova._discId || !prova._avId) return;
+    __corAutoPostAllPayload = { prova, turma };
+    clearTimeout(__corAutoPostAllTimer);
+    __corAutoPostAllTimer = setTimeout(()=>{
+      const payload = __corAutoPostAllPayload;
+      __corAutoPostAllPayload = null;
+      __corAutoPostAllTimer = null;
+      if(!payload || !payload.prova || !payload.turma) return;
+      try{ corAutoPostAllGrades(payload.prova, payload.turma); }catch(_){ }
+    }, 220);
+  }catch(_){ }
+}
+
+function corRefreshAlunoQuestionUi(prova, alunoId, idx){
+  try{
+    const grid = document.getElementById('corRespostasGrid');
+    if(!grid || !prova) return;
+    const cards = grid.querySelectorAll('.cor-resp-card');
+    const card = cards && cards[idx] ? cards[idx] : null;
+    if(!card) return;
+
+    const meta = card.querySelector('.cor-resp-meta');
+    if(meta){
+      meta.innerHTML = `<div>Gabarito: <strong>${escHTML((prova.questions[idx]||{}).g || '—')}</strong></div>
+                        <div>${escHTML((prova.questions[idx]||{}).ref || '')}</div>`;
+    }
+
+    const input = card.querySelector('.cor-resp-input');
+    if(input){
+      const g = corNormalizeAlt((prova.questions[idx]||{}).g);
+      const r = corNormalizeAlt(input.value);
+      input.classList.remove('ok','no','na');
+      if(!r) input.classList.add('na');
+      else if(g && r===g) input.classList.add('ok');
+      else input.classList.add('no');
+    }
+
+    if(alunoId) corRefreshAlunoSummary(prova, alunoId);
   }catch(_){ }
 }
 
