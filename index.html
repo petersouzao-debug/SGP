@@ -31613,15 +31613,86 @@ function _rankHistFmtShort(d){
     return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
 }
 
+function _rankHistParseDateInput(dateStr, endOfDay=false){
+    try{
+        if(!dateStr) return null;
+        const d = new Date(String(dateStr) + (endOfDay ? 'T23:59:59.999' : 'T00:00:00'));
+        return isNaN(d.getTime()) ? null : d;
+    }catch(_){ return null; }
+}
+
+function _rankHistGetFilters(){
+    const diaInicio = parseInt(document.getElementById('rankHistDiaInicio')?.value ?? 5);
+    const dataInicioStr = document.getElementById('rankHistDataInicio')?.value || '';
+    const dataFimStr = document.getElementById('rankHistDataFim')?.value || '';
+    return {
+        diaInicio,
+        dataInicioStr,
+        dataFimStr,
+        dataInicioFilter: _rankHistParseDateInput(dataInicioStr, false),
+        dataFimFilter: _rankHistParseDateInput(dataFimStr, true),
+        turma: String(filtroTurma || 'Todas'),
+        bim: parseInt(bimestreAtual || 1, 10) || 1,
+        hasDateFilter: !!(dataInicioStr || dataFimStr)
+    };
+}
+
+function _rankHistTsInRange(ts, dataInicioFilter, dataFimFilter){
+    if(!Number.isFinite(ts)) return false;
+    if(dataInicioFilter && ts < dataInicioFilter.getTime()) return false;
+    if(dataFimFilter && ts > dataFimFilter.getTime()) return false;
+    return true;
+}
+
+function _rankHistBlankTotals(){
+    return {
+        notas:0,
+        comportamento:0,
+        participacao:0,
+        bonus:0,
+        total:0,
+        _autoNotas:0,
+        _autoParticipacao:0,
+        _manualNotas:0,
+        _manualParticipacao:0
+    };
+}
+
+function _rankHistAccumulateTotals(target, cat, val, src){
+    const n = Number(val || 0);
+    if(!n || !target) return;
+    if(cat === 'notas'){
+        target.notas += n;
+        if(src === 'auto_grade') target._autoNotas += n;
+        else target._manualNotas += n;
+    }else if(cat === 'participacao'){
+        target.participacao += n;
+        if(src === 'auto_freq') target._autoParticipacao += n;
+        else target._manualParticipacao += n;
+    }else if(cat === 'comportamento'){
+        target.comportamento += n;
+    }else if(cat === 'bonus'){
+        target.bonus += n;
+    }
+    target.total = (target.notas||0) + (target.comportamento||0) + (target.participacao||0) + (target.bonus||0);
+}
+
+function _rankHistGetAlunoGradeValue(alunoObj, bim, discId, avId){
+    try{
+        if(!alunoObj || !alunoObj.bimestres || !alunoObj.bimestres[bim]) return 0;
+        const b = alunoObj.bimestres[bim];
+        const notasDisc = (b && b.notas_disc && b.notas_disc[discId]) ? b.notas_disc[discId] : null;
+        if(!notasDisc) return 0;
+        const nota = parseFloat(notasDisc[avId]);
+        return (!isNaN(nota) && nota > 0) ? Math.round(nota) : 0;
+    }catch(_){ return 0; }
+}
+
 // Build all weeks from historico data
 function _rankHistBuildWeeks(){
-    const diaInicio = parseInt(document.getElementById('rankHistDiaInicio')?.value ?? 5);
-    const dataInicioStr = document.getElementById('rankHistDataInicio')?.value;
-    const dataFimStr = document.getElementById('rankHistDataFim')?.value;
-    const dataInicioFilter = dataInicioStr ? new Date(dataInicioStr + 'T00:00:00') : null;
-    const dataFimFilter = dataFimStr ? new Date(dataFimStr + 'T23:59:59') : null;
+    const { diaInicio, dataInicioFilter, dataFimFilter, turma, bim, hasDateFilter } = _rankHistGetFilters();
 
-    // CRITICAL: sync auto-points before reading (same as _rankBuild does)
+    // Sync auto-points before reading (same as _rankBuild does)
     try{ _rankSyncAuto(); }catch(_){}
 
     const __rt = _rankGetTurma();
@@ -31629,62 +31700,124 @@ function _rankHistBuildWeeks(){
     const lista = getAlunosFiltrados();
     const CATS = ['notas','comportamento','participacao','bonus'];
 
-    // Pre-compute the FULL ranking totals (with auto) for each student
-    // This uses the SAME logic as the main ranking (_rankBuild → _rankGetPontosWithAuto)
-    const rankingTotals = {};
-    lista.forEach(a => {
-        const id = String(a.id);
-        const p = _rankGetPontosWithAuto(a.id);
-        rankingTotals[id] = {
-            total: _rankTotal(p),
-            notas: p.notas||0,
-            comportamento: p.comportamento||0,
-            participacao: p.participacao||0,
-            bonus: p.bonus||0,
-            _autoNotas: p._autoNotas||0,
-            _autoParticipacao: p._autoParticipacao||0,
-            _manualNotas: p._manualNotas||0,
-            _manualParticipacao: p._manualParticipacao||0
-        };
-    });
+    const alunoById = {};
+    lista.forEach(a => { if(a && a.id != null) alunoById[String(a.id)] = a; });
 
-    // Also compute the stored manual running totals (pontos[id].cat)
-    // These are the TRUE manual totals (historico may be truncated at 100 entries)
+    const rankingTotals = {};
     const manualTotals = {};
     lista.forEach(a => {
         const id = String(a.id);
-        const p = pontos[id];
-        if(!p) { manualTotals[id] = { notas:0, comportamento:0, participacao:0, bonus:0, total:0 }; return; }
-        const mt = { notas: p.notas||0, comportamento: p.comportamento||0, participacao: p.participacao||0, bonus: p.bonus||0 };
-        mt.total = mt.notas + mt.comportamento + mt.participacao + mt.bonus;
-        manualTotals[id] = mt;
+        rankingTotals[id] = _rankHistBlankTotals();
+        manualTotals[id] = _rankHistBlankTotals();
     });
 
-    // Collect all historico entries with their timestamps
-    let allEntries = [];
+    const allEntries = [];
+    const manualEntries = [];
     let minTs = Infinity, maxTs = 0;
-    
+
+    function pushEntry(entry, isManual){
+        try{
+            if(!entry || entry.alunoId == null) return;
+            const id = String(entry.alunoId);
+            if(!alunoById[id]) return;
+            const ts = Number(entry.ts || 0);
+            if(!Number.isFinite(ts) || !_rankHistTsInRange(ts, dataInicioFilter, dataFimFilter)) return;
+            const val = Number(entry.val || 0);
+            if(!val) return;
+            const cat = String(entry.cat || '');
+            if(!CATS.includes(cat)) return;
+            const safe = { ...entry, alunoId:id, alunoNome:(entry.alunoNome || alunoById[id].nome || 'Aluno'), ts, val, cat };
+            allEntries.push(safe);
+            if(isManual) manualEntries.push(safe);
+            if(ts < minTs) minTs = ts;
+            if(ts > maxTs) maxTs = ts;
+            _rankHistAccumulateTotals(rankingTotals[id], cat, val, safe.src || (isManual ? 'manual' : 'auto'));
+            if(isManual) _rankHistAccumulateTotals(manualTotals[id], cat, val, 'manual');
+        }catch(_){ }
+    }
+
+    // 1) Manual history entries (already timestamped)
     lista.forEach(a => {
         const id = String(a.id);
         const p = pontos[id];
-        if(!p || !p.historico) return;
+        if(!p || !Array.isArray(p.historico)) return;
         p.historico.forEach(h => {
-            if(!h.ts) return;
-            const ts = h.ts;
-            if(dataInicioFilter && ts < dataInicioFilter.getTime()) return;
-            if(dataFimFilter && ts > dataFimFilter.getTime()) return;
-            allEntries.push({ ...h, alunoId: id, alunoNome: a.nome });
-            if(ts < minTs) minTs = ts;
-            if(ts > maxTs) maxTs = ts;
+            if(!h || !h.ts) return;
+            pushEntry({ ...h, alunoId: id, alunoNome: a.nome, src: 'manual' }, true);
         });
     });
 
-    if(allEntries.length === 0) return { weeks: [], rankingTotals, manualTotals };
+    // 2) Auto participation by attendance date (date-resolved)
+    try{
+        const freq = window.__sgpFrequencia || {};
+        Object.keys(freq).forEach(key => {
+            const parts = String(key || '').split('|');
+            if(String(parts[0]||'') !== turma) return;
+            if((parseInt(parts[1], 10) || 0) !== bim) return;
+            const dateStr = parts[2];
+            const dt = _rankHistParseDateInput(dateStr, false);
+            if(!dt) return;
+            const ts = dt.getTime();
+            if(!_rankHistTsInRange(ts, dataInicioFilter, dataFimFilter)) return;
+            const reg = freq[key] || {};
+            Object.keys(reg).forEach(alunoId => {
+                if(alunoId === '_meta') return;
+                if(String(reg[alunoId] || '') !== 'P') return;
+                const a = alunoById[String(alunoId)];
+                if(!a) return;
+                pushEntry({
+                    alunoId: String(alunoId),
+                    alunoNome: a.nome,
+                    cat: 'participacao',
+                    val: 1,
+                    ts,
+                    motivo: 'Presença',
+                    src: 'auto_freq'
+                }, false);
+            });
+        });
+    }catch(_){ }
 
-    // Generate week ranges
-    const firstWeekStart = _rankHistWeekStart(new Date(minTs), diaInicio);
-    const lastWeekStart = _rankHistWeekStart(new Date(maxTs), diaInicio);
-    
+    // 3) Auto grades anchored by linked proof/activity creation date (date-resolved best effort)
+    try{
+        const turmaCtx = (correcaoProvas && correcaoProvas[turma]) ? correcaoProvas[turma] : null;
+        const provas = Object.values((turmaCtx && turmaCtx.provas) ? turmaCtx.provas : {});
+        const proofByAv = {};
+        provas.forEach(prova => {
+            if(!prova || !prova._discId || !prova._avId) return;
+            const createdTs = prova.createdAt ? new Date(prova.createdAt).getTime() : NaN;
+            if(!Number.isFinite(createdTs)) return;
+            const k = String(prova._discId) + '|' + String(prova._avId);
+            const prev = proofByAv[k];
+            if(!prev || createdTs < prev.ts) proofByAv[k] = { discId:String(prova._discId), avId:String(prova._avId), ts:createdTs };
+        });
+        Object.values(proofByAv).forEach(ref => {
+            if(!_rankHistTsInRange(ref.ts, dataInicioFilter, dataFimFilter)) return;
+            lista.forEach(a => {
+                const gradePts = _rankHistGetAlunoGradeValue(a, bim, ref.discId, ref.avId);
+                if(gradePts > 0){
+                    pushEntry({
+                        alunoId: String(a.id),
+                        alunoNome: a.nome,
+                        cat: 'notas',
+                        val: gradePts,
+                        ts: ref.ts,
+                        motivo: 'Nota automática',
+                        src: 'auto_grade'
+                    }, false);
+                }
+            });
+        });
+    }catch(_){ }
+
+    if(allEntries.length === 0) return { weeks: [], rankingTotals, manualTotals, hasDateFilter };
+
+    // Generate week ranges (respects explicit date filter bounds when present)
+    const firstAnchor = dataInicioFilter ? dataInicioFilter : new Date(minTs);
+    const lastAnchor = dataFimFilter ? dataFimFilter : new Date(maxTs);
+    const firstWeekStart = _rankHistWeekStart(firstAnchor, diaInicio);
+    const lastWeekStart = _rankHistWeekStart(lastAnchor, diaInicio);
+
     const weeks = [];
     let ws = new Date(firstWeekStart);
     while(ws <= lastWeekStart){
@@ -31709,27 +31842,33 @@ function _rankHistBuildWeeks(){
         const studentMap = {};
         week.entries.forEach(e => {
             if(!studentMap[e.alunoId]){
-                studentMap[e.alunoId] = { id: e.alunoId, nome: e.alunoNome, notas:0, comportamento:0, participacao:0, bonus:0, total:0 };
+                studentMap[e.alunoId] = {
+                    id: e.alunoId,
+                    nome: e.alunoNome,
+                    notas:0,
+                    comportamento:0,
+                    participacao:0,
+                    bonus:0,
+                    total:0,
+                    _autoNotas:0,
+                    _autoParticipacao:0,
+                    _manualNotas:0,
+                    _manualParticipacao:0
+                };
             }
             const s = studentMap[e.alunoId];
-            const cat = e.cat;
-            const val = e.val||0;
-            if(cat && CATS.includes(cat)){
-                s[cat] += val;
-            }
-            // total = sum of category values only (not unknown cats)
-            s.total = s.notas + s.comportamento + s.participacao + s.bonus;
+            _rankHistAccumulateTotals(s, e.cat, e.val || 0, e.src || 'manual');
         });
-        
+
         // Sort by total points earned in the week
         week.students = Object.values(studentMap).sort((a,b) => b.total - a.total || a.nome.localeCompare(b.nome));
-        week.totalPts = week.students.reduce((s,st) => s + st.total, 0);
+        week.totalPts = week.students.reduce((sum, st) => sum + (st.total||0), 0);
         week.idx = wi;
     });
 
     // Reverse so newest week is first
     weeks.reverse();
-    return { weeks, rankingTotals, manualTotals };
+    return { weeks, rankingTotals, manualTotals, hasDateFilter };
 }
 
 // Compute cumulative totals up to each week (for evolution view)
@@ -31792,7 +31931,7 @@ function _rankHistRenderSemanal(){
                 </div>
                 <table class="rank-hist-table"><thead><tr>
                     <th style="text-align:center;">#</th><th>Aluno</th>
-                    <th style="text-align:center;" title="Total no ranking (inclui automáticos)">Total Ranking</th>
+                    <th style="text-align:center;" title="Total dentro do período filtrado">Ranking período</th>
                     <th>Auto</th>
                 </tr></thead><tbody>`;
             const sorted = lista.map(a => ({ id: String(a.id), nome: a.nome, rt: rankingTotals[String(a.id)] || {total:0} }))
@@ -31841,14 +31980,14 @@ function _rankHistRenderSemanal(){
 
     let html = `<div class="rank-hist-summary">
         <div class="rank-hist-summary-card"><div class="val">${totalWeeks}</div><div class="lbl">Semanas</div></div>
-        <div class="rank-hist-summary-card"><div class="val">${rankTotalGeral}</div><div class="lbl">Total Ranking</div></div>
+        <div class="rank-hist-summary-card"><div class="val">${rankTotalGeral}</div><div class="lbl">Ranking período</div></div>
         <div class="rank-hist-summary-card"><div class="val">${manualTotalGeral}</div><div class="lbl">Pts Manuais</div></div>
         <div class="rank-hist-summary-card"><div class="val">${autoTotal}</div><div class="lbl">Pts Automáticos</div></div>
         <div class="rank-hist-summary-card"><div class="val">${totalEntries}</div><div class="lbl">Registros</div></div>
     </div>`;
 
     if(autoTotal > 0){
-        html += `<div style="padding:4px 16px 8px;font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> Pts Automáticos = notas das avaliações + presenças. Aparecem no Total Ranking mas não se distribuem por semana.</div>`;
+        html += `<div style="padding:4px 16px 8px;font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> O histórico semanal agora respeita o período filtrado e distribui automaticamente presenças e provas/atividades vinculadas pela data registrada.</div>`;
     }
 
     weeks.forEach((week, wi) => {
@@ -31883,7 +32022,7 @@ function _rankHistRenderSemanal(){
         } else {
             html += `<table class="rank-hist-table"><thead><tr>
                 <th style="text-align:center;">#</th><th>Aluno</th><th style="text-align:center;">Pts Semana</th>
-                <th>Detalhes</th><th style="text-align:center;" title="Total geral no ranking (inclui automáticos)">Total Ranking</th><th style="text-align:center;">Posição</th>
+                <th>Detalhes</th><th style="text-align:center;" title="Total do aluno dentro do período filtrado">Ranking período</th><th style="text-align:center;">Posição</th>
             </tr></thead><tbody>`;
 
             // Get previous week for trend comparison
@@ -31922,7 +32061,7 @@ function _rankHistRenderSemanal(){
                         <span title="Participação">🙋${s.participacao||0}</span>
                         <span title="Bônus">🎁${s.bonus||0}</span>
                     </td>
-                    <td class="hist-pts" style="text-align:center;color:var(--primary);font-weight:800;" title="Total geral no ranking">${rt.total}</td>
+                    <td class="hist-pts" style="text-align:center;color:var(--primary);font-weight:800;" title="Total no período filtrado">${rt.total}</td>
                     <td style="text-align:center;">${trendHtml}</td>
                 </tr>`;
             });
@@ -31968,7 +32107,7 @@ function _rankHistRenderEvolucao(){
     });
     
     html += `<th style="text-align:center;font-weight:900;min-width:70px;" title="Soma pontos manuais">Manual</th>`;
-    html += `<th style="text-align:center;font-weight:900;min-width:70px;" title="Total real no ranking (manual + automático)">Ranking</th></tr></thead><tbody>`;
+    html += `<th style="text-align:center;font-weight:900;min-width:70px;" title="Total do período filtrado (manual + automático)">Ranking</th></tr></thead><tbody>`;
 
     activeStudents.forEach((s, si) => {
         const rt = (rankingTotals || {})[s.id] || { total:0, _autoNotas:0, _autoParticipacao:0 };
@@ -31997,7 +32136,7 @@ function _rankHistRenderEvolucao(){
     const maxTotal = top10[0]?.rankTotal || 1;
     
     html += `<div style="padding:16px;">
-        <h4 style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;font-weight:700;">Total Ranking — Top ${Math.min(10, top10.length)}</h4>`;
+        <h4 style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;font-weight:700;">Ranking no período — Top ${Math.min(10, top10.length)}</h4>`;
     
     top10.forEach(s => {
         const rt = (rankingTotals || {})[s.id] || { total:0, _autoNotas:0, _autoParticipacao:0 };
