@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V19.0.2 — Frequência Avançada + Calendário + Padrões + PDF)</title>
+    <title>SGP - Gestão Final (V19.0.4 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -7720,6 +7720,71 @@ function corEnsureTurma(turma){
   return correcaoProvas[turma];
 }
 
+function corGetLinkedDisc(prova){
+  try{
+    if(!prova || !prova._discId || !config || !Array.isArray(config.disciplinas)) return null;
+    return (config.disciplinas||[]).find(d=>String(d.id)===String(prova._discId)) || null;
+  }catch(_){ return null; }
+}
+
+function corGetLinkedAv(prova, discObj){
+  try{
+    const disc = discObj || corGetLinkedDisc(prova);
+    if(!prova || !disc || !prova._avId) return null;
+    return (disc.avaliacoes||[]).find(av=>String(av.id)===String(prova._avId)) || null;
+  }catch(_){ return null; }
+}
+
+function corGetCanonicalLinkedNome(prova){
+  try{
+    if(!prova) return '';
+    const disc = corGetLinkedDisc(prova);
+    const av = corGetLinkedAv(prova, disc);
+    if(!disc || !av) return '';
+    return String((disc.nome||'Disciplina') + ' — ' + (av.nome||'Atividade'));
+  }catch(_){ return ''; }
+}
+
+function corShouldForceCanonicalName(prova){
+  try{
+    if(!prova) return false;
+    if(prova._autoSync) return true;
+    const syncKey = String(prova._syncKey||'');
+    return syncKey.startsWith('sync_');
+  }catch(_){ return false; }
+}
+
+function corRepairLinkedProvaMeta(prova){
+  try{
+    if(!prova || !corShouldForceCanonicalName(prova)) return false;
+    const disc = corGetLinkedDisc(prova);
+    const av = corGetLinkedAv(prova, disc);
+    if(!disc || !av) return false;
+
+    let changed = false;
+    const canonicalName = String((disc.nome||'Disciplina') + ' — ' + (av.nome||'Atividade'));
+    const canonicalSyncKey = 'sync_' + String(disc.id) + '_' + String(av.id);
+
+    if(String(prova._discId)!==String(disc.id)){
+      prova._discId = disc.id;
+      changed = true;
+    }
+    if(String(prova._avId)!==String(av.id)){
+      prova._avId = av.id;
+      changed = true;
+    }
+    if(String(prova._syncKey||'') !== canonicalSyncKey){
+      prova._syncKey = canonicalSyncKey;
+      changed = true;
+    }
+    if(String(prova.nome||'').trim() !== canonicalName){
+      prova.nome = canonicalName;
+      changed = true;
+    }
+    return changed;
+  }catch(_){ return false; }
+}
+
 function corEnsureProva(turma){
   const ctx = corEnsureTurma(turma);
   if(!ctx) return null;
@@ -7910,11 +7975,19 @@ function corRenderSelectors(){
     const provasArr = tctx ? Object.values(tctx.provas||{}) : [];
     if(provasArr.length===0){ corEnsureProva(turma); }
     const provas = Object.values((correcaoProvas[turma]||{}).provas||{});
+    let repaired = false;
     const opts = provas
       .sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')))
-      .map(p=>`<option value="${escAttr(p.id)}">${escHTML(p.nome||p.id)}</option>`).join('');
+      .map(p=>{
+        try{ if(corRepairLinkedProvaMeta(p)) repaired = true; }catch(_){ }
+        const label = corGetCanonicalLinkedNome(p) || p.nome || p.id;
+        return `<option value="${escAttr(p.id)}">${escHTML(label)}</option>`;
+      }).join('');
     provaSel.innerHTML = opts || `<option value="">(sem provas)</option>`;
     provaSel.value = (correcaoProvas[turma] && correcaoProvas[turma].activeProvaId) ? correcaoProvas[turma].activeProvaId : (provas[0] ? provas[0].id : '');
+    if(repaired){
+      try{ corSave(); }catch(_){ }
+    }
   }
 
   // aluno select
@@ -8642,6 +8715,10 @@ function corRenderLinkSelectors(){
 
           // syncKey ajuda a evitar provas duplicadas auto-sincronizadas para a mesma atividade
           p._syncKey = 'sync_' + String(p._discId) + '_' + String(p._avId);
+          if(corShouldForceCanonicalName(p)){
+            const canonicalName = corGetCanonicalLinkedNome(p);
+            if(canonicalName) p.nome = canonicalName;
+          }
 
           // Evita duplicar provas/atividades vinculadas ao mesmo Disciplina→Atividade (syncKey)
           try{ corDedupProvasBySyncKey(turma, p._syncKey, p.id); }catch(_){}
@@ -8788,6 +8865,11 @@ function corSyncDiscActivities(){
     turmas.forEach(turma=>{
       const tctx = corEnsureTurma(turma);
       if(!tctx) return;
+
+      // 0) Auto-repair linked auto-synced provas (nome/vínculo) antes de renderizar a lista
+      Object.values(tctx.provas||{}).forEach(p=>{
+        try{ if(corRepairLinkedProvaMeta(p)) changed = true; }catch(_){ }
+      });
 
       // 1) Create missing synced provas
       config.disciplinas.forEach(disc=>{
@@ -10377,7 +10459,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v19.0.2",
+                version: "v19.0.4",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -32251,7 +32333,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v19.0.2',
+        version: versionLabel || 'v19.0.4',
         total: arr.length,
         okCount,
         failCount,
@@ -33620,7 +33702,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.2'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.4'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
