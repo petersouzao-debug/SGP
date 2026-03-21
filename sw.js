@@ -1,4 +1,4 @@
-// SGP - Service Worker v19.1.12
+// SGP - Service Worker v20.0.0
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -25,8 +25,8 @@
 //  - FIX v19.1.1: histórico semanal do ranking ignora filtros globais indevidos e corrige totais/legendas manual x automático na evolução
 //  - FIX v19.1.11: histórico individual passa a ler a mesma trilha de eventos do semanal e o reset registra deltas manuais com mensagem consistente
 
-const SW_VERSION = '19.1.12';
-const CACHE_NAME = `sgp-v19-${SW_VERSION}`;
+const SW_VERSION = '20.0.0';
+const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
 const CACHE_MAX_ENTRIES = 60;          // máximo de entradas no cache geral
