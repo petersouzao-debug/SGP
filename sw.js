@@ -1,4 +1,4 @@
-// SGP - Service Worker v19.0.9
+// SGP - Service Worker v19.1.12
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -21,8 +21,11 @@
 //  - FIX v19.0.7: histórico semanal do ranking agora usa a data real do lançamento/atualização das notas automáticas
 //  - FIX v19.0.8: exportações/backup ignoram históricos internos transitórios para reduzir tamanho e risco de corrupção por bloat
 //  - FIX v19.0.9: histórico semanal agora expande o filtro para semanas completas e usa a data real do lançamento das notas
+//  - FIX v19.1.0: histórico semanal agora recupera notas da semana anterior por evento salvo, correção por aluno e inferência pelos autobackups
+//  - FIX v19.1.1: histórico semanal do ranking ignora filtros globais indevidos e corrige totais/legendas manual x automático na evolução
+//  - FIX v19.1.11: histórico individual passa a ler a mesma trilha de eventos do semanal e o reset registra deltas manuais com mensagem consistente
 
-const SW_VERSION = '19.0.9';
+const SW_VERSION = '19.1.12';
 const CACHE_NAME = `sgp-v19-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado

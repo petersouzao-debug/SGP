@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V19.0.9 — Frequência Avançada + Calendário + Padrões + PDF)</title>
+    <title>SGP - Gestão Final (V19.1.10 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '19.0.9';
+      window.__SGP_SW_VERSION = '19.1.10';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -5044,7 +5044,7 @@ body.dark-mode .link-quick-remove{ color:#fecaca; background: rgba(239,68,68,.14
                         <button class="btn-tool" data-onclick="rankAddPontosModal()" title="Adicionar pontos"><i class="fas fa-plus-circle"></i></button>
                         <button class="btn-tool" data-onclick="rankHistoricoSemanalAbrir()" title="Histórico Semanal"><i class="fas fa-calendar-week"></i></button>
                         <button class="btn-tool" data-onclick="rankExportarPDF()" title="Exportar ranking"><i class="fas fa-file-export"></i></button>
-                        <button class="btn-tool" data-onclick="rankResetar()" title="Resetar pontos"><i class="fas fa-rotate-left"></i></button>
+                        <button class="btn-tool" data-onclick="rankResetar()" title="Resetar pontos manuais"><i class="fas fa-rotate-left"></i></button>
                         <button id="btnRankFullscreen" class="btn-tool" data-onclick="rankToggleFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i></button>
                     </div>
                 </div>
@@ -8197,6 +8197,352 @@ function corGetTsMs(v){
     return Number.isFinite(t) ? t : NaN;
   }catch(_){ return NaN; }
 }
+const __GRADE_EVENTS_KEY = 'sgp_grade_events_v1';
+const __GRADE_EVENT_LOG_KEY = 'sgp_grade_event_log_v1';
+let __GRADE_EVENTS_CACHE = null;
+let __GRADE_EVENT_LOG_CACHE = null;
+let __RANK_HIST_BACKUP_GRADE_TS_CACHE = null;
+let __RANK_HIST_BACKUP_PARSED_CACHE = null;
+
+const __RANK_EVENT_LOG_KEY = 'sgp_rank_event_log_v1';
+let __RANK_EVENT_LOG_CACHE = null;
+
+function __rankEventLogLoad(){
+  try{
+    if(Array.isArray(__RANK_EVENT_LOG_CACHE)) return __RANK_EVENT_LOG_CACHE;
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(__RANK_EVENT_LOG_KEY) : localStorage.getItem(__RANK_EVENT_LOG_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    __RANK_EVENT_LOG_CACHE = Array.isArray(parsed) ? parsed : [];
+  }catch(_){ __RANK_EVENT_LOG_CACHE = []; }
+  return __RANK_EVENT_LOG_CACHE;
+}
+
+function __rankEventLogSave(){
+  try{
+    const arr = Array.isArray(__RANK_EVENT_LOG_CACHE) ? __RANK_EVENT_LOG_CACHE : [];
+    const json = JSON.stringify(arr);
+    if(typeof __safeLSSet === 'function') __safeLSSet(__RANK_EVENT_LOG_KEY, json);
+    else localStorage.setItem(__RANK_EVENT_LOG_KEY, json);
+    return true;
+  }catch(_){ return false; }
+}
+
+function __rankEventLogNormalize(evt){
+  try{
+    if(!evt) return null;
+    const val = Math.round(Number(evt.val || 0));
+    const cat = String(evt.cat || '');
+    const turma = String(evt.turma || '');
+    const alunoId = corIdKey(evt.alunoId);
+    const ts = corGetTsMs(evt.ts || Date.now()) || Date.now();
+    if(!turma || !alunoId || !cat || !val) return null;
+    return {
+      turma,
+      bim: parseInt(evt.bim, 10) || (parseInt(bimestreAtual, 10) || 1),
+      alunoId,
+      alunoNome: String(evt.alunoNome || ''),
+      cat,
+      val,
+      motivo: String(evt.motivo || ''),
+      ts,
+      src: String(evt.src || 'manual_rank')
+    };
+  }catch(_){ return null; }
+}
+
+function __rankEventFingerprint(evt){
+  try{
+    return [
+      String(evt?.turma || ''),
+      parseInt(evt?.bim, 10) || 1,
+      corIdKey(evt?.alunoId),
+      String(evt?.cat || ''),
+      Math.round(Number(evt?.val || 0)),
+      corGetTsMs(evt?.ts) || 0,
+      String(evt?.motivo || ''),
+      String(evt?.src || '')
+    ].join('|');
+  }catch(_){ return ''; }
+}
+
+function __rankEventLogAppend(evt){
+  try{
+    const next = __rankEventLogNormalize(evt);
+    if(!next) return false;
+    const fp = __rankEventFingerprint(next);
+    if(!fp) return false;
+    const arr = __rankEventLogLoad();
+    if(arr.some(item => __rankEventFingerprint(item) === fp)) return false;
+    arr.push(next);
+    if(arr.length > 50000) arr.splice(0, arr.length - 50000);
+    return __rankEventLogSave();
+  }catch(_){ return false; }
+}
+
+function __gradeEventsLoad(){
+  try{
+    if(__GRADE_EVENTS_CACHE && typeof __GRADE_EVENTS_CACHE === 'object' && !Array.isArray(__GRADE_EVENTS_CACHE)) return __GRADE_EVENTS_CACHE;
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(__GRADE_EVENTS_KEY) : localStorage.getItem(__GRADE_EVENTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    __GRADE_EVENTS_CACHE = (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+  }catch(_){ __GRADE_EVENTS_CACHE = {}; }
+  return __GRADE_EVENTS_CACHE;
+}
+
+function __gradeEventsSave(){
+  try{
+    const store = (__GRADE_EVENTS_CACHE && typeof __GRADE_EVENTS_CACHE === 'object' && !Array.isArray(__GRADE_EVENTS_CACHE)) ? __GRADE_EVENTS_CACHE : {};
+    const json = JSON.stringify(store);
+    if(typeof __safeLSSet === 'function') __safeLSSet(__GRADE_EVENTS_KEY, json);
+    else localStorage.setItem(__GRADE_EVENTS_KEY, json);
+    return true;
+  }catch(_){ return false; }
+}
+
+
+function __gradeEventLogLoad(){
+  try{
+    if(Array.isArray(__GRADE_EVENT_LOG_CACHE)) return __GRADE_EVENT_LOG_CACHE;
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(__GRADE_EVENT_LOG_KEY) : localStorage.getItem(__GRADE_EVENT_LOG_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    __GRADE_EVENT_LOG_CACHE = Array.isArray(parsed) ? parsed : [];
+  }catch(_){ __GRADE_EVENT_LOG_CACHE = []; }
+  return __GRADE_EVENT_LOG_CACHE;
+}
+
+function __gradeEventLogSave(){
+  try{
+    const arr = Array.isArray(__GRADE_EVENT_LOG_CACHE) ? __GRADE_EVENT_LOG_CACHE : [];
+    const json = JSON.stringify(arr);
+    if(typeof __safeLSSet === 'function') __safeLSSet(__GRADE_EVENT_LOG_KEY, json);
+    else localStorage.setItem(__GRADE_EVENT_LOG_KEY, json);
+    return true;
+  }catch(_){ return false; }
+}
+
+function __gradeEventLogAppend(evt){
+  try{
+    if(!evt || !(Math.abs(Number(evt.delta || 0)) > 0)) return false;
+    const arr = __gradeEventLogLoad();
+    const next = {
+      turma: String(evt.turma || ''),
+      bim: parseInt(evt.bim, 10) || (parseInt(bimestreAtual, 10) || 1),
+      alunoId: corIdKey(evt.alunoId),
+      alunoNome: String(evt.alunoNome || ''),
+      discId: String(evt.discId || ''),
+      avId: String(evt.avId || ''),
+      nota: Math.round(Number(evt.nota || 0)),
+      delta: Math.round(Number(evt.delta || 0)),
+      ts: corGetTsMs(evt.ts || Date.now()) || Date.now(),
+      src: String(evt.src || 'manual_grade')
+    };
+    if(!next.turma || !next.alunoId || !next.discId || !next.avId) return false;
+    const prev = arr.length ? arr[arr.length - 1] : null;
+    const isDup = !!(prev
+      && String(prev.turma||'') === next.turma
+      && (parseInt(prev.bim,10)||1) === next.bim
+      && corIdKey(prev.alunoId) === next.alunoId
+      && String(prev.discId||'') === next.discId
+      && String(prev.avId||'') === next.avId
+      && Number(prev.nota||0) === Number(next.nota||0)
+      && Number(prev.delta||0) === Number(next.delta||0)
+      && Number(prev.ts||0) === Number(next.ts||0)
+      && String(prev.src||'') === next.src);
+    if(isDup) return false;
+    arr.push(next);
+    if(arr.length > 30000) arr.splice(0, arr.length - 30000);
+    return __gradeEventLogSave();
+  }catch(_){ return false; }
+}
+
+function __gradeEventKey(turma, bim, alunoId, discId, avId){
+  return [String(turma || ''), (parseInt(bim, 10) || 1), corIdKey(alunoId), String(discId || ''), String(avId || '')].join('|');
+}
+
+function __gradeEventGet(turma, bim, alunoId, discId, avId){
+  try{ return __gradeEventsLoad()[__gradeEventKey(turma, bim, alunoId, discId, avId)] || null; }catch(_){ return null; }
+}
+
+function __gradeEventRecord(evt){
+  try{
+    if(!evt) return false;
+    const turma = String(evt.turma || '');
+    const bim = parseInt(evt.bim, 10) || (parseInt(bimestreAtual, 10) || 1);
+    const alunoId = corIdKey(evt.alunoId);
+    const alunoNome = String(evt.alunoNome || '');
+    const discId = String(evt.discId || '');
+    const avId = String(evt.avId || '');
+    const nota = Math.round(Number(evt.nota || 0));
+    const ts = corGetTsMs(evt.ts || Date.now());
+    const src = String(evt.src || 'manual_grade');
+    if(!turma || !alunoId || !discId || !avId) return false;
+    const store = __gradeEventsLoad();
+    const key = __gradeEventKey(turma, bim, alunoId, discId, avId);
+    const prev = store[key] || null;
+    const prevNota = Math.round(Number(prev && prev.nota || 0));
+    const nextTs = (Number.isFinite(ts) && ts > 0) ? ts : Date.now();
+    const changed = !prev || Number(prev.ts || 0) !== Number(nextTs || 0) || Number(prev.nota || 0) !== Number(nota || 0) || String(prev.src || '') !== String(src || '') || String(prev.alunoNome || '') !== String(alunoNome || '');
+    const delta = nota - prevNota;
+    if(!(nota > 0)){
+      if(prev){
+        delete store[key];
+        __gradeEventsSave();
+        try{ if(prevNota !== 0) __gradeEventLogAppend({ turma, bim, alunoId, alunoNome, discId, avId, nota:0, delta:(0 - prevNota), ts: nextTs, src }); }catch(_){ }
+        return true;
+      }
+      return false;
+    }
+    const next = { turma, bim, alunoId, alunoNome, discId, avId, nota, ts: nextTs, src };
+    if(changed){
+      store[key] = next;
+      __gradeEventsSave();
+      try{ if(delta !== 0) __gradeEventLogAppend({ turma, bim, alunoId, alunoNome, discId, avId, nota, delta, ts: nextTs, src }); }catch(_){ }
+    }
+    return changed;
+  }catch(_){ return false; }
+}
+
+function _rankHistGetBackupsList(){
+  try{
+    let arr = Array.isArray(__BACKUPS) ? __BACKUPS : [];
+    if(!arr.length){
+      const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_autobackups') : localStorage.getItem('sgp_autobackups');
+      arr = raw ? (JSON.parse(raw) || []) : [];
+    }
+    return Array.isArray(arr) ? arr : [];
+  }catch(_){ return []; }
+}
+
+function _rankHistParseBackupSnapshotEntry(entry){
+  try{
+    if(!entry) return null;
+    if(!__RANK_HIST_BACKUP_PARSED_CACHE) __RANK_HIST_BACKUP_PARSED_CACHE = new Map();
+    const cacheKey = String(entry.id || entry.ts || 'bk');
+    if(__RANK_HIST_BACKUP_PARSED_CACHE.has(cacheKey)) return __RANK_HIST_BACKUP_PARSED_CACHE.get(cacheKey);
+    let obj = null;
+    if(entry.snapshot && typeof entry.snapshot === 'object') obj = entry.snapshot;
+    else obj = JSON.parse(String(entry.snapshot || 'null'));
+    __RANK_HIST_BACKUP_PARSED_CACHE.set(cacheKey, obj);
+    return obj;
+  }catch(_){ return null; }
+}
+
+
+function _rankHistGetBackupGradeValue(snapshotObj, turma, bim, alunoId, discId, avId){
+  try{
+    const lista = Array.isArray(snapshotObj && snapshotObj.alunos) ? snapshotObj.alunos : [];
+    const aluno = lista.find(a => a && String(a.id) === String(alunoId) && String(a.turma || '') === String(turma || ''));
+    if(!aluno || !Array.isArray(aluno.bimestres) || !aluno.bimestres[bim]) return 0;
+    const b = aluno.bimestres[bim];
+    const notasDisc = (b && b.notas_disc && b.notas_disc[discId]) ? b.notas_disc[discId] : null;
+    const nota = parseFloat(notasDisc ? notasDisc[avId] : NaN);
+    return (!isNaN(nota) && nota > 0) ? Math.round(nota) : 0;
+  }catch(_){ return 0; }
+}
+
+function _rankHistGetBackupManualRankTotals(snapshotObj, turma, bim, alunoId){
+  try{
+    const ranking = (snapshotObj && snapshotObj.ranking && typeof snapshotObj.ranking === 'object' && !Array.isArray(snapshotObj.ranking)) ? snapshotObj.ranking : {};
+    const turmaObj = ranking[String(turma || '')];
+    const bimObj = turmaObj && turmaObj[(parseInt(bim, 10) || 1)];
+    const row = (bimObj && typeof bimObj === 'object') ? (bimObj[corIdKey(alunoId)] || bimObj[alunoId]) : null;
+    if(!row || typeof row !== 'object') return { notas:0, comportamento:0, participacao:0, bonus:0 };
+    return {
+      notas: Number(row.notas || 0) || 0,
+      comportamento: Number(row.comportamento || 0) || 0,
+      participacao: Number(row.participacao || 0) || 0,
+      bonus: Number(row.bonus || 0) || 0
+    };
+  }catch(_){ return { notas:0, comportamento:0, participacao:0, bonus:0 }; }
+}
+
+function _rankHistSumManualHistoryAll(p){
+  const totals = { notas:0, comportamento:0, participacao:0, bonus:0 };
+  try{
+    const hist = (p && Array.isArray(p.historico)) ? p.historico : [];
+    hist.forEach(h => {
+      if(!h || !h.cat) return;
+      const cat = String(h.cat || '');
+      if(!Object.prototype.hasOwnProperty.call(totals, cat)) return;
+      const val = Number(h.val || 0);
+      if(!Number.isFinite(val) || !val) return;
+      totals[cat] += val;
+    });
+  }catch(_){ }
+  return totals;
+}
+
+function _rankHistInferManualRankEntriesFromBackups(turma, bim, alunoId, missingTotals){
+  try{
+    const remaining = {
+      notas: Number(missingTotals && missingTotals.notas || 0) || 0,
+      comportamento: Number(missingTotals && missingTotals.comportamento || 0) || 0,
+      participacao: Number(missingTotals && missingTotals.participacao || 0) || 0,
+      bonus: Number(missingTotals && missingTotals.bonus || 0) || 0
+    };
+    const cats = ['notas','comportamento','participacao','bonus'];
+    if(!cats.some(cat => remaining[cat] !== 0)) return [];
+
+    const backups = _rankHistGetBackupsList().slice().sort((a,b) => (Number(a?.ts || 0) - Number(b?.ts || 0)));
+    const out = [];
+    let prev = { notas:0, comportamento:0, participacao:0, bonus:0 };
+
+    backups.forEach(entry => {
+      const ts = Number(entry && entry.ts || 0);
+      if(!(ts > 0)) return;
+      const snap = _rankHistParseBackupSnapshotEntry(entry);
+      if(!snap) return;
+      const cur = _rankHistGetBackupManualRankTotals(snap, turma, bim, alunoId);
+      cats.forEach(cat => {
+        const delta = (Number(cur[cat] || 0) || 0) - (Number(prev[cat] || 0) || 0);
+        if(!delta) return;
+        const rem = Number(remaining[cat] || 0) || 0;
+        if(!rem) return;
+        if(rem > 0 && delta > 0){
+          const use = Math.min(delta, rem);
+          if(use){
+            out.push({ cat, val: use, ts, motivo: 'Ponto manual (inferido backup)', src: 'manual_rank_backup' });
+            remaining[cat] -= use;
+          }
+        }else if(rem < 0 && delta < 0){
+          const use = Math.max(delta, rem);
+          if(use){
+            out.push({ cat, val: use, ts, motivo: 'Ajuste manual (inferido backup)', src: 'manual_rank_backup' });
+            remaining[cat] -= use;
+          }
+        }
+      });
+      prev = cur;
+    });
+
+    return out.sort((a,b) => (Number(a.ts || 0) - Number(b.ts || 0)));
+  }catch(_){ return []; }
+}
+
+function _rankHistInferGradeTsFromBackups(turma, bim, alunoId, discId, avId, currentGrade){
+  try{
+    const grade = Math.round(Number(currentGrade || 0));
+    if(!(grade > 0)) return NaN;
+    if(!__RANK_HIST_BACKUP_GRADE_TS_CACHE) __RANK_HIST_BACKUP_GRADE_TS_CACHE = {};
+    const cacheKey = [String(turma || ''), (parseInt(bim, 10) || 1), corIdKey(alunoId), String(discId || ''), String(avId || ''), grade].join('|');
+    if(Object.prototype.hasOwnProperty.call(__RANK_HIST_BACKUP_GRADE_TS_CACHE, cacheKey)) return __RANK_HIST_BACKUP_GRADE_TS_CACHE[cacheKey];
+    const backups = _rankHistGetBackupsList().slice().sort((a,b) => (Number(a?.ts || 0) - Number(b?.ts || 0)));
+    let prevVal = 0, candidate = NaN, firstPositive = NaN;
+    backups.forEach(entry => {
+      const ts = Number(entry && entry.ts || 0);
+      if(!(ts > 0)) return;
+      const snap = _rankHistParseBackupSnapshotEntry(entry);
+      if(!snap) return;
+      const v = _rankHistGetBackupGradeValue(snap, turma, bim, alunoId, discId, avId);
+      if(v > 0 && !Number.isFinite(firstPositive)) firstPositive = ts;
+      if(v === grade && prevVal !== grade) candidate = ts;
+      prevVal = v;
+    });
+    const out = Number.isFinite(candidate) ? candidate : firstPositive;
+    __RANK_HIST_BACKUP_GRADE_TS_CACHE[cacheKey] = out;
+    return out;
+  }catch(_){ return NaN; }
+}
 
 function corGetAlunoGradeEvent(prova, alunoId){
   try{
@@ -9160,6 +9506,7 @@ function corPostGradeToAlunoBimestre(prova, aluno, bimIdx){
     }
 
     corRecordGradeEvent(prova, aluno.id, bimIdx, nota, { ts: eventTs });
+    try{ __gradeEventRecord({ turma: aluno.turma, bim: bimIdx, alunoId: aluno.id, alunoNome: aluno.nome, discId: prova._discId, avId: prova._avId, nota, ts: eventTs, src: 'auto_grade' }); }catch(_){ }
     return true;
   }catch(e){
     try{ if(typeof __diagCapture==='function') __diagCapture(e,'corPostGradeToAlunoBimestre',{}); }catch(_){ }
@@ -10600,7 +10947,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v19.0.9",
+                version: "v19.1.12",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -10635,9 +10982,6 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
 
             const extras = {
                 audit: (typeof __AUDIT !== 'undefined') ? (__AUDIT || []) : _lsArr('sgp_audit'),
-                autobackups: (typeof __sanitizeBackupList === 'function')
-                  ? __sanitizeBackupList((typeof __BACKUPS !== 'undefined') ? (__BACKUPS || []) : _lsArr('sgp_autobackups'))
-                  : ((typeof __BACKUPS !== 'undefined') ? (__BACKUPS || []) : _lsArr('sgp_autobackups')),
                 lastBackupAt: parseInt(((typeof __lastBackupAt !== 'undefined') ? __lastBackupAt : _lsJson('sgp_lastBackupAt', 0)) || '0', 10) || 0
             };
 
@@ -10672,8 +11016,13 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             files.push(['sgp_entregas.json', JSON.stringify(__bkEnt || {}, null, 2)]);
 // Ranking da Sala
             files.push(['sgp_ranking_v1.json', JSON.stringify(_lsObj('sgp_ranking_v1'), null, 2)]);
+// Ranking: trilha temporal dos pontos manuais
+            files.push(['sgp_rank_event_log_v1.json', JSON.stringify(_lsArr('sgp_rank_event_log_v1'), null, 2)]);
 // Ranking: histórico semanal config
             files.push(['sgp_rank_hist_cfg.json', JSON.stringify(_lsObj('sgp_rank_hist_cfg'), null, 2)]);
+// Ranking: eventos temporais de notas (essenciais para o filtro semanal)
+            files.push(['sgp_grade_events_v1.json', JSON.stringify(_lsObj('sgp_grade_events_v1'), null, 2)]);
+            files.push(['sgp_grade_event_log_v1.json', JSON.stringify(_lsArr('sgp_grade_event_log_v1'), null, 2)]);
 // Quiz (atividades)
             const __bkQuiz = (typeof quizBank!=='undefined' && Array.isArray(quizBank)) ? (quizBank||[]) : _lsArr('sgp_atividades_quiz_bank');
             files.push(['atividades_quiz.json', JSON.stringify(__bkQuiz || [], null, 2)]);
@@ -10822,13 +11171,16 @@ __safeLSSet('sgp_last_backup', Date.now());
 
                         // Extras (opcional) — FIX: evita duplo JSON.parse por arquivo
                         const _rAudit = readJson('extras_audit.json');           const exAudit = Array.isArray(_rAudit) ? _rAudit : [];
-                        const _rBkps = readJson('extras_autobackups.json');      const exBackups = Array.isArray(_rBkps) ? _rBkps : [];
+                        // Autobackups internos não são importados/exportados no ZIP (mantém o backup leve)
                         const exLastBackupAt = readJson('extras_lastBackupAt.json');
                         if(typeof __AUDIT !== 'undefined') __AUDIT = exAudit;
-                        if(typeof __BACKUPS !== 'undefined') __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(exBackups) : exBackups;
-                        if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && typeof exLastBackupAt === 'object') ? (parseInt(exLastBackupAt.lastBackupAt || '0', 10) || 0) : 0;
+                        if(typeof __BACKUPS !== 'undefined'){ try{ if(!Array.isArray(__BACKUPS)) __BACKUPS = []; }catch(_){ } }
+                        
+if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && typeof exLastBackupAt === 'object') ? (parseInt(exLastBackupAt.lastBackupAt || '0', 10) || 0) : 0;
 
-                        // Persiste no localStorage (mesmo formato do app)
+                        
+                        try{ __safeLSSet('sgp_lastBackupAt', String(__lastBackupAt||0)); }catch(_){}
+// Persiste no localStorage (mesmo formato do app)
                         try{
                             // Core é salvo de forma atômica via salvarDadosLocal() mais abaixo (evita duplicação de chaves)
                             __safeLSSet('sgp_planner', JSON.stringify(plannerTasks || []));
@@ -10918,11 +11270,31 @@ __safeLSSet('sgp_last_backup', Date.now());
                             __safeLSSet('sgp_ranking_v1', JSON.stringify(restoredRanking));
                         }catch(_){}
 
+                        // Restore ranking manual event log from backup
+                        try{
+                            const bkRankEventLog = readJson('sgp_rank_event_log_v1.json');
+                            __RANK_EVENT_LOG_CACHE = Array.isArray(bkRankEventLog) ? bkRankEventLog : [];
+                            __rankEventLogSave();
+                        }catch(_){}
+
                         // Restore ranking hist config from backup
                         try{
                             const bkHistCfg = readJson('sgp_rank_hist_cfg.json');
                             const restoredHistCfg = (bkHistCfg && typeof bkHistCfg === 'object' && !Array.isArray(bkHistCfg)) ? bkHistCfg : {};
                             __safeLSSet('sgp_rank_hist_cfg', JSON.stringify(restoredHistCfg));
+                        }catch(_){}
+
+                        // Restore grade events from backup
+                        try{
+                            const bkGradeEvents = readJson('sgp_grade_events_v1.json');
+                            const restoredGradeEvents = (bkGradeEvents && typeof bkGradeEvents === 'object' && !Array.isArray(bkGradeEvents)) ? bkGradeEvents : {};
+                            __GRADE_EVENTS_CACHE = restoredGradeEvents;
+                            __gradeEventsSave();
+                        }catch(_){}
+                        try{
+                            const bkGradeEventLog = readJson('sgp_grade_event_log_v1.json');
+                            __GRADE_EVENT_LOG_CACHE = Array.isArray(bkGradeEventLog) ? bkGradeEventLog : [];
+                            __gradeEventLogSave();
                         }catch(_){}
 
                         // Restore audit log from backup
@@ -11000,7 +11372,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                             if(fullStorage){
                                 const managedKeys = new Set([
                                     __SGP_ATOMIC_CORE_KEY,
-                                    'sgp_planner','sgp_correcao_provas','sgp_frequencia','sgp_entregas','sgp_ranking_v1','sgp_rank_hist_cfg',
+                                    'sgp_planner','sgp_correcao_provas','sgp_frequencia','sgp_entregas','sgp_ranking_v1','sgp_rank_event_log_v1','sgp_rank_hist_cfg',
                                     'sgp_atividades_forca_bank','sgp_atividades_vf_bank','sgp_atividades_mem_bank','sgp_atividades_fc_bank',
                                     'sgp_atividades_rel_bank','sgp_atividades_roleta_bank','sgp_atividades_quiz_bank','sgp_atividades_comp_bank','sgp_atividades_ord_bank',
                                     'sgp_audit_log','sgp_freq_events','sgp_busca_ativa','sgp_entregas_doc_prazos_v1','sgp_links_cards_v1','sgp_autotest_history_v1',
@@ -11121,6 +11493,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                         ranking: (d.ranking && typeof d.ranking === 'object' && !Array.isArray(d.ranking))
                           ? d.ranking
                           : (((d.sgp_ranking_v1 && typeof d.sgp_ranking_v1 === 'object' && !Array.isArray(d.sgp_ranking_v1)) ? d.sgp_ranking_v1 : {})),
+                        rankEventLog: Array.isArray(d.rankEventLog) ? d.rankEventLog : (Array.isArray(d.sgp_rank_event_log_v1) ? d.sgp_rank_event_log_v1 : []),
                         rankHistCfg: (d.rankHistCfg && typeof d.rankHistCfg === 'object' && !Array.isArray(d.rankHistCfg))
                           ? d.rankHistCfg
                           : (((d.sgp_rank_hist_cfg && typeof d.sgp_rank_hist_cfg === 'object' && !Array.isArray(d.sgp_rank_hist_cfg)) ? d.sgp_rank_hist_cfg : {})),
@@ -11693,7 +12066,7 @@ function selTurma(n){
             const tbody = document.getElementById('tbodyFechamento');
             const cards = document.getElementById('mobileFechamentoCards');
 
-            const lista = getAlunosFiltrados().sort((a,b)=>a.nome.localeCompare(b.nome));
+            const lista = _rankGetListaBase().slice().sort((a,b)=>a.nome.localeCompare(b.nome));
 
             let htmlBuffer = '';
             lista.forEach((a, idx)=>{
@@ -14559,6 +14932,9 @@ function salvarAlteracoesDetalhadas(){
   b.notas_disc = b.notas_disc || {};
   if(!b.notas_disc[d1]) b.notas_disc[d1] = {};
   if(!b.notas_disc[d2]) b.notas_disc[d2] = {};
+  const __gradeEventTs = Date.now();
+  const __prevNotasD1 = Object.assign({}, b.notas_disc[d1] || {});
+  const __prevNotasD2 = Object.assign({}, b.notas_disc[d2] || {});
 
   document.querySelectorAll('#tbodyAvalLP input[data-eval]').forEach(inp=>{
     b.notas_disc[d1][inp.dataset.eval] = clampNota(inp.value);
@@ -14567,6 +14943,20 @@ function salvarAlteracoesDetalhadas(){
     b.notas_disc[d2][inp.dataset.eval] = clampNota(inp.value);
   });
 
+  try{
+    const __recordDiscChanges = function(discId, prevMap){
+      const disc = getDiscById(discId);
+      const avs = Array.isArray(disc && disc.avaliacoes) ? disc.avaliacoes : [];
+      avs.forEach(av => {
+        const prev = clampNota(prevMap ? prevMap[av.id] : 0);
+        const next = clampNota((b.notas_disc[discId] || {})[av.id]);
+        if(Math.abs(prev - next) < 0.05) return;
+        __gradeEventRecord({ turma: a.turma, bim: bimestreAtual, alunoId: a.id, alunoNome: a.nome, discId, avId: av.id, nota: next, ts: __gradeEventTs, src: 'manual_grade' });
+      });
+    };
+    __recordDiscChanges(d1, __prevNotasD1);
+    __recordDiscChanges(d2, __prevNotasD2);
+  }catch(_){ }
 
   try{ b.notas_disc[d1].__touched = true; b.notas_disc[d2].__touched = true; }catch(_){ }
   _syncBimestreRefs(b);
@@ -15230,7 +15620,15 @@ function salvarEdicaoMassa(silent){
       if(!b.notas_disc[discId]) b.notas_disc[discId] = {};
       try{ b.notas_disc[discId].__touched = true; }catch(_){ }
       const evs = discMap[discId];
-      Object.keys(evs).forEach(evId=>{ b.notas_disc[discId][evId] = evs[evId]; });
+      const __gradeEventTs = Date.now();
+      Object.keys(evs).forEach(evId=>{
+        const prev = clampNota((b.notas_disc[discId] || {})[evId]);
+        const next = clampNota(evs[evId]);
+        b.notas_disc[discId][evId] = next;
+        if(Math.abs(prev - next) >= 0.05){
+          try{ __gradeEventRecord({ turma: aluno.turma, bim: bimestreAtual, alunoId: aluno.id, alunoNome: aluno.nome, discId, avId: evId, nota: next, ts: __gradeEventTs, src: 'manual_grade' }); }catch(_){ }
+        }
+      });
     });
     _syncBimestreRefs(b);
     b.media_lp = calcularMediaLPIndividual(b.notas_lp, b.notas_lp?.rec);
@@ -15655,6 +16053,7 @@ function __snapshotObj(){
     frequencia: freqObj,
     entregas: entregasObj,
     ranking: rankingObj,
+    rankEventLog: (typeof __rankEventLogLoad === 'function') ? __rankEventLogLoad() : __lsArr('sgp_rank_event_log_v1'),
     rankHistCfg: rankHistCfgObj,
     buscaAtiva: buscaAtivaObj,
     entregasDocPrazos: entregasDocPrazosObj,
@@ -15675,6 +16074,8 @@ function __snapshotObj(){
     auditLog,
     freqEvents,
     auditTrail: Array.isArray(__AUDIT) ? __AUDIT.slice(-500) : [],
+    gradeEvents: (typeof __gradeEventsLoad === 'function') ? __gradeEventsLoad() : __lsJson('sgp_grade_events_v1', {}),
+    gradeEventLog: (typeof __gradeEventLogLoad === 'function') ? __gradeEventLogLoad() : __lsArr('sgp_grade_event_log_v1'),
     autobackups: (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(__BACKUPS) : (Array.isArray(__BACKUPS) ? __BACKUPS.slice(0, 10) : []),
     lastBackupAt: parseInt(__lastBackupAt || '0', 10) || 0
   };
@@ -15883,6 +16284,7 @@ function __applySnapshot(snapshotStr, label){
     try{
       const restoredRanking = (data.ranking && typeof data.ranking==='object' && !Array.isArray(data.ranking)) ? data.ranking : {};
       __safeLSSet('sgp_ranking_v1', JSON.stringify(restoredRanking));
+      try{ __rankCache = restoredRanking; __rankCacheDirty = false; }catch(__){}
     }catch(_){ }
     try{
       const restoredHistCfg = (data.rankHistCfg && typeof data.rankHistCfg==='object' && !Array.isArray(data.rankHistCfg)) ? data.rankHistCfg : {};
@@ -15930,6 +16332,18 @@ function __applySnapshot(snapshotStr, label){
       __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(data.autobackups) : (Array.isArray(data.autobackups) ? data.autobackups.slice(0, 10) : []);
       __lastBackupAt = (data && Object.prototype.hasOwnProperty.call(data, 'lastBackupAt')) ? (parseInt(data.lastBackupAt || '0', 10) || 0) : 0;
       try{ if(typeof __saveExtras === 'function') __saveExtras(); }catch(__){ }
+    }catch(_){ }
+    try{
+      __RANK_EVENT_LOG_CACHE = Array.isArray(data.rankEventLog) ? data.rankEventLog : [];
+      __rankEventLogSave();
+    }catch(_){ }
+    try{
+      __GRADE_EVENTS_CACHE = (data.gradeEvents && typeof data.gradeEvents === 'object' && !Array.isArray(data.gradeEvents)) ? data.gradeEvents : {};
+      __gradeEventsSave();
+    }catch(_){ }
+    try{
+      __GRADE_EVENT_LOG_CACHE = Array.isArray(data.gradeEventLog) ? data.gradeEventLog : [];
+      __gradeEventLogSave();
     }catch(_){ }
 
     // Correção de provas
@@ -31031,6 +31445,13 @@ function _rankGetBucket(turmaOverride){
 function _rankGetTurma(){
     return _rankGetBucket();
 }
+function _rankGetListaBase(){
+    try{
+        const turma = String(filtroTurma || 'Todas');
+        const base = Array.isArray(alunos) ? alunos.filter(Boolean) : [];
+        return turma === 'Todas' ? base : base.filter(a => String(a.turma || '') === turma);
+    }catch(_){ return []; }
+}
 function _rankGetPontos(alunoId){
     const data = _rankLoad();
     const bim = bimestreAtual || 1;
@@ -31104,20 +31525,30 @@ function _rankSyncAutoForTurma(turma, bim){
         const pontos = _rankEnsureBucket(data, turma, b);
 
         const lista = (alunos||[]).filter(a => a && a.turma === turma);
+        let changed = false;
         lista.forEach(a => {
             const id = String(a.id);
-            if(!pontos[id]) pontos[id] = { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
+            if(!pontos[id]){
+                pontos[id] = { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
+                changed = true;
+            }
 
             // Calculate auto points
             const autoFreq = _rankCalcAutoFreq(id, turma, b);
             const autoGrades = _rankCalcAutoGrades(id, turma, b);
 
             // Store auto-tracked values
-            pontos[id]._autoParticipacao = autoFreq;
-            pontos[id]._autoNotas = autoGrades;
+            if(Number(pontos[id]._autoParticipacao || 0) !== Number(autoFreq || 0)){
+                pontos[id]._autoParticipacao = autoFreq;
+                changed = true;
+            }
+            if(Number(pontos[id]._autoNotas || 0) !== Number(autoGrades || 0)){
+                pontos[id]._autoNotas = autoGrades;
+                changed = true;
+            }
         });
 
-        _rankSave(data);
+        if(changed) _rankSave(data);
         // FIX: lê sgp_last_core_save APÓS o save (não antes), porque _rankSave chama
         // __markBackupRelevantChange que atualiza esse timestamp. Guardar o valor antigo
         // fazia a cache ser sempre invalidada na próxima chamada, causando saves repetidos
@@ -31168,8 +31599,11 @@ function _rankAddPontos(alunoId, categoria, valor, motivo){
     const data = _rankLoad();
     const bim = bimestreAtual || 1;
     const turmaAlvo = _rankResolveTurmaForAluno(alunoId);
-    const bucket = (turmaAlvo && turmaAlvo !== 'Todas') ? _rankEnsureBucket(data, turmaAlvo, bim) : _rankEnsureBucket(data, (filtroTurma||'Todas'), bim);
+    const turmaDestino = (turmaAlvo && turmaAlvo !== 'Todas') ? turmaAlvo : (filtroTurma || 'Todas');
+    const bucket = (turmaDestino && turmaDestino !== 'Todas') ? _rankEnsureBucket(data, turmaDestino, bim) : _rankEnsureBucket(data, (filtroTurma||'Todas'), bim);
     const id = String(alunoId);
+    const alunoObj = (Array.isArray(alunos) ? alunos.find(a => String(a?.id) === id) : null) || null;
+    const eventTs = Date.now();
 
     if(!bucket[id]) bucket[id] = { notas:0, comportamento:0, participacao:0, bonus:0, historico:[] };
     bucket[id][categoria] = (bucket[id][categoria]||0) + valor;
@@ -31177,11 +31611,25 @@ function _rankAddPontos(alunoId, categoria, valor, motivo){
         cat: categoria,
         val: valor,
         motivo: motivo || '',
-        data: new Date().toLocaleDateString('pt-BR'),
-        ts: Date.now()
+        data: new Date(eventTs).toLocaleDateString('pt-BR'),
+        ts: eventTs
     });
-    // Keep last 100 entries per student
-    if(bucket[id].historico.length > 100) bucket[id].historico = bucket[id].historico.slice(-100);
+    // Mantém um histórico bem maior para não quebrar o acompanhamento semanal.
+    // Antes o corte em 100 registros fazia semanas antigas sumirem do histórico.
+    if(bucket[id].historico.length > 5000) bucket[id].historico = bucket[id].historico.slice(-5000);
+    try{
+        __rankEventLogAppend({
+            turma: String(turmaDestino || filtroTurma || 'Todas'),
+            bim,
+            alunoId: id,
+            alunoNome: String(alunoObj?.nome || ''),
+            cat: categoria,
+            val: valor,
+            motivo: motivo || '',
+            ts: eventTs,
+            src: 'manual_rank'
+        });
+    }catch(_){ }
     _rankSave(data);
 }
 
@@ -31226,7 +31674,9 @@ function _rankBuild(categoria){
     try{ if((filtroTurma||'Todas') === 'Todas') _rankMigrateTodosToTurmas(); }catch(_){}
     try{ _rankSyncAuto(); }catch(_){}
     
-    const lista = getAlunosFiltrados();
+    // O ranking principal deve refletir a turma inteira, sem herdar filtros globais
+    // de busca/risco/tutoria que pertencem a outras telas.
+    const lista = _rankGetListaBase();
     const cat = categoria || 'total';
     
     const ranked = lista.map((a, idx) => {
@@ -31391,7 +31841,7 @@ function _rankGetStreak(p){
 function _renderBadges(ranked){
     const row = document.getElementById('rankBadgesRow');
     if(!row) return;
-    const lista = getAlunosFiltrados();
+    const lista = _rankGetListaBase();
     const total = ranked.reduce((s,r)=>s+r.total, 0);
     const avg = lista.length > 0 ? Math.round(total/lista.length) : 0;
     const withPts = ranked.filter(r=>r.total>0).length;
@@ -31445,7 +31895,7 @@ window.rankAddPontosModal = function(){
     const select = document.getElementById('rankPontosAluno');
     if(!modal || !select) return;
     
-    const lista = getAlunosFiltrados().sort((a,b)=>a.nome.localeCompare(b.nome));
+    const lista = _rankGetListaBase().slice().sort((a,b)=>a.nome.localeCompare(b.nome));
     select.innerHTML = lista.map(a => `<option value="${a.id}">${_escHTML(a.nome)}</option>`).join('');
     
     document.getElementById('rankPontosValor').value = 1;
@@ -31541,7 +31991,7 @@ window.rankAbrirHistoricoAluno = function(alunoId){
     try{
         window.__rankAlunoHistCtx = { alunoId: alunoId };
         const aluno = (Array.isArray(alunos) ? alunos : []).find(a=>String(a.id)===String(alunoId))
-                   || (typeof getAlunosFiltrados==='function' ? getAlunosFiltrados().find(a=>String(a.id)===String(alunoId)) : null);
+                   || _rankGetListaBase().find(a=>String(a.id)===String(alunoId));
         const nome = aluno ? aluno.nome : ('Aluno ' + alunoId);
         const title = document.getElementById('rankAlunoHistTitle');
         if(title) title.innerHTML = `<i class="fas fa-clipboard-list" style="color:#0ea5e9;"></i> Histórico de Pontos — ${_escHTML(nome)}`;
@@ -31577,24 +32027,31 @@ window.rankAlunoHistRender = function(){
     const data = _rankLoad();
     const bim = bimestreAtual || 1;
     const turmaAlvo = _rankResolveTurmaForAluno(alunoId);
-    const bucket = (turmaAlvo && turmaAlvo !== 'Todas') ? _rankEnsureBucket(data, turmaAlvo, bim) : {};
-    const p = bucket[String(alunoId)] || bucket[alunoId] || null;
-    const hist = (p && Array.isArray(p.historico)) ? p.historico.slice() : [];
-    hist.sort((a,b)=>(b.ts||0)-(a.ts||0));
+    const turmaHist = (turmaAlvo && turmaAlvo !== 'Todas') ? turmaAlvo : (filtroTurma || 'Todas');
+    const lista = (turmaHist && turmaHist !== 'Todas') ? _rankHistGetTurmaLista(turmaHist) : _rankGetListaBase();
+    try{ _rankHistEnsureManualRankEventLogForTurma(turmaHist, bim, lista, data); }catch(_){ }
+
+    const manualEvents = (typeof _rankHistIndexManualRankEventLogForTurma === 'function')
+        ? _rankHistIndexManualRankEventLogForTurma(turmaHist, bim)
+        : [];
 
     const catNames = { notas:'Notas', comportamento:'Comportamento', participacao:'Participação', bonus:'Bônus' };
     const catIcons = { notas:'📝', comportamento:'⭐', participacao:'🙋', bonus:'🎁' };
 
-    let rows = hist.filter(h=>{
-        if(catFilter && String(h.cat||'') !== String(catFilter)) return false;
-        if(q){
-            const m = (h.motivo||'').toLowerCase();
-            if(!m.includes(q) && !String(h.val||'').includes(q) && !String(h.data||'').includes(q)) return false;
-        }
-        return true;
-    });
+    let rows = (Array.isArray(manualEvents) ? manualEvents : [])
+        .filter(h => String(h.alunoId) === String(alunoId))
+        .slice()
+        .sort((a,b)=>(Number(b.ts||0)-Number(a.ts||0)))
+        .filter(h=>{
+            if(catFilter && String(h.cat||'') !== String(catFilter)) return false;
+            if(q){
+                const m = String(h.motivo||'').toLowerCase();
+                const dt = h.ts ? new Date(h.ts).toLocaleString('pt-BR') : (h.data||'');
+                if(!m.includes(q) && !String(h.val||'').includes(q) && !String(dt||'').toLowerCase().includes(q)) return false;
+            }
+            return true;
+        });
 
-    // Resumo de pontos automáticos (derivados de chamada/notas)
     let autoInfo = '';
     try{
         if(typeof _rankGetPontosWithAuto === 'function'){
@@ -31699,35 +32156,76 @@ window.rankExportarPDF = function(){
 };
 
 // --- Resetar pontos ---
+function _rankAppendManualResetEventsForBucket(turma, bim, bucket){
+    try{
+        if(!bucket || typeof bucket !== 'object') return false;
+        let changed = false;
+        Object.keys(bucket).forEach(id => {
+            const p = bucket[id];
+            if(!p || typeof p !== 'object') return;
+            const alunoObj = (Array.isArray(alunos) ? alunos.find(a => String(a?.id) === String(id)) : null) || null;
+            [['notas','Reset de pontos manuais (Notas)'],['comportamento','Reset de pontos manuais (Comportamento)'],['participacao','Reset de pontos manuais (Participação)'],['bonus','Reset de pontos manuais (Bônus)']].forEach(([cat,motivo]) => {
+                const currentVal = Math.round(Number(p?.[cat] || 0));
+                if(!currentVal) return;
+                try{
+                    if(__rankEventLogAppend({
+                        turma: String(turma || ''),
+                        bim,
+                        alunoId: String(id),
+                        alunoNome: String(alunoObj?.nome || ''),
+                        cat,
+                        val: -currentVal,
+                        motivo,
+                        ts: Date.now(),
+                        src: 'manual_rank_reset'
+                    })) changed = true;
+                }catch(_){ }
+            });
+        });
+        return changed;
+    }catch(_){ return false; }
+}
+
 window.rankResetar = function(){
     const turma = filtroTurma || 'Todas';
     const bim = bimestreAtual || 1;
 
     const msg = (turma === 'Todas')
-        ? 'Tem certeza que deseja resetar todos os pontos de TODAS as turmas neste bimestre?\n\nEsta ação não pode ser desfeita.'
-        : 'Tem certeza que deseja resetar todos os pontos desta turma neste bimestre?\n\nEsta ação não pode ser desfeita.';
+        ? 'Tem certeza que deseja resetar apenas os pontos manuais de TODAS as turmas neste bimestre?\n\nOs pontos automáticos (notas/presenças) serão recalculados pelo sistema. Esta ação não pode ser desfeita.'
+        : 'Tem certeza que deseja resetar apenas os pontos manuais desta turma neste bimestre?\n\nOs pontos automáticos (notas/presenças) serão recalculados pelo sistema. Esta ação não pode ser desfeita.';
     if(!confirm(msg)) return;
 
     const data = _rankLoad();
 
     if(turma === 'Todas'){
-        // Zera todas as turmas existentes (e também limpa o bucket legado "Todas", se houver)
-        const turmas = Array.from(new Set((alunos||[]).map(a=>a && a.turma).filter(Boolean)));
+        const turmas = Array.from(new Set([
+            ...Object.keys(data || {}).filter(t => t && t !== 'Todas'),
+            ...((alunos||[]).map(a=>a && a.turma).filter(Boolean))
+        ]));
         turmas.forEach(t => {
             if(!t || t === 'Todas') return;
+            const prevBucket = (data[t] && data[t][bim] && typeof data[t][bim] === 'object') ? data[t][bim] : {};
+            try{ _rankHistEnsureManualRankEventLogForTurma(t, bim, _rankHistGetTurmaLista(t), data); }catch(_){ }
+            _rankAppendManualResetEventsForBucket(t, bim, prevBucket);
             if(!data[t]) data[t] = {};
             data[t][bim] = {};
         });
         if(data['Todas']){
+            const prevLegacy = (data['Todas'] && data['Todas'][bim] && typeof data['Todas'][bim] === 'object') ? data['Todas'][bim] : {};
+            try{ _rankHistEnsureManualRankEventLogForTurma('Todas', bim, _rankGetListaBase(), data); }catch(_){ }
+            _rankAppendManualResetEventsForBucket('Todas', bim, prevLegacy);
             data['Todas'][bim] = {};
         }
     } else {
+        const prevBucket = (data[turma] && data[turma][bim] && typeof data[turma][bim] === 'object') ? data[turma][bim] : {};
+        try{ _rankHistEnsureManualRankEventLogForTurma(turma, bim, _rankHistGetTurmaLista(turma), data); }catch(_){ }
+        _rankAppendManualResetEventsForBucket(turma, bim, prevBucket);
         if(!data[turma]) data[turma] = {};
         data[turma][bim] = {};
     }
 
     _rankSave(data);
-    showToast('Pontos resetados');
+    showToast('Pontos manuais resetados');
     renderizarRanking();
 };
 
@@ -31808,16 +32306,31 @@ function _rankHistGetFilters(){
     const diaInicio = parseInt(document.getElementById('rankHistDiaInicio')?.value ?? 5);
     const dataInicioStr = document.getElementById('rankHistDataInicio')?.value || '';
     const dataFimStr = document.getElementById('rankHistDataFim')?.value || '';
+    let dataInicioFilter = _rankHistParseDateInput(dataInicioStr, false);
+    let dataFimFilter = _rankHistParseDateInput(dataFimStr, true);
+    if(dataInicioFilter && dataFimFilter && dataInicioFilter.getTime() > dataFimFilter.getTime()){
+        const tmp = dataInicioFilter;
+        dataInicioFilter = _rankHistParseDateInput(dataFimStr, false) || dataFimFilter;
+        dataFimFilter = _rankHistParseDateInput(dataInicioStr, true) || tmp;
+    }
     return {
         diaInicio,
         dataInicioStr,
         dataFimStr,
-        dataInicioFilter: _rankHistParseDateInput(dataInicioStr, false),
-        dataFimFilter: _rankHistParseDateInput(dataFimStr, true),
+        dataInicioFilter,
+        dataFimFilter,
         turma: String(filtroTurma || 'Todas'),
         bim: parseInt(bimestreAtual || 1, 10) || 1,
         hasDateFilter: !!(dataInicioStr || dataFimStr)
     };
+}
+
+function _rankHistGetTurmaLista(turma){
+    try{
+        const tt = String(turma || filtroTurma || 'Todas');
+        const base = Array.isArray(alunos) ? alunos : [];
+        return tt === 'Todas' ? base.filter(Boolean) : base.filter(a => a && String(a.turma || '') === tt);
+    }catch(_){ return []; }
 }
 
 function _rankHistTsInRange(ts, rangeStart, rangeEnd){
@@ -31871,26 +32384,393 @@ function _rankHistGetAlunoGradeValue(alunoObj, bim, discId, avId){
     }catch(_){ return 0; }
 }
 
+function _rankHistHasAlunoAnswersForProof(prova, alunoId){
+    try{
+        const map = (prova && prova.answers && typeof prova.answers === 'object') ? prova.answers : {};
+        const arr = map[String(alunoId)] || map[alunoId];
+        return Array.isArray(arr) && arr.some(x => String(x || '').trim() !== '');
+    }catch(_){ return false; }
+}
+
+function _rankHistGetProofDirectTs(prova, alunoId){
+    try{
+        const evt = corGetAlunoGradeEvent(prova, alunoId);
+        if(evt && Number(evt.nota || 0) > 0){
+            const tsEvt = corGetTsMs(evt.ts);
+            if(Number.isFinite(tsEvt) && tsEvt > 0) return tsEvt;
+        }
+        const answerTs = prova && prova._answerTs && typeof prova._answerTs === 'object' ? prova._answerTs : null;
+        const tsAns = corGetTsMs(answerTs ? answerTs[corIdKey(alunoId)] : NaN);
+        if(Number.isFinite(tsAns) && tsAns > 0) return tsAns;
+        const tsLegacy = corGetTsMs(prova && (prova._lastAutoPostAt || prova._updatedAt || prova._lastAnswerAt || prova.createdAt));
+        if(Number.isFinite(tsLegacy) && tsLegacy > 0) return tsLegacy;
+    }catch(_){ }
+    return NaN;
+}
+
+function _rankHistIndexGlobalGradeEventsForTurma(turma, bim){
+    const out = {};
+    try{
+        const store = (typeof __gradeEventsLoad === 'function') ? __gradeEventsLoad() : {};
+        Object.keys(store || {}).forEach(key => {
+            const evt = store[key];
+            if(!evt || typeof evt !== 'object') return;
+            if(String(evt.turma || '') !== String(turma || '')) return;
+            if((parseInt(evt.bim, 10) || 1) !== (parseInt(bim, 10) || 1)) return;
+            const alunoId = corIdKey(evt.alunoId);
+            const discId = String(evt.discId || '');
+            const avId = String(evt.avId || '');
+            if(!alunoId || !discId || !avId) return;
+            out[[alunoId, discId, avId].join('|')] = evt;
+        });
+    }catch(_){ }
+    return out;
+}
+
+
+function _rankHistIndexGradeEventLogForTurma(turma, bim){
+    const out = {};
+    try{
+        const arr = (typeof __gradeEventLogLoad === 'function') ? __gradeEventLogLoad() : [];
+        (Array.isArray(arr) ? arr : []).forEach(evt => {
+            if(!evt || typeof evt !== 'object') return;
+            if(String(evt.turma || '') !== String(turma || '')) return;
+            if((parseInt(evt.bim, 10) || 1) !== (parseInt(bim, 10) || 1)) return;
+            const alunoId = corIdKey(evt.alunoId);
+            const discId = String(evt.discId || '');
+            const avId = String(evt.avId || '');
+            if(!alunoId || !discId || !avId) return;
+            const key = [alunoId, discId, avId].join('|');
+            if(!out[key]) out[key] = [];
+            out[key].push({
+                turma: String(evt.turma || ''),
+                bim: parseInt(evt.bim, 10) || 1,
+                alunoId,
+                alunoNome: String(evt.alunoNome || ''),
+                discId,
+                avId,
+                nota: Math.round(Number(evt.nota || 0)),
+                delta: Math.round(Number((typeof evt.delta !== 'undefined') ? evt.delta : evt.nota || 0)),
+                ts: corGetTsMs(evt.ts),
+                src: String(evt.src || 'manual_grade')
+            });
+        });
+        Object.keys(out).forEach(key => out[key].sort((a,b)=> (Number(a.ts||0) - Number(b.ts||0))));
+    }catch(_){ }
+    return out;
+}
+
+function _rankHistIndexManualRankEventLogForTurma(turma, bim){
+    const out = [];
+    try{
+        const arr = (typeof __rankEventLogLoad === 'function') ? __rankEventLogLoad() : [];
+        (Array.isArray(arr) ? arr : []).forEach(evt => {
+            if(!evt || typeof evt !== 'object') return;
+            if(String(evt.turma || '') !== String(turma || '')) return;
+            if((parseInt(evt.bim, 10) || 1) !== (parseInt(bim, 10) || 1)) return;
+            const alunoId = corIdKey(evt.alunoId);
+            const cat = String(evt.cat || '');
+            const val = Math.round(Number(evt.val || 0));
+            const ts = corGetTsMs(evt.ts);
+            if(!alunoId || !cat || !val || !Number.isFinite(ts) || ts <= 0) return;
+            out.push({
+                turma: String(evt.turma || ''),
+                bim: parseInt(evt.bim, 10) || 1,
+                alunoId,
+                alunoNome: String(evt.alunoNome || ''),
+                cat,
+                val,
+                motivo: String(evt.motivo || ''),
+                ts,
+                src: String(evt.src || 'manual_rank')
+            });
+        });
+        out.sort((a,b)=> (Number(a.ts||0) - Number(b.ts||0)));
+    }catch(_){ }
+    return out;
+}
+
+function _rankHistGetManualBucketForAluno(rankData, turma, bim, alunoById, alunoId){
+    try{
+        const id = String(alunoId);
+        const alunoObj = alunoById[id] || ((Array.isArray(alunos) ? alunos : []).find(x => String(x?.id) === id)) || null;
+        const turmaAluno = String((alunoObj && alunoObj.turma) ? alunoObj.turma : (turma || filtroTurma || 'Todas'));
+        if(turmaAluno && turmaAluno !== 'Todas'){
+            const bucket = _rankEnsureBucket(rankData, turmaAluno, bim);
+            return bucket[id] || bucket[alunoId] || null;
+        }
+        const legacy = (rankData && rankData['Todas'] && rankData['Todas'][bim]) ? rankData['Todas'][bim] : {};
+        return legacy[id] || legacy[alunoId] || null;
+    }catch(_){ return null; }
+}
+
+function _rankHistEnsureManualRankEventLogForTurma(turma, bim, lista, rankData){
+    try{
+        const alunoById = {};
+        (lista || []).forEach(a => { if(a && a.id != null) alunoById[String(a.id)] = a; });
+
+        const existing = new Set((_rankHistIndexManualRankEventLogForTurma(turma, bim) || []).map(__rankEventFingerprint));
+        let changed = false;
+        let rankDataDirty = false;
+        const nowTs = Date.now();
+
+        (lista || []).forEach(a => {
+            const id = String(a.id);
+            const p = _rankHistGetManualBucketForAluno(rankData, turma, bim, alunoById, id);
+            if(!p || typeof p !== 'object') return;
+            if(!Array.isArray(p.historico)) p.historico = [];
+
+            function _pushHistLocal(cat, val, motivo, ts){
+                try{
+                    const v = Math.round(Number(val || 0));
+                    if(!v) return;
+                    const t = corGetTsMs(ts) || nowTs;
+                    const c = String(cat || '');
+                    if(!c) return;
+
+                    // Avoid duplicate exact entries (cheap check on tail)
+                    const tail = p.historico.slice(-40);
+                    const fp = c + '|' + v + '|' + (t||0) + '|' + String(motivo || '');
+                    if(tail.some(h => (String(h.cat||'') + '|' + Math.round(Number(h.val||0)) + '|' + (corGetTsMs(h.ts)||0) + '|' + String(h.motivo||'')) === fp)) return;
+
+                    p.historico.push({ cat: c, val: v, motivo: String(motivo || ''), ts: t });
+                    if(p.historico.length > 5000) p.historico.splice(0, p.historico.length - 5000);
+                    rankDataDirty = true;
+                }catch(_){ }
+            }
+
+            // 1) Migra histórico local do bucket para o log temporal (append-only)
+            const hist = Array.isArray(p.historico) ? p.historico : [];
+            hist.forEach(h => {
+                if(!h || !h.ts || !h.cat || !h.val) return;
+                const evt = {
+                    turma,
+                    bim,
+                    alunoId: id,
+                    alunoNome: a.nome,
+                    cat: String(h.cat || ''),
+                    val: Math.round(Number(h.val || 0)),
+                    motivo: String(h.motivo || ''),
+                    ts: corGetTsMs(h.ts),
+                    src: String(h.src || 'manual_rank')
+                };
+                const fp = __rankEventFingerprint(evt);
+                if(!fp || existing.has(fp)) return;
+                if(__rankEventLogAppend(evt)){
+                    existing.add(fp);
+                    changed = true;
+                }
+            });
+
+            // 2) Completa o que está salvo no bucket mas não existe no histórico (truncamento/legado)
+            const histTotals = _rankHistSumManualHistoryAll(p);
+            const storedTotals = {
+                notas: Number(p.notas || 0) || 0,
+                comportamento: Number(p.comportamento || 0) || 0,
+                participacao: Number(p.participacao || 0) || 0,
+                bonus: Number(p.bonus || 0) || 0
+            };
+
+            const missingTotals0 = {
+                notas: storedTotals.notas - histTotals.notas,
+                comportamento: storedTotals.comportamento - histTotals.comportamento,
+                participacao: storedTotals.participacao - histTotals.participacao,
+                bonus: storedTotals.bonus - histTotals.bonus
+            };
+            if(!Object.values(missingTotals0).some(v => Math.abs(Number(v || 0)) > 0)) return;
+
+            // 2a) Tenta reconstruir pelo autobackup (melhor aproximação temporal)
+            const inferred = _rankHistInferManualRankEntriesFromBackups(turma, bim, id, missingTotals0) || [];
+            inferred.forEach(h => {
+                const evt = {
+                    turma,
+                    bim,
+                    alunoId: id,
+                    alunoNome: a.nome,
+                    cat: String(h.cat || ''),
+                    val: Math.round(Number(h.val || 0)),
+                    motivo: String(h.motivo || 'Ponto manual (inferido backup)'),
+                    ts: corGetTsMs(h.ts),
+                    src: String(h.src || 'manual_rank_backup')
+                };
+                if(!evt.cat || !evt.val) return;
+                const fp = __rankEventFingerprint(evt);
+                if(!fp || existing.has(fp)) return;
+                if(__rankEventLogAppend(evt)){
+                    existing.add(fp);
+                    changed = true;
+                    // Escreve também no histórico local para evitar reprocessar sempre
+                    _pushHistLocal(evt.cat, evt.val, evt.motivo, evt.ts);
+                }
+            });
+
+            // 2b) Se ainda sobrar diferença, lança como AJUSTE nesta data (sem tentar "inventar" semana passada)
+            const histTotals2 = _rankHistSumManualHistoryAll(p);
+            const remaining = {
+                notas: storedTotals.notas - histTotals2.notas,
+                comportamento: storedTotals.comportamento - histTotals2.comportamento,
+                participacao: storedTotals.participacao - histTotals2.participacao,
+                bonus: storedTotals.bonus - histTotals2.bonus
+            };
+            Object.keys(remaining).forEach(cat => {
+                const val = Math.round(Number(remaining[cat] || 0));
+                if(!val) return;
+                const motivo = 'Ajuste sem data (saldo legado)';
+                const evt = {
+                    turma,
+                    bim,
+                    alunoId: id,
+                    alunoNome: a.nome,
+                    cat: String(cat),
+                    val,
+                    motivo,
+                    ts: nowTs,
+                    src: 'ajuste_rank_sem_data'
+                };
+                const fp = __rankEventFingerprint(evt);
+                if(!fp || existing.has(fp)) return;
+                if(__rankEventLogAppend(evt)){
+                    existing.add(fp);
+                    changed = true;
+                    _pushHistLocal(evt.cat, evt.val, evt.motivo, evt.ts);
+                }
+            });
+        });
+
+        if(rankDataDirty){
+            try{ _rankSave(rankData); }catch(_){ }
+        }
+        return changed;
+    }catch(_){ return false; }
+}
+
+function _rankHistEnsureGradeEventLogForTurma(turma, bim, lista){
+    try{
+        const alunoById = {};
+        (lista || []).forEach(a => { if(a && a.id != null) alunoById[String(a.id)] = a; });
+        const existingLog = _rankHistIndexGradeEventLogForTurma(turma, bim);
+        const globalGradeEvents = _rankHistIndexGlobalGradeEventsForTurma(turma, bim);
+        const turmaCtx = (correcaoProvas && correcaoProvas[turma]) ? correcaoProvas[turma] : null;
+        const provas = Object.values((turmaCtx && turmaCtx.provas) ? turmaCtx.provas : {});
+        const proofIndex = {};
+        provas.forEach(prova => {
+            if(!prova || !prova._discId || !prova._avId) return;
+            const key = String(prova._discId) + '|' + String(prova._avId);
+            if(!proofIndex[key]) proofIndex[key] = [];
+            proofIndex[key].push(prova);
+        });
+        let changed = false;
+
+        (lista || []).forEach(a => {
+            const b = a && a.bimestres && a.bimestres[bim];
+            if(!b) return;
+            try{ _syncBimestreRefs(b); }catch(_){ }
+            const notasDiscAll = (b && b.notas_disc && typeof b.notas_disc === 'object') ? b.notas_disc : {};
+            Object.keys(notasDiscAll).forEach(discId => {
+                const notasDisc = notasDiscAll[discId];
+                if(!notasDisc || typeof notasDisc !== 'object') return;
+                Object.keys(notasDisc).forEach(avId => {
+                    if(String(avId || '').startsWith('__')) return;
+                    const gradePts = _rankHistGetAlunoGradeValue(a, bim, discId, avId);
+                    const alunoId = String(a.id);
+                    const gradeKey = [alunoId, String(discId), String(avId)].join('|');
+                    const entries = Array.isArray(existingLog[gradeKey]) ? existingLog[gradeKey] : [];
+                    const currentSum = entries.reduce((sum, evt) => sum + (Math.round(Number(evt?.delta || 0)) || 0), 0);
+                    const diff = gradePts - currentSum;
+                    if(!diff) return;
+
+                    let ts = NaN;
+                    let src = 'manual_grade';
+                    const evtGlobal = globalGradeEvents[gradeKey];
+                    if(evtGlobal){
+                        const t0 = corGetTsMs(evtGlobal.ts);
+                        if(Number.isFinite(t0) && t0 > 0) ts = t0;
+                        src = String(evtGlobal.src || 'manual_grade');
+                    }
+                    const proofMatches = proofIndex[String(discId) + '|' + String(avId)] || [];
+                    if((!Number.isFinite(ts) || ts <= 0) && proofMatches.length){
+                        for(const prova of proofMatches){
+                            if(!_rankHistHasAlunoAnswersForProof(prova, alunoId) && !corGetAlunoGradeEvent(prova, alunoId)) continue;
+                            const directTs = _rankHistGetProofDirectTs(prova, alunoId);
+                            if(Number.isFinite(directTs) && directTs > 0){
+                                ts = directTs;
+                                src = 'auto_grade';
+                                break;
+                            }
+                        }
+                    }
+                    if((!Number.isFinite(ts) || ts <= 0) && typeof _rankHistInferGradeTsFromBackups === 'function'){
+                        const inferredTs = _rankHistInferGradeTsFromBackups(turma, bim, alunoId, discId, avId, gradePts || currentSum || diff);
+                        if(Number.isFinite(inferredTs) && inferredTs > 0){
+                            ts = inferredTs;
+                            if(proofMatches.length) src = 'auto_grade';
+                        }
+                    }
+                    if(!Number.isFinite(ts) || ts <= 0){ ts = Date.now(); src = 'ajuste_grade_sem_data'; }
+
+                    if(__gradeEventLogAppend({
+                        turma,
+                        bim,
+                        alunoId,
+                        alunoNome: a.nome,
+                        discId,
+                        avId,
+                        nota: gradePts,
+                        delta: diff,
+                        ts,
+                        src
+                    })){
+                        if(!existingLog[gradeKey]) existingLog[gradeKey] = [];
+                        existingLog[gradeKey].push({ turma, bim, alunoId, alunoNome: a.nome, discId, avId, nota: gradePts, delta: diff, ts, src });
+                        existingLog[gradeKey].sort((x,y)=> (Number(x.ts||0)-Number(y.ts||0)));
+                        changed = true;
+                    }
+                    try{
+                        const store = __gradeEventsLoad();
+                        store[__gradeEventKey(turma, bim, alunoId, discId, avId)] = { turma, bim, alunoId, alunoNome: a.nome, discId, avId, nota: gradePts, ts, src };
+                        __gradeEventsSave();
+                    }catch(_){ }
+                });
+            });
+        });
+        return changed;
+    }catch(_){ return false; }
+}
+
 // Build all weeks from historico data
 function _rankHistBuildWeeks(){
-    const { diaInicio, dataInicioFilter, dataFimFilter, turma, bim, hasDateFilter } = _rankHistGetFilters();
+    const { diaInicio, dataInicioFilter, dataFimFilter, turma, bim } = _rankHistGetFilters();
 
-    // Em visão semanal, o filtro deve respeitar semanas completas.
-    // Ex.: "a partir de 12/03" com início na sexta deve incluir toda a semana 06/03–12/03,
-    // e não apenas o dia 12/03, evitando semanas mostradas com zero por recorte parcial.
+    // O filtro trabalha sempre com semanas completas, usando datas-âncora apenas
+    // para escolher o primeiro e o último bloco semanal.
     const rangeStart = dataInicioFilter ? _rankHistWeekStart(dataInicioFilter, diaInicio) : null;
     const rangeEnd = dataFimFilter ? _rankHistWeekEnd(_rankHistWeekStart(dataFimFilter, diaInicio)) : null;
 
-    // Sync auto-points before reading (same as _rankBuild does)
-    try{ _rankSyncAuto(); }catch(_){}
+    try{ _rankSyncAuto(); }catch(_){ }
 
-    const __rt = _rankGetTurma();
-    const pontos = (__rt && __rt.pontos) ? __rt.pontos : {};
-    const lista = getAlunosFiltrados();
+    const rankData = _rankLoad();
+    const lista = _rankHistGetTurmaLista(turma);
     const CATS = ['notas','comportamento','participacao','bonus'];
-
     const alunoById = {};
     lista.forEach(a => { if(a && a.id != null) alunoById[String(a.id)] = a; });
+
+    // Migração/normalização: daqui para frente o semanal trabalha por eventos.
+    try{ _rankHistEnsureManualRankEventLogForTurma(turma, bim, lista, rankData); }catch(_){ }
+    try{ _rankHistEnsureGradeEventLogForTurma(turma, bim, lista); }catch(_){ }
+
+    function _rankHistBuildWeekBuckets(firstAnchor, lastAnchor){
+        const out = [];
+        if(!firstAnchor || !lastAnchor) return out;
+        const firstWeekStart = _rankHistWeekStart(firstAnchor, diaInicio);
+        const lastWeekStart = _rankHistWeekStart(lastAnchor, diaInicio);
+        let ws = new Date(firstWeekStart);
+        while(ws <= lastWeekStart){
+            const we = _rankHistWeekEnd(ws);
+            out.push({ start: new Date(ws), end: new Date(we), entries: [], students: [], totalPts: 0, idx: out.length });
+            ws.setDate(ws.getDate() + 7);
+        }
+        return out;
+    }
 
     const rankingTotals = {};
     const manualTotals = {};
@@ -31901,7 +32781,6 @@ function _rankHistBuildWeeks(){
     });
 
     const allEntries = [];
-    const manualEntries = [];
     let minTs = Infinity, maxTs = 0;
 
     function pushEntry(entry, isManual){
@@ -31910,33 +32789,34 @@ function _rankHistBuildWeeks(){
             const id = String(entry.alunoId);
             if(!alunoById[id]) return;
             const ts = Number(entry.ts || 0);
-            if(!Number.isFinite(ts) || !_rankHistTsInRange(ts, rangeStart, rangeEnd)) return;
-            const val = Number(entry.val || 0);
-            if(!val) return;
+            const val = Math.round(Number(entry.val || 0));
             const cat = String(entry.cat || '');
-            if(!CATS.includes(cat)) return;
-            const safe = { ...entry, alunoId:id, alunoNome:(entry.alunoNome || alunoById[id].nome || 'Aluno'), ts, val, cat };
+            if(!Number.isFinite(ts) || ts <= 0 || !val || !CATS.includes(cat)) return;
+            if(!_rankHistTsInRange(ts, rangeStart, rangeEnd)) return;
+            const safe = {
+                ...entry,
+                alunoId: id,
+                alunoNome: String(entry.alunoNome || alunoById[id].nome || 'Aluno'),
+                ts,
+                val,
+                cat,
+                src: String(entry.src || (isManual ? 'manual_rank' : 'auto'))
+            };
             allEntries.push(safe);
-            if(isManual) manualEntries.push(safe);
             if(ts < minTs) minTs = ts;
             if(ts > maxTs) maxTs = ts;
-            _rankHistAccumulateTotals(rankingTotals[id], cat, val, safe.src || (isManual ? 'manual' : 'auto'));
+            _rankHistAccumulateTotals(rankingTotals[id], cat, val, safe.src);
             if(isManual) _rankHistAccumulateTotals(manualTotals[id], cat, val, 'manual');
         }catch(_){ }
     }
 
-    // 1) Manual history entries (already timestamped)
-    lista.forEach(a => {
-        const id = String(a.id);
-        const p = pontos[id];
-        if(!p || !Array.isArray(p.historico)) return;
-        p.historico.forEach(h => {
-            if(!h || !h.ts) return;
-            pushEntry({ ...h, alunoId: id, alunoNome: a.nome, src: 'manual' }, true);
-        });
-    });
+    // 1) Pontos manuais: agora só a trilha temporal do ranking.
+    try{
+        const manualEvents = _rankHistIndexManualRankEventLogForTurma(turma, bim);
+        manualEvents.forEach(evt => pushEntry(evt, true));
+    }catch(_){ }
 
-    // 2) Auto participation by attendance date (date-resolved)
+    // 2) Presenças: a frequência já é naturalmente orientada a eventos pela própria data da chamada.
     try{
         const freq = window.__sgpFrequencia || {};
         Object.keys(freq).forEach(key => {
@@ -31967,81 +32847,47 @@ function _rankHistBuildWeeks(){
         });
     }catch(_){ }
 
-    // 3) Auto grades by per-student launch/update timestamp
+    // 3) Notas: somente o log temporal append-only.
     try{
-        const turmaCtx = (correcaoProvas && correcaoProvas[turma]) ? correcaoProvas[turma] : null;
-        const provas = Object.values((turmaCtx && turmaCtx.provas) ? turmaCtx.provas : {});
-        provas.forEach(prova => {
-            if(!prova || !prova._discId || !prova._avId) return;
-            const gradeEvents = (prova._gradeEvents && typeof prova._gradeEvents === 'object' && !Array.isArray(prova._gradeEvents)) ? prova._gradeEvents : null;
-            const answerMap = (prova.answers && typeof prova.answers === 'object') ? prova.answers : {};
-            let usedEventMap = false;
-
-            if(gradeEvents){
-                Object.keys(gradeEvents).forEach(alunoId => {
-                    const evt = gradeEvents[alunoId] || {};
-                    if(String(evt.discId || prova._discId) !== String(prova._discId)) return;
-                    if(String(evt.avId || prova._avId) !== String(prova._avId)) return;
-                    if((parseInt(evt.bim, 10) || bim) !== bim) return;
-                    const a = alunoById[String(alunoId)];
-                    if(!a) return;
-                    const ts = corGetTsMs(evt.ts);
-                    if(!Number.isFinite(ts) || !_rankHistTsInRange(ts, rangeStart, rangeEnd)) return;
-                    const gradePts = Math.round(Number(evt.nota || _rankHistGetAlunoGradeValue(a, bim, prova._discId, prova._avId) || 0));
-                    if(!(gradePts > 0)) return;
-                    usedEventMap = true;
-                    pushEntry({
-                        alunoId: String(alunoId),
-                        alunoNome: a.nome,
-                        cat: 'notas',
-                        val: gradePts,
-                        ts,
-                        motivo: 'Nota automática',
-                        src: 'auto_grade'
-                    }, false);
-                });
-            }
-
-            if(usedEventMap) return;
-
-            const legacyTs = corGetTsMs(prova._lastAutoPostAt || prova._updatedAt || prova._lastAnswerAt || prova.createdAt);
-            if(!Number.isFinite(legacyTs) || !_rankHistTsInRange(legacyTs, rangeStart, rangeEnd)) return;
-            lista.forEach(a => {
-                const arr = answerMap[String(a.id)] || answerMap[a.id];
-                if(!Array.isArray(arr) || !arr.some(x => String(x || '').trim() !== '')) return;
-                const gradePts = _rankHistGetAlunoGradeValue(a, bim, prova._discId, prova._avId);
-                if(gradePts > 0){
-                    pushEntry({
-                        alunoId: String(a.id),
-                        alunoNome: a.nome,
-                        cat: 'notas',
-                        val: gradePts,
-                        ts: legacyTs,
-                        motivo: 'Nota automática',
-                        src: 'auto_grade'
-                    }, false);
-                }
+        const gradeEventLog = _rankHistIndexGradeEventLogForTurma(turma, bim);
+        Object.keys(gradeEventLog).forEach(gradeKey => {
+            const entries = Array.isArray(gradeEventLog[gradeKey]) ? gradeEventLog[gradeKey] : [];
+            entries.forEach(evt => {
+                const alunoId = corIdKey(evt.alunoId);
+                const a = alunoById[alunoId];
+                if(!a) return;
+                const ts = corGetTsMs(evt.ts);
+                const delta = Math.round(Number((typeof evt.delta !== 'undefined') ? evt.delta : evt.nota || 0));
+                if(!delta || !Number.isFinite(ts) || ts <= 0) return;
+                const src = String(evt.src || 'manual_grade');
+                pushEntry({
+                    alunoId,
+                    alunoNome: (a && a.nome) ? a.nome : (evt.alunoNome || 'Aluno'),
+                    cat: 'notas',
+                    val: delta,
+                    ts,
+                    motivo: (src === 'auto_grade' ? 'Nota automática' : 'Nota lançada'),
+                    src
+                }, false);
             });
         });
     }catch(_){ }
 
-    if(allEntries.length === 0) return { weeks: [], rankingTotals, manualTotals, hasDateFilter };
-
-    // Generate week ranges (respects explicit date filter bounds when present)
-    const firstAnchor = rangeStart ? rangeStart : new Date(minTs);
-    const lastAnchor = rangeEnd ? rangeEnd : new Date(maxTs);
-    const firstWeekStart = _rankHistWeekStart(firstAnchor, diaInicio);
-    const lastWeekStart = _rankHistWeekStart(lastAnchor, diaInicio);
-
-    const weeks = [];
-    let ws = new Date(firstWeekStart);
-    while(ws <= lastWeekStart){
-        const we = _rankHistWeekEnd(ws);
-        weeks.push({ start: new Date(ws), end: new Date(we), entries: [] });
-        ws.setDate(ws.getDate() + 7);
+    if(allEntries.length === 0){
+        if(rangeStart || rangeEnd){
+            const firstAnchor = rangeStart || rangeEnd || new Date();
+            const lastAnchor = rangeEnd || rangeStart || firstAnchor;
+            const weeks = _rankHistBuildWeekBuckets(firstAnchor, lastAnchor).reverse();
+            weeks.forEach((week, idx) => { week.idx = idx; });
+            return { weeks, rankingTotals, manualTotals, hasDateFilter: !!(dataInicioFilter || dataFimFilter) };
+        }
+        return { weeks: [], rankingTotals, manualTotals, hasDateFilter: !!(dataInicioFilter || dataFimFilter) };
     }
 
-    // Assign entries to weeks
+    const firstAnchor = rangeStart ? rangeStart : new Date(minTs);
+    const lastAnchor = rangeEnd ? rangeEnd : new Date(maxTs);
+    const weeks = _rankHistBuildWeekBuckets(firstAnchor, lastAnchor);
+
     allEntries.forEach(e => {
         const entryDate = new Date(e.ts);
         for(const week of weeks){
@@ -32052,7 +32898,6 @@ function _rankHistBuildWeeks(){
         }
     });
 
-    // Build per-student stats for each week
     weeks.forEach((week, wi) => {
         const studentMap = {};
         week.entries.forEach(e => {
@@ -32068,22 +32913,38 @@ function _rankHistBuildWeeks(){
                     _autoNotas:0,
                     _autoParticipacao:0,
                     _manualNotas:0,
-                    _manualParticipacao:0
+                    _manualParticipacao:0,
+                    _rankManualPts:0,
+                    _gradeAutoPts:0,
+                    _gradeManualPts:0,
+                    _freqAutoPts:0,
+                    _ajustePts:0
                 };
             }
             const s = studentMap[e.alunoId];
             _rankHistAccumulateTotals(s, e.cat, e.val || 0, e.src || 'manual');
+
+// Classificação explícita para evitar confusão entre "manual do ranking" e "nota lançada"
+const __src = String(e.src || '');
+if(__src === 'auto_grade') s._gradeAutoPts += (e.val || 0);
+else if(__src.indexOf('grade') !== -1) s._gradeManualPts += (e.val || 0);
+
+if(__src === 'auto_freq') s._freqAutoPts += (e.val || 0);
+
+if(__src.startsWith('manual_rank') || __src.startsWith('manual_rank_backup') || __src === 'manual_rank' || __src === 'rank_reset' || __src.startsWith('ajuste_rank')) {
+    s._rankManualPts += (e.val || 0);
+}
+if(__src.startsWith('ajuste_')) s._ajustePts += (e.val || 0);
         });
 
-        // Sort by total points earned in the week
         week.students = Object.values(studentMap).sort((a,b) => b.total - a.total || a.nome.localeCompare(b.nome));
         week.totalPts = week.students.reduce((sum, st) => sum + (st.total||0), 0);
         week.idx = wi;
     });
 
-    // Reverse so newest week is first
     weeks.reverse();
-    return { weeks, rankingTotals, manualTotals, hasDateFilter };
+    weeks.forEach((week, idx) => { week.idx = idx; });
+    return { weeks, rankingTotals, manualTotals, hasDateFilter: !!(dataInicioFilter || dataFimFilter) };
 }
 
 // Compute cumulative totals up to each week (for evolution view)
@@ -32095,22 +32956,39 @@ function _rankHistBuildEvolution(){
     
     if(weeks.length === 0) return { weeks:[], students:[], rankingTotals, manualTotals };
 
-    const lista = getAlunosFiltrados();
+    const lista = _rankHistGetTurmaLista(_rankHistGetFilters().turma);
 
-    // Track cumulative manual totals per student per week
+    // Track cumulative totals per student per week
     const studentsEvol = [];
     lista.forEach(a => {
         const id = String(a.id);
         const rt = rankingTotals[id] || { total:0 };
         const mt = manualTotals[id] || { total:0 };
-        let cumulative = 0;
+        let cumulativeTotal = 0;
+        let cumulativeManual = 0;
+        let cumulativeAuto = 0;
         const weeklyData = weeks.map(w => {
             const found = w.students?.find(s => s.id === id);
             const weekPts = found ? found.total : 0;
-            cumulative += weekPts;
-            return { weekPts, cumulative };
+            const rankManualWeekPts = found ? (found._rankManualPts||0) : 0;
+const manualGradeWeekPts = found ? (found._gradeManualPts||0) : 0;
+const ajusteWeekPts = found ? (found._ajustePts||0) : 0;
+const manualWeekPts = rankManualWeekPts + manualGradeWeekPts;
+const autoWeekPts = found ? ((found._gradeAutoPts||0) + (found._freqAutoPts||0)) : 0;
+            cumulativeTotal += weekPts;
+            cumulativeManual += manualWeekPts;
+            cumulativeAuto += autoWeekPts;
+            return { weekPts, manualWeekPts, autoWeekPts, rankManualWeekPts, manualGradeWeekPts, ajusteWeekPts, cumulativeTotal, cumulativeManual, cumulativeAuto };
         });
-        studentsEvol.push({ id, nome: a.nome, weeklyData, finalTotal: cumulative, rankTotal: rt.total, manualTotal: mt.total });
+        studentsEvol.push({
+            id,
+            nome: a.nome,
+            weeklyData,
+            finalTotal: cumulativeTotal,
+            rankTotal: rt.total,
+            manualTotal: mt.total,
+            autoTotal: (rt._autoNotas||0) + (rt._autoParticipacao||0)
+        });
     });
 
     // Sort by ranking total (the real total)
@@ -32131,7 +33009,7 @@ function _rankHistRenderSemanal(){
     
     if(weeks.length === 0){
         // Even with no manual entries, show auto points if they exist
-        const lista = getAlunosFiltrados();
+        const lista = _rankHistGetTurmaLista(_rankHistGetFilters().turma);
         let hasAutoPoints = false;
         lista.forEach(a => {
             const rt = rankingTotals[String(a.id)];
@@ -32141,7 +33019,7 @@ function _rankHistRenderSemanal(){
             let html = `<div style="padding:16px;">
                 <div style="text-align:center;padding:16px;color:var(--text-muted);margin-bottom:16px;">
                     <i class="fas fa-robot" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:8px;"></i>
-                    <p><b>Sem registros manuais</b></p>
+                    <p><b>Sem registros manuais no período</b></p>
                     <p style="font-size:0.85rem;">Nenhum ponto foi adicionado manualmente, mas existem pontos automáticos (notas e presenças).</p>
                 </div>
                 <table class="rank-hist-table"><thead><tr>
@@ -32174,7 +33052,7 @@ function _rankHistRenderSemanal(){
     }
 
     // Compute global ranking total (with auto) for summary
-    const lista = getAlunosFiltrados();
+    const lista = _rankHistGetTurmaLista(_rankHistGetFilters().turma);
     let rankTotalGeral = 0;
     let autoTotal = 0;
     let manualTotalGeral = 0;
@@ -32189,6 +33067,22 @@ function _rankHistRenderSemanal(){
         if(mt) manualTotalGeral += mt.total;
     });
 
+let manualGradeTotal = 0;
+let ajustesTotal = 0;
+try{
+    lista.forEach(a => {
+        const id = String(a.id);
+        const rt = rankingTotals[id];
+        if(rt) manualGradeTotal += (rt._manualNotas||0);
+    });
+    (weeks||[]).forEach(w => {
+        (w.entries||[]).forEach(e => {
+            if(String(e.src||'').startsWith('ajuste_')) ajustesTotal += (Math.round(Number(e.val||0))||0);
+        });
+    });
+}catch(_){ }
+
+
     // Summary
     const totalWeeks = weeks.length;
     const totalEntries = weeks.reduce((s,w) => s + w.entries.length, 0);
@@ -32196,13 +33090,15 @@ function _rankHistRenderSemanal(){
     let html = `<div class="rank-hist-summary">
         <div class="rank-hist-summary-card"><div class="val">${totalWeeks}</div><div class="lbl">Semanas</div></div>
         <div class="rank-hist-summary-card"><div class="val">${rankTotalGeral}</div><div class="lbl">Ranking período</div></div>
-        <div class="rank-hist-summary-card"><div class="val">${manualTotalGeral}</div><div class="lbl">Pts Manuais</div></div>
-        <div class="rank-hist-summary-card"><div class="val">${autoTotal}</div><div class="lbl">Pts Automáticos</div></div>
+        <div class="rank-hist-summary-card"><div class="val">${manualTotalGeral}</div><div class="lbl">Manual (ranking)</div></div>
+        <div class="rank-hist-summary-card"><div class="val">${manualGradeTotal}</div><div class="lbl">Notas lançadas</div></div>
+        <div class="rank-hist-summary-card"><div class="val">${autoTotal}</div><div class="lbl">Auto (notas+pres.)</div></div>
+        <div class="rank-hist-summary-card"><div class="val">${ajustesTotal}</div><div class="lbl">Ajustes</div></div>
         <div class="rank-hist-summary-card"><div class="val">${totalEntries}</div><div class="lbl">Registros</div></div>
     </div>`;
 
-    if(autoTotal > 0){
-        html += `<div style="padding:4px 16px 8px;font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> O histórico semanal agora ajusta o filtro para semanas completas e usa a data real do lançamento/atualização das notas automáticas, além das presenças pela data da chamada.</div>`;
+    if(autoTotal > 0 || ajustesTotal > 0){
+        html += `<div style="padding:4px 16px 8px;font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> O histórico semanal usa semanas completas e soma apenas eventos temporais confiáveis: pontos do ranking, notas (auto e lançadas) e presenças pela data da chamada. Itens sem data viram ⚙ ajustes na semana atual.</div>`;
     }
 
     weeks.forEach((week, wi) => {
@@ -32233,7 +33129,7 @@ function _rankHistRenderSemanal(){
             <div class="rank-hist-week-body${isFirst ? ' open' : ''}">`;
 
         if(week.students.length === 0){
-            html += `<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:0.85rem;">Sem registros manuais nesta semana</div>`;
+            html += `<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:0.85rem;">Sem registros nesta semana</div>`;
         } else {
             html += `<table class="rank-hist-table"><thead><tr>
                 <th style="text-align:center;">#</th><th>Aluno</th><th style="text-align:center;">Pts Semana</th>
@@ -32271,10 +33167,14 @@ function _rankHistRenderSemanal(){
                     <td class="hist-name">${_escHTML(s.nome)}</td>
                     <td class="hist-pts ${ptsClass}">${sign}${s.total}</td>
                     <td class="hist-detail">
-                        <span title="Notas">📝${s.notas||0}</span>
-                        <span title="Comportamento">⭐${s.comportamento||0}</span>
-                        <span title="Participação">🙋${s.participacao||0}</span>
-                        <span title="Bônus">🎁${s.bonus||0}</span>
+                        ${(s._gradeAutoPts||0) ? '<span title="Notas automáticas">📝auto:'+(s._gradeAutoPts||0)+'</span>' : ''}
+                        ${(s._gradeManualPts||0) ? '<span title="Notas lançadas / ajustes">📝lan:'+(s._gradeManualPts||0)+'</span>' : ''}
+                        ${(s._rankManualPts||0) ? '<span title="Pontos manuais do ranking">🎯rank:'+(s._rankManualPts||0)+'</span>' : ''}
+                        ${(s._freqAutoPts||0) ? '<span title="Presenças (automático)">🙋pres:'+(s._freqAutoPts||0)+'</span>' : ''}
+                        ${(s.comportamento||0) ? '<span title="Comportamento">⭐'+(s.comportamento||0)+'</span>' : ''}
+                        ${(s.participacao||0) ? '<span title="Participação (total)">🙋'+(s.participacao||0)+'</span>' : ''}
+                        ${(s.bonus||0) ? '<span title="Bônus">🎁'+(s.bonus||0)+'</span>' : ''}
+                        ${(s._ajustePts||0) ? '<span title="Ajustes sem data">⚙'+(s._ajustePts||0)+'</span>' : ''}
                     </td>
                     <td class="hist-pts" style="text-align:center;color:var(--primary);font-weight:800;" title="Total no período filtrado">${rt.total}</td>
                     <td style="text-align:center;">${trendHtml}</td>
@@ -32336,7 +33236,7 @@ function _rankHistRenderEvolucao(){
             const pts = wd.weekPts;
             const cls = pts > 0 ? 'positive' : (pts < 0 ? 'negative' : 'zero');
             const sign = pts > 0 ? '+' : '';
-            const cumTip = `Acumulado manual: ${wd.cumulative} pts`;
+            const cumTip = `Semana: ${wd.weekPts} pts • Ranking(manual): ${wd.rankManualWeekPts||0} • Nota lançada: ${wd.manualGradeWeekPts||0} • Auto: ${wd.autoWeekPts||0} • Ajustes: ${wd.ajusteWeekPts||0} • Acumulado: ${wd.cumulativeTotal} pts`;
             html += `<td class="hist-pts ${cls}" style="text-align:center;" title="${cumTip}">${pts !== 0 ? sign+pts : '—'}</td>`;
         });
         
@@ -32356,7 +33256,7 @@ function _rankHistRenderEvolucao(){
     top10.forEach(s => {
         const rt = (rankingTotals || {})[s.id] || { total:0, _autoNotas:0, _autoParticipacao:0 };
         const autoTot = (rt._autoNotas||0) + (rt._autoParticipacao||0);
-        const manualVal = s.manualTotal || s.finalTotal;
+        const manualVal = s.manualTotal || 0;
         const manualPct = maxTotal > 0 ? Math.round((manualVal / maxTotal) * 100) : 0;
         const autoPct = maxTotal > 0 ? Math.round((autoTot / maxTotal) * 100) : 0;
         const color = _rankAvatarColor(parseInt(s.id) || 0);
@@ -32435,6 +33335,18 @@ window.rankHistoricoSemanalAbrir = function(){
     if(selDia && cfg.diaInicio !== undefined) selDia.value = cfg.diaInicio;
     if(inpDataIni && cfg.dataInicio) inpDataIni.value = cfg.dataInicio;
     if(inpDataFim && cfg.dataFim) inpDataFim.value = cfg.dataFim;
+
+    // UX: se o usuário ainda não configurou nada, abre já focado na semana atual completa.
+    try{
+        if(inpDataIni && inpDataFim && !inpDataIni.value && !inpDataFim.value){
+            const diaInicio = parseInt(selDia?.value ?? 5, 10) || 5;
+            const ws = _rankHistWeekStart(new Date(), diaInicio);
+            const we = _rankHistWeekEnd(ws);
+            const fmt = (d)=> `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            inpDataIni.value = fmt(ws);
+            inpDataFim.value = fmt(we);
+        }
+    }catch(_){ }
 
     _rankHistUpdateDiaFim();
     
@@ -32687,7 +33599,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v19.0.9',
+        version: versionLabel || 'v19.1.12',
         total: arr.length,
         okCount,
         failCount,
@@ -33766,7 +34678,7 @@ try{
                         'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
                         'atividades_relacoes.json','atividades_roleta.json',
                         'atividades_quiz.json','atividades_completar.json','atividades_ordenar.json','sgp_storage_full.json',
-                        'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_busca_ativa.json','sgp_entregas_doc_prazos_v1.json','sgp_links_cards_v1.json','sgp_autotest_history_v1.json','sgp_linked_file_meta.json','sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
+                        'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_busca_ativa.json','sgp_entregas_doc_prazos_v1.json','sgp_links_cards_v1.json','sgp_autotest_history_v1.json','sgp_linked_file_meta.json','sgp_ranking_v1.json','sgp_rank_event_log_v1.json','sgp_rank_hist_cfg.json',
                         'sgp_audit_log.json','sgp_freq_events.json',
                         'extras_audit.json','extras_lastBackupAt.json'
                     ];
@@ -34056,7 +34968,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.9'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.1.12'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
