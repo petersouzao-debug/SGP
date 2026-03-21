@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V19.0.8 — Frequência Avançada + Calendário + Padrões + PDF)</title>
+    <title>SGP - Gestão Final (V19.0.9 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '19.0.0';
+      window.__SGP_SW_VERSION = '19.0.9';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -8217,10 +8217,12 @@ function corGetAlunoActivityTs(prova, alunoId){
       prova && prova._updatedAt,
       prova && prova.createdAt
     ];
+    let best = NaN;
     for(const c of candidates){
       const ts = corGetTsMs(c);
-      if(Number.isFinite(ts) && ts > 0) return ts;
+      if(Number.isFinite(ts) && ts > 0 && (!Number.isFinite(best) || ts > best)) best = ts;
     }
+    if(Number.isFinite(best) && best > 0) return best;
   }catch(_){ }
   return Date.now();
 }
@@ -9119,7 +9121,9 @@ function corPostGradeToAlunoBimestre(prova, aluno, bimIdx){
     const prevHas = !(typeof prev === 'undefined' || prev === null || prev === '');
     const prevN = clampNota(prev);
     const nota = corCalcNotaFinal(prova, aluno.id);
-    const eventTs = corGetAlunoActivityTs(prova, aluno.id);
+    // Histórico semanal deve usar a data real do lançamento/atualização da nota,
+    // não a data antiga da digitação das respostas.
+    const eventTs = Date.now();
 
     // Modo seguro (migração): não sobrescreve notas já existentes (>0) quando __overwrite=false
     if(__overwrite === false){
@@ -10596,7 +10600,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v19.0.8",
+                version: "v19.0.9",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -31816,10 +31820,10 @@ function _rankHistGetFilters(){
     };
 }
 
-function _rankHistTsInRange(ts, dataInicioFilter, dataFimFilter){
+function _rankHistTsInRange(ts, rangeStart, rangeEnd){
     if(!Number.isFinite(ts)) return false;
-    if(dataInicioFilter && ts < dataInicioFilter.getTime()) return false;
-    if(dataFimFilter && ts > dataFimFilter.getTime()) return false;
+    if(rangeStart && ts < rangeStart.getTime()) return false;
+    if(rangeEnd && ts > rangeEnd.getTime()) return false;
     return true;
 }
 
@@ -31871,6 +31875,12 @@ function _rankHistGetAlunoGradeValue(alunoObj, bim, discId, avId){
 function _rankHistBuildWeeks(){
     const { diaInicio, dataInicioFilter, dataFimFilter, turma, bim, hasDateFilter } = _rankHistGetFilters();
 
+    // Em visão semanal, o filtro deve respeitar semanas completas.
+    // Ex.: "a partir de 12/03" com início na sexta deve incluir toda a semana 06/03–12/03,
+    // e não apenas o dia 12/03, evitando semanas mostradas com zero por recorte parcial.
+    const rangeStart = dataInicioFilter ? _rankHistWeekStart(dataInicioFilter, diaInicio) : null;
+    const rangeEnd = dataFimFilter ? _rankHistWeekEnd(_rankHistWeekStart(dataFimFilter, diaInicio)) : null;
+
     // Sync auto-points before reading (same as _rankBuild does)
     try{ _rankSyncAuto(); }catch(_){}
 
@@ -31900,7 +31910,7 @@ function _rankHistBuildWeeks(){
             const id = String(entry.alunoId);
             if(!alunoById[id]) return;
             const ts = Number(entry.ts || 0);
-            if(!Number.isFinite(ts) || !_rankHistTsInRange(ts, dataInicioFilter, dataFimFilter)) return;
+            if(!Number.isFinite(ts) || !_rankHistTsInRange(ts, rangeStart, rangeEnd)) return;
             const val = Number(entry.val || 0);
             if(!val) return;
             const cat = String(entry.cat || '');
@@ -31937,7 +31947,7 @@ function _rankHistBuildWeeks(){
             const dt = _rankHistParseDateInput(dateStr, false);
             if(!dt) return;
             const ts = dt.getTime();
-            if(!_rankHistTsInRange(ts, dataInicioFilter, dataFimFilter)) return;
+            if(!_rankHistTsInRange(ts, rangeStart, rangeEnd)) return;
             const reg = freq[key] || {};
             Object.keys(reg).forEach(alunoId => {
                 if(alunoId === '_meta') return;
@@ -31976,7 +31986,7 @@ function _rankHistBuildWeeks(){
                     const a = alunoById[String(alunoId)];
                     if(!a) return;
                     const ts = corGetTsMs(evt.ts);
-                    if(!Number.isFinite(ts) || !_rankHistTsInRange(ts, dataInicioFilter, dataFimFilter)) return;
+                    if(!Number.isFinite(ts) || !_rankHistTsInRange(ts, rangeStart, rangeEnd)) return;
                     const gradePts = Math.round(Number(evt.nota || _rankHistGetAlunoGradeValue(a, bim, prova._discId, prova._avId) || 0));
                     if(!(gradePts > 0)) return;
                     usedEventMap = true;
@@ -31995,7 +32005,7 @@ function _rankHistBuildWeeks(){
             if(usedEventMap) return;
 
             const legacyTs = corGetTsMs(prova._lastAutoPostAt || prova._updatedAt || prova._lastAnswerAt || prova.createdAt);
-            if(!Number.isFinite(legacyTs) || !_rankHistTsInRange(legacyTs, dataInicioFilter, dataFimFilter)) return;
+            if(!Number.isFinite(legacyTs) || !_rankHistTsInRange(legacyTs, rangeStart, rangeEnd)) return;
             lista.forEach(a => {
                 const arr = answerMap[String(a.id)] || answerMap[a.id];
                 if(!Array.isArray(arr) || !arr.some(x => String(x || '').trim() !== '')) return;
@@ -32018,8 +32028,8 @@ function _rankHistBuildWeeks(){
     if(allEntries.length === 0) return { weeks: [], rankingTotals, manualTotals, hasDateFilter };
 
     // Generate week ranges (respects explicit date filter bounds when present)
-    const firstAnchor = dataInicioFilter ? dataInicioFilter : new Date(minTs);
-    const lastAnchor = dataFimFilter ? dataFimFilter : new Date(maxTs);
+    const firstAnchor = rangeStart ? rangeStart : new Date(minTs);
+    const lastAnchor = rangeEnd ? rangeEnd : new Date(maxTs);
     const firstWeekStart = _rankHistWeekStart(firstAnchor, diaInicio);
     const lastWeekStart = _rankHistWeekStart(lastAnchor, diaInicio);
 
@@ -32192,7 +32202,7 @@ function _rankHistRenderSemanal(){
     </div>`;
 
     if(autoTotal > 0){
-        html += `<div style="padding:4px 16px 8px;font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> O histórico semanal agora respeita o período filtrado e usa a data real do lançamento/atualização das notas automáticas, além das presenças pela data da chamada.</div>`;
+        html += `<div style="padding:4px 16px 8px;font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> O histórico semanal agora ajusta o filtro para semanas completas e usa a data real do lançamento/atualização das notas automáticas, além das presenças pela data da chamada.</div>`;
     }
 
     weeks.forEach((week, wi) => {
@@ -32677,7 +32687,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v19.0.8',
+        version: versionLabel || 'v19.0.9',
         total: arr.length,
         okCount,
         failCount,
@@ -34046,7 +34056,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.8'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.9'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
