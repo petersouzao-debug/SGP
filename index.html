@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V19.0.4 — Frequência Avançada + Calendário + Padrões + PDF)</title>
+    <title>SGP - Gestão Final (V19.0.6 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -8058,6 +8058,7 @@ function corRenderGabarito(){
 
         const v = (this.value||'').toUpperCase();
         p.questions[idx].g = (['A','B','C','D'].includes(v) ? v : '');
+        corTouchProva(p);
 
         corSave();
         corRefreshAlunoQuestionUi(p, corGetAlunoSelecionadoId(), idx);
@@ -8084,6 +8085,7 @@ function corRenderGabarito(){
         if(!p.questions[idx]) p.questions[idx] = { g:'', ref:'' };
 
         p.questions[idx].ref = (this.value||'').trim();
+        corTouchProva(p);
         corSave();
         corRefreshAlunoQuestionUi(p, corGetAlunoSelecionadoId(), idx);
         corScheduleStatsRender(false);
@@ -8118,6 +8120,118 @@ function corEnsureAlunoAnswers(prova, alunoId){
     prova.answers[k] = prova.answers[k].concat(Array.from({length:10-prova.answers[k].length}).map(()=> ''));
   }
   return prova.answers[k];
+}
+
+function corEnsureGradeEvents(prova){
+  try{
+    if(!prova || typeof prova !== 'object') return {};
+    if(!prova._gradeEvents || typeof prova._gradeEvents !== 'object' || Array.isArray(prova._gradeEvents)) prova._gradeEvents = {};
+    return prova._gradeEvents;
+  }catch(_){ return {}; }
+}
+
+function corEnsureAnswerTouchMap(prova){
+  try{
+    if(!prova || typeof prova !== 'object') return {};
+    if(!prova._answerTs || typeof prova._answerTs !== 'object' || Array.isArray(prova._answerTs)) prova._answerTs = {};
+    return prova._answerTs;
+  }catch(_){ return {}; }
+}
+
+function corTouchProva(prova, ts){
+  try{
+    if(!prova || typeof prova !== 'object') return 0;
+    const n = Number(ts || Date.now()) || Date.now();
+    prova._updatedAt = n;
+    return n;
+  }catch(_){ return 0; }
+}
+
+function corTouchAlunoAnswer(prova, alunoId, ts){
+  try{
+    if(!prova || alunoId == null) return 0;
+    const n = corTouchProva(prova, ts);
+    const map = corEnsureAnswerTouchMap(prova);
+    map[corIdKey(alunoId)] = n;
+    prova._lastAnswerAt = n;
+    return n;
+  }catch(_){ return 0; }
+}
+
+function corGetTsMs(v){
+  try{
+    if(v === null || typeof v === 'undefined' || v === '') return NaN;
+    if(typeof v === 'number') return Number.isFinite(v) ? v : NaN;
+    const s = String(v).trim();
+    if(!s) return NaN;
+    if(/^\d+$/.test(s)){
+      const n = parseInt(s, 10);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    const d = new Date(s);
+    const t = d.getTime();
+    return Number.isFinite(t) ? t : NaN;
+  }catch(_){ return NaN; }
+}
+
+function corGetAlunoGradeEvent(prova, alunoId){
+  try{
+    const map = corEnsureGradeEvents(prova);
+    return map[corIdKey(alunoId)] || null;
+  }catch(_){ return null; }
+}
+
+function corGetAlunoActivityTs(prova, alunoId){
+  try{
+    const id = corIdKey(alunoId);
+    const evt = corGetAlunoGradeEvent(prova, id);
+    const candidates = [
+      evt && evt.ts,
+      prova && prova._answerTs && prova._answerTs[id],
+      prova && prova._lastAnswerAt,
+      prova && prova._lastAutoPostAt,
+      prova && prova._updatedAt,
+      prova && prova.createdAt
+    ];
+    for(const c of candidates){
+      const ts = corGetTsMs(c);
+      if(Number.isFinite(ts) && ts > 0) return ts;
+    }
+  }catch(_){ }
+  return Date.now();
+}
+
+function corRecordGradeEvent(prova, alunoId, bimIdx, nota, opts){
+  try{
+    if(!prova || alunoId == null) return false;
+    const nNota = Number(nota || 0);
+    if(!(nNota > 0)) return false;
+    const id = corIdKey(alunoId);
+    if(!id) return false;
+    const map = corEnsureGradeEvents(prova);
+    const ts = Number((opts && opts.ts) || corGetAlunoActivityTs(prova, id) || Date.now()) || Date.now();
+    const next = {
+      ts,
+      nota: Math.round(nNota),
+      bim: parseInt(bimIdx, 10) || (parseInt(bimestreAtual, 10) || 1),
+      discId: prova._discId || '',
+      avId: prova._avId || ''
+    };
+    const prev = map[id];
+    const changed = !prev
+      || Number(prev.ts||0) !== Number(next.ts||0)
+      || Number(prev.nota||0) !== Number(next.nota||0)
+      || String(prev.discId||'') !== String(next.discId||'')
+      || String(prev.avId||'') !== String(next.avId||'')
+      || parseInt(prev.bim,10) !== parseInt(next.bim,10);
+
+    if(changed){
+      map[id] = next;
+      prova._lastAutoPostAt = ts;
+      corTouchProva(prova, ts);
+    }
+    return changed;
+  }catch(_){ return false; }
 }
 
 function corNormalizeAlt(v){
@@ -8341,6 +8455,7 @@ function corRenderAluno(){
         return;
       }
       ans[i] = v;
+      corTouchAlunoAnswer(prova, alunoId);
       updateClass();
       corRefreshAlunoSummary(prova, alunoId);
       __corStatsDirty = true;
@@ -8979,37 +9094,33 @@ function corPostGradeToAlunoBimestre(prova, aluno, bimIdx){
     const prev = bim.notas_disc[prova._discId][prova._avId];
     const prevHas = !(typeof prev === 'undefined' || prev === null || prev === '');
     const prevN = clampNota(prev);
+    const nota = corCalcNotaFinal(prova, aluno.id);
+    const eventTs = corGetAlunoActivityTs(prova, aluno.id);
 
     // Modo seguro (migração): não sobrescreve notas já existentes (>0) quando __overwrite=false
     if(__overwrite === false){
-      // Se já existe uma nota lançada (>0), preserva
       if(prevHas && prevN > 0.05){
+        if(corRecordGradeEvent(prova, aluno.id, bimIdx, prevN, { ts: eventTs })) return true;
         try{ _syncBimestreRefs(bim); }catch(_){}
         return false;
       }
-      // Se nota calculada é ~0 e o campo já está 0/vazio, não precisa gravar
-      // (mantém 0 para casos de aluno que zerou)
-      const __notaCalcTmp = corCalcNotaFinal(prova, aluno.id);
-      if(__notaCalcTmp <= 0.05 && (!prevHas || prevN <= 0.05)){
+      if(nota <= 0.05 && (!prevHas || prevN <= 0.05)){
         try{ _syncBimestreRefs(bim); }catch(_){}
         return false;
       }
     }
 
-    // Nota final (calculada)
-    const nota = corCalcNotaFinal(prova, aluno.id);
-// Só grava se mudou (evita salvar toda hora)
+    // Só grava se mudou (evita salvar toda hora), mas garante evento temporal para o histórico semanal
     if(Math.abs(prevN - nota) < 0.05){
+      if(corRecordGradeEvent(prova, aluno.id, bimIdx, nota, { ts: eventTs })) return true;
       try{ _syncBimestreRefs(bim); }catch(_){}
       return false;
     }
 
     bim.notas_disc[prova._discId][prova._avId] = nota;
 
-    // Sync legados
     try{ _syncBimestreRefs(bim); }catch(_){}
 
-    // Recalcula média para a disciplina vinculada
     const disc = getDiscById(prova._discId);
     if(disc){
       const notas = bim.notas_disc[prova._discId];
@@ -9019,9 +9130,11 @@ function corPostGradeToAlunoBimestre(prova, aluno, bimIdx){
       if(!bim.medias_disc || typeof bim.medias_disc !== 'object') bim.medias_disc = {};
       bim.medias_disc[prova._discId] = parseFloat(media);
     }
+
+    corRecordGradeEvent(prova, aluno.id, bimIdx, nota, { ts: eventTs });
     return true;
   }catch(e){
-    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corPostGradeToAlunoBimestre',{}); }catch(_){}
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'corPostGradeToAlunoBimestre',{}); }catch(_){ }
     return false;
   }
 }
@@ -10459,7 +10572,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v19.0.4",
+                version: "v19.0.6",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -23093,14 +23206,64 @@ function abrirFrequencia(){
   });
 }
 
+function __freqGetListaTurmaSorted(turma){
+  const cache = window.__freqListaTurmaCache || (window.__freqListaTurmaCache = { version:'', byTurma:{} });
+  const sig = `${Array.isArray(alunos) ? alunos.length : 0}|${window.__sgpAlunosVersion || 0}`;
+  if(cache.version !== sig){
+    cache.version = sig;
+    cache.byTurma = {};
+  }
+  const key = String(turma || '');
+  if(cache.byTurma[key]) return cache.byTurma[key];
+  const lista = (Array.isArray(alunos) ? alunos : [])
+    .filter(a => a && a.turma === turma)
+    .slice()
+    .sort((a,b)=>(a.nome||'').localeCompare((b.nome||''), 'pt-BR'));
+  const order = Object.create(null);
+  for(let i=0;i<lista.length;i++) order[String(lista[i].id)] = i + 1;
+  cache.byTurma[key] = { lista, order };
+  return cache.byTurma[key];
+}
+function __freqAlunoFromAgg(agg, alunoId){
+  const a = (agg && agg[String(alunoId)]) ? agg[String(alunoId)] : {total:0, presentes:0, faltas:0, justificadas:0};
+  const total = a.total || 0;
+  const presentes = a.presentes || 0;
+  const faltas = a.faltas || 0;
+  const justificadas = a.justificadas || 0;
+  const pct = total > 0 ? (presentes / total * 100) : 100;
+  return { total, presentes, faltas, justificadas, pct };
+}
+function __freqScheduleRender(reason){
+  __scheduleUiAfterPaint('freq-render', function(){ renderFrequencia(); });
+}
+function __freqScheduleDashboardRefresh(){
+  clearTimeout(window.__freqDashTimer);
+  window.__freqDashTimer = setTimeout(function(){
+    try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){ }
+  }, 180);
+}
+function __freqBindSearchInput(currentValue){
+  try{
+    const si = document.getElementById('freqSearchInput');
+    if(!si || si.__freqBound) return;
+    si.__freqBound = true;
+    si.addEventListener('input', function(){
+      window.__freqSearchFilter = this.value || '';
+      clearTimeout(window.__freqSearchInputTimer);
+      window.__freqSearchInputTimer = setTimeout(function(){ __freqScheduleRender('search'); }, 80);
+    });
+    if(currentValue){ si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
+  }catch(_){ }
+}
+
 function renderFrequencia(){
   const date = document.getElementById('freqDate')?.value || __freqTodayStr();
   const freq = window.__sgpFrequencia || {};
   const keysDate = __freqListKeysForDate(filtroTurma, bimestreAtual, date);
-
-  const lista = alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  const listaOrder = Object.create(null);
-  for(let i=0;i<lista.length;i++) listaOrder[lista[i].id] = i + 1;
+  const turmaPack = __freqGetListaTurmaSorted(filtroTurma);
+  const lista = turmaPack.lista || [];
+  const listaOrder = turmaPack.order || Object.create(null);
+  const agg = __freqEnsureAggForBim(bimestreAtual);
 
   // Populate discipline dropdown
   const selDisc = document.getElementById('freqDisciplina');
@@ -23111,26 +23274,33 @@ function renderFrequencia(){
   }
 
   if(selDisc){
-    const options = new Map();
-    const putOpt = (val)=>{
-      const v = String(val||'').trim();
-      if(!v || options.has(v)) return;
-      options.set(v, v);
-    };
-    try{
-      ensureConfigSchema();
-      (config.disciplinas||[]).forEach(d=> putOpt(d?.nome || d?.id || ''));
-    }catch(_){ }
-    keysDate.forEach(k=> putOpt(((freq[k]||{})._meta||{}).disciplina || ''));
-
-    selDisc.innerHTML = '<option value="">— Selecione —</option>';
-    Array.from(options.keys()).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(v=>{
-      const o = document.createElement('option');
-      o.value = v;
-      o.textContent = v;
-      selDisc.appendChild(o);
+    const currentOptionsSignature = JSON.stringify({
+      cfg: (()=>{ try{ ensureConfigSchema(); return (config.disciplinas||[]).map(d=>String(d?.nome || d?.id || '').trim()).filter(Boolean).sort(); }catch(_){ return []; } })(),
+      day: keysDate.map(k=>String(((freq[k]||{})._meta||{}).disciplina || '').trim()).filter(Boolean).sort()
     });
-    selDisc.value = selectedDisc && options.has(selectedDisc) ? selectedDisc : '';
+    if(selDisc.dataset.optionsSig !== currentOptionsSignature){
+      const options = new Map();
+      const putOpt = (val)=>{
+        const v = String(val||'').trim();
+        if(!v || options.has(v)) return;
+        options.set(v, v);
+      };
+      try{
+        ensureConfigSchema();
+        (config.disciplinas||[]).forEach(d=> putOpt(d?.nome || d?.id || ''));
+      }catch(_){ }
+      keysDate.forEach(k=> putOpt(((freq[k]||{})._meta||{}).disciplina || ''));
+      selDisc.innerHTML = '<option value="">— Selecione —</option>';
+      Array.from(options.keys()).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(v=>{
+        const o = document.createElement('option');
+        o.value = v;
+        o.textContent = v;
+        selDisc.appendChild(o);
+      });
+      selDisc.dataset.optionsSig = currentOptionsSignature;
+    }
+    const validValues = Array.from(selDisc.options).map(o=>o.value);
+    selDisc.value = (selectedDisc && validValues.includes(selectedDisc)) ? selectedDisc : '';
     selectedDisc = String(selDisc.value || '').trim();
   }
 
@@ -23145,26 +23315,28 @@ function renderFrequencia(){
   if(txtRegistro) txtRegistro.value = meta.registroAula || '';
 
   // Search filter
-  const searchVal = (window.__freqSearchFilter||'').toLowerCase();
+  const searchRaw = String(window.__freqSearchFilter || '');
+  const searchVal = searchRaw.toLowerCase();
   const listaFiltrada = searchVal ? lista.filter(a=>(a.nome||'').toLowerCase().includes(searchVal)) : lista;
 
   // Count unmarked
   const totalAlunos = lista.length;
-  const marcados = lista.filter(a=>registro[a.id]).length;
+  let marcados = 0;
+  for(let i=0;i<lista.length;i++) if(registro[lista[i].id]) marcados++;
   const semMarcacao = totalAlunos - marcados;
 
-  let html = `<div class="freq-search-wrap"><i class="fas fa-search"></i><input type="text" id="freqSearchInput" placeholder="Buscar aluno... (${semMarcacao>0?semMarcacao+' sem marcação':'todos marcados'})" value="${escHTML(searchVal)}" oninput="window.__freqSearchFilter=this.value;renderFrequencia();"></div>`;
+  let html = `<div class="freq-search-wrap"><i class="fas fa-search"></i><input type="text" id="freqSearchInput" placeholder="Buscar aluno... (${semMarcacao>0?semMarcacao+' sem marcação':'todos marcados'})" value="${escHTML(searchRaw)}"></div>`;
   html += `<table class="freq-table"><thead><tr><th>#</th><th style="text-align:left;">Nome</th><th>Status</th><th>Freq. Bim.</th></tr></thead><tbody>`;
   listaFiltrada.forEach((a,i)=>{
     const status = registro[a.id] || '';
-    const freqAluno = calcFreqAluno(a.id, bimestreAtual);
+    const freqAluno = __freqAlunoFromAgg(agg, a.id);
     const globalIdx = (listaOrder[a.id] || (i+1)) - 1;
     const unmarkedClass = status ? '' : ' freq-unmarked';
     const pctClass = freqAluno.pct>=75?'good':(freqAluno.pct>=50?'warn':'danger');
-    // data-aluno-id permite atualização cirúrgica da linha sem reconstruir toda a tabela
+    const alunoNome = escHTML(a.nome || 'Sem nome');
     html+=`<tr class="${unmarkedClass}" data-aluno-id="${a.id}">
       <td>${globalIdx+1}</td>
-      <td style="text-align:left;">${escHTML(a.nome)}</td>
+      <td style="text-align:left;"><button type="button" onclick="freqAbrirCalendarioAluno('${a.id}')" title="Ver calendário de presença" style="border:none;background:transparent;padding:0;color:var(--primary);text-decoration:underline;text-decoration-style:dotted;cursor:pointer;font:inherit;text-align:left;">${alunoNome}</button></td>
       <td>
         <button class="freq-btn ${status==='P'?'P':'none'}" onclick="setFreq('${a.id}','P')" title="Presente">P</button>
         <button class="freq-btn ${status==='F'?'F':'none'}" onclick="setFreq('${a.id}','F')" title="Falta">F</button>
@@ -23182,11 +23354,7 @@ function renderFrequencia(){
     const discTxt = selectedDisc ? ` • ${selectedDisc}` : '';
     deleteBtn.title = hasCurrentRecord ? `Excluir chamada de ${date}${discTxt}` : '';
   }
-  // Preserve search input focus
-  try{
-    const si=document.getElementById('freqSearchInput');
-    if(si && searchVal){ si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
-  }catch(_){ }
+  __freqBindSearchInput(searchRaw);
 }
 
 
@@ -23203,7 +23371,8 @@ function freqSaveMeta(){
     disciplina: selDisc ? String(selDisc.value || '').trim() : ''
   };
   __saveFrequencia();
-  try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
+  __freqScheduleRender('meta');
+  __freqScheduleDashboardRefresh();
 }
 
 function freqExcluirChamadaAtual(){
@@ -23331,6 +23500,7 @@ function setFreq(alunoId, value){
     window.__sgpFrequencia[key][alunoId] = value;
   }
   const newValue = (window.__sgpFrequencia[key]||{})[alunoId] || '';
+  try{ __freqBumpVersion(); }catch(_){ window.__sgpFreqVersion = (window.__sgpFreqVersion || 0) + 1; }
 
   try{ __freqLogEvent({type:'set', turma:filtroTurma, bim:bimestreAtual, date:date, alunoId:alunoId, value:newValue}); }catch(_){ }
 
@@ -23353,7 +23523,7 @@ function setFreq(alunoId, value){
     if(tdFreq) tdFreq.innerHTML = '<span class="freq-pct '+pctClass+'">'+fd.pct.toFixed(0)+'%</span> <small>('+fd.faltas+'F)</small>';
     // 4. Placeholder do campo de busca (contador "sem marcação")
     const registro = window.__sgpFrequencia[key] || {};
-    const lista = alunos.filter(function(a){ return a.turma===filtroTurma; });
+    const lista = __freqGetListaTurmaSorted(filtroTurma).lista;
     const semMarcacao = lista.filter(function(a){ return !registro[a.id]; }).length;
     const si = document.getElementById('freqSearchInput');
     if(si) si.placeholder = semMarcacao > 0 ? 'Buscar aluno... ('+semMarcacao+' sem marcação)' : 'Buscar aluno... (todos marcados)';
@@ -23373,29 +23543,35 @@ function setFreq(alunoId, value){
   }, 350);
 }
 
-function freqMarcarTodosP(){
+function __freqBulkApply(value){
+  const turmaPack = __freqGetListaTurmaSorted(filtroTurma);
+  const lista = turmaPack.lista || [];
+  const total = lista.length;
   const date = document.getElementById('freqDate')?.value || __freqTodayStr();
-  // BUG FIX: usava chave simples sem disciplina → gravava no registro errado quando
-  // uma disciplina estava selecionada. __freqCurrentKey() resolve a chave correta.
   const key = __freqCurrentKey(date);
   if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
-  alunos.filter(a=>a.turma===filtroTurma).forEach(a=>{ window.__sgpFrequencia[key][a.id]='P'; });
-  try{ __freqLogEvent({type:'bulk', turma:filtroTurma, bim:bimestreAtual, date:date, value:'P', count:(alunos.filter(a=>a.turma===filtroTurma).length||0)}); }catch(_){}
-  __saveFrequencia(); renderFrequencia();
-  try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
+  const reg = window.__sgpFrequencia[key];
+  for(let i=0;i<lista.length;i++) reg[lista[i].id] = value;
+  try{ __freqBumpVersion(); }catch(_){ window.__sgpFreqVersion = (window.__sgpFreqVersion || 0) + 1; }
+  try{ __freqLogEvent({type:'bulk', turma:filtroTurma, bim:bimestreAtual, date:date, value:value, count:total}); }catch(_){ }
+  __freqScheduleRender('bulk-'+value);
+  clearTimeout(window.__freqSaveTimer);
+  window.__freqSaveTimer = setTimeout(function(){
+    __saveFrequencia();
+    __freqScheduleDashboardRefresh();
+  }, 180);
+}
+function freqMarcarTodosP(){
+  __freqBulkApply('P');
 }
 function freqMarcarTodosF(){
-  const total = alunos.filter(a=>a.turma===filtroTurma).length;
-  if(!confirm(`Marcar todos os ${total} alunos como AUSENTES?\n\nEssa ação pode ser desfeita individualmente.`)) return;
-  const date = document.getElementById('freqDate')?.value || __freqTodayStr();
-  // BUG FIX: chave correta com disciplina selecionada
-  const key = __freqCurrentKey(date);
-  if(!window.__sgpFrequencia[key]) window.__sgpFrequencia[key]={};
-  alunos.filter(a=>a.turma===filtroTurma).forEach(a=>{ window.__sgpFrequencia[key][a.id]='F'; });
-  try{ __freqLogEvent({type:'bulk', turma:filtroTurma, bim:bimestreAtual, date:date, value:'F', count:(alunos.filter(a=>a.turma===filtroTurma).length||0)}); }catch(_){}
-  __saveFrequencia(); renderFrequencia();
-  try{ if(visaoAtual==='dash'){ renderizarDashboard(); } }catch(_){}
+  const total = __freqGetListaTurmaSorted(filtroTurma).lista.length;
+  if(!confirm(`Marcar todos os ${total} alunos como AUSENTES?
+
+Essa ação pode ser desfeita individualmente.`)) return;
+  __freqBulkApply('F');
 }
+
 
 // ================================================================
 // HISTÓRICO DE CHAMADAS / FREQUÊNCIA
@@ -24552,10 +24728,8 @@ function renderFreqPatternsHTML(turma,bim){
 try{
   const __origRenderFreq=renderFrequencia;
   renderFrequencia=function(){
-    // Bug fix: always remove orphaned freqExtraButtons before rebuild
-    try{ const old=document.getElementById('freqExtraButtons'); if(old) old.remove(); }catch(_){}
+    try{ const old=document.getElementById('freqExtraButtons'); if(old) old.remove(); }catch(_){ }
     __origRenderFreq();
-    // Inject extra buttons inside container
     try{
       const container=document.getElementById('freqTableContainer');
       if(container){
@@ -24569,28 +24743,10 @@ try{
         `;
         container.appendChild(btnsDiv);
       }
-    }catch(_){}
-
-    // Make student names clickable for calendar
-    try{
-      const container=document.getElementById('freqTableContainer');
-      if(!container) return;
-      const rows=container.querySelectorAll('tbody tr');
-      const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-      rows.forEach((tr,i)=>{
-        const td=tr.querySelector('td:nth-child(2)');
-        if(!td) return;
-        // Match by name text to handle search filtering
-        const nomeText=(td.textContent||'').trim();
-        const alunoMatch=lista.find(a=>(a.nome||'').trim()===nomeText);
-        if(!alunoMatch) return;
-        td.style.cssText='text-align:left;cursor:pointer;color:var(--primary);text-decoration:underline;text-decoration-style:dotted;';
-        td.title='Clique para ver calendário de presença';
-        td.onclick=function(){freqAbrirCalendarioAluno(alunoMatch.id);};
-      });
-    }catch(_){}
+    }catch(_){ }
   };
-}catch(_){}
+}catch(_){ }
+
 
 // Tendência popup
 function __freqAbrirTendencia(){
@@ -31778,30 +31934,56 @@ function _rankHistBuildWeeks(){
         });
     }catch(_){ }
 
-    // 3) Auto grades anchored by linked proof/activity creation date (date-resolved best effort)
+    // 3) Auto grades by per-student launch/update timestamp
     try{
         const turmaCtx = (correcaoProvas && correcaoProvas[turma]) ? correcaoProvas[turma] : null;
         const provas = Object.values((turmaCtx && turmaCtx.provas) ? turmaCtx.provas : {});
-        const proofByAv = {};
         provas.forEach(prova => {
             if(!prova || !prova._discId || !prova._avId) return;
-            const createdTs = prova.createdAt ? new Date(prova.createdAt).getTime() : NaN;
-            if(!Number.isFinite(createdTs)) return;
-            const k = String(prova._discId) + '|' + String(prova._avId);
-            const prev = proofByAv[k];
-            if(!prev || createdTs < prev.ts) proofByAv[k] = { discId:String(prova._discId), avId:String(prova._avId), ts:createdTs };
-        });
-        Object.values(proofByAv).forEach(ref => {
-            if(!_rankHistTsInRange(ref.ts, dataInicioFilter, dataFimFilter)) return;
+            const gradeEvents = (prova._gradeEvents && typeof prova._gradeEvents === 'object' && !Array.isArray(prova._gradeEvents)) ? prova._gradeEvents : null;
+            const answerMap = (prova.answers && typeof prova.answers === 'object') ? prova.answers : {};
+            let usedEventMap = false;
+
+            if(gradeEvents){
+                Object.keys(gradeEvents).forEach(alunoId => {
+                    const evt = gradeEvents[alunoId] || {};
+                    if(String(evt.discId || prova._discId) !== String(prova._discId)) return;
+                    if(String(evt.avId || prova._avId) !== String(prova._avId)) return;
+                    if((parseInt(evt.bim, 10) || bim) !== bim) return;
+                    const a = alunoById[String(alunoId)];
+                    if(!a) return;
+                    const ts = corGetTsMs(evt.ts);
+                    if(!Number.isFinite(ts) || !_rankHistTsInRange(ts, dataInicioFilter, dataFimFilter)) return;
+                    const gradePts = Math.round(Number(evt.nota || _rankHistGetAlunoGradeValue(a, bim, prova._discId, prova._avId) || 0));
+                    if(!(gradePts > 0)) return;
+                    usedEventMap = true;
+                    pushEntry({
+                        alunoId: String(alunoId),
+                        alunoNome: a.nome,
+                        cat: 'notas',
+                        val: gradePts,
+                        ts,
+                        motivo: 'Nota automática',
+                        src: 'auto_grade'
+                    }, false);
+                });
+            }
+
+            if(usedEventMap) return;
+
+            const legacyTs = corGetTsMs(prova._lastAutoPostAt || prova._updatedAt || prova._lastAnswerAt || prova.createdAt);
+            if(!Number.isFinite(legacyTs) || !_rankHistTsInRange(legacyTs, dataInicioFilter, dataFimFilter)) return;
             lista.forEach(a => {
-                const gradePts = _rankHistGetAlunoGradeValue(a, bim, ref.discId, ref.avId);
+                const arr = answerMap[String(a.id)] || answerMap[a.id];
+                if(!Array.isArray(arr) || !arr.some(x => String(x || '').trim() !== '')) return;
+                const gradePts = _rankHistGetAlunoGradeValue(a, bim, prova._discId, prova._avId);
                 if(gradePts > 0){
                     pushEntry({
                         alunoId: String(a.id),
                         alunoNome: a.nome,
                         cat: 'notas',
                         val: gradePts,
-                        ts: ref.ts,
+                        ts: legacyTs,
                         motivo: 'Nota automática',
                         src: 'auto_grade'
                     }, false);
@@ -31987,7 +32169,7 @@ function _rankHistRenderSemanal(){
     </div>`;
 
     if(autoTotal > 0){
-        html += `<div style="padding:4px 16px 8px;font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> O histórico semanal agora respeita o período filtrado e distribui automaticamente presenças e provas/atividades vinculadas pela data registrada.</div>`;
+        html += `<div style="padding:4px 16px 8px;font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> O histórico semanal agora respeita o período filtrado e usa a data real do lançamento/atualização das notas automáticas, além das presenças pela data da chamada.</div>`;
     }
 
     weeks.forEach((week, wi) => {
@@ -32472,7 +32654,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v19.0.4',
+        version: versionLabel || 'v19.0.6',
         total: arr.length,
         okCount,
         failCount,
@@ -33841,7 +34023,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.4'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.6'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
