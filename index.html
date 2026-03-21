@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V19.0.6 — Frequência Avançada + Calendário + Padrões + PDF)</title>
+    <title>SGP - Gestão Final (V19.0.8 — Frequência Avançada + Calendário + Padrões + PDF)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -7108,6 +7108,29 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
             }
         }
 
+        function __shouldExportStateStorageKey(key){
+            try{
+                key = String(key || '');
+                if(!key || !key.startsWith('sgp_')) return false;
+                const skip = new Set([
+                    'sgp_autobackups',
+                    'sgp_lastBackupAt',
+                    'sgp_last_backup',
+                    'sgp_backup_pending',
+                    'sgp_last_core_save',
+                    'sgp_linked_file_pending',
+                    'sgp_linked_file_last_sync',
+                    'sgp_id_seq',
+                    'sgp_freq_version',
+                    'sgp_last_freq_save',
+                    'sgp_storage_alert_level',
+                    (typeof __SGP_ATOMIC_CORE_TMP === 'string' ? __SGP_ATOMIC_CORE_TMP : 'sgp_state_core_tmp_v1'),
+                    (typeof __SGP_ATOMIC_CORE_META_KEY === 'string' ? __SGP_ATOMIC_CORE_META_KEY : 'sgp_state_core_meta_v1')
+                ]);
+                return !skip.has(key);
+            }catch(_){ return true; }
+        }
+
         function __exportState(){
             const out = {
                 format: "SGP_STATE_EXPORT_V1",
@@ -7121,6 +7144,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                     : Array.from({length: localStorage.length}, (_, i)=>localStorage.key(i)).filter(k=>k && k.startsWith('sgp_'));
                 keys.forEach((k)=>{
                     try{
+                        if(typeof __shouldExportStateStorageKey === 'function' && !__shouldExportStateStorageKey(k)) return;
                         const v = (typeof __storageGetItem === 'function') ? __storageGetItem(k) : localStorage.getItem(k);
                         if(v !== null && typeof v !== 'undefined') out.storage[k] = v;
                     }catch(_){ }
@@ -10572,7 +10596,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v19.0.6",
+                version: "v19.0.8",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -10626,7 +10650,6 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 ["atividades_relacoes.json", JSON.stringify(acts.relacoes, null, 2)],
                 ["atividades_roleta.json", JSON.stringify(acts.roleta, null, 2)],
                 ["extras_audit.json", JSON.stringify(extras.audit, null, 2)],
-                ["extras_autobackups.json", JSON.stringify(extras.autobackups, null, 2)],
                 ["extras_lastBackupAt.json", JSON.stringify({ lastBackupAt: extras.lastBackupAt }, null, 2)]
             ];
 
@@ -32654,7 +32677,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v19.0.6',
+        version: versionLabel || 'v19.0.8',
         total: arr.length,
         okCount,
         failCount,
@@ -33735,7 +33758,7 @@ try{
                         'atividades_quiz.json','atividades_completar.json','atividades_ordenar.json','sgp_storage_full.json',
                         'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_busca_ativa.json','sgp_entregas_doc_prazos_v1.json','sgp_links_cards_v1.json','sgp_autotest_history_v1.json','sgp_linked_file_meta.json','sgp_ranking_v1.json','sgp_rank_hist_cfg.json',
                         'sgp_audit_log.json','sgp_freq_events.json',
-                        'extras_audit.json','extras_autobackups.json','extras_lastBackupAt.json'
+                        'extras_audit.json','extras_lastBackupAt.json'
                     ];
                     if(filesMap && typeof filesMap === 'object'){
                         const missingF = requiredFiles.filter(fn=>!(fn in filesMap));
@@ -34023,7 +34046,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.6'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v19.0.8'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
