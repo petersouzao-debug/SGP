@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.0.0)</title>
+    <title>SGP - Gestão Final (V20.0.1)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.0.0';
+      window.__SGP_SW_VERSION = '20.0.1';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -6812,6 +6812,17 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
     <script>
         // --- ESTADOS ---
         let turmas=[], alunos=[], aulas=[], planosSemana={}, correcaoProvas={}, filtroTurma='Todas', alunoEdicaoID=null, abaAtual='lp', visaoAtual='cards', bimestreAtual=1, filtroRiscoAtivo=false, filtroInclusaoAtivo=false, filtroTutoriaAtivo=false, privacyMode=false, currMes=new Date().getMonth(), currAno=new Date().getFullYear();
+
+        // --- COMPAT: lista base da turma (Ranking / Fechamento/SED) ---
+        // Corrige erro: "_rankGetListaBase is not defined" em builds onde a função não existia.
+        // Mantém a semântica: retorna todos os alunos (turma=Todas) ou filtra pela turma selecionada.
+        var _rankGetListaBase = (typeof _rankGetListaBase === 'function') ? _rankGetListaBase : function(){
+            try{
+                const turma = String(filtroTurma || 'Todas');
+                const base = Array.isArray(alunos) ? alunos.filter(Boolean) : [];
+                return turma === 'Todas' ? base : base.filter(a => String(a.turma || '') === turma);
+            }catch(_){ return []; }
+        };
         // === Eventos internos (evita monkey patches) ===
         const __SGP_EVT = (()=> {
             const map = Object.create(null);
@@ -10947,7 +10958,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.0.0",
+                version: "v20.0.1",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -33599,7 +33610,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.0.0',
+        version: versionLabel || 'v20.0.1',
         total: arr.length,
         okCount,
         failCount,
@@ -34968,7 +34979,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.0.0'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.0.1'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
