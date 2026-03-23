@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.0.1)</title>
+    <title>SGP - Gestão Final (V20.0.2)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.0.1';
+      window.__SGP_SW_VERSION = '20.0.2';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -2119,6 +2119,8 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         @keyframes pulseMesa { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         .aluno-drag { background: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.8rem; font-weight: bold; text-align: center; cursor: grab; border-left: 5px solid #cbd5e1; user-select: none; padding: 4px; overflow: hidden; color: #334155; }
+        .lista-livres .aluno-drag{ height:auto; min-height:44px; }
+
         .aulas-container { display: none; flex-direction: column; gap: 20px; background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
         .progress-container { width: 100%; background: #e2e8f0; border-radius: 10px; height: 24px; overflow: hidden; position: relative;}
         .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.4s ease; }
@@ -5011,6 +5013,7 @@ body.dark-mode .link-quick-remove{ color:#fecaca; background: rgba(239,68,68,.14
                         <option value="5x8">5×8 (40)</option>
                     </select>
                     <button class="btn-tool" data-onclick="mapaAutoDistribuir()" title="Distribuir automaticamente"><i class="fas fa-wand-magic-sparkles"></i></button>
+                    <button class="btn-tool" data-onclick="mapaResetarMapaSala()" title="Resetar mapa (limpar lugares)"><i class="fas fa-eraser"></i></button>
                     <button id="btnMapaSwap" class="btn-tool" data-onclick="mapaToggleSwap()" title="Trocar 2 alunos de lugar"><i class="fas fa-rotate"></i></button>
                     <button class="btn-tool" data-onclick="mapaToggleDisable()" title="Desabilitar/habilitar mesas"><i class="fas fa-square-minus"></i></button>
                     <button class="btn-tool" data-onclick="mapaImprimir()" title="Imprimir mapa"><i class="fas fa-print"></i></button>
@@ -10958,7 +10961,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.0.1",
+                version: "v20.0.2",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -13509,7 +13512,8 @@ function __cmpBinIndex(v){
             
             document.querySelectorAll('.mesa').forEach(m=>{m.innerHTML='';m.style.borderStyle='dashed'; m.classList.remove('mobile-target');});
             
-            ls.forEach(a=>{
+            const ls=getAlunosFiltrados();
+      ls.forEach(a=>{
                 const c=getCorFarol((a.bimestres&&a.bimestres[bimestreAtual]&&a.bimestres[bimestreAtual].media_lp)||0); 
                 const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${alunoSelecionadoParaMover===a.id ? 'mobile-selected' : ''}" draggable="true" ondragstart="drag(event)" data-onclick="touchSelectAluno(${__u(a.id)})" style="border-left-color:${c}">${_escHTML(_mapaNomeCurto(a.nome))}</div>`; 
                 if(a.mesa!==null && a.mesa<36){
@@ -30903,6 +30907,7 @@ try{
     try{
       const seen=new Set();
       let changed=false;
+      const ls=getAlunosFiltrados();
       ls.forEach(a=>{
         if(a && a.mesa!==null && a.mesa!==undefined){
           const m=parseInt(a.mesa,10);
@@ -30989,6 +30994,27 @@ try{
   renderizarMapa=function(){
     if(filtroTurma==='Todas') return;
     const ls=getAlunosFiltrados();
+    // Anti-sobreposição: garante 1 aluno por mesa (se houver conflito legado, envia para 'livres')
+    try{
+      const totalLocal = mapaGridCols*mapaGridRows;
+      const seenLocal = new Set();
+      let changedLocal = false;
+      ls.forEach(a=>{
+        if(!a) return;
+        if(a.mesa!==null && a.mesa!==undefined){
+          const m=parseInt(a.mesa,10);
+          if(!Number.isFinite(m) || m<0 || m>=totalLocal || (mapaDisabledDesks && mapaDisabledDesks.has(m))){
+            a.mesa=null; changedLocal=true; return;
+          }
+          if(seenLocal.has(m)){
+            a.mesa=null; changedLocal=true; return;
+          }
+          seenLocal.add(m);
+        }
+      });
+      if(changedLocal) salvarDadosLocal();
+    }catch(_){}
+
     const lv=document.getElementById('listaAlunosLivres');
     if(lv) lv.innerHTML='';
 
@@ -31179,6 +31205,38 @@ function mapaAutoDistribuir(){
   showToast(`${livres.length} alunos distribuídos!`);
 }
 
+
+// F13.5: Resetar mapa (limpar lugares da turma atual)
+function mapaResetarMapaSala(){
+  try{
+    if(filtroTurma==='Todas') return showToast("Selecione uma turma.","error");
+    const ls=getAlunosFiltrados();
+    if(!ls||ls.length===0) return showToast("Nenhum aluno na turma.","error");
+    const msg = "Resetar o mapa desta turma?\n\n- Todos os alunos serão removidos das carteiras e voltarão para 'Alunos sem carteira'.\n- Mesas desabilitadas e tamanho do grid serão mantidos.";
+    if(!confirm(msg)) return;
+    let changed=false;
+    ls.forEach(a=>{
+      if(a && a.mesa!==null && a.mesa!==undefined){
+        a.mesa=null; changed=true;
+      }
+    });
+    // também reseta seleções/modos para evitar estado preso
+    mapaSwapMode=false; mapaSwapFirst=null; mapaDisableMode=false;
+    try{ const msgEl=document.getElementById('mapaSwapMsg'); if(msgEl) msgEl.style.display='none'; }catch(_){}
+    try{ const btn=document.getElementById('btnMapaSwap'); if(btn) btn.style.color=''; }catch(_){}
+    try{ alunoSelecionadoParaMover=null; }catch(_){}
+    if(changed){
+      salvarDadosLocal();
+      gerarMesas();
+      renderizarMapa();
+      showToast("Mapa resetado.");
+    } else {
+      showToast("Nada para resetar.");
+    }
+  }catch(_){
+    try{ showToast("Falha ao resetar mapa.","error"); }catch(__){}
+  }
+}
 // ================================================================
 // GERADOR DE GRUPOS (Features 14-22)
 // ================================================================
@@ -33610,7 +33668,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.0.1',
+        version: versionLabel || 'v20.0.2',
         total: arr.length,
         okCount,
         failCount,
@@ -34979,7 +35037,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.0.1'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.0.2'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
