@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.0.2)</title>
+    <title>SGP - Gestão Final (V20.0.3)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.0.2';
+      window.__SGP_SW_VERSION = '20.0.3';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -2119,8 +2119,6 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         @keyframes pulseMesa { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         .aluno-drag { background: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.8rem; font-weight: bold; text-align: center; cursor: grab; border-left: 5px solid #cbd5e1; user-select: none; padding: 4px; overflow: hidden; color: #334155; }
-        .lista-livres .aluno-drag{ height:auto; min-height:44px; }
-
         .aulas-container { display: none; flex-direction: column; gap: 20px; background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
         .progress-container { width: 100%; background: #e2e8f0; border-radius: 10px; height: 24px; overflow: hidden; position: relative;}
         .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.4s ease; }
@@ -5013,7 +5011,7 @@ body.dark-mode .link-quick-remove{ color:#fecaca; background: rgba(239,68,68,.14
                         <option value="5x8">5×8 (40)</option>
                     </select>
                     <button class="btn-tool" data-onclick="mapaAutoDistribuir()" title="Distribuir automaticamente"><i class="fas fa-wand-magic-sparkles"></i></button>
-                    <button class="btn-tool" data-onclick="mapaResetarMapaSala()" title="Resetar mapa (limpar lugares)"><i class="fas fa-eraser"></i></button>
+                    <button id="btnMapaReset" class="btn-tool" data-onclick="mapaResetTurma()" title="Resetar mapa (todos sem carteira)"><i class="fas fa-undo"></i></button>
                     <button id="btnMapaSwap" class="btn-tool" data-onclick="mapaToggleSwap()" title="Trocar 2 alunos de lugar"><i class="fas fa-rotate"></i></button>
                     <button class="btn-tool" data-onclick="mapaToggleDisable()" title="Desabilitar/habilitar mesas"><i class="fas fa-square-minus"></i></button>
                     <button class="btn-tool" data-onclick="mapaImprimir()" title="Imprimir mapa"><i class="fas fa-print"></i></button>
@@ -10961,7 +10959,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.0.2",
+                version: "v20.0.3",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -13512,8 +13510,7 @@ function __cmpBinIndex(v){
             
             document.querySelectorAll('.mesa').forEach(m=>{m.innerHTML='';m.style.borderStyle='dashed'; m.classList.remove('mobile-target');});
             
-            const ls=getAlunosFiltrados();
-      ls.forEach(a=>{
+            ls.forEach(a=>{
                 const c=getCorFarol((a.bimestres&&a.bimestres[bimestreAtual]&&a.bimestres[bimestreAtual].media_lp)||0); 
                 const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${alunoSelecionadoParaMover===a.id ? 'mobile-selected' : ''}" draggable="true" ondragstart="drag(event)" data-onclick="touchSelectAluno(${__u(a.id)})" style="border-left-color:${c}">${_escHTML(_mapaNomeCurto(a.nome))}</div>`; 
                 if(a.mesa!==null && a.mesa<36){
@@ -14888,7 +14885,7 @@ function abrirDetalhes(id){
   const a=alunos.find(al=>al.id===id); if(!a) return;
   alunoEdicaoID = id;
 
-  const b=a.bimestres[bimestreAtual];
+  const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {};
   _syncBimestreRefs(b);
 
   document.getElementById('detNome').innerHTML = privacyMode ? '••••••••' : (_escHTML(a.nome) + __buildAlunoStatusIcons(a));
@@ -14933,7 +14930,7 @@ function abrirDetalhes(id){
 function salvarAlteracoesDetalhadas(){
   ensureConfigSchema();
   const a=alunos.find(al=>al.id===alunoEdicaoID); if(!a) return;
-  const b=a.bimestres[bimestreAtual];
+  const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {};
   _syncBimestreRefs(b);
 
   // Livro
@@ -15551,7 +15548,7 @@ function renderizarEdicaoMassa(){
   const avs = disc.avaliacoes || [];
   let buf='';
   lista.forEach((a, idx)=>{
-    const b=a.bimestres[bimestreAtual];
+    const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {};
     _syncBimestreRefs(b);
     if(!b.notas_disc || typeof b.notas_disc !== 'object') b.notas_disc = {};
     if(!b.notas_disc[discId]) b.notas_disc[discId] = {};
@@ -25533,25 +25530,25 @@ getAlunosFiltrados = function(){
   
   if(__searchFilters.media5){
     l = l.filter(a=>{
-      const b=a.bimestres[bimestreAtual]; if(!b) return false;
+      const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {}; if(!b) return false;
       return parseFloat(b.media_lp)<5 || parseFloat(b.media_red)<5;
     });
   }
   if(__searchFilters.media7){
     l = l.filter(a=>{
-      const b=a.bimestres[bimestreAtual]; if(!b) return false;
+      const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {}; if(!b) return false;
       return parseFloat(b.media_lp)<7 || parseFloat(b.media_red)<7;
     });
   }
   if(__searchFilters.ocorrencia){
     l = l.filter(a=>{
-      const b=a.bimestres[bimestreAtual];
+      const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {};
       return b && b.ocorrencias && b.ocorrencias.length>0;
     });
   }
   if(__searchFilters.comportamento){
     l = l.filter(a=>{
-      const b=a.bimestres[bimestreAtual];
+      const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {};
       return b && (b.comportamento||10)<7;
     });
   }
@@ -26981,7 +26978,7 @@ function renderComparativoTurmas(){
     if(!als.length) return;
     let somLp=0, somRed=0, n=0, risco=0, occTotal=0;
     als.forEach(a=>{
-      const b=a.bimestres[bimestreAtual]; if(!b) return;
+      const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {}; if(!b) return;
       _syncBimestreRefs(b);
       const m1=parseFloat(b.media_lp)||0, m2=parseFloat(b.media_red)||0;
       somLp+=m1; somRed+=m2; n++;
@@ -30907,7 +30904,7 @@ try{
     try{
       const seen=new Set();
       let changed=false;
-      const ls=getAlunosFiltrados();
+      const ls=(filtroTurma==='Todas' || typeof getAlunosFiltrados!=='function')?[]:getAlunosFiltrados();
       ls.forEach(a=>{
         if(a && a.mesa!==null && a.mesa!==undefined){
           const m=parseInt(a.mesa,10);
@@ -30994,27 +30991,6 @@ try{
   renderizarMapa=function(){
     if(filtroTurma==='Todas') return;
     const ls=getAlunosFiltrados();
-    // Anti-sobreposição: garante 1 aluno por mesa (se houver conflito legado, envia para 'livres')
-    try{
-      const totalLocal = mapaGridCols*mapaGridRows;
-      const seenLocal = new Set();
-      let changedLocal = false;
-      ls.forEach(a=>{
-        if(!a) return;
-        if(a.mesa!==null && a.mesa!==undefined){
-          const m=parseInt(a.mesa,10);
-          if(!Number.isFinite(m) || m<0 || m>=totalLocal || (mapaDisabledDesks && mapaDisabledDesks.has(m))){
-            a.mesa=null; changedLocal=true; return;
-          }
-          if(seenLocal.has(m)){
-            a.mesa=null; changedLocal=true; return;
-          }
-          seenLocal.add(m);
-        }
-      });
-      if(changedLocal) salvarDadosLocal();
-    }catch(_){}
-
     const lv=document.getElementById('listaAlunosLivres');
     if(lv) lv.innerHTML='';
 
@@ -31029,8 +31005,8 @@ try{
     });
 
     ls.forEach(a=>{
-      const b=a.bimestres[bimestreAtual];
-      const c=getCorFarol(b.media_lp);
+      const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {};
+      const c=getCorFarol(parseFloat(b.media_lp)||0);
       const mlp=parseFloat(b.media_lp)||0;
       const mred=parseFloat(b.media_red)||0;
       const comp=b.comportamento||10;
@@ -31050,7 +31026,8 @@ try{
 
       const selected=alunoSelecionadoParaMover===a.id;
       const swapSel=mapaSwapMode&&mapaSwapFirst!==null&&a.mesa===mapaSwapFirst;
-      const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${selected?'mobile-selected':''}" draggable="true" ondragstart="drag(event)" data-onclick="${mapaSwapMode?'mapaMesaClick('+a.mesa+')':'touchSelectAluno('+__u(a.id)+')'}" style="border-left-color:${c};${swapSel?'box-shadow:0 0 10px #f59e0b;border-color:#f59e0b;':''}">${_escHTML(_mapaNomeCurto(a.nome))}${badges}${tip}</div>`;
+      const clickCode = (mapaSwapMode && a.mesa!==null && a.mesa!==undefined) ? `mapaMesaClick(${a.mesa})` : `touchSelectAluno(${__u(a.id)})`;
+      const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${selected?'mobile-selected':''}" draggable="true" ondragstart="drag(event)" data-onclick="${clickCode}" style="border-left-color:${c};${swapSel?'box-shadow:0 0 10px #f59e0b;border-color:#f59e0b;':''}">${_escHTML(_mapaNomeCurto(a.nome))}${badges}${tip}</div>`;
 
       if(a.mesa!==null&&a.mesa<total&&!mapaDisabledDesks.has(a.mesa)){
         const m=document.getElementById('mesa_'+a.mesa);
@@ -31148,6 +31125,36 @@ try{
 
 
 // F12: Print map
+
+function mapaResetTurma(){
+  if(filtroTurma==='Todas') return showToast("Selecione uma turma.","error");
+  if(!confirm("Resetar o mapa desta turma? Todos os alunos voltarão para 'sem carteira'.")) return;
+  try{
+    alunos.filter(a=>a && a.turma===filtroTurma).forEach(a=>{ a.mesa=null; });
+    try{ if(mapaDisabledDesks && typeof mapaDisabledDesks.clear==='function') mapaDisabledDesks.clear(); }catch(_){}
+    mapaSwapMode=false; mapaSwapFirst=null; mapaDisableMode=false;
+    const msg=document.getElementById('mapaSwapMsg'); if(msg) msg.style.display='none';
+    const btn=document.getElementById('btnMapaSwap'); if(btn) btn.style.color='';
+    alunoSelecionadoParaMover=null;
+    salvarDadosLocal();
+  }catch(e){
+    try{ console.error(e); }catch(_){}
+  }
+  try{ gerarMesas(); }catch(e){ try{ console.error(e); }catch(_){}
+  }
+  try{ renderizarMapa(); }catch(e){ try{ console.error(e); }catch(_){}
+  }
+  showToast("Mapa resetado!");
+}
+
+function mapaResetZoom(){
+  const g=document.getElementById('salaGrid');
+  if(!g) return;
+  g.style.transform='';
+  g.style.transformOrigin='';
+  showToast("Zoom resetado!");
+}
+
 function mapaImprimir(){
   const grid=document.getElementById('salaGrid');
   if(!grid) return;
@@ -31205,38 +31212,6 @@ function mapaAutoDistribuir(){
   showToast(`${livres.length} alunos distribuídos!`);
 }
 
-
-// F13.5: Resetar mapa (limpar lugares da turma atual)
-function mapaResetarMapaSala(){
-  try{
-    if(filtroTurma==='Todas') return showToast("Selecione uma turma.","error");
-    const ls=getAlunosFiltrados();
-    if(!ls||ls.length===0) return showToast("Nenhum aluno na turma.","error");
-    const msg = "Resetar o mapa desta turma?\n\n- Todos os alunos serão removidos das carteiras e voltarão para 'Alunos sem carteira'.\n- Mesas desabilitadas e tamanho do grid serão mantidos.";
-    if(!confirm(msg)) return;
-    let changed=false;
-    ls.forEach(a=>{
-      if(a && a.mesa!==null && a.mesa!==undefined){
-        a.mesa=null; changed=true;
-      }
-    });
-    // também reseta seleções/modos para evitar estado preso
-    mapaSwapMode=false; mapaSwapFirst=null; mapaDisableMode=false;
-    try{ const msgEl=document.getElementById('mapaSwapMsg'); if(msgEl) msgEl.style.display='none'; }catch(_){}
-    try{ const btn=document.getElementById('btnMapaSwap'); if(btn) btn.style.color=''; }catch(_){}
-    try{ alunoSelecionadoParaMover=null; }catch(_){}
-    if(changed){
-      salvarDadosLocal();
-      gerarMesas();
-      renderizarMapa();
-      showToast("Mapa resetado.");
-    } else {
-      showToast("Nada para resetar.");
-    }
-  }catch(_){
-    try{ showToast("Falha ao resetar mapa.","error"); }catch(__){}
-  }
-}
 // ================================================================
 // GERADOR DE GRUPOS (Features 14-22)
 // ================================================================
@@ -33668,7 +33643,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.0.2',
+        version: versionLabel || 'v20.0.3',
         total: arr.length,
         okCount,
         failCount,
@@ -35037,7 +35012,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.0.2'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.0.3'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
