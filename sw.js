@@ -1,4 +1,4 @@
-// SGP - Service Worker v20.0.6
+// SGP - Service Worker v20.1.0
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -24,8 +24,15 @@
 //  - FIX v19.1.0: histórico semanal agora recupera notas da semana anterior por evento salvo, correção por aluno e inferência pelos autobackups
 //  - FIX v19.1.1: histórico semanal do ranking ignora filtros globais indevidos e corrige totais/legendas manual x automático na evolução
 //  - FIX v19.1.11: histórico individual passa a ler a mesma trilha de eventos do semanal e o reset registra deltas manuais com mensagem consistente
+//  - PERF v20.1.0: sparklines lazy via IntersectionObserver (canvas só desenhado ao entrar na viewport)
+//  - PERF v20.1.0: renderização em lote — primeiros 20 cards síncronos, restante via requestIdleCallback
+//  - PERF v20.1.0: deduplicação de eventos O(n²)→O(1) via Set de fingerprints em memória
+//  - PERF v20.1.0: _rankGetStreak usa tail de 90 entradas em vez de sort do histórico completo (5000 entradas)
+//  - PERF v20.1.0: cache de índice por turma|bim em _rankHistIndexManualRankEventLogForTurma
+//  - PERF v20.1.0: guard de sessão em _rankHistEnsureManualRankEventLogForTurma (migração roda 1x por turma+bim)
+//  - PERF v20.1.0: dirty-check por hash em _renderList evita reescrita do DOM sem mudanças
 
-const SW_VERSION = '20.0.6';
+const SW_VERSION = '20.1.0';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado

@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.0.6)</title>
+    <title>SGP - Gestão Final (V20.1.0)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.0.6';
+      window.__SGP_SW_VERSION = '20.1.0';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -8242,6 +8242,10 @@ let __RANK_HIST_BACKUP_PARSED_CACHE = null;
 
 const __RANK_EVENT_LOG_KEY = 'sgp_rank_event_log_v1';
 let __RANK_EVENT_LOG_CACHE = null;
+// PERF FIX: Set de fingerprints em memória para deduplicação O(1) em __rankEventLogAppend.
+// Antes: arr.some(item => fingerprint(item) === fp) era O(n) por append.
+// Com 50k eventos e centenas de appends por aluno na migração histórica, isso era O(n²) total.
+let __RANK_EVENT_FP_SET = null;
 
 function __rankEventLogLoad(){
   try{
@@ -8249,7 +8253,9 @@ function __rankEventLogLoad(){
     const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(__RANK_EVENT_LOG_KEY) : localStorage.getItem(__RANK_EVENT_LOG_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
     __RANK_EVENT_LOG_CACHE = Array.isArray(parsed) ? parsed : [];
-  }catch(_){ __RANK_EVENT_LOG_CACHE = []; }
+    // Reconstrói o Set quando carrega do storage
+    __RANK_EVENT_FP_SET = new Set(__RANK_EVENT_LOG_CACHE.map(__rankEventFingerprint).filter(Boolean));
+  }catch(_){ __RANK_EVENT_LOG_CACHE = []; __RANK_EVENT_FP_SET = new Set(); }
   return __RANK_EVENT_LOG_CACHE;
 }
 
@@ -8259,6 +8265,8 @@ function __rankEventLogSave(){
     const json = JSON.stringify(arr);
     if(typeof __safeLSSet === 'function') __safeLSSet(__RANK_EVENT_LOG_KEY, json);
     else localStorage.setItem(__RANK_EVENT_LOG_KEY, json);
+    // Invalida o cache de índice por turma|bim ao salvar novos eventos
+    try{ if(typeof __rankHistManualIndexCache !== 'undefined'){ __rankHistManualIndexCache = {}; __rankHistManualIndexCacheVersion = ((__rankHistManualIndexCacheVersion||0)+1); } }catch(_){}
     return true;
   }catch(_){ return false; }
 }
@@ -8308,9 +8316,17 @@ function __rankEventLogAppend(evt){
     const fp = __rankEventFingerprint(next);
     if(!fp) return false;
     const arr = __rankEventLogLoad();
-    if(arr.some(item => __rankEventFingerprint(item) === fp)) return false;
+    // PERF FIX: deduplicação O(1) via Set em vez de arr.some() O(n).
+    // Com 50k eventos, arr.some() varreria o array inteiro a cada append.
+    if(!__RANK_EVENT_FP_SET) __RANK_EVENT_FP_SET = new Set(arr.map(__rankEventFingerprint).filter(Boolean));
+    if(__RANK_EVENT_FP_SET.has(fp)) return false;
     arr.push(next);
-    if(arr.length > 50000) arr.splice(0, arr.length - 50000);
+    __RANK_EVENT_FP_SET.add(fp);
+    if(arr.length > 50000){
+        // Ao truncar, reconstrói o Set para manter consistência
+        arr.splice(0, arr.length - 50000);
+        __RANK_EVENT_FP_SET = new Set(arr.map(__rankEventFingerprint).filter(Boolean));
+    }
     return __rankEventLogSave();
   }catch(_){ return false; }
 }
@@ -8440,11 +8456,7 @@ function __gradeEventRecord(evt){
 
 function _rankHistGetBackupsList(){
   try{
-    let arr = Array.isArray(__BACKUPS) ? __BACKUPS : [];
-    if(!arr.length){
-      const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_autobackups') : localStorage.getItem('sgp_autobackups');
-      arr = raw ? (JSON.parse(raw) || []) : [];
-    }
+    const arr = (typeof __ensureBackupsLoaded === 'function') ? __ensureBackupsLoaded() : __BACKUPS;
     return Array.isArray(arr) ? arr : [];
   }catch(_){ return []; }
 }
@@ -10012,7 +10024,7 @@ function __flushPendingPersistenceWork(){
   }catch(_){ }
 }
 
-const __sgpDeferredInitState = window.__sgpDeferredInitState || (window.__sgpDeferredInitState = { planner:false, atividades:false, correcao:false });
+const __sgpDeferredInitState = window.__sgpDeferredInitState || (window.__sgpDeferredInitState = { planner:false, atividades:false, correcao:false, postBoot:false, idbWarmupStarted:false });
 function __sgpRunDeferred(name, fn, delay){
             const ms = Math.max(0, Number(delay)||0);
             const runner = ()=>{ try{ fn(); }catch(_){ } };
@@ -10036,55 +10048,80 @@ function __sgpInitCorrecaoOnce(){
             __sgpDeferredInitState.correcao = true;
             initCorrecao();
         }
+function __sgpFinalizeDeferredBoot(){
+            if(__sgpDeferredInitState.postBoot) return;
+            __sgpDeferredInitState.postBoot = true;
+            __sgpRunDeferred('planner', ()=>{ __sgpInitPlannerOnce(); }, 80);
+            __sgpRunDeferred('atividades', ()=>{ __sgpInitAtividadesOnce(); }, 160);
+            __sgpRunDeferred('correcao', ()=>{ __sgpInitCorrecaoOnce(); }, 260);
+            __sgpRunDeferred('storageMonitor', ()=>{ try{ __scheduleStorageMonitorRefresh(1200); }catch(_){ } }, 900);
+        }
+function __sgpHasFastLocalBootstrap(){
+            try{
+                if(localStorage.getItem(__SGP_ATOMIC_CORE_KEY)) return true;
+                return !!(localStorage.getItem('sgp_turmas') || localStorage.getItem('sgp_alunos') || localStorage.getItem('sgp_config'));
+            }catch(_){ return false; }
+        }
+function __sgpStartIndexedDBWarmup(){
+            if(__sgpDeferredInitState.idbWarmupStarted) return;
+            __sgpDeferredInitState.idbWarmupStarted = true;
+            let settled = false;
+            const done = ()=>{
+                if(settled) return;
+                settled = true;
+                try{ __sgpFinalizeDeferredBoot(); }catch(_){ }
+            };
+            try{
+                const p = (typeof initIndexedDB === 'function') ? initIndexedDB() : null;
+                if(p && typeof p.finally === 'function'){
+                    p.finally(done);
+                }else{
+                    done();
+                }
+            }catch(_){
+                done();
+            }
+            setTimeout(done, 1800);
+        }
 
 function __sgpMainOnLoad(){ 
             if(window.__sgpBootDone) return;
             window.__sgpBootDone = true;
-            const __afterFirstPaint = (fn)=>{
-                try{
-                    requestAnimationFrame(()=>setTimeout(()=>{ try{ fn(); }catch(_){ } }, 0));
-                }catch(_){
-                    setTimeout(()=>{ try{ fn(); }catch(_){ } }, 0);
-                }
-            };
-            const __bootNow = ()=>{
-                try{ carregarDados(); }catch(_){ }
-                try{ garantirEstruturaNova(); }catch(_){ }
-                try{ initMenuTurmas(); }catch(_){ }
+            const __boot = ()=>{
+                carregarDados();
+                try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){ }
+                try{ __warnTempPath(); }catch(_){ }
+                try{ __checkExternalLibs(); }catch(_){ }
+                checkBackupStatus();
+                garantirEstruturaNova();
+                initMenuTurmas();
+                renderizarMenu();
                 try{ __sgpBindDataOnclick(document); }catch(_){ }
-
-                __afterFirstPaint(()=>{
-                    try{ renderizarMenu(); }catch(_){ }
-                    try{ renderizarVisao(); }catch(_){ }
-                    try{ atualizarLabelsConfig(); }catch(_){ }
-                });
-
-                __sgpRunDeferred('boot-ui-followup', ()=>{
-                    try{ initKeyboardShortcuts(); }catch(_){ }
-                    try{ initOcorrenciasUI(); }catch(_){ }
-                    try{ initElegivelUI(); }catch(_){ }
-                    try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){ }
-                }, 120);
-
-                __sgpRunDeferred('boot-light', ()=>{
-                    try{ __warnTempPath(); }catch(_){ }
-                    try{ __checkExternalLibs(); }catch(_){ }
-                    try{ checkBackupStatus(); }catch(_){ }
-                    try{ gerarMesas(); }catch(_){ }
-                    try{ __sgpInitPlannerOnce(); }catch(_){ }
-                    try{ __HIST.lastSnapshot = __snapshotStr(); }catch(_){ }
-                    try{ __scheduleStorageMonitorRefresh(1200); }catch(_){ }
-                }, 280);
-                __sgpRunDeferred('boot-correcao', ()=>{ try{ __sgpInitCorrecaoOnce(); }catch(_){ } }, 1200);
-                __sgpRunDeferred('boot-atividades', ()=>{ try{ __sgpInitAtividadesOnce(); }catch(_){ } }, 2000);
+                gerarMesas();
+                renderizarVisao();
+                atualizarLabelsConfig();
+                initKeyboardShortcuts();
+                initOcorrenciasUI();
+                initElegivelUI();
+                try{ __HIST.lastSnapshot = __snapshotStr(); }catch(_){ }
             };
             try{
-                const p = (typeof initIndexedDB === 'function') ? initIndexedDB() : null;
-                if(p && typeof p.catch === 'function'){
-                    p.catch(()=>null);
+                if(__sgpHasFastLocalBootstrap()){
+                    __boot();
+                    __sgpRunDeferred('idbWarmup', ()=>{ __sgpStartIndexedDBWarmup(); }, 180);
+                }else{
+                    const p = (typeof initIndexedDB === 'function') ? initIndexedDB() : null;
+                    if(p && typeof p.finally === 'function'){
+                        p.finally(()=>{ __boot(); __sgpFinalizeDeferredBoot(); });
+                    }else{
+                        __boot();
+                        __sgpFinalizeDeferredBoot();
+                    }
                 }
-            }catch(_){ }
-            __bootNow();
+            }catch(_){
+                __boot();
+                __sgpFinalizeDeferredBoot();
+            }
         }
         if(document.readyState === 'loading'){
             document.addEventListener('DOMContentLoaded', __sgpMainOnLoad, { once:true });
@@ -11021,7 +11058,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.0.6",
+                version: "v20.1.0",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -11895,16 +11932,28 @@ function selTurma(n){
         const _cardRenderHooks = [];
         const _sparkCache = new Map(); // Cache sparkline data to avoid double computation
         
-        // IntersectionObserver for staggered card reveal animation
+        // IntersectionObserver for staggered card reveal animation + LAZY sparkline draw
+        // PERF FIX: sparklines são caros (canvas API). Antes eram desenhados para TODOS os
+        // cards na renderizarGrid(), mesmo cards fora da viewport (O(n) canvas ops no boot).
+        // Agora o observer aciona animação + sparkline apenas quando o card entra na tela.
         let _cardRevealObserver = null;
         function _initCardObserver(){
             if(_cardRevealObserver) return;
             _cardRevealObserver = new IntersectionObserver((entries) => {
-                entries.forEach((entry, i) => {
+                entries.forEach((entry) => {
                     if(entry.isIntersecting){
                         const el = entry.target;
                         const delay = parseInt(el.dataset.cardIdx || '0') * 40;
+                        // Reveal animation
                         setTimeout(() => el.classList.add('card-visible'), Math.min(delay, 300));
+                        // Lazy sparkline draw: só executa quando o card é visível
+                        const cvs = el.querySelector('.sparkline-canvas');
+                        if(cvs && !cvs.dataset.drawn){
+                            const vals = _sparkCache.get(el.getAttribute('data-id'));
+                            if(vals && vals.length >= 2){
+                                setTimeout(() => { try{ drawSparkline(cvs, vals, 80, 28); cvs.dataset.drawn='1'; }catch(_){} }, Math.min(delay, 300));
+                            }
+                        }
                         _cardRevealObserver.unobserve(el);
                     }
                 });
@@ -11959,23 +12008,36 @@ function selTurma(n){
             // PERF FIX: usa Map de referências de elementos para sparklines (O(n) em vez de O(n²)).
             // Antes: d.querySelector(`.card-aluno[data-id="${a.id}"] ...`) dentro de forEach = O(n²).
             const sparkCardMap = new Map();
+            // PERF FIX: Renderização em lote com limite de cards síncronos.
+            // Antes: todos os cards eram criados e inseridos de forma síncrona no boot,
+            // bloqueando o thread principal por dezenas de ms em turmas grandes.
+            // Agora: os primeiros 20 cards são inseridos imediatamente (viewport cheio),
+            // o restante é diferido via requestIdleCallback (ou setTimeout fallback),
+            // liberando o thread para pintar a tela inicial sem jank.
+            const SYNC_CARD_LIMIT = 20;
+
             // Build or update each card
-            const fragment = document.createDocumentFragment();
+            const fragmentImmediate = document.createDocumentFragment();
+            const deferredItems = []; // cards além do limite síncrono
+
             l.forEach((a, idx) => {
                 const b = a.bimestres[bimestreAtual];
                 const cardId = String(a.id);
                 let card = existingMap.get(cardId);
 
                 if(card){
-                    // Update existing card content
                     _updateCardContent(card, a, b, idx);
                 } else {
-                    // Create new card
                     card = _createCardElement(a, b, idx);
                     _cardRevealObserver.observe(card);
                 }
                 sparkCardMap.set(cardId, card);
-                fragment.appendChild(card);
+
+                if(idx < SYNC_CARD_LIMIT){
+                    fragmentImmediate.appendChild(card);
+                } else {
+                    deferredItems.push(card);
+                }
             });
 
             // PERF FIX: pausa os dois MutationObservers (ícones + data-handlers) durante o
@@ -11985,9 +12047,9 @@ function selTurma(n){
             try{ if(window.__sgpDataHandlerObs) window.__sgpDataHandlerObs.disconnect(); }catch(_){}
 
             d.innerHTML = '';
-            d.appendChild(fragment);
+            d.appendChild(fragmentImmediate); // imediato — preenche a viewport visível
 
-            // Reconecta observers após o batch completo
+            // Reconecta observers após o batch imediato
             try{
               if(window.__sgpIconMO) window.__sgpIconMO.observe(document.documentElement,{childList:true,subtree:true});
             }catch(_){}
@@ -11995,20 +12057,28 @@ function selTurma(n){
               if(window.__sgpDataHandlerObs) window.__sgpDataHandlerObs.observe(document.documentElement,{childList:true,subtree:true});
             }catch(_){}
 
-            // Draw sparklines on canvas elements (must be in DOM)
-            // Reuse cached sparkline data stored during _fillCardHTML via _sparkCache
-            // PERF FIX: busca canvas diretamente no card via sparkCardMap (O(1) por card)
-            l.forEach(a => {
-                const card = sparkCardMap.get(String(a.id));
-                const cvs = card && card.querySelector('.sparkline-canvas');
-                if(cvs){
-                    const vals = _sparkCache.get(String(a.id));
-                    if(vals && vals.length >= 2) drawSparkline(cvs, vals, 80, 28);
-                }
-            });
+            // PERF FIX: sparklines são desenhadas de forma LAZY no IntersectionObserver.
+            // (sparkCardMap mantido para compatibilidade com hooks externos)
 
-            // Run any registered extension hooks
-            _cardRenderHooks.forEach(fn => { try{ fn(d, l); }catch(_){} });
+            // PERF FIX: cards além do SYNC_CARD_LIMIT são inseridos de forma DIFERIDA.
+            // Isso garante que o navegador pinte a tela inicial (cards 1-20) antes de
+            // processar o restante, eliminando o jank de "tela em branco" no boot.
+            if(deferredItems.length > 0){
+                const _flushDeferred = () => {
+                    const fragDeferred = document.createDocumentFragment();
+                    deferredItems.forEach(card => fragDeferred.appendChild(card));
+                    d.appendChild(fragDeferred);
+                    _cardRenderHooks.forEach(fn => { try{ fn(d, l); }catch(_){} });
+                };
+                if(typeof requestIdleCallback === 'function'){
+                    requestIdleCallback(_flushDeferred, { timeout: 300 });
+                } else {
+                    setTimeout(_flushDeferred, 0);
+                }
+            } else {
+                // Run any registered extension hooks
+                _cardRenderHooks.forEach(fn => { try{ fn(d, l); }catch(_){} });
+            }
         }
 
         function _createCardElement(a, b, idx){
@@ -16041,6 +16111,9 @@ const __HIST = {
 
 let __AUDIT = [];
 let __BACKUPS = [];
+let __BACKUPS_LOADED = false;
+let __BACKUPS_DIRTY = false;
+let __BACKUPS_META = { count:0, lastTs:0 };
 let __lastBackupAt = 0;
 
 function __sanitizeSnapshotForEmbedding(snapshotStr){
@@ -16075,6 +16148,53 @@ function __sanitizeBackupList(list){
   return out;
 }
 
+
+function __backupsMetaFromList(list){
+  try{
+    const arr = Array.isArray(list) ? list : [];
+    let lastTs = 0;
+    arr.forEach((item)=>{
+      const ts = parseInt(item && item.ts || '0', 10) || 0;
+      if(ts > lastTs) lastTs = ts;
+    });
+    return { count: arr.length, lastTs };
+  }catch(_){ return { count:0, lastTs:0 }; }
+}
+function __saveBackupsMeta(list){
+  try{
+    __BACKUPS_META = __backupsMetaFromList(list);
+    __safeLSSet('sgp_autobackups_meta', JSON.stringify(__BACKUPS_META || { count:0, lastTs:0 }));
+  }catch(_){ }
+}
+function __loadBackupsMeta(){
+  try{
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_autobackups_meta') : localStorage.getItem('sgp_autobackups_meta');
+    const obj = raw ? (JSON.parse(raw) || {}) : {};
+    __BACKUPS_META = {
+      count: parseInt(obj && obj.count || '0', 10) || 0,
+      lastTs: parseInt(obj && obj.lastTs || '0', 10) || 0
+    };
+  }catch(_){
+    __BACKUPS_META = { count:0, lastTs:0 };
+  }
+}
+function __ensureBackupsLoaded(){
+  try{
+    if(__BACKUPS_LOADED) return __BACKUPS;
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_autobackups') : localStorage.getItem('sgp_autobackups');
+    __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(JSON.parse(raw || '[]') || []) : (JSON.parse(raw || '[]') || []);
+    __BACKUPS_LOADED = true;
+    __BACKUPS_DIRTY = false;
+    __saveBackupsMeta(__BACKUPS);
+    return __BACKUPS;
+  }catch(_){
+    __BACKUPS = [];
+    __BACKUPS_LOADED = true;
+    __BACKUPS_DIRTY = false;
+    __saveBackupsMeta(__BACKUPS);
+    return __BACKUPS;
+  }
+}
 function __snapshotObj(){
   // inclui tudo o que o usuário precisa recuperar (sem depender só das variáveis em memória)
   const __lsJson = (k, fallback)=>{
@@ -16159,7 +16279,7 @@ function __snapshotObj(){
     auditTrail: Array.isArray(__AUDIT) ? __AUDIT.slice(-500) : [],
     gradeEvents: (typeof __gradeEventsLoad === 'function') ? __gradeEventsLoad() : __lsJson('sgp_grade_events_v1', {}),
     gradeEventLog: (typeof __gradeEventLogLoad === 'function') ? __gradeEventLogLoad() : __lsArr('sgp_grade_event_log_v1'),
-    autobackups: (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(__BACKUPS) : (Array.isArray(__BACKUPS) ? __BACKUPS.slice(0, 10) : []),
+    autobackups: __BACKUPS_LOADED ? ((typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(__BACKUPS) : (Array.isArray(__BACKUPS) ? __BACKUPS.slice(0, 10) : [])) : null,
     lastBackupAt: parseInt(__lastBackupAt || '0', 10) || 0
   };
 }
@@ -16173,9 +16293,16 @@ function __loadExtras(){
     __AUDIT = JSON.parse(raw || '[]') || [];
   }catch(e){ __AUDIT = []; }
   try{
-    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_autobackups') : localStorage.getItem('sgp_autobackups');
-    __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(JSON.parse(raw || '[]') || []) : (JSON.parse(raw || '[]') || []);
-  }catch(e){ __BACKUPS = []; }
+    __BACKUPS = [];
+    __BACKUPS_LOADED = false;
+    __BACKUPS_DIRTY = false;
+    if(typeof __loadBackupsMeta === 'function') __loadBackupsMeta();
+  }catch(e){
+    __BACKUPS = [];
+    __BACKUPS_LOADED = false;
+    __BACKUPS_DIRTY = false;
+    __BACKUPS_META = { count:0, lastTs:0 };
+  }
   try{
     const raw = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_lastBackupAt') : localStorage.getItem('sgp_lastBackupAt');
     __lastBackupAt = parseInt(raw || '0', 10) || 0;
@@ -16185,26 +16312,34 @@ function __loadExtras(){
 function __saveExtras(){
   // Salva com tolerância a quota: se o snapshot ficar grande, reduz a quantidade de backups até caber.
   try{ __safeLSSet('sgp_audit', JSON.stringify(__AUDIT)); }catch(_){}
-  let ok = false;
   try{
-    ok = __safeLSSet('sgp_autobackups', JSON.stringify(__BACKUPS));
-  }catch(_){ ok = false; }
-
-  if(!ok){
-    try{
-      // tenta reduzir (mantém os mais recentes)
-      for(let keep = (__BACKUPS||[]).length-1; keep>=1 && !ok; keep--){
-        __BACKUPS = (__BACKUPS||[]).slice(0, keep);
+    if(__BACKUPS_LOADED || __BACKUPS_DIRTY){
+      let ok = false;
+      try{
         ok = __safeLSSet('sgp_autobackups', JSON.stringify(__BACKUPS));
-      }
-      // se ainda falhar, apaga todos os autobackups (não perde core atual)
-      if(!ok){
-        __BACKUPS = [];
-        __safeLSSet('sgp_autobackups', '[]');
-      }
-    }catch(_){}
-  }
+      }catch(_){ ok = false; }
 
+      if(!ok){
+        try{
+          // tenta reduzir (mantém os mais recentes)
+          for(let keep = (__BACKUPS||[]).length-1; keep>=1 && !ok; keep--){
+            __BACKUPS = (__BACKUPS||[]).slice(0, keep);
+            ok = __safeLSSet('sgp_autobackups', JSON.stringify(__BACKUPS));
+          }
+          // se ainda falhar, apaga todos os autobackups (não perde core atual)
+          if(!ok){
+            __BACKUPS = [];
+            __safeLSSet('sgp_autobackups', '[]');
+          }
+        }catch(_){}
+      }
+      __BACKUPS_LOADED = true;
+      __BACKUPS_DIRTY = false;
+      try{ __saveBackupsMeta(__BACKUPS); }catch(_){ }
+    }else{
+      try{ __loadBackupsMeta(); }catch(_){ }
+    }
+  }catch(_){}
   try{ __safeLSSet('sgp_lastBackupAt', String(__lastBackupAt||0)); }catch(_){}
 }
 function __countChangedAlunos(beforeArr, afterArr){
@@ -16244,8 +16379,10 @@ function __maybeAutoBackup(snapshotStr){
   if(!snapshotStr) return;
   if(now - (__lastBackupAt||0) < INTERVAL) return;
 
+  try{ __ensureBackupsLoaded(); }catch(_){ }
   __BACKUPS.unshift({ id: 'bkp_'+now, ts: now, snapshot: snapshotStr });
   __BACKUPS = __BACKUPS.slice(0, 10);
+  __BACKUPS_DIRTY = true;
   __lastBackupAt = now;
 }
 
@@ -16255,11 +16392,12 @@ function __renderBackupsUI(){
   if(info){
     const u=(typeof __UNDO_STACK!=='undefined')?__UNDO_STACK.length:__HIST.undo.length;
     const r=(typeof __REDO_STACK!=='undefined')?__REDO_STACK.length:__HIST.redo.length;
-    const a=__AUDIT.length, b=__BACKUPS.length;
+    const a=__AUDIT.length, b=(__BACKUPS_LOADED ? __BACKUPS.length : ((__BACKUPS_META && __BACKUPS_META.count) || 0));
     info.innerHTML = `Histórico: <strong>${u}</strong> / Refazer: <strong>${r}</strong> • Log: <strong>${a}</strong> • Backups: <strong>${b}</strong>`;
   }
   if(!box) return;
 
+  try{ __ensureBackupsLoaded(); }catch(_){ }
   if(!__BACKUPS.length){
     box.innerHTML = `<div style="font-size:0.85rem; color:#64748b;">Nenhum backup ainda.</div>`;
     return;
@@ -16412,8 +16550,13 @@ function __applySnapshot(snapshotStr, label){
     }catch(_){ }
     try{
       __AUDIT = Array.isArray(data.auditTrail) ? data.auditTrail.slice(-500) : [];
-      __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(data.autobackups) : (Array.isArray(data.autobackups) ? data.autobackups.slice(0, 10) : []);
-      __lastBackupAt = (data && Object.prototype.hasOwnProperty.call(data, 'lastBackupAt')) ? (parseInt(data.lastBackupAt || '0', 10) || 0) : 0;
+      if(data && Object.prototype.hasOwnProperty.call(data, 'autobackups') && Array.isArray(data.autobackups)){
+        __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(data.autobackups) : data.autobackups.slice(0, 10);
+        __BACKUPS_LOADED = true;
+        __BACKUPS_DIRTY = true;
+        try{ __saveBackupsMeta(__BACKUPS); }catch(__){ }
+      }
+      __lastBackupAt = (data && Object.prototype.hasOwnProperty.call(data, 'lastBackupAt')) ? (parseInt(data.lastBackupAt || '0', 10) || 0) : (__lastBackupAt || 0);
       try{ if(typeof __saveExtras === 'function') __saveExtras(); }catch(__){ }
     }catch(_){ }
     try{
@@ -16483,8 +16626,10 @@ function criarBackupAgora(){
   const snap = __snapshotStr();
   const now = Date.now();
   if(!snap) return showToast("Não foi possível criar backup.", "error");
+  try{ __ensureBackupsLoaded(); }catch(_){ }
   __BACKUPS.unshift({ id: 'bkp_'+now, ts: now, snapshot: snap });
   __BACKUPS = __BACKUPS.slice(0, 10);
+  __BACKUPS_DIRTY = true;
   __lastBackupAt = now;
   __saveExtras();
   __renderBackupsUI();
@@ -16492,18 +16637,22 @@ function criarBackupAgora(){
 }
 
 function restaurarUltimoBackup(){
+  try{ __ensureBackupsLoaded(); }catch(_){ }
   if(!__BACKUPS.length) return showToast("Sem backups.");
   __applySnapshot(__BACKUPS[0].snapshot, "Backup restaurado!");
 }
 
 function restaurarBackup(id){
+  try{ __ensureBackupsLoaded(); }catch(_){ }
   const b = __BACKUPS.find(x=>x.id===id);
   if(!b) return showToast("Backup não encontrado.", "error");
   __applySnapshot(b.snapshot, "Backup restaurado!");
 }
 
 function excluirBackup(id){
+  try{ __ensureBackupsLoaded(); }catch(_){ }
   __BACKUPS = __BACKUPS.filter(x=>x.id!==id);
+  __BACKUPS_DIRTY = true;
   __saveExtras();
   __renderBackupsUI();
   showToast("Backup removido.");
@@ -21024,14 +21173,15 @@ function fcReiniciar(){
 
 
 window.addEventListener('load', function(){
-  __loadExtras();
-  applyThemeFromConfig();
-  __HIST.lastSnapshot = __snapshotStr();
-  __renderBackupsUI();
-  // V13: Init new features
-  try{ updatePlannerBadge(); }catch(_){}
-  try{ initBackupReminder(); }catch(_){}
-  try{ initIndexedDB(); }catch(_){}
+  __sgpRunDeferred('postLoadUi', ()=>{
+    try{ __loadExtras(); }catch(_){ }
+    try{ applyThemeFromConfig(); }catch(_){ }
+    try{ __HIST.lastSnapshot = __snapshotStr(); }catch(_){ }
+    try{ __renderBackupsUI(); }catch(_){ }
+    try{ updatePlannerBadge(); }catch(_){ }
+    try{ initBackupReminder(); }catch(_){ }
+    try{ __sgpStartIndexedDBWarmup(); }catch(_){ }
+  }, 450);
 });
 
 // ===============================================
@@ -26519,11 +26669,11 @@ try{
 // V14 INIT: Run on load
 // ================================================================
 window.addEventListener('load', function(){
-  setTimeout(()=>{
-    try{ updateSidebarBadges(); }catch(_){}
-    try{ updatePlannerBadge(); }catch(_){}
-    try{ initSidebarMobile(); }catch(_){}
-  }, 600);
+  __sgpRunDeferred('sidebarWarmup', ()=>{
+    try{ updateSidebarBadges(); }catch(_){ }
+    try{ updatePlannerBadge(); }catch(_){ }
+    try{ initSidebarMobile(); }catch(_){ }
+  }, 900);
 });
 
 // ================================================================
@@ -31526,6 +31676,8 @@ function _rankSave(data){
     __rankCacheDirty = false;
     try{ __safeLSSet(RANK_KEY, JSON.stringify(data)); }catch(_){}
     try{ __markBackupRelevantChange('ranking-save'); }catch(_){}
+    // Invalida guard de migração pois os dados do ranking mudaram
+    try{ if(typeof _rankHistEnsureGuardInvalidate === 'function') _rankHistEnsureGuardInvalidate(null, null); }catch(_){}
 }
 
 // Estrutura: { [turma]: { [bimestre]: { [alunoId]: { notas:N, comportamento:N, participacao:N, bonus:N, historico:[...] } } } }
@@ -31886,6 +32038,13 @@ function _renderList(ranked){
     }
     
     const maxPts = ranked[0] ? ranked[0].total : 1;
+
+    // PERF FIX: hash barato do estado da lista para evitar re-render desnecessário.
+    // _renderList é chamado por renderizarRanking() que pode ser acionado por muitos eventos.
+    // Se os totais e a ordem não mudaram, pula o innerHTML inteiro.
+    const quickHash = ranked.map(r => String(r.aluno.id) + ':' + r.total).join(',');
+    if(list.dataset.rankHash === quickHash) return;
+    list.dataset.rankHash = quickHash;
     
     let html = `<div class="ranking-list-header">
         <span>#</span><span>Aluno</span><span>Progresso</span><span>Detalhes</span><span>Pts</span>
@@ -31942,7 +32101,11 @@ function _renderList(ranked){
 // --- Streak calculation ---
 function _rankGetStreak(p){
     if(!p.historico || p.historico.length < 2) return 0;
-    const sorted = [...p.historico].sort((a,b)=>(b.ts||0)-(a.ts||0));
+    // PERF FIX: antes fazia [...p.historico].sort() no histórico COMPLETO (até 5000 entradas)
+    // para cada aluno na lista do ranking. Agora usa apenas as últimas 90 entradas:
+    // uma streak nunca precisaria de mais do que isso e evitamos O(n log n) por render.
+    const tail = p.historico.length > 90 ? p.historico.slice(-90) : p.historico;
+    const sorted = tail.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
     let streak = 0;
     const seen = new Set();
     for(const h of sorted){
@@ -32577,7 +32740,20 @@ function _rankHistIndexGradeEventLogForTurma(turma, bim){
     return out;
 }
 
+// PERF FIX: cache de resultado por turma|bim. O evento log pode ter 50k entradas;
+// filtrar+mapear+sort a cada render do ranking (ou histórico) era O(n) toda vez.
+// O cache é invalidado quando __RANK_EVENT_LOG_CACHE é modificado (via __rankEventLogSave).
+let __rankHistManualIndexCache = {};
+let __rankHistManualIndexCacheVersion = 0;
+
 function _rankHistIndexManualRankEventLogForTurma(turma, bim){
+    const cacheKey = String(turma||'') + '|' + (parseInt(bim,10)||1);
+    // Versão baseada no comprimento do array de cache — cheap proxy de "mudou algo"
+    const arrLen = Array.isArray(__RANK_EVENT_LOG_CACHE) ? __RANK_EVENT_LOG_CACHE.length : -1;
+    const cv = arrLen + '_' + __rankHistManualIndexCacheVersion;
+    if(__rankHistManualIndexCache[cacheKey] && __rankHistManualIndexCache[cacheKey].cv === cv){
+        return __rankHistManualIndexCache[cacheKey].data;
+    }
     const out = [];
     try{
         const arr = (typeof __rankEventLogLoad === 'function') ? __rankEventLogLoad() : [];
@@ -32604,6 +32780,7 @@ function _rankHistIndexManualRankEventLogForTurma(turma, bim){
         });
         out.sort((a,b)=> (Number(a.ts||0) - Number(b.ts||0)));
     }catch(_){ }
+    __rankHistManualIndexCache[cacheKey] = { cv, data: out };
     return out;
 }
 
@@ -32621,7 +32798,24 @@ function _rankHistGetManualBucketForAluno(rankData, turma, bim, alunoById, aluno
     }catch(_){ return null; }
 }
 
+// PERF FIX: guard de sessão para _rankHistEnsureManualRankEventLogForTurma.
+// A migração de histórico é cara (itera todos os alunos × histórico × event log).
+// Antes era chamada em: renderizarRanking → _rankBuild, rankAlunoHistRender, rankHistoricoSemanal.
+// Agora só roda UMA vez por turma|bim por sessão (página). Se rankData mudar (save),
+// o guard é invalidado via _rankHistEnsureGuardInvalidate().
+let __rankHistEnsureGuard = {};
+function _rankHistEnsureGuardInvalidate(turma, bim){
+    try{
+        if(turma){ delete __rankHistEnsureGuard[String(turma)+'|'+(parseInt(bim)||1)]; }
+        else { __rankHistEnsureGuard = {}; }
+    }catch(_){}
+}
+
 function _rankHistEnsureManualRankEventLogForTurma(turma, bim, lista, rankData){
+    // Guard: pula se já rodou nesta sessão para este turma+bim
+    const guardKey = String(turma||'')+'|'+(parseInt(bim)||1);
+    if(__rankHistEnsureGuard[guardKey]) return;
+
     try{
         const alunoById = {};
         (lista || []).forEach(a => { if(a && a.id != null) alunoById[String(a.id)] = a; });
@@ -32757,6 +32951,8 @@ function _rankHistEnsureManualRankEventLogForTurma(turma, bim, lista, rankData){
         if(rankDataDirty){
             try{ _rankSave(rankData); }catch(_){ }
         }
+        // Marca como executado nesta sessão para este turma+bim
+        __rankHistEnsureGuard[guardKey] = true;
         return changed;
     }catch(_){ return false; }
 }
