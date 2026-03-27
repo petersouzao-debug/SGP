@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.0.3)</title>
+    <title>SGP - Gestão Final (V20.0.4)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.0.3';
+      window.__SGP_SW_VERSION = '20.0.4';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -2205,8 +2205,9 @@ body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
         .timeline-container { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-top: 10px; }
         .occ-list { display: flex; flex-direction: column; gap: 10px; max-height: 200px; overflow-y: auto; }
         .occ-item { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; border-left: 4px solid #94a3b8; }
-                .occ-del { position:absolute; right:8px; top:8px; width:22px; height:22px; border:none; border-radius:6px; background:transparent; cursor:pointer; color:#94a3b8; font-size:1.1rem; line-height:1; }
-        .occ-del:hover { color:#ef4444; background: rgba(239,68,68,0.08); }
+        .occ-del { position:absolute; right:8px; top:8px; min-width:72px; height:28px; padding:0 10px; border:1px solid rgba(239,68,68,0.2); border-radius:999px; background:rgba(239,68,68,0.08); cursor:pointer; color:#dc2626; font-size:.78rem; font-weight:700; line-height:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+        .occ-del:hover { color:#b91c1c; background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.32); }
+        .occ-del i{ font-size:.75rem; }
 .report-text { width: 100%; height: 100px; margin-top: 10px; padding: 10px; border: 1px solid #fcd34d; border-radius: 6px; resize: none; background: #fefce8; color: #451a03; }
         
         .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
@@ -10959,7 +10960,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.0.3",
+                version: "v20.0.4",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -13752,8 +13753,8 @@ function renderizarOcorrencias(lista){
   d.innerHTML = sorted.map(o=>{
     const when = _escHTML(o.data || (o.ts ? new Date(o.ts).toLocaleString() : ''));
     const texto = _escHTML(o.texto ?? '');
-    return `<div class="occ-item" style="position:relative; padding-right:32px;">
-      <button class="occ-del" data-onclick="removerOcorrencia(${__u(o.id)})" title="Excluir ocorrência" aria-label="Excluir ocorrência">×</button>
+    return `<div class="occ-item" style="position:relative; padding-right:84px;">
+      <button class="occ-del" data-onclick="removerOcorrencia(${__u(o.id)})" title="Excluir ocorrência" aria-label="Excluir ocorrência"><i class="fas fa-trash"></i><span>Excluir</span></button>
       <strong>${when}</strong>: ${texto}
     </div>`;
   }).join('');
@@ -14887,6 +14888,7 @@ function abrirDetalhes(id){
 
   const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {};
   _syncBimestreRefs(b);
+  _ensureOcorrenciasSchema(b);
 
   document.getElementById('detNome').innerHTML = privacyMode ? '••••••••' : (_escHTML(a.nome) + __buildAlunoStatusIcons(a));
   document.getElementById('detTurma').innerText = `${__u(a.turma)} — ${bimestreAtual}º Bimestre`;
@@ -14915,6 +14917,14 @@ function abrirDetalhes(id){
   // Parecer
   const txt=document.getElementById('txtParecer');
   if(txt) txt.value = b.parecer || '';
+
+  // Ocorrências do aluno atual
+  const occInput = document.getElementById('inputNovaOcorrencia');
+  if(occInput){
+    occInput.value = '';
+    occInput.style.height = 'auto';
+  }
+  renderizarOcorrencias(b.ocorrencias || []);
 
   // Médias
   b.media_lp = calcularMediaLPIndividual(b.notas_lp, b.notas_lp?.rec);
@@ -33643,7 +33653,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.0.3',
+        version: versionLabel || 'v20.0.4',
         total: arr.length,
         okCount,
         failCount,
@@ -35012,7 +35022,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.0.3'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.0.4'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
