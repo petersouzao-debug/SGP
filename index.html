@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.0.4)</title>
+    <title>SGP - Gestão Final (V20.0.5)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.0.4';
+      window.__SGP_SW_VERSION = '20.0.5';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -90,12 +90,24 @@
           window.__SGP_SW_RELOADING = true;
           try{ location.reload(); }catch(_){ }
         });
+        window.__SGP_SW_UPDATE_LAST_TS = 0;
+        window.__SGP_SW_UPDATE_TIMER = 0;
+        const __scheduleSWUpdate = (reg, reason, delay)=>{
+          const wait = Math.max(0, Number(delay)||0);
+          try{ if(window.__SGP_SW_UPDATE_TIMER) clearTimeout(window.__SGP_SW_UPDATE_TIMER); }catch(_){ }
+          window.__SGP_SW_UPDATE_TIMER = setTimeout(()=>{
+            const now = Date.now();
+            if((now - (window.__SGP_SW_UPDATE_LAST_TS||0)) < 15000) return;
+            window.__SGP_SW_UPDATE_LAST_TS = now;
+            __safeSWUpdate(reg, reason);
+          }, wait);
+        };
         __registerSW().then(reg => {
           __wireServiceWorkerReg(reg);
-          __safeSWUpdate(reg, 'registro inicial');
-          window.addEventListener('focus', ()=>{ __safeSWUpdate(reg, 'focus'); }, {passive:true});
+          __scheduleSWUpdate(reg, 'registro inicial', 1600);
+          window.addEventListener('focus', ()=>{ __scheduleSWUpdate(reg, 'focus', 600); }, {passive:true});
           document.addEventListener('visibilitychange', ()=>{
-            if(document.visibilityState === 'visible') __safeSWUpdate(reg, 'visibilitychange');
+            if(document.visibilityState === 'visible') __scheduleSWUpdate(reg, 'visibilitychange', 600);
           }, {passive:true});
           console.log('[SGP] Service Worker registrado! Escopo:', reg.scope, 'Versão:', window.__SGP_SW_VERSION);
         }).catch(err => {
@@ -9989,30 +10001,57 @@ function __flushPendingPersistenceWork(){
   }catch(_){ }
 }
 
+const __sgpDeferredInitState = window.__sgpDeferredInitState || (window.__sgpDeferredInitState = { planner:false, atividades:false, correcao:false });
+function __sgpRunDeferred(name, fn, delay){
+            const ms = Math.max(0, Number(delay)||0);
+            const runner = ()=>{ try{ fn(); }catch(_){ } };
+            if(window.requestIdleCallback){
+                return window.requestIdleCallback(runner, { timeout: Math.max(700, ms || 700) });
+            }
+            return setTimeout(runner, ms);
+        }
+function __sgpInitPlannerOnce(){
+            if(__sgpDeferredInitState.planner) return;
+            __sgpDeferredInitState.planner = true;
+            initPlanner();
+        }
+function __sgpInitAtividadesOnce(){
+            if(__sgpDeferredInitState.atividades) return;
+            __sgpDeferredInitState.atividades = true;
+            initAtividades();
+        }
+function __sgpInitCorrecaoOnce(){
+            if(__sgpDeferredInitState.correcao) return;
+            __sgpDeferredInitState.correcao = true;
+            initCorrecao();
+        }
+
 function __sgpMainOnLoad(){ 
             if(window.__sgpBootDone) return;
             window.__sgpBootDone = true;
             const __boot = ()=>{
                 carregarDados();
-                try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){ }
-                try{ __warnTempPath(); }catch(_){ }
-                try{ __checkExternalLibs(); }catch(_){ }
-                checkBackupStatus();
                 garantirEstruturaNova();
                 initMenuTurmas();
                 renderizarMenu();
                 try{ __sgpBindDataOnclick(document); }catch(_){ }
-                gerarMesas();
                 renderizarVisao();
                 atualizarLabelsConfig();
                 initKeyboardShortcuts();
                 initOcorrenciasUI();
                 initElegivelUI();
-                initPlanner();
-                initAtividades();
-                initCorrecao();
-                try{ __HIST.lastSnapshot = __snapshotStr(); }catch(_){ }
-                try{ __scheduleStorageMonitorRefresh(1200); }catch(_){ }
+                try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){ }
+                __sgpRunDeferred('boot-light', ()=>{
+                    try{ __warnTempPath(); }catch(_){ }
+                    try{ __checkExternalLibs(); }catch(_){ }
+                    try{ checkBackupStatus(); }catch(_){ }
+                    try{ gerarMesas(); }catch(_){ }
+                    try{ __sgpInitPlannerOnce(); }catch(_){ }
+                    try{ __HIST.lastSnapshot = __snapshotStr(); }catch(_){ }
+                    try{ __scheduleStorageMonitorRefresh(1200); }catch(_){ }
+                }, 180);
+                __sgpRunDeferred('boot-correcao', ()=>{ try{ __sgpInitCorrecaoOnce(); }catch(_){ } }, 900);
+                __sgpRunDeferred('boot-atividades', ()=>{ try{ __sgpInitAtividadesOnce(); }catch(_){ } }, 1600);
             };
             try{
                 const p = (typeof initIndexedDB === 'function') ? initIndexedDB() : null;
@@ -10960,7 +10999,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.0.4",
+                version: "v20.0.5",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -11710,7 +11749,7 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
             __scheduleUiAfterPaint('main-view', function(){
                 if(visaoAtual !== t) return;
                 if(t==='calendar') renderizarCalendario();
-                else if(t==='correcao') corRenderAll();
+                else if(t==='correcao'){ try{ __sgpInitCorrecaoOnce(); }catch(_){ } corRenderAll(); }
                 else if(t==='mapa'){ carregarSelectLayouts(); mapaUpdateFullscreenUI(); }
                 else if(t==='ranking' && typeof rankUpdateFullscreenUI==='function') rankUpdateFullscreenUI();
                 renderizarVisaoContent();
@@ -11791,7 +11830,7 @@ function selTurma(n){
             renderizarMenu(); 
             __scheduleUiAfterPaint('main-view', function(){
                 renderizarVisaoContent();
-                if(visaoAtual==='correcao'){ try{ corRenderAll(); }catch(_){ } }
+                if(visaoAtual==='correcao'){ try{ __sgpInitCorrecaoOnce(); }catch(_){ } try{ corRenderAll(); }catch(_){ } }
             });
         }
 
@@ -18670,6 +18709,7 @@ function initPlanner(){
 }
 
 function abrirPlanner(){
+  try{ __sgpInitPlannerOnce(); }catch(_){ }
   abrirModal('modalPlanner');
   __scheduleUiAfterPaint('modal-planner', function(){
     plannerRefreshTurmasUI();
@@ -19759,6 +19799,7 @@ function initAtividades(){
 }
 
 function abrirAtividades(){
+  try{ __sgpInitAtividadesOnce(); }catch(_){ }
   abrirModal('modalAtividades');
   __scheduleUiAfterPaint('modal-atividades', function(){
     // Segurança: ao abrir, começa no modo aluno (banco/config ocultos)
