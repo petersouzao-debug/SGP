@@ -3849,9 +3849,10 @@ body.dark-mode .cw-cell.black{background:#0f172a;}
 .boletim-btn-print{ background:#0ea5e9; color:#fff; } .boletim-btn-print:hover{ background:#0284c7; }
 @media print{
   body *{ visibility:hidden !important; }
-  .boletim-overlay,.boletim-overlay *{ visibility:visible !important; }
-  .boletim-overlay{ position:fixed; inset:0; background:#fff; }
-  .boletim-container{ width:100%; max-height:none; box-shadow:none; border-radius:0; }
+  body > *:not(#boletimOverlay){ display:none !important; }
+  #boletimOverlay, #boletimOverlay *{ visibility:visible !important; }
+  #boletimOverlay{ position:static !important; inset:auto !important; display:block !important; background:#fff !important; }
+  #boletimOverlay .boletim-container{ width:100% !important; max-height:none !important; overflow:visible !important; box-shadow:none !important; border-radius:0 !important; padding:0 !important; }
   .boletim-close,.boletim-actions{ display:none !important; }
 }
 
@@ -15049,6 +15050,13 @@ function abrirDetalhes(id){
   const txt=document.getElementById('txtParecer');
   if(txt) txt.value = b.parecer || '';
 
+  // Comportamento
+  const sliderComp = document.getElementById('sliderComp');
+  const valComp = document.getElementById('valComp');
+  const compAtual = (b.comportamento === 0 || b.comportamento === '0') ? 0 : ((parseFloat(b.comportamento) || 10));
+  if(sliderComp) sliderComp.value = String(compAtual);
+  if(valComp) valComp.innerText = String(compAtual);
+
   // Ocorrências do aluno atual
   const occInput = document.getElementById('inputNovaOcorrencia');
   if(occInput){
@@ -15127,6 +15135,13 @@ function salvarAlteracoesDetalhadas(){
   // Parecer
   const txt=document.getElementById('txtParecer');
   if(txt) b.parecer = txt.value || '';
+
+  // Comportamento
+  const sliderComp = document.getElementById('sliderComp');
+  if(sliderComp){
+    const comp = Math.max(0, Math.min(10, parseFloat(sliderComp.value)));
+    if(Number.isFinite(comp)) b.comportamento = comp;
+  }
 
   // Médias
   b.media_lp = calcularMediaLPIndividual(b.notas_lp, b.notas_lp?.rec);
