@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.1.0)</title>
+    <title>SGP - Gestão Final (V20.1.1)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.1.0';
+      window.__SGP_SW_VERSION = '20.1.1';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -11059,7 +11059,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.1.0",
+                version: "v20.1.1",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };

@@ -1,4 +1,4 @@
-// SGP - Service Worker v20.1.0
+// SGP - Service Worker v20.1.1
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -31,8 +31,9 @@
 //  - PERF v20.1.0: cache de índice por turma|bim em _rankHistIndexManualRankEventLogForTurma
 //  - PERF v20.1.0: guard de sessão em _rankHistEnsureManualRankEventLogForTurma (migração roda 1x por turma+bim)
 //  - PERF v20.1.0: dirty-check por hash em _renderList evita reescrita do DOM sem mudanças
+//  - FIX v20.1.1: bump de versão do Service Worker para forçar atualização do cache após correções no boletim/PDF
 
-const SW_VERSION = '20.1.0';
+const SW_VERSION = '20.1.1';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
