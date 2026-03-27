@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.0.5)</title>
+    <title>SGP - Gestão Final (V20.0.6)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.0.5';
+      window.__SGP_SW_VERSION = '20.0.6';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -102,17 +102,28 @@
             __safeSWUpdate(reg, reason);
           }, wait);
         };
-        __registerSW().then(reg => {
-          __wireServiceWorkerReg(reg);
-          __scheduleSWUpdate(reg, 'registro inicial', 1600);
-          window.addEventListener('focus', ()=>{ __scheduleSWUpdate(reg, 'focus', 600); }, {passive:true});
-          document.addEventListener('visibilitychange', ()=>{
-            if(document.visibilityState === 'visible') __scheduleSWUpdate(reg, 'visibilitychange', 600);
-          }, {passive:true});
-          console.log('[SGP] Service Worker registrado! Escopo:', reg.scope, 'Versão:', window.__SGP_SW_VERSION);
-        }).catch(err => {
-          console.log('[SGP] Service Worker indisponível (normal em file:// ou rede temporariamente indisponível):', (err && err.message) || err);
-        });
+        const __startSWRegistration = ()=>{
+          __registerSW().then(reg => {
+            __wireServiceWorkerReg(reg);
+            __scheduleSWUpdate(reg, 'registro inicial', 2600);
+            window.addEventListener('focus', ()=>{ __scheduleSWUpdate(reg, 'focus', 900); }, {passive:true});
+            document.addEventListener('visibilitychange', ()=>{
+              if(document.visibilityState === 'visible') __scheduleSWUpdate(reg, 'visibilitychange', 900);
+            }, {passive:true});
+            console.log('[SGP] Service Worker registrado! Escopo:', reg.scope, 'Versão:', window.__SGP_SW_VERSION);
+          }).catch(err => {
+            console.log('[SGP] Service Worker indisponível (normal em file:// ou rede temporariamente indisponível):', (err && err.message) || err);
+          });
+        };
+        const __scheduleSWBoot = ()=>{
+          const runner = ()=>setTimeout(__startSWRegistration, 0);
+          if('requestIdleCallback' in window){
+            try{ return window.requestIdleCallback(runner, { timeout: 2500 }); }catch(_){ }
+          }
+          if(document.readyState === 'complete') return setTimeout(runner, 900);
+          window.addEventListener('load', ()=>{ setTimeout(runner, 900); }, { once:true, passive:true });
+        };
+        __scheduleSWBoot();
       }
     })();
     </script>
@@ -10029,18 +10040,32 @@ function __sgpInitCorrecaoOnce(){
 function __sgpMainOnLoad(){ 
             if(window.__sgpBootDone) return;
             window.__sgpBootDone = true;
-            const __boot = ()=>{
-                carregarDados();
-                garantirEstruturaNova();
-                initMenuTurmas();
-                renderizarMenu();
+            const __afterFirstPaint = (fn)=>{
+                try{
+                    requestAnimationFrame(()=>setTimeout(()=>{ try{ fn(); }catch(_){ } }, 0));
+                }catch(_){
+                    setTimeout(()=>{ try{ fn(); }catch(_){ } }, 0);
+                }
+            };
+            const __bootNow = ()=>{
+                try{ carregarDados(); }catch(_){ }
+                try{ garantirEstruturaNova(); }catch(_){ }
+                try{ initMenuTurmas(); }catch(_){ }
                 try{ __sgpBindDataOnclick(document); }catch(_){ }
-                renderizarVisao();
-                atualizarLabelsConfig();
-                initKeyboardShortcuts();
-                initOcorrenciasUI();
-                initElegivelUI();
-                try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){ }
+
+                __afterFirstPaint(()=>{
+                    try{ renderizarMenu(); }catch(_){ }
+                    try{ renderizarVisao(); }catch(_){ }
+                    try{ atualizarLabelsConfig(); }catch(_){ }
+                });
+
+                __sgpRunDeferred('boot-ui-followup', ()=>{
+                    try{ initKeyboardShortcuts(); }catch(_){ }
+                    try{ initOcorrenciasUI(); }catch(_){ }
+                    try{ initElegivelUI(); }catch(_){ }
+                    try{ if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(); }catch(_){ }
+                }, 120);
+
                 __sgpRunDeferred('boot-light', ()=>{
                     try{ __warnTempPath(); }catch(_){ }
                     try{ __checkExternalLibs(); }catch(_){ }
@@ -10049,20 +10074,17 @@ function __sgpMainOnLoad(){
                     try{ __sgpInitPlannerOnce(); }catch(_){ }
                     try{ __HIST.lastSnapshot = __snapshotStr(); }catch(_){ }
                     try{ __scheduleStorageMonitorRefresh(1200); }catch(_){ }
-                }, 180);
-                __sgpRunDeferred('boot-correcao', ()=>{ try{ __sgpInitCorrecaoOnce(); }catch(_){ } }, 900);
-                __sgpRunDeferred('boot-atividades', ()=>{ try{ __sgpInitAtividadesOnce(); }catch(_){ } }, 1600);
+                }, 280);
+                __sgpRunDeferred('boot-correcao', ()=>{ try{ __sgpInitCorrecaoOnce(); }catch(_){ } }, 1200);
+                __sgpRunDeferred('boot-atividades', ()=>{ try{ __sgpInitAtividadesOnce(); }catch(_){ } }, 2000);
             };
             try{
                 const p = (typeof initIndexedDB === 'function') ? initIndexedDB() : null;
-                if(p && typeof p.then === 'function'){
-                    p.finally(__boot);
-                }else{
-                    __boot();
+                if(p && typeof p.catch === 'function'){
+                    p.catch(()=>null);
                 }
-            }catch(_){
-                __boot();
-            }
+            }catch(_){ }
+            __bootNow();
         }
         if(document.readyState === 'loading'){
             document.addEventListener('DOMContentLoaded', __sgpMainOnLoad, { once:true });
@@ -10999,7 +11021,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.0.5",
+                version: "v20.0.6",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
