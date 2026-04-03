@@ -1,4 +1,4 @@
-// SGP - Service Worker v20.1.1
+// SGP - Service Worker v20.5.8
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -32,8 +32,18 @@
 //  - PERF v20.1.0: guard de sessão em _rankHistEnsureManualRankEventLogForTurma (migração roda 1x por turma+bim)
 //  - PERF v20.1.0: dirty-check por hash em _renderList evita reescrita do DOM sem mudanças
 //  - FIX v20.1.1: bump de versão do Service Worker para forçar atualização do cache após correções no boletim/PDF
+//  - FIX v20.2.0: atualização do cache para liberar o novo módulo de Tutoria integrado ao SGP
+//  - FIX v20.3.0: painel do aluno agora cruza Tutoria, risco pedagógico, frequência e próximos passos
+//  - FIX v20.4.0: relatório imprimível de Tutoria por aluno com dados automáticos do painel integrado
+//  - FIX v20.5.0: impressão em lote dos relatórios de Tutoria por turma
+//  - FIX v20.5.1: correção do layout do modal de Tutoria + botão de tela cheia
+//  - FIX v20.5.2: rolagem do modal de Tutoria e liberação de mais espaço útil para edição
+//  - FIX v20.5.3: barra de ações recolhível na Tutoria para ampliar a área de edição
+//  - FIX v20.5.5: alinhamento de versão do app, Service Worker e manifestos de backup
+//  - FIX v20.5.6: adiciona fallback IndexedDB para chaves críticas de histórico/backup
+//  - FIX v20.5.8: restauração ZIP volta a persistir sgp_audit e ignora metadata transitória de autobackups
 
-const SW_VERSION = '20.1.1';
+const SW_VERSION = '20.5.8';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado

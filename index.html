@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.1.1)</title>
+    <title>SGP - Gestão Final (V20.5.8)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.1.1';
+      window.__SGP_SW_VERSION = '20.5.8';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -191,6 +191,43 @@ body.dark-mode .plano-pr-tab:hover{ background:rgba(124,58,237,.15); color:#a78b
 body.dark-mode .plano-pr-tab-active{ background:#7c3aed !important; color:#fff !important; }
 body.dark-mode .plano-pr-tab-done{ border-color:#34d399; color:#34d399; }
 
+
+
+/* Painel integrado Tutoria x Risco x Frequência */
+.aluno-tutoria-panel{margin-top:16px;padding:16px;border-radius:16px;border:1px solid rgba(15,118,110,.18);background:linear-gradient(135deg,rgba(240,253,250,.95) 0%,rgba(248,250,252,.98) 100%);box-shadow:0 10px 24px rgba(15,23,42,.05);}
+.aluno-tutoria-panel.compact{margin-top:14px;padding:14px;border-radius:14px;}
+body.dark-mode .aluno-tutoria-panel{background:linear-gradient(135deg,rgba(15,23,42,.96) 0%,rgba(30,41,59,.96) 100%);border-color:rgba(45,212,191,.18);}
+.aluno-tutoria-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.aluno-tutoria-title{display:flex;flex-direction:column;gap:4px;}
+.aluno-tutoria-title h4{margin:0;font-size:1rem;color:var(--text-main);display:flex;align-items:center;gap:8px;}
+.aluno-tutoria-title .sub{font-size:.82rem;color:var(--text-muted);line-height:1.4;}
+.aluno-tutoria-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.aluno-tutoria-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:.78rem;font-weight:800;border:1px solid transparent;white-space:nowrap;}
+.aluno-tutoria-badge.neutral{background:rgba(148,163,184,.12);color:var(--text-sub);border-color:rgba(148,163,184,.2);}
+.aluno-tutoria-kpis{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;margin-bottom:12px;}
+.aluno-tutoria-panel.compact .aluno-tutoria-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+.aluno-tutoria-kpi{padding:12px;border-radius:14px;background:var(--card-bg);border:1px solid var(--border-color);}
+.aluno-tutoria-kpi .num{font-size:1.35rem;font-weight:900;line-height:1;color:var(--text-main);margin-bottom:6px;}
+.aluno-tutoria-kpi .lbl{font-size:.72rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;}
+.aluno-tutoria-kpi .sub{margin-top:6px;font-size:.8rem;color:var(--text-muted);line-height:1.35;}
+.aluno-tutoria-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.aluno-tutoria-panel.compact .aluno-tutoria-grid{grid-template-columns:1fr;}
+.aluno-tutoria-box{padding:12px 14px;border-radius:14px;background:var(--card-bg);border:1px solid var(--border-color);}
+.aluno-tutoria-box .ttl{font-size:.76rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+.aluno-tutoria-box ul{margin:0;padding-left:18px;color:var(--text-main);display:flex;flex-direction:column;gap:6px;}
+.aluno-tutoria-box li{line-height:1.45;}
+.aluno-tutoria-box .line{font-size:.9rem;line-height:1.5;color:var(--text-main);}
+.aluno-tutoria-box .muted{font-size:.84rem;color:var(--text-muted);line-height:1.45;}
+.aluno-tutoria-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.aluno-tutoria-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-main);font-weight:700;cursor:pointer;}
+.aluno-tutoria-btn:hover{transform:translateY(-1px);box-shadow:0 8px 16px rgba(15,23,42,.08);}
+.aluno-tutoria-btn.primary{background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);color:#fff;border-color:transparent;}
+.aluno-tutoria-btn.soft{background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.18);color:#075985;}
+body.dark-mode .aluno-tutoria-btn.soft{color:#bae6fd;background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.22);}
+.aluno-tutoria-btn.warn{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.18);color:#92400e;}
+body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.22);}
+@media (max-width: 900px){.aluno-tutoria-kpis,.aluno-tutoria-grid{grid-template-columns:1fr 1fr;}}
+@media (max-width: 680px){.aluno-tutoria-kpis,.aluno-tutoria-grid{grid-template-columns:1fr;} .aluno-tutoria-actions{flex-direction:column;} .aluno-tutoria-btn{justify-content:center; width:100%;}}
 
 </style>
 
@@ -4486,6 +4523,22 @@ body.dark-mode .link-quick-remove{ color:#fecaca; background: rgba(239,68,68,.14
   .links-quick-grid{ grid-template-columns: 1fr; max-height: 50vh; }
 }
 
+
+/* =========================
+   Tutoria — módulo integrado
+   ========================= */
+.tutoria-headbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+#modalTutoria .modal-box.modal-xl{width:min(1240px,98vw);max-width:98vw;height:92vh;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;padding:0;}
+#modalTutoria .modal-header-xl,#modalTutoria .modal-footer-xl{flex:0 0 auto;padding-left:24px;padding-right:24px;}
+#modalTutoria .modal-header-xl{padding-top:22px;padding-bottom:18px;}
+#modalTutoria .modal-footer-xl{padding-top:14px;padding-bottom:16px;}
+.tutoria-main-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;border-top:1px solid var(--border-color);border-bottom:1px solid var(--border-color);}
+.tutoria-main-scroll::-webkit-scrollbar{width:12px;}
+.tutoria-main-scroll::-webkit-scrollbar-thumb{background:rgba(100,116,139,.38);border-radius:999px;border:3px solid transparent;background-clip:content-box;}
+.tutoria-main-scroll::-webkit-scrollbar-track{background:transparent;}
+.tutoria-toolbar{padding:14px 18px;border-bottom:1px solid var(--border-color);background:rgba(14,165,233,.06);display:grid;grid-template-columns:minmax(150px,180px) minmax(220px,1fr) minmax(220px,1fr);gap:10px;align-items:end;}
+body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolbar .tb{display:flex;flex-direction:column;gap:6px;min-width:0;} .tutoria-toolbar .tb label{font-size:.78rem;font-weight:800;color:var(--text-muted);} .tutoria-toolbar .tb-actions-toggle{grid-column:1 / -1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:2px;} .tutoria-toolbar .tb-actions-toggle .planner-mini{white-space:normal;} .tutoria-toolbar .tb-actions{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding-top:2px;} .tutoria-toolbar .tb-actions .btn-planner{flex:0 0 auto;} .tutoria-toolbar.actions-collapsed .tb-actions{display:none;} .tutoria-toolbar-toggle{display:inline-flex;align-items:center;gap:8px;font-weight:800;} .tutoria-body{display:flex;flex-direction:column;gap:16px;padding:18px;flex:0 0 auto;min-height:0;overflow:visible;padding-bottom:26px;} .tutoria-kpis{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;} .tutoria-kpi{background:var(--card-bg);border:1px solid var(--border-color);border-radius:16px;padding:16px;box-shadow:0 8px 18px rgba(15,23,42,.05);} .tutoria-kpi .num{font-size:1.8rem;font-weight:900;color:var(--primary);line-height:1;margin-bottom:8px;} .tutoria-kpi .lbl{font-size:.8rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;} .tutoria-kpi .sub{margin-top:6px;font-size:.82rem;color:var(--text-muted);} .tutoria-grid-2{display:grid;grid-template-columns:minmax(320px,380px) minmax(0,1fr);gap:16px;align-items:start;} .tutoria-card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:16px;padding:16px;box-shadow:0 8px 18px rgba(15,23,42,.05);} .tutoria-card h3,.tutoria-card h4{margin:0 0 10px 0;color:var(--text-main);} .tutoria-card h3{font-size:1rem;} .tutoria-muted{color:var(--text-muted);font-size:.9rem;} .tutoria-empty{border:1px dashed var(--border-color);border-radius:14px;padding:18px;text-align:center;color:var(--text-muted);background:rgba(148,163,184,.06);} .tutoria-list{display:flex;flex-direction:column;gap:10px;max-height:min(62vh,640px);overflow:auto;padding-right:4px;} .tutoria-item{border:1px solid var(--border-color);border-radius:14px;padding:12px;background:var(--card-bg);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;} .tutoria-item:hover{transform:translateY(-1px);box-shadow:0 10px 16px rgba(15,23,42,.08);} .tutoria-item.active{border-color:rgba(37,99,235,.45);box-shadow:0 10px 16px rgba(37,99,235,.10);} .tutoria-item .top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;} .tutoria-item .name{font-weight:900;color:var(--text-main);line-height:1.15;} .tutoria-item .meta{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;font-size:.78rem;} .tutoria-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:.76rem;font-weight:800;border:1px solid var(--border-color);background:rgba(148,163,184,.08);} .tutoria-pill.ok{color:#166534;border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.10);} .tutoria-pill.warn{color:#92400e;border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.12);} .tutoria-pill.danger{color:#b91c1c;border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.10);} .tutoria-pill.soft{color:var(--text-muted);} .tutoria-script{background:rgba(14,165,233,.08);border:1px dashed rgba(14,165,233,.35);border-radius:14px;padding:14px;color:var(--text-main);line-height:1.5;font-size:.92rem;} .tutoria-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;} .tutoria-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;} .tutoria-form-grid .full{grid-column:1 / -1;} .tutoria-note{font-size:.82rem;color:var(--text-muted);} .tutoria-actions{display:flex;gap:8px;flex-wrap:wrap;} .tutoria-mini-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-main);font-weight:800;cursor:pointer;} .tutoria-mini-btn:hover{transform:translateY(-1px);} .tutoria-theme-bank{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;} .tutoria-theme-chip{padding:6px 12px;border-radius:999px;border:1px solid rgba(14,165,233,.25);background:rgba(14,165,233,.08);color:#0369a1;font-weight:800;font-size:.8rem;cursor:pointer;} body.dark-mode .tutoria-theme-chip{color:#bae6fd;background:rgba(14,165,233,.16);} .tutoria-timeline{display:flex;flex-direction:column;gap:10px;} .tutoria-timeline-item{border:1px solid var(--border-color);border-radius:14px;padding:12px;background:rgba(15,23,42,.03);} body.dark-mode .tutoria-timeline-item{background:rgba(255,255,255,.04);} .tutoria-timeline-item .hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px;} .tutoria-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;} .tutoria-flow .step{border:1px solid var(--border-color);border-radius:14px;padding:14px;background:rgba(148,163,184,.05);} .tutoria-flow .step strong{display:block;margin-bottom:8px;color:var(--text-main);} .tutoria-linkish{border:none;background:transparent;color:var(--primary);cursor:pointer;font-weight:900;padding:0;} .tutoria-linkish:hover{text-decoration:underline;} #modalTutoria .modal-box:fullscreen,#modalTutoria .modal-box:-webkit-full-screen,#modalTutoria .modal-box:-moz-full-screen,#modalTutoria .modal-box:-ms-fullscreen{width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;border-radius:0!important;margin:0!important;} body.tutoria-is-fullscreen #modalTutoria{background:transparent!important;backdrop-filter:none!important;} @media (max-width:1180px){.tutoria-toolbar{grid-template-columns:1fr 1fr;} .tutoria-toolbar .tb-actions{justify-content:flex-start;} .tutoria-grid-2{grid-template-columns:1fr;} .tutoria-list{max-height:320px;}} @media (max-width:860px){.tutoria-kpis,.tutoria-flow,.tutoria-form-grid{grid-template-columns:1fr;} .tutoria-toolbar{grid-template-columns:1fr;} .tutoria-toolbar .tb-actions-toggle{align-items:flex-start;flex-direction:column;} .tutoria-toolbar .tb-actions{justify-content:stretch;} .tutoria-toolbar .tb-actions .btn-planner{flex:1 1 calc(50% - 8px); justify-content:center;} #modalTutoria .modal-box.modal-xl{width:100vw;max-width:100vw;height:100vh;max-height:100vh;border-radius:0;} #modalTutoria .modal-header-xl,#modalTutoria .modal-footer-xl{padding-left:16px;padding-right:16px;}}
+
 </style>
 </head>
 <body>
@@ -4611,6 +4664,9 @@ body.dark-mode .link-quick-remove{ color:#fecaca; background: rgba(239,68,68,.14
                     </button>
                     <button class="btn-tool" id="btnPlannerTool" data-onclick="abrirPlanner()" title="Planner">
                         <i class="fas fa-clipboard-list"></i><span id="plannerBadge" class="planner-badge" style="display:none;">0</span>
+                    </button>
+                    <button class="btn-tool" data-onclick="abrirTutoria()" title="Tutoria">
+                        <i class="fas fa-hands-holding-circle"></i>
                     </button>
                     <button class="btn-tool" data-onclick="abrirFrequencia()" title="Chamada/Frequência">
                         <i class="fas fa-clipboard-check"></i>
@@ -5979,6 +6035,7 @@ body.dark-mode .link-quick-remove{ color:#fecaca; background: rgba(239,68,68,.14
 
                     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e2e8f0;">
                     <div style="display: flex; align-items: center; gap: 15px; background: #f0fdf4; padding: 15px; border-radius: 8px;"><span style="font-size: 1.5rem;"><i class="fas fa-shield-heart"></i></span><input type="range" id="sliderComp" min="0" max="10" step="0.5" class="slider-comp" data-oninput="document.getElementById('valComp').innerText = this.value"><span id="valComp" style="font-weight: bold; font-size: 1.2rem; color: var(--farol-verde);">10</span></div>
+                    <div id="painelTutoriaAluno"></div>
                 </div>
                 <div class="col-right">
                     <h3 style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px; color: #334155;">
@@ -6009,8 +6066,63 @@ body.dark-mode .link-quick-remove{ color:#fecaca; background: rgba(239,68,68,.14
                 </div>
             </div>
             <div class="modal-footer-xl">
-                <div><button class="btn-primary" style="background:#475569;" data-onclick="imprimirFicha()"><i class="fas fa-print"></i> PDF</button></div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-primary" style="background:#475569;" data-onclick="imprimirFicha()"><i class="fas fa-print"></i> PDF</button>
+                    <button class="btn-primary" style="background:#0f766e;" data-onclick="abrirTutoria(alunoEdicaoID)"><i class="fas fa-hands-holding-circle"></i> Tutoria</button>
+                </div>
                 <div style="display: flex; gap: 10px;"><button data-onclick="fecharModais()" style="padding: 10px 20px; border: 1px solid #cbd5e1; bg: white; cursor: pointer;">Cancelar</button><button data-onclick="salvarAlteracoesDetalhadas()" class="btn-primary" style="background: var(--farol-verde);">Salvar</button></div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="modalTutoria" class="modal-overlay" style="display:none;">
+        <div class="modal-box modal-xl">
+            <div class="modal-header-xl">
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <div style="display:flex; align-items:center; gap:10px; font-size:1.25rem; font-weight:800;">
+                        <i class="fas fa-hands-holding-circle" style="color:#0f766e;"></i> Tutoria
+                    </div>
+                    <div style="font-size:0.85rem; color:#64748b;">Acolher, engajar, fazer junto, acompanhar e registrar.</div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button id="tutoriaFsBtn" class="btn-planner" data-onclick="tutoriaToggleFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i></button>
+                    <button class="btn-planner" data-onclick="fecharModais()" title="Fechar"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="tutoria-main-scroll" id="tutoriaMainScroll">
+                <div class="planner-headbar tutoria-headbar">
+                    <div class="planner-tabs" role="tablist" aria-label="Visões da Tutoria">
+                        <button id="tutoriaTabPainel" class="planner-tab active" data-onclick="tutoriaSetTab('painel')"><i class="fas fa-chart-line"></i> Painel</button>
+                        <button id="tutoriaTabIndividual" class="planner-tab" data-onclick="tutoriaSetTab('individual')"><i class="fas fa-user-check"></i> Individual</button>
+                        <button id="tutoriaTabColetiva" class="planner-tab" data-onclick="tutoriaSetTab('coletiva')"><i class="fas fa-users"></i> Coletiva</button>
+                    </div>
+                    <div class="planner-actions"><span id="tutoriaHeaderHint" class="planner-mini">FE 1 + encontros individuais e coletivos</span></div>
+                </div>
+                <div class="tutoria-toolbar actions-collapsed" id="tutoriaToolbar">
+                    <div class="tb"><label for="tutoriaFilterTurma">Turma</label><select id="tutoriaFilterTurma" class="inp" data-onchange="tutoriaSetFilterTurma(this.value)"></select></div>
+                    <div class="tb"><label for="tutoriaSearch">Busca</label><input id="tutoriaSearch" class="inp" placeholder="Nome, sonho, ponto de atenção..." data-oninput="tutoriaSetSearch(this.value)"></div>
+                    <div class="tb"><label for="tutoriaAlunoSelect">Ir para aluno</label><select id="tutoriaAlunoSelect" class="inp"></select></div>
+                    <div class="tb tb-actions-toggle">
+                        <span class="planner-mini">Ações rápidas recolhidas para liberar mais espaço de edição.</span>
+                        <button id="tutoriaToggleActionsBtn" class="btn-planner tutoria-toolbar-toggle" data-onclick="tutoriaToggleActionsCollapsed()"><i class="fas fa-chevron-down"></i> Mostrar ações</button>
+                    </div>
+                    <div class="tb tb-actions" id="tutoriaToolbarActions">
+                        <button class="btn-planner" data-onclick="tutoriaSelecionarAlunoDoSelect()"><i class="fas fa-user"></i> Abrir</button>
+                        <button class="btn-planner" data-onclick="tutoriaToggleTutorandoSelecionado()"><i class="fas fa-user-check"></i> Marcar</button>
+                        <button class="btn-planner" data-onclick="tutoriaImprimirRelatorioAluno()"><i class="fas fa-print"></i> Relatório</button>
+                        <button class="btn-planner" data-onclick="tutoriaImprimirRelatoriosTurma()"><i class="fas fa-layer-group"></i> Relatórios da turma</button>
+                        <button class="btn-planner" data-onclick="tutoriaAplicarListaBase()"><i class="fas fa-wand-magic-sparkles"></i> Lista base</button>
+                        <button class="btn-planner" data-onclick="tutoriaExportJSON()"><i class="fas fa-file-arrow-down"></i> Exportar</button>
+                        <button class="btn-planner" data-onclick="document.getElementById('tutoriaImportFile').click()"><i class="fas fa-file-arrow-up"></i> Importar</button>
+                        <input type="file" id="tutoriaImportFile" style="display:none;" accept="application/json" data-onchange="tutoriaImportFile(this)">
+                    </div>
+                </div>
+                <div class="tutoria-body" id="tutoriaContent"></div>
+            </div>
+            <div class="modal-footer-xl">
+                <div class="planner-mini" id="tutoriaFooterInfo">Tutoria integrada ao SGP.</div>
+                <div style="display:flex; gap:10px;"><button class="btn-planner" data-onclick="fecharModais()"><i class="fas fa-xmark"></i> Fechar</button></div>
             </div>
         </div>
     </div>
@@ -7151,6 +7263,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                 if(!key || !key.startsWith('sgp_')) return false;
                 const skip = new Set([
                     'sgp_autobackups',
+                    'sgp_autobackups_meta',
                     'sgp_lastBackupAt',
                     'sgp_last_backup',
                     'sgp_backup_pending',
@@ -10687,7 +10800,13 @@ function __getIDBShadowKeys(){
     'sgp_atividades_roleta_bank',
     'sgp_atividades_quiz_bank',
     'sgp_atividades_comp_bank',
-    'sgp_atividades_ord_bank'
+    'sgp_atividades_ord_bank',
+    'sgp_rank_event_log_v1',
+    'sgp_grade_events_v1',
+    'sgp_grade_event_log_v1',
+    'sgp_links_cards_v1',
+    'sgp_autotest_history_v1',
+    'sgp_autobackups_meta'
   ];
 }
 function __shadowStorageIdbKey(key){ return '__shadow__::' + String(key || ''); }
@@ -11059,7 +11178,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.1.1",
+                version: "v20.5.8",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -11236,6 +11355,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                     let __restoreStarted = false;
                     try{
                         try{ if(typeof __snapshotStr === 'function') __beforeRestore = __snapshotStr(); }catch(_){ __beforeRestore = null; }
+                        if(__beforeRestore && typeof __applySnapshot === 'function') __restoreStarted = true;
                         const files = __zipReadStore(e.target.result);
                         const readJson = (fname)=>{
                             if(!files || typeof files[fname] === 'undefined') return null;
@@ -11247,12 +11367,43 @@ __safeLSSet('sgp_last_backup', Date.now());
 
                         const fullExport = readJson('sgp_storage_full.json');
                         const fullStorage = (fullExport && fullExport.storage && typeof fullExport.storage === 'object' && !Array.isArray(fullExport.storage)) ? fullExport.storage : null;
+
+                        // FIX v20.5.5: ao restaurar ZIP com sgp_storage_full.json, limpar chaves sgp_
+                        // que não existem mais no backup. Sem isso, dados locais antigos podem
+                        // sobreviver ao restore e contaminar o snapshot restaurado.
+                        try{
+                            if(fullStorage){
+                                const importedKeys = new Set(Object.keys(fullStorage).filter((k)=>k && String(k).startsWith('sgp_')));
+                                const preserve = new Set([
+                                    'sgp_lastBackupAt',
+                                    'sgp_last_backup',
+                                    'sgp_backup_pending',
+                                    'sgp_last_core_save',
+                                    'sgp_linked_file_pending',
+                                    'sgp_linked_file_last_sync',
+                                    'sgp_id_seq',
+                                    'sgp_freq_version',
+                                    'sgp_last_freq_save',
+                                    'sgp_storage_alert_level',
+                                    (typeof __SGP_ATOMIC_CORE_TMP === 'string' ? __SGP_ATOMIC_CORE_TMP : 'sgp_state_core_tmp_v1'),
+                                    (typeof __SGP_ATOMIC_CORE_META_KEY === 'string' ? __SGP_ATOMIC_CORE_META_KEY : 'sgp_state_core_meta_v1')
+                                ]);
+                                const currentKeys = (typeof __storageListKeys === 'function') ? __storageListKeys('sgp_') : [];
+                                currentKeys.forEach((k)=>{
+                                    try{
+                                        if(!k || !String(k).startsWith('sgp_')) return;
+                                        if(importedKeys.has(k) || preserve.has(k)) return;
+                                        __safeLSRemove(k);
+                                    }catch(_){ }
+                                });
+                            }
+                        }catch(_){ }
+
                         let core = readJson('sgp_core.json');
                         if(!core && fullStorage && fullStorage[__SGP_ATOMIC_CORE_KEY]){
                             try{ core = JSON.parse(fullStorage[__SGP_ATOMIC_CORE_KEY]); }catch(_){ core = null; }
                         }
                         if(!core) throw new Error("Backup ZIP inválido (sgp_core.json ausente).");
-                        __restoreStarted = true;
 
                         turmas = Array.isArray(core.turmas) ? core.turmas : [];
                         alunos = Array.isArray(core.alunos) ? core.alunos : [];
@@ -11286,6 +11437,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                         // Autobackups internos não são importados/exportados no ZIP (mantém o backup leve)
                         const exLastBackupAt = readJson('extras_lastBackupAt.json');
                         if(typeof __AUDIT !== 'undefined') __AUDIT = exAudit;
+                        try{ __safeLSSet('sgp_audit', JSON.stringify(Array.isArray(__AUDIT) ? __AUDIT : [])); }catch(_){ }
                         if(typeof __BACKUPS !== 'undefined'){ try{ if(!Array.isArray(__BACKUPS)) __BACKUPS = []; }catch(_){ } }
                         
 if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && typeof exLastBackupAt === 'object') ? (parseInt(exLastBackupAt.lastBackupAt || '0', 10) || 0) : 0;
@@ -11491,7 +11643,7 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                                     'sgp_linked_file_meta','sgp_linked_file_last_sync','sgp_linked_file_pending',
                                     'sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid',
                                     'sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b','sgp_atividades_sorteio_turma',
-                                    'sgp_audit','sgp_autobackups','sgp_lastBackupAt'
+                                    'sgp_audit','sgp_autobackups','sgp_autobackups_meta','sgp_lastBackupAt'
                                 ]);
                                 Object.keys(fullStorage).forEach((k)=>{
                                     try{
@@ -11609,6 +11761,11 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                         rankHistCfg: (d.rankHistCfg && typeof d.rankHistCfg === 'object' && !Array.isArray(d.rankHistCfg))
                           ? d.rankHistCfg
                           : (((d.sgp_rank_hist_cfg && typeof d.sgp_rank_hist_cfg === 'object' && !Array.isArray(d.sgp_rank_hist_cfg)) ? d.sgp_rank_hist_cfg : {})),
+                        linksRapidos: Array.isArray(d.linksRapidos) ? d.linksRapidos : (Array.isArray(d.sgp_links_cards_v1) ? d.sgp_links_cards_v1 : []),
+                        gradeEvents: (d.gradeEvents && typeof d.gradeEvents === 'object' && !Array.isArray(d.gradeEvents))
+                          ? d.gradeEvents
+                          : (((d.sgp_grade_events_v1 && typeof d.sgp_grade_events_v1 === 'object' && !Array.isArray(d.sgp_grade_events_v1)) ? d.sgp_grade_events_v1 : {})),
+                        gradeEventLog: Array.isArray(d.gradeEventLog) ? d.gradeEventLog : (Array.isArray(d.sgp_grade_event_log_v1) ? d.sgp_grade_event_log_v1 : []),
                         uiPrefs: (d.uiPrefs && typeof d.uiPrefs === 'object' && !Array.isArray(d.uiPrefs)) ? d.uiPrefs : {},
                         planoPrefs: (d.planoPrefs && typeof d.planoPrefs === 'object' && !Array.isArray(d.planoPrefs)) ? d.planoPrefs : {},
                         auditLog: Array.isArray(d.auditLog) ? d.auditLog : (Array.isArray(d.sgp_audit_log) ? d.sgp_audit_log : []),
@@ -13906,19 +14063,13 @@ function addOcorrencia(){
   const now = Date.now();
   ctx.b.ocorrencias.push({ id: now, ts: now, data: new Date(now).toLocaleString(), texto: t });
 
-  ta.value = '';
-  salvarDadosLocal();
-  renderizarOcorrencias(ctx.b.ocorrencias);
-  showToast("Ocorrência registrada.", "success");
+  ta.value = '';   salvarDadosLocal();   renderizarOcorrencias(ctx.b.ocorrencias);   __tutoriaRenderAlunoPainelDetalhes();   showToast("Ocorrência registrada.", "success");
 }
 
 function removerOcorrencia(occId){
   const ctx = _getAlunoBimestreAtual();
   if(!ctx) return;
-  ctx.b.ocorrencias = (ctx.b.ocorrencias || []).filter(o => (o.id !== occId));
-  salvarDadosLocal();
-  renderizarOcorrencias(ctx.b.ocorrencias);
-  showToast("Ocorrência excluída.", "info");
+  ctx.b.ocorrencias = (ctx.b.ocorrencias || []).filter(o => (o.id !== occId));   salvarDadosLocal();   renderizarOcorrencias(ctx.b.ocorrencias);   __tutoriaRenderAlunoPainelDetalhes();   showToast("Ocorrência excluída.", "info");
 }
 
 function initOcorrenciasUI(){
@@ -15013,6 +15164,483 @@ function calcularEmTempoReal(){
   if(s2){ s2.innerText = m2.toFixed(1); s2.style.color = getCorFarol(m2); }
 }
 
+
+function __tutoriaAlunoBadgeTone(nivelKey){
+  const k = String(nivelKey || 'baixo');
+  if(k === 'critico') return 'background:rgba(220,38,38,.12);color:#991b1b;border-color:rgba(220,38,38,.18);';
+  if(k === 'alto') return 'background:rgba(249,115,22,.12);color:#9a3412;border-color:rgba(249,115,22,.18);';
+  if(k === 'moderado') return 'background:rgba(245,158,11,.14);color:#92400e;border-color:rgba(245,158,11,.18);';
+  return 'background:rgba(22,163,74,.12);color:#166534;border-color:rgba(22,163,74,.18);';
+}
+function __tutoriaAlunoMetricTone(kind, value){
+  if(kind === 'media'){
+    const n = parseFloat(value);
+    if(!isFinite(n)) return 'color:var(--text-main);';
+    return n < 5 ? 'color:#b91c1c;' : (n < 7 ? 'color:#b45309;' : 'color:#15803d;');
+  }
+  if(kind === 'freq'){
+    const n = parseFloat(value);
+    if(!isFinite(n)) return 'color:var(--text-main);';
+    return n < 75 ? 'color:#b91c1c;' : (n < 85 ? 'color:#b45309;' : 'color:#15803d;');
+  }
+  if(kind === 'risk'){
+    return parseFloat(value) >= 60 ? 'color:#b91c1c;' : (parseFloat(value) >= 35 ? 'color:#c2410c;' : 'color:#1d4ed8;');
+  }
+  return 'color:var(--text-main);';
+}
+function __tutoriaAlunoListOrFallback(items, fallback){
+  const arr = (items || []).filter(Boolean);
+  if(!arr.length) return `<div class="muted">${_escHTML(fallback || 'Sem registro ainda.')}</div>`;
+  return `<ul>${arr.map(x=>`<li>${_escHTML(x)}</li>`).join('')}</ul>`;
+}
+function __tutoriaAlunoPainelHtml(a, bim, compact){
+  try{
+    if(!a) return '';
+    __tutoriaEnsureBoot();
+    const recTut = __tutoriaGetAlunoRec(a.id, false);
+    const perfil = recTut?.perfil || __tutoriaDefaultPerfil();
+    const risk = (typeof __riskBuildAlunoRecord === 'function') ? __riskBuildAlunoRecord(a, bim || bimestreAtual) : null;
+    const info = __tutoriaStatusInfo(a);
+    const last = __tutoriaLastEncontro(recTut);
+    const encontros = Array.isArray(recTut?.encontros) ? recTut.encontros : [];
+    const sonhos = __tutoriaLines(perfil.sonhos).slice(0, compact ? 1 : 2);
+    const projeto = __tutoriaLines(perfil.projetoVida).slice(0, compact ? 1 : 2);
+    const focoAcad = __tutoriaLines(perfil.prioridadesAcademicas).slice(0, compact ? 2 : 3);
+    const focoProt = __tutoriaLines(perfil.prioridadesProtagonismo).slice(0, compact ? 1 : 2);
+    const combinados = __tutoriaLines(perfil.combinados).slice(0, compact ? 1 : 2);
+    const fatores = (risk?.fatores || []).slice(0, compact ? 3 : 5).map(f => f?.texto).filter(Boolean);
+    const mediaTxt = (risk && risk.mediaGeral !== null && isFinite(risk.mediaGeral)) ? risk.mediaGeral.toFixed(1) : '—';
+    const freqTxt = (risk && risk.freqPct !== null && isFinite(risk.freqPct)) ? `${risk.freqPct.toFixed(0)}%` : '—';
+    const riscoTxt = (risk && isFinite(risk.score)) ? String(risk.score) : '0';
+    const compTxt = (risk && risk.comportamento !== null && isFinite(risk.comportamento)) ? risk.comportamento.toFixed(1) : '—';
+    const commTxt = risk ? __riskFormatActionShort(risk.lastAction) : 'Sem registro de comunicação';
+    const padraoTxt = risk?.absencePattern?.short && risk.absencePattern.short !== 'Sem registros suficientes' ? risk.absencePattern.short : 'Sem padrão forte detectado';
+    const proxPasso = (last && (last.nextStep || last.nextDate)) ? `${last.nextStep || 'Retomar combinado'}${last.nextDate ? ' • ' + __tutoriaHumanDate(last.nextDate) : ''}` : (combinados[0] || 'Definir um próximo passo com o estudante.');
+    const hint = compact ? 'Resumo rápido para agir sem sair da Tutoria.' : 'Cruza Tutoria, notas, frequência e risco pedagógico no mesmo lugar.';
+    const actionBtns = compact
+      ? `<div class="aluno-tutoria-actions"><button class="aluno-tutoria-btn primary" data-onclick="__tutoriaAlunoAbrirDetalhes('${_escHTML(String(a.id))}')"><i class="fas fa-id-card"></i> Ficha do aluno</button><button class="aluno-tutoria-btn soft" data-onclick="__tutoriaAlunoAbrirFrequencia('${_escHTML(String(a.id))}')"><i class="fas fa-calendar-check"></i> Frequência</button><button class="aluno-tutoria-btn" data-onclick="tutoriaImprimirRelatoriosTurma('${_escHTML(String(a.turma || ''))}','${_escHTML(String(a.id))}')"><i class="fas fa-layer-group"></i> Lote da turma</button><button class="aluno-tutoria-btn warn" data-onclick="tutoriaImprimirRelatorioAluno('${_escHTML(String(a.id))}')"><i class="fas fa-print"></i> Relatório</button></div>`
+      : `<div class="aluno-tutoria-actions"><button class="aluno-tutoria-btn primary" data-onclick="abrirTutoria('${_escHTML(String(a.id))}')"><i class="fas fa-hands-holding-circle"></i> Abrir Tutoria</button><button class="aluno-tutoria-btn soft" data-onclick="__tutoriaAlunoAbrirFrequencia('${_escHTML(String(a.id))}')"><i class="fas fa-calendar-check"></i> Frequência</button><button class="aluno-tutoria-btn warn" data-onclick="__tutoriaAlunoCriarAcompanhamento('${_escHTML(String(a.id))}')"><i class="fas fa-list-check"></i> Criar tarefa</button><button class="aluno-tutoria-btn" data-onclick="tutoriaImprimirRelatorioAluno('${_escHTML(String(a.id))}')"><i class="fas fa-print"></i> Relatório</button><button class="aluno-tutoria-btn" data-onclick="tutoriaImprimirRelatoriosTurma('${_escHTML(String(a.turma || ''))}','${_escHTML(String(a.id))}')"><i class="fas fa-layer-group"></i> Lote da turma</button></div>`;
+    return `
+      <div class="aluno-tutoria-panel${compact ? ' compact' : ''}">
+        <div class="aluno-tutoria-head">
+          <div class="aluno-tutoria-title">
+            <h4><i class="fas fa-route" style="color:#0f766e;"></i> Painel integrado da Tutoria</h4>
+            <div class="sub">${_escHTML(hint)}</div>
+          </div>
+          <div class="aluno-tutoria-badges">
+            <span class="aluno-tutoria-badge" style="${__tutoriaAlunoBadgeTone(risk?.nivel?.key)}"><i class="fas fa-triangle-exclamation"></i> ${_escHTML(risk?.nivel?.label || 'Monitorar')}</span>
+            <span class="aluno-tutoria-badge neutral"><i class="fas fa-user-check"></i> ${_escHTML(info.label)}</span>
+          </div>
+        </div>
+        <div class="aluno-tutoria-kpis">
+          <div class="aluno-tutoria-kpi"><div class="num" style="${__tutoriaAlunoMetricTone('risk', risk?.score || 0)}">${_escHTML(riscoTxt)}</div><div class="lbl">Score de risco</div><div class="sub">${_escHTML((risk?.resumo || []).slice(0,1).join(' • ') || 'Sem alerta forte')}</div></div>
+          <div class="aluno-tutoria-kpi"><div class="num" style="${__tutoriaAlunoMetricTone('freq', risk?.freqPct)}">${_escHTML(freqTxt)}</div><div class="lbl">Frequência</div><div class="sub">${_escHTML(padraoTxt)}</div></div>
+          <div class="aluno-tutoria-kpi"><div class="num" style="${__tutoriaAlunoMetricTone('media', risk?.mediaGeral)}">${_escHTML(mediaTxt)}</div><div class="lbl">Média geral</div><div class="sub">Comp.: ${_escHTML(compTxt)} • Ocorrências: ${_escHTML(String(risk?.ocorrencias || 0))}</div></div>
+          <div class="aluno-tutoria-kpi"><div class="num">${_escHTML(String(encontros.length))}</div><div class="lbl">Encontros</div><div class="sub">Último: ${_escHTML(__tutoriaHumanDate(last?.date || ''))}</div></div>
+        </div>
+        <div class="aluno-tutoria-grid">
+          <div class="aluno-tutoria-box">
+            <div class="ttl">Sinais para agir agora</div>
+            ${__tutoriaAlunoListOrFallback(fatores.length ? fatores : (risk?.resumo || []).slice(0, compact ? 3 : 4), 'Ainda sem fatores críticos registrados no bimestre atual.')}
+          </div>
+          <div class="aluno-tutoria-box">
+            <div class="ttl">Foco da tutoria</div>
+            ${__tutoriaAlunoListOrFallback([sonhos[0] ? `Sonho: ${sonhos[0]}` : '', projeto[0] ? `Projeto de Vida: ${projeto[0]}` : '', focoAcad[0] ? `Acadêmico: ${focoAcad[0]}` : '', focoProt[0] ? `Protagonismo: ${focoProt[0]}` : ''].filter(Boolean), 'Preencha sonhos, projeto de vida e prioridades na aba de Tutoria.')}
+          </div>
+          <div class="aluno-tutoria-box">
+            <div class="ttl">Próximo passo</div>
+            <div class="line">${_escHTML(proxPasso)}</div>
+            <div class="muted" style="margin-top:8px;">${_escHTML(last?.notes || (combinados[0] ? `Combinado atual: ${combinados[0]}` : 'Sem observação recente do encontro.'))}</div>
+          </div>
+          <div class="aluno-tutoria-box">
+            <div class="ttl">Comunicação e acompanhamento</div>
+            <div class="line">${_escHTML(commTxt)}</div>
+            <div class="muted" style="margin-top:8px;">${_escHTML(risk?.deepAbsenceData?.mini || risk?.deepAbsenceData?.summary || 'Sem leitura aprofundada de ausência no período.')}</div>
+          </div>
+        </div>
+        ${actionBtns}
+      </div>`;
+  }catch(_){ return ''; }
+}
+function __tutoriaRenderAlunoPainelDetalhes(){
+  try{
+    const host = document.getElementById('painelTutoriaAluno');
+    const a = alunos.find(al => al.id === alunoEdicaoID);
+    if(!host || !a) return;
+    host.innerHTML = __tutoriaAlunoPainelHtml(a, bimestreAtual, false);
+    try{ __sgpBindDataOnclick(host); }catch(_){ }
+  }catch(_){ }
+}
+function __tutoriaAlunoAbrirFrequencia(alunoId){
+  try{
+    const a = alunos.find(al => String(al.id) === String(alunoId));
+    if(!a) return;
+    fecharModais(false);
+    if(typeof abrirFrequenciaRapido === 'function') abrirFrequenciaRapido(a.turma, { refreshView:false });
+    else if(typeof abrirFrequencia === 'function') abrirFrequencia();
+  }catch(_){ }
+}
+function __tutoriaAlunoAbrirDetalhes(alunoId){
+  try{
+    fecharModais(false);
+    abrirDetalhes(alunoId);
+  }catch(_){ }
+}
+function __tutoriaAlunoCriarAcompanhamento(alunoId){
+  try{
+    __tutoriaEnsureBoot();
+    const a = alunos.find(al => String(al.id) === String(alunoId));
+    if(!a) return;
+    const recTut = __tutoriaGetAlunoRec(a.id, false);
+    const risk = (typeof __riskBuildAlunoRecord === 'function') ? __riskBuildAlunoRecord(a, bimestreAtual) : null;
+    const last = __tutoriaLastEncontro(recTut);
+    const notes = [];
+    if(risk){
+      notes.push(`Score de risco: ${risk.score} • ${risk.nivel?.label || 'Monitorar'}`);
+      if(risk.mediaGeral !== null) notes.push(`Média geral: ${risk.mediaGeral.toFixed(1)}`);
+      if(risk.freqPct !== null) notes.push(`Frequência: ${risk.freqPct.toFixed(0)}%`);
+      const acoes = (typeof __riskInterventionActions === 'function') ? __riskInterventionActions(risk) : [];
+      if(acoes.length) notes.push('Ações sugeridas:\n- ' + acoes.join('\n- '));
+      if(risk.absencePattern?.short) notes.push('Padrão de ausência: ' + risk.absencePattern.short);
+    }
+    if(last?.nextStep) notes.push('Próximo passo combinado: ' + last.nextStep);
+    __tutoriaCreatePlannerTask({
+      title: `Acompanhamento • ${a.nome}`,
+      date: last?.nextDate || __tutoriaTodayISO(),
+      turma: a.turma || '',
+      notes: notes.filter(Boolean).join('\n\n')
+    });
+    if(typeof showToast === 'function') showToast('Tarefa de acompanhamento criada no Planner.');
+  }catch(_){ if(typeof showToast === 'function') showToast('Não foi possível criar a tarefa.', 'error'); }
+}
+
+
+function __tutoriaReportList(arr, fallback){
+  const items = (arr || []).filter(Boolean).map(v => String(v || '').trim()).filter(Boolean);
+  if(!items.length) return `<div class="tutoria-report-empty">${_escHTML(fallback || 'Sem registro.')}</div>`;
+  return `<ul>${items.map(x => `<li>${_escHTML(x)}</li>`).join('')}</ul>`;
+}
+function __tutoriaReportField(label, html, wide){
+  return `<div class="tutoria-report-field${wide ? ' wide' : ''}"><div class="tutoria-report-label">${_escHTML(label)}</div><div class="tutoria-report-value">${html}</div></div>`;
+}
+function __tutoriaBuildAlunoReportHtml(alunoId, bim){
+  try{
+    __tutoriaEnsureBoot();
+    const a = __tutoriaGetAlunoById(alunoId);
+    if(!a) return '';
+    const b = parseInt(bim || bimestreAtual || 1, 10) || 1;
+    const recTut = __tutoriaGetAlunoRec(a.id, false);
+    const perfil = recTut?.perfil || __tutoriaDefaultPerfil();
+    const risk = (typeof __riskBuildAlunoRecord === 'function') ? __riskBuildAlunoRecord(a, b) : null;
+    const info = __tutoriaStatusInfo(a);
+    const last = __tutoriaLastEncontro(recTut);
+    const encontros = Array.isArray(recTut?.encontros) ? recTut.encontros.slice().sort((x,y)=> String(y.date||'').localeCompare(String(x.date||'')) || (y.createdAt||0)-(x.createdAt||0)) : [];
+    const recentes = encontros.slice(0, 4);
+    const sonhos = __tutoriaLines(perfil.sonhos);
+    const projeto = __tutoriaLines(perfil.projetoVida);
+    const virtudes = __tutoriaLines(perfil.virtudes);
+    const habilidades = __tutoriaLines(perfil.habilidades);
+    const positivos = __tutoriaLines(perfil.pontosPositivos);
+    const fragilidades = __tutoriaLines(perfil.fragilidades);
+    const atencoes = __tutoriaLines(perfil.pontosAtencao);
+    const acad = __tutoriaLines(perfil.prioridadesAcademicas);
+    const prot = __tutoriaLines(perfil.prioridadesProtagonismo);
+    const combinados = __tutoriaLines(perfil.combinados);
+    const combinadosEdu = __tutoriaLines(perfil.combinadosEducadores);
+    const abordagens = __tutoriaLines(perfil.abordagens);
+    const fatores = (risk?.fatores || []).map(f => f?.texto).filter(Boolean);
+    const resumoRisco = (risk?.resumo || []).filter(Boolean);
+    const mediaTxt = (risk && risk.mediaGeral !== null && isFinite(risk.mediaGeral)) ? risk.mediaGeral.toFixed(1) : '—';
+    const freqTxt = (risk && risk.freqPct !== null && isFinite(risk.freqPct)) ? `${risk.freqPct.toFixed(0)}%` : '—';
+    const scoreTxt = (risk && isFinite(risk.score)) ? String(risk.score) : '0';
+    const compTxt = (risk && risk.comportamento !== null && isFinite(risk.comportamento)) ? risk.comportamento.toFixed(1) : '—';
+    const padraoTxt = risk?.absencePattern?.short && risk.absencePattern.short !== 'Sem registros suficientes' ? risk.absencePattern.short : 'Sem padrão forte detectado';
+    const commTxt = risk ? __riskFormatActionShort(risk.lastAction) : 'Sem registro de comunicação';
+    const deepTxt = risk?.deepAbsenceData?.summary || risk?.deepAbsenceData?.mini || 'Sem leitura aprofundada de ausência no período.';
+    const proxPasso = (last && (last.nextStep || last.nextDate)) ? `${last.nextStep || 'Retomar combinado'}${last.nextDate ? ' • ' + __tutoriaHumanDate(last.nextDate) : ''}` : (combinados[0] || 'Definir um próximo passo com o estudante.');
+    const escola = (typeof config === 'object' && config && config.escola) ? String(config.escola).trim() : '';
+    const title = escola || 'SGP — Relatório de Tutoria';
+    const coverHtml = `
+      <section class="tutoria-report-cover">
+        <div>
+          <div class="tag">Tutor, o acolhedor de sonhos</div>
+          <h1>Relatório individual de Tutoria</h1>
+          <p>Documento sintético para acompanhamento do tutorado, integrando registros da tutoria, dados acadêmicos, frequência, risco pedagógico e próximos passos.</p>
+          <div class="meta">
+            <span class="chip">Aluno: ${_escHTML(a.nome || '—')}</span>
+            <span class="chip">Turma: ${_escHTML(a.turma || '—')}</span>
+            <span class="chip">${_escHTML(String(b))}º bimestre</span>
+            <span class="chip">Gerado em: ${_escHTML(__tutoriaHumanDate(__tutoriaTodayISO()))}</span>
+          </div>
+        </div>
+        <div class="status-box">
+          <div class="status-title">Situação de acompanhamento</div>
+          <div class="status-main">${_escHTML(info.label)}</div>
+          <div class="status-sub">${_escHTML(risk?.nivel?.label || 'Monitorar')} • ${_escHTML(String(encontros.length))} encontro(s) registrado(s)</div>
+        </div>
+      </section>`;
+    const kpiHtml = `
+      <section class="tutoria-report-section">
+        <div class="tutoria-report-section-title"><h2>Painel integrado</h2><span class="mini">Resumo automático do aluno</span></div>
+        <div class="tutoria-report-kpis">
+          <div class="kpi"><div class="num">${_escHTML(scoreTxt)}</div><div class="lbl">Score de risco</div><div class="sub">${_escHTML((resumoRisco[0] || 'Sem alerta forte'))}</div></div>
+          <div class="kpi"><div class="num">${_escHTML(freqTxt)}</div><div class="lbl">Frequência</div><div class="sub">${_escHTML(padraoTxt)}</div></div>
+          <div class="kpi"><div class="num">${_escHTML(mediaTxt)}</div><div class="lbl">Média geral</div><div class="sub">Comportamento: ${_escHTML(compTxt)}</div></div>
+          <div class="kpi"><div class="num">${_escHTML(String(encontros.length))}</div><div class="lbl">Encontros</div><div class="sub">Último: ${_escHTML(__tutoriaHumanDate(last?.date || ''))}</div></div>
+        </div>
+      </section>`;
+    const perfilHtml = `
+      <section class="tutoria-report-section">
+        <div class="tutoria-report-section-title"><h2>Perfil do tutorado</h2><span class="mini">Base para FE1 e planejamento da abordagem</span></div>
+        <div class="tutoria-report-grid">
+          ${__tutoriaReportField('Dados pessoais', _escHTML(perfil.dadosPessoais || 'Sem registro.'), false)}
+          ${__tutoriaReportField('Dados da família', _escHTML(perfil.dadosFamilia || 'Sem registro.'), false)}
+          ${__tutoriaReportField('Breve histórico do estudante', _escHTML(perfil.historico || 'Sem registro.'), true)}
+          ${__tutoriaReportField('Breve perfil familiar', _escHTML(perfil.perfilFamiliar || 'Sem registro.'), true)}
+          ${__tutoriaReportField('Sonhos', __tutoriaReportList(sonhos, 'Sem sonhos registrados.'), false)}
+          ${__tutoriaReportField('Projeto de Vida', __tutoriaReportList(projeto, 'Sem projeto de vida registrado.'), false)}
+          ${__tutoriaReportField('Gostos e preferências', __tutoriaReportList(__tutoriaLines(perfil.gostos), 'Sem gostos registrados.'), false)}
+          ${__tutoriaReportField('Virtudes / características positivas', __tutoriaReportList(virtudes, 'Sem virtudes registradas.'), false)}
+          ${__tutoriaReportField('Habilidades', __tutoriaReportList(habilidades, 'Sem habilidades registradas.'), false)}
+          ${__tutoriaReportField('Pontos positivos atuais', __tutoriaReportList(positivos, 'Sem pontos positivos registrados.'), false)}
+          ${__tutoriaReportField('Fragilidades / vulnerabilidades', __tutoriaReportList(fragilidades, 'Sem fragilidades registradas.'), false)}
+          ${__tutoriaReportField('Pontos de atenção', __tutoriaReportList(atencoes, 'Sem pontos de atenção registrados.'), false)}
+        </div>
+      </section>`;
+    const acompanhamentoHtml = `
+      <section class="tutoria-report-section">
+        <div class="tutoria-report-section-title"><h2>Plano de acompanhamento</h2><span class="mini">Foco da tutoria e próximos passos</span></div>
+        <div class="tutoria-report-grid">
+          ${__tutoriaReportField('Prioridades acadêmicas', __tutoriaReportList(acad, 'Sem prioridade acadêmica registrada.'), false)}
+          ${__tutoriaReportField('Prioridades de protagonismo', __tutoriaReportList(prot, 'Sem prioridade de protagonismo registrada.'), false)}
+          ${__tutoriaReportField('Combinados com o tutorado', __tutoriaReportList(combinados, 'Sem combinados registrados.'), true)}
+          ${__tutoriaReportField('Combinados com os educadores', __tutoriaReportList(combinadosEdu, 'Sem combinados com a equipe.'), true)}
+          ${__tutoriaReportField('6 abordagens de acolhimento', __tutoriaReportList(abordagens, 'Use o botão Gerar 6 abordagens para preencher esta parte.'), true)}
+          ${__tutoriaReportField('Observações gerais', _escHTML(perfil.observacoesGerais || 'Sem observações gerais.'), true)}
+        </div>
+      </section>`;
+    const riscoHtml = `
+      <section class="tutoria-report-section">
+        <div class="tutoria-report-section-title"><h2>Leitura pedagógica e risco</h2><span class="mini">Apoia o acompanhamento individual</span></div>
+        <div class="tutoria-report-grid">
+          ${__tutoriaReportField('Sinais para agir agora', __tutoriaReportList(fatores.length ? fatores : resumoRisco, 'Ainda sem fatores críticos registrados.'), true)}
+          ${__tutoriaReportField('Comunicação e acompanhamento', _escHTML(commTxt), false)}
+          ${__tutoriaReportField('Leitura de ausência / padrão', _escHTML(deepTxt), false)}
+          ${__tutoriaReportField('Próximo passo', _escHTML(proxPasso), true)}
+        </div>
+      </section>`;
+    const histItems = recentes.map((e, idx)=> `
+      <div class="timeline-item">
+        <div class="head"><div class="badge">${idx+1}</div><div><strong>${_escHTML(__tutoriaHumanDate(e.date))}</strong><div class="mini">${_escHTML(e.focus || 'acolhimento')} • ${_escHTML(String(e.duration || 10))} min</div></div></div>
+        <div class="timeline-grid">
+          ${__tutoriaReportField('Avanços percebidos', _escHTML(e.advances || 'Sem registro.'), false)}
+          ${__tutoriaReportField('Combinados', _escHTML(e.combinados || 'Sem registro.'), false)}
+          ${__tutoriaReportField('Próximo passo', _escHTML((e.nextStep || 'Sem próximo passo definido.') + (e.nextDate ? ' • ' + __tutoriaHumanDate(e.nextDate) : '')), false)}
+          ${__tutoriaReportField('Observações', _escHTML(e.notes || 'Sem observações.'), false)}
+        </div>
+      </div>`).join('');
+    const historicoHtml = `
+      <section class="tutoria-report-section">
+        <div class="tutoria-report-section-title"><h2>Histórico recente dos encontros</h2><span class="mini">Últimos ${_escHTML(String(recentes.length))} registro(s)</span></div>
+        ${histItems || `<div class="tutoria-report-empty" style="padding:16px 18px;">Ainda não há encontros registrados para este tutorado.</div>`}
+      </section>`;
+    return `<!doctype html><html><head><meta charset="utf-8"><title>${_escHTML(title)} — ${_escHTML(a.nome || 'Aluno')}</title><style>
+      :root{color-scheme:light;}
+      *{box-sizing:border-box;}
+      body{margin:0;padding:24px;font-family:Arial,Helvetica,sans-serif;background:#f8fafc;color:#0f172a;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+      .tutoria-report-cover{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:stretch;background:linear-gradient(135deg,#ecfeff 0%,#eff6ff 100%);border:1px solid #bfdbfe;border-radius:22px;padding:22px 24px;}
+      .tutoria-report-cover .tag{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:#ffffff;border:1px solid rgba(15,118,110,.16);font-size:12px;font-weight:700;color:#0f766e;margin-bottom:10px;}
+      .tutoria-report-cover h1{margin:0 0 8px;font-size:28px;line-height:1.1;color:#0f172a;}
+      .tutoria-report-cover p{margin:0;font-size:14px;line-height:1.6;color:#334155;}
+      .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+      .chip{display:inline-flex;align-items:center;padding:7px 10px;border-radius:999px;background:#fff;border:1px solid rgba(148,163,184,.25);font-size:12px;font-weight:700;color:#334155;}
+      .status-box{background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:18px;padding:18px;display:flex;flex-direction:column;justify-content:center;gap:8px;}
+      .status-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#64748b;}
+      .status-main{font-size:26px;font-weight:900;color:#0f766e;line-height:1;}
+      .status-sub{font-size:13px;line-height:1.5;color:#475569;}
+      .tutoria-report-section{background:#fff;border:1px solid #dbe4f0;border-radius:20px;padding:18px 20px;box-shadow:0 6px 18px rgba(15,23,42,.04);break-inside:avoid;page-break-inside:avoid;}
+      .tutoria-report-section-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px;}
+      .tutoria-report-section-title h2{margin:0;font-size:18px;color:#0f172a;}
+      .mini{font-size:12px;color:#64748b;line-height:1.5;}
+      .tutoria-report-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+      .kpi{padding:14px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;}
+      .kpi .num{font-size:26px;font-weight:900;color:#0f172a;line-height:1;margin-bottom:8px;}
+      .kpi .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;}
+      .kpi .sub{margin-top:8px;font-size:12px;color:#475569;line-height:1.45;}
+      .tutoria-report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+      .tutoria-report-field{padding:14px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;min-width:0;}
+      .tutoria-report-field.wide{grid-column:1 / -1;}
+      .tutoria-report-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:8px;}
+      .tutoria-report-value{font-size:14px;line-height:1.6;color:#1e293b;white-space:pre-wrap;word-break:break-word;}
+      .tutoria-report-value ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;}
+      .tutoria-report-value li{margin:0;}
+      .tutoria-report-empty{color:#64748b;font-style:italic;}
+      .timeline-item{padding:14px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;flex-direction:column;gap:12px;}
+      .timeline-item + .timeline-item{margin-top:12px;}
+      .head{display:flex;align-items:flex-start;gap:10px;}
+      .badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-weight:900;font-size:12px;flex:0 0 auto;}
+      .timeline-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+      .printbar{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;padding:12px 16px;background:#0f172a;color:#fff;border-radius:14px;}
+      .printbar .info{font-size:13px;line-height:1.5;}
+      .printbar .actions{display:flex;gap:8px;flex-wrap:wrap;}
+      .printbar button{padding:10px 14px;border:none;border-radius:10px;font-weight:800;cursor:pointer;}
+      .btn-print{background:#0f766e;color:#fff;}
+      .btn-close{background:#e2e8f0;color:#0f172a;}
+      @page{size:A4 portrait;margin:12mm;}
+      @media (max-width:860px){body{padding:14px}.tutoria-report-cover,.tutoria-report-kpis,.tutoria-report-grid,.timeline-grid{grid-template-columns:1fr}.printbar{position:static;flex-direction:column;align-items:flex-start;}}
+      @media print{body{background:#fff;padding:0}.wrap{max-width:none}.printbar{display:none!important}.tutoria-report-section,.tutoria-report-cover{box-shadow:none}.tutoria-report-cover{border-radius:18px}.tutoria-report-section{border-radius:16px}}
+    </style></head><body><div class="printbar"><div class="info"><strong>${_escHTML(title)}</strong><br>${_escHTML(a.nome || 'Aluno')} • ${_escHTML(a.turma || 'Sem turma')} • ${_escHTML(String(b))}º bimestre</div><div class="actions"><button class="btn-print" onclick="window.print()">Imprimir / Salvar PDF</button><button class="btn-close" onclick="window.close()">Fechar</button></div></div><div class="wrap">${coverHtml}${kpiHtml}${perfilHtml}${acompanhamentoHtml}${riscoHtml}${historicoHtml}</div></body></html>`;
+  }catch(_){ return ''; }
+}
+function tutoriaImprimirRelatorioAluno(alunoId){
+  try{
+    __tutoriaEnsureBoot();
+    const id = String(alunoId || __tutoriaCurrentAlunoId || document.getElementById('tutoriaAlunoSelect')?.value || '');
+    if(!id){ if(typeof showToast === 'function') showToast('Selecione um aluno para gerar o relatório.', 'error'); return; }
+    const html = __tutoriaBuildAlunoReportHtml(id, bimestreAtual);
+    if(!html){ if(typeof showToast === 'function') showToast('Não foi possível montar o relatório.', 'error'); return; }
+    const win = window.open('', '_blank');
+    if(!win){ if(typeof showToast === 'function') showToast('Permita pop-ups para abrir o relatório.', 'error'); return; }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    try{ win.focus(); }catch(_){ }
+  }catch(_){ if(typeof showToast === 'function') showToast('Falha ao gerar o relatório.', 'error'); }
+}
+function __tutoriaResolveTurmaLote(turmaHint, alunoId){
+  try{
+    const hint = String(turmaHint || '').trim();
+    if(hint && hint !== 'all') return hint;
+    const filtro = String(__tutoriaFilterTurma || '').trim();
+    if(filtro && filtro !== 'all') return filtro;
+    const id = String(alunoId || __tutoriaCurrentAlunoId || document.getElementById('tutoriaAlunoSelect')?.value || '').trim();
+    const a = id ? __tutoriaGetAlunoById(id) : null;
+    const turmaAluno = String(a?.turma || '').trim();
+    if(turmaAluno) return turmaAluno;
+    const primeiro = (__tutoriaGetTutorandos() || []).find(Boolean);
+    return String(primeiro?.turma || '').trim();
+  }catch(_){ return ''; }
+}
+function __tutoriaGetTutorandosDaTurma(turma){
+  try{
+    const alvo = String(turma || '').trim();
+    if(!alvo) return [];
+    const list = (alunos || []).filter(a => {
+      if(!a) return false;
+      if(String(a.turma || '').trim() !== alvo) return false;
+      const hasRec = !!(__sgpTutoria?.tutorados && __sgpTutoria.tutorados[String(a.id)]);
+      return !!(a.tutorando || hasRec);
+    });
+    list.sort((a,b)=> String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', {sensitivity:'base'}));
+    return list;
+  }catch(_){ return []; }
+}
+function __tutoriaGetReportWrapInner(html){
+  try{
+    const m = String(html || '').match(/<div class="wrap">([\s\S]*)<\/div><\/body><\/html>\s*$/i);
+    return m ? m[1] : String(html || '');
+  }catch(_){ return String(html || ''); }
+}
+function __tutoriaBuildLoteReportHtml(alunoIds, turma, bim){
+  try{
+    __tutoriaEnsureBoot();
+    const ids = Array.isArray(alunoIds) ? alunoIds.map(v => String(v || '')).filter(Boolean) : [];
+    if(!ids.length) return '';
+    const turmaTxt = String(turma || 'Sem turma');
+    const sections = [];
+    const nomes = [];
+    ids.forEach((id, idx) => {
+      const a = __tutoriaGetAlunoById(id);
+      if(!a) return;
+      nomes.push(String(a.nome || 'Aluno'));
+      const inner = __tutoriaGetReportWrapInner(__tutoriaBuildAlunoReportHtml(id, bim || bimestreAtual));
+      if(!inner) return;
+      sections.push(`<section class="batch-student${idx < ids.length - 1 ? ' break-after' : ''}">${inner}</section>`);
+    });
+    if(!sections.length) return '';
+    const escola = (typeof config !== 'undefined' && config && config.escola) ? String(config.escola) : 'SGP';
+    const listaNomes = nomes.map(n => `<li>${_escHTML(n)}</li>`).join('');
+    return `<!doctype html><html><head><meta charset="utf-8"><title>${_escHTML(escola)} — Relatórios de Tutoria em lote</title><style>
+      :root{color-scheme:light;}
+      *{box-sizing:border-box;}
+      body{margin:0;padding:24px;font-family:Arial,Helvetica,sans-serif;background:#f8fafc;color:#0f172a;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .batch-shell{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+      .batch-cover{background:linear-gradient(135deg,#ecfeff 0%,#eff6ff 100%);border:1px solid #bfdbfe;border-radius:22px;padding:22px 24px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start;}
+      .batch-cover h1{margin:0 0 8px;font-size:30px;line-height:1.1;color:#0f172a;}
+      .batch-cover p{margin:0;font-size:14px;line-height:1.6;color:#334155;}
+      .batch-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+      .chip{display:inline-flex;align-items:center;padding:7px 10px;border-radius:999px;background:#fff;border:1px solid rgba(148,163,184,.25);font-size:12px;font-weight:700;color:#334155;}
+      .batch-summary{background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px;}
+      .batch-summary .ttl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#64748b;}
+      .batch-summary .num{font-size:34px;font-weight:900;color:#0f766e;line-height:1;}
+      .batch-summary ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:#334155;max-height:260px;overflow:auto;}
+      .batch-student{display:block;}
+      .batch-student.break-after{page-break-after:always;break-after:page;}
+      .batch-student + .batch-student{margin-top:16px;}
+      .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+      .tutoria-report-cover{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:stretch;background:linear-gradient(135deg,#ecfeff 0%,#eff6ff 100%);border:1px solid #bfdbfe;border-radius:22px;padding:22px 24px;}
+      .tutoria-report-cover .tag{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:#ffffff;border:1px solid rgba(15,118,110,.16);font-size:12px;font-weight:700;color:#0f766e;margin-bottom:10px;}
+      .tutoria-report-cover h1{margin:0 0 8px;font-size:28px;line-height:1.1;color:#0f172a;}
+      .tutoria-report-cover p{margin:0;font-size:14px;line-height:1.6;color:#334155;}
+      .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+      .status-box{background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:18px;padding:18px;display:flex;flex-direction:column;justify-content:center;gap:8px;}
+      .status-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#64748b;}
+      .status-main{font-size:26px;font-weight:900;color:#0f766e;line-height:1;}
+      .status-sub{font-size:13px;line-height:1.5;color:#475569;}
+      .tutoria-report-section{background:#fff;border:1px solid #dbe4f0;border-radius:20px;padding:18px 20px;box-shadow:0 6px 18px rgba(15,23,42,.04);break-inside:avoid;page-break-inside:avoid;}
+      .tutoria-report-section-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px;}
+      .tutoria-report-section-title h2{margin:0;font-size:18px;color:#0f172a;}
+      .mini{font-size:12px;color:#64748b;line-height:1.5;}
+      .tutoria-report-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+      .kpi{padding:14px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;}
+      .kpi .num{font-size:26px;font-weight:900;color:#0f172a;line-height:1;margin-bottom:8px;}
+      .kpi .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;}
+      .kpi .sub{margin-top:8px;font-size:12px;color:#475569;line-height:1.45;}
+      .tutoria-report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+      .tutoria-report-field{padding:14px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;min-width:0;}
+      .tutoria-report-field.wide{grid-column:1 / -1;}
+      .tutoria-report-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:8px;}
+      .tutoria-report-value{font-size:14px;line-height:1.6;color:#1e293b;white-space:pre-wrap;word-break:break-word;}
+      .tutoria-report-value ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;}
+      .tutoria-report-value li{margin:0;}
+      .tutoria-report-empty{color:#64748b;font-style:italic;}
+      .timeline-item{padding:14px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;flex-direction:column;gap:12px;}
+      .timeline-item + .timeline-item{margin-top:12px;}
+      .head{display:flex;align-items:flex-start;gap:10px;}
+      .badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-weight:900;font-size:12px;flex:0 0 auto;}
+      .timeline-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+      .printbar{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;padding:12px 16px;background:#0f172a;color:#fff;border-radius:14px;}
+      .printbar .info{font-size:13px;line-height:1.5;}
+      .printbar .actions{display:flex;gap:8px;flex-wrap:wrap;}
+      .printbar button{padding:10px 14px;border:none;border-radius:10px;font-weight:800;cursor:pointer;}
+      .btn-print{background:#0f766e;color:#fff;}
+      .btn-close{background:#e2e8f0;color:#0f172a;}
+      @page{size:A4 portrait;margin:12mm;}
+      @media (max-width:860px){body{padding:14px}.batch-cover,.tutoria-report-cover,.tutoria-report-kpis,.tutoria-report-grid,.timeline-grid{grid-template-columns:1fr}.printbar{position:static;flex-direction:column;align-items:flex-start;}}
+      @media print{body{background:#fff;padding:0}.batch-shell,.wrap{max-width:none}.printbar{display:none!important}.batch-cover,.tutoria-report-section,.tutoria-report-cover{box-shadow:none}.batch-cover,.tutoria-report-cover{border-radius:18px}.tutoria-report-section{border-radius:16px}.batch-cover{page-break-after:always;break-after:page;}}
+    </style></head><body><div class="printbar"><div class="info"><strong>${_escHTML(escola)}</strong><br>Relatórios de Tutoria em lote • ${_escHTML(turmaTxt)} • ${_escHTML(String(bim || bimestreAtual))}º bimestre</div><div class="actions"><button class="btn-print" onclick="window.print()">Imprimir / Salvar PDF</button><button class="btn-close" onclick="window.close()">Fechar</button></div></div><div class="batch-shell"><section class="batch-cover"><div><div class="chip">Tutoria em lote</div><h1>Relatórios da turma ${_escHTML(turmaTxt)}</h1><p>Documento reunindo todos os relatórios individuais de Tutoria dos tutorandos da turma selecionada, pronto para impressão em sequência.</p><div class="batch-meta"><span class="chip">Tutorandos: ${_escHTML(String(ids.length))}</span><span class="chip">Bimestre: ${_escHTML(String(bim || bimestreAtual))}º</span><span class="chip">Gerado em: ${_escHTML(__tutoriaHumanDate(__tutoriaTodayISO()))}</span></div></div><div class="batch-summary"><div class="ttl">Lista incluída</div><div class="num">${_escHTML(String(ids.length))}</div><ul>${listaNomes}</ul></div></section>${sections.join('')}</div></body></html>`;
+  }catch(_){ return ''; }
+}
+function tutoriaImprimirRelatoriosTurma(turmaHint, alunoId){
+  try{
+    __tutoriaEnsureBoot();
+    const turma = __tutoriaResolveTurmaLote(turmaHint, alunoId);
+    if(!turma){ if(typeof showToast === 'function') showToast('Selecione uma turma ou um aluno para gerar o lote.', 'error'); return; }
+    const list = __tutoriaGetTutorandosDaTurma(turma);
+    if(!list.length){ if(typeof showToast === 'function') showToast(`Não há tutorandos registrados em ${turma}.`, 'error'); return; }
+    const html = __tutoriaBuildLoteReportHtml(list.map(a => a.id), turma, bimestreAtual);
+    if(!html){ if(typeof showToast === 'function') showToast('Não foi possível montar o relatório em lote.', 'error'); return; }
+    const win = window.open('', '_blank');
+    if(!win){ if(typeof showToast === 'function') showToast('Permita pop-ups para abrir o relatório em lote.', 'error'); return; }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    try{ win.focus(); }catch(_){ }
+    if(typeof showToast === 'function') showToast(`${list.length} relatório(s) preparados para impressão.`);
+  }catch(_){ if(typeof showToast === 'function') showToast('Falha ao gerar o relatório em lote.', 'error'); }
+}
+
 function abrirDetalhes(id){
   ensureConfigSchema();
   const a=alunos.find(al=>al.id===id); if(!a) return;
@@ -15073,10 +15701,7 @@ function abrirDetalhes(id){
   if(_sLP){ _sLP.innerText = b.media_lp; _sLP.style.color = getCorFarol(b.media_lp); }
   if(_sRD){ _sRD.innerText = b.media_red; _sRD.style.color = getCorFarol(b.media_red); }
 
-  abrirModal('modalDetalhes');
-}
-
-function salvarAlteracoesDetalhadas(){
+  abrirModal('modalDetalhes');   __tutoriaRenderAlunoPainelDetalhes(); }  function salvarAlteracoesDetalhadas(){
   ensureConfigSchema();
   const a=alunos.find(al=>al.id===alunoEdicaoID); if(!a) return;
   const b=(a.bimestres && a.bimestres[bimestreAtual]) ? a.bimestres[bimestreAtual] : {};
@@ -15154,9 +15779,7 @@ function salvarAlteracoesDetalhadas(){
   const chkTut = document.getElementById('checkTutoria');
   if(chkTut) a.tutorando = !!chkTut.checked;
 
-  salvarDadosLocal();
-  renderizarVisaoContent();
-  showToast("Alterações salvas!");
+  salvarDadosLocal();   __tutoriaRenderAlunoPainelDetalhes();   renderizarVisaoContent();   showToast("Alterações salvas!");
 }
 
 /* ======= MASSA V18 ENHANCED ======= */
@@ -16220,6 +16843,10 @@ function __snapshotObj(){
       return fallback;
     }
   };
+  const __lsArr = (k)=>{
+    const v = __lsJson(k, []);
+    return Array.isArray(v) ? v : [];
+  };
 
   // bancos/objetos que podem estar apenas no localStorage, dependendo do fluxo de uso
   const freqObj = (window.__sgpFrequencia && typeof window.__sgpFrequencia==='object')
@@ -17173,7 +17800,7 @@ function diagCopiarRelatorio(){
     const storage = (typeof __estimateLocalStorageUsage==='function') ? __estimateLocalStorageUsage() : null;
     const payload = {
       app: "SGP",
-      version: "v12.13 (diag+logs)",
+      version: "v20.5.8 (diag+logs)",
       ts: new Date().toISOString(),
       ua: navigator.userAgent,
       counts: {
@@ -33927,7 +34554,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.0.4',
+        version: versionLabel || 'v20.5.8',
         total: arr.length,
         okCount,
         failCount,
@@ -35296,7 +35923,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.0.4'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.5.8'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
@@ -35463,6 +36090,1161 @@ try{
 }catch(_){}
 
 
+
+/* ============================================================
+   Tutoria — módulo leve integrado ao SGP
+   ============================================================ */
+const __TUTORIA_KEY = 'sgp_tutoria_v1';
+const __TUTORIA_SEED = [{"turma": "7°A", "nome": "HEITOR FERNANDO SILVA DA LUZ"}, {"turma": "7°A", "nome": "ALYSON ERICO ESTEVEZ DA SILVA"}, {"turma": "7°A", "nome": "ISABELLY CRISTHINA DE CARVALHO MONTEIRO"}, {"turma": "7°A", "nome": "JULIA GABRIELLY ALVARES TEODORO"}, {"turma": "7°A", "nome": "MARIA CLARA FELIX DA SILVA"}, {"turma": "7°A", "nome": "PAULO HENRIQUE SOUZA ALVES"}, {"turma": "7°A", "nome": "TIAGO LEITE DAS NEVES JUNIOR"}, {"turma": "7°B", "nome": "DAVI DE SOUZA"}, {"turma": "7°B", "nome": "KAUA MIGUEL SOARES DOS SANTOS"}, {"turma": "7°B", "nome": "KAUAN PIETRO SILVA PEREIRA"}, {"turma": "7°B", "nome": "NICOLAS DA SILVA SANTOS"}, {"turma": "7°B", "nome": "SOPHIA VIEIRA DE LIMA"}, {"turma": "7°B", "nome": "CHRISTOPHER IGOR CASTELO BRANCO"}, {"turma": "7°B", "nome": "GUILHERME BARBOSA DOS SANTOS"}, {"turma": "7°C", "nome": "DAVI LUCA ALVES DOS SANTOS"}, {"turma": "7°C", "nome": "LEANDRO DANIEL DE BRITO PRIMAO"}, {"turma": "7°C", "nome": "RICHARD MONTEIRO TEIXEIRA"}, {"turma": "7°C", "nome": "GABRIEL DE OLIVEIRA BRAZ"}, {"turma": "7°C", "nome": "ISAQUE DANIEL DA SILVA RIBEIRO"}, {"turma": "7°C", "nome": "RAPHAEL FERREIRA DA SILVA"}, {"turma": "7°C", "nome": "SAMUEL SOUSA DE LIMA"}, {"turma": "7°D", "nome": "DAVI LUCAS PEREIRA DE GODOY"}, {"turma": "7°D", "nome": "DAVI PEREIRA GARCIA"}, {"turma": "7°D", "nome": "KAIQUE DANIEL DE SALES FERREIRA"}, {"turma": "7°D", "nome": "KEVIN LIRA GONÇALVES"}, {"turma": "7°D", "nome": "MARIANE TEIXEIRA DE ALMEIDA"}, {"turma": "7°D", "nome": "PAULO CESAR SIMÕES SANTOS"}];
+const __TUTORIA_TEMAS = {
+  "Empatia": {
+    objetivo: "Fortalecer a escuta ativa, o respeito e a resolução de conflitos pela fala.",
+    roteiro: "1. Acolhida breve e combinados da roda.\n2. Pergunta disparadora: como eu gosto de ser tratado?\n3. Situação simples para debate em duplas.\n4. Compartilhamento com escuta ativa.\n5. Fechamento com um combinado coletivo."
+  },
+  "Inclusão": {
+    objetivo: "Valorizar a diversidade, o pertencimento e a participação de todos no grupo.",
+    roteiro: "1. Acolhida e palavra-chave do dia.\n2. Pergunta disparadora: o que faz alguém se sentir parte da turma?\n3. Leitura de pequenas situações de exclusão/inclusão.\n4. Debate guiado.\n5. Definição de uma ação coletiva de acolhimento."
+  },
+  "Valores": {
+    objetivo: "Reforçar princípios de convivência ética, responsabilidade e respeito mútuo.",
+    roteiro: "1. Acolhida.\n2. Escolha coletiva de três valores importantes para a turma.\n3. Exemplos concretos do cotidiano escolar.\n4. Combinado de sala.\n5. Registro do que a turma quer praticar até a próxima roda."
+  },
+  "Protagonismo Juvenil": {
+    objetivo: "Estimular iniciativa, autonomia e participação dos estudantes na vida escolar.",
+    roteiro: "1. Pergunta inicial: onde posso fazer diferença na escola?\n2. Levantamento de ideias em grupo.\n3. Escolha de uma meta possível.\n4. Definição de responsáveis.\n5. Fechamento com próximos passos."
+  },
+  "Convivência": {
+    objetivo: "Melhorar o clima da turma e prevenir conflitos a partir do diálogo.",
+    roteiro: "1. Acolhida.\n2. Roda rápida: algo que ajuda a convivência e algo que atrapalha.\n3. Organização das falas em temas.\n4. Proposta de solução realista.\n5. Combinado da semana."
+  },
+  "Corresponsabilidade": {
+    objetivo: "Reforçar a ideia de que cada estudante participa da construção do ambiente escolar.",
+    roteiro: "1. Pergunta disparadora: de quem é a responsabilidade pelo clima da sala?\n2. Situações reais do cotidiano.\n3. Debate em pequenos grupos.\n4. Lista de ações possíveis.\n5. Escolha de uma ação comum."
+  }
+};
+let __sgpTutoria = null;
+let __tutoriaTab = 'painel';
+let __tutoriaCurrentAlunoId = '';
+let __tutoriaCurrentColetivaId = '';
+let __tutoriaActionsCollapsed = true;
+let __tutoriaFilterTurma = 'all';
+let __tutoriaSearch = '';
+
+function __tutoriaDefaultPerfil(){
+  return {
+    dadosPessoais: '',
+    dadosFamilia: '',
+    historico: '',
+    perfilFamiliar: '',
+    sonhos: '',
+    projetoVida: '',
+    gostos: '',
+    virtudes: '',
+    habilidades: '',
+    pontosPositivos: '',
+    fragilidades: '',
+    pontosAtencao: '',
+    combinados: '',
+    prioridadesAcademicas: '',
+    prioridadesProtagonismo: '',
+    combinadosEducadores: '',
+    abordagens: '',
+    observacoesGerais: ''
+  };
+}
+function __tutoriaDefaultStore(){
+  return {
+    version: 1,
+    tutorados: {},
+    coletivas: [],
+    meta: {
+      seedApplied: false,
+      seedMatched: 0,
+      lastExportAt: 0
+    },
+    updatedAt: 0
+  };
+}
+function __tutoriaNormName(v){
+  try{
+    return String(v || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toUpperCase();
+  }catch(_){
+    return String(v || '').replace(/\s+/g, ' ').trim().toUpperCase();
+  }
+}
+function __tutoriaNormTurma(v){
+  return __tutoriaNormName(v).replace(/[º°]/g, '');
+}
+function __tutoriaTodayISO(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+function __tutoriaMonthPrefix(){
+  return __tutoriaTodayISO().slice(0,7);
+}
+function __tutoriaHumanDate(iso){
+  const s = String(iso || '').trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s)) return '—';
+  const [y,m,d] = s.split('-');
+  return `${d}/${m}/${y}`;
+}
+function __tutoriaLines(v){
+  return String(v || '')
+    .split(/\n|[;•]+/g)
+    .map(x => String(x || '').trim())
+    .filter(Boolean);
+}
+function __tutoriaTextArea(id, label, value, rows, full, placeholder){
+  return `<div class="form-group ${full ? 'full' : ''}"><label for="${id}">${_escHTML(label)}</label><textarea id="${id}" class="inp" rows="${rows || 3}" placeholder="${_escHTML(placeholder || '')}">${_escHTML(value || '')}</textarea></div>`;
+}
+function __tutoriaInput(id, label, value, type, full, placeholder){
+  return `<div class="form-group ${full ? 'full' : ''}"><label for="${id}">${_escHTML(label)}</label><input id="${id}" type="${_escHTML(type || 'text')}" class="inp" value="${_escHTML(value || '')}" placeholder="${_escHTML(placeholder || '')}"></div>`;
+}
+function __tutoriaNormalizeEncontro(item){
+  const it = (item && typeof item === 'object') ? item : {};
+  return {
+    id: it.id || __newId(),
+    date: String(it.date || it.data || __tutoriaTodayISO()),
+    duration: Math.max(5, parseInt(it.duration || it.duracao || 10, 10) || 10),
+    focus: String(it.focus || it.foco || 'acolhimento'),
+    acolheu: !!(it.acolheu ?? true),
+    engajou: !!(it.engajou ?? true),
+    fezJunto: !!(it.fezJunto ?? it.fez_junto ?? false),
+    acompanhou: !!(it.acompanhou ?? true),
+    desenvolveu: !!(it.desenvolveu ?? false),
+    advances: String(it.advances || it.avancos || ''),
+    combinados: String(it.combinados || ''),
+    nextStep: String(it.nextStep || it.proximoPasso || ''),
+    nextDate: String(it.nextDate || it.proximaData || ''),
+    notes: String(it.notes || it.observacoes || ''),
+    createdAt: parseInt(it.createdAt || Date.now(), 10) || Date.now(),
+    updatedAt: parseInt(it.updatedAt || Date.now(), 10) || Date.now()
+  };
+}
+function __tutoriaNormalizeAlunoRec(item){
+  const it = (item && typeof item === 'object') ? item : {};
+  const perfilRaw = (it.perfil && typeof it.perfil === 'object') ? it.perfil : {};
+  const perfil = { ...__tutoriaDefaultPerfil(), ...perfilRaw };
+  const encontros = Array.isArray(it.encontros) ? it.encontros.map(__tutoriaNormalizeEncontro).filter(Boolean) : [];
+  encontros.sort((a,b)=> String(b.date || '').localeCompare(String(a.date || '')) || (b.createdAt||0) - (a.createdAt||0));
+  return {
+    alunoId: String(it.alunoId || ''),
+    nomeSnapshot: String(it.nomeSnapshot || it.nome || ''),
+    turmaSnapshot: String(it.turmaSnapshot || it.turma || ''),
+    createdAt: parseInt(it.createdAt || Date.now(), 10) || Date.now(),
+    updatedAt: parseInt(it.updatedAt || Date.now(), 10) || Date.now(),
+    perfil,
+    encontros
+  };
+}
+function __tutoriaNormalizeColetiva(item){
+  const it = (item && typeof item === 'object') ? item : {};
+  return {
+    id: it.id || __newId(),
+    date: String(it.date || it.data || __tutoriaTodayISO()),
+    turma: String(it.turma || ''),
+    tema: String(it.tema || ''),
+    objetivo: String(it.objetivo || ''),
+    roteiro: String(it.roteiro || ''),
+    reflexoes: String(it.reflexoes || ''),
+    acoesGerais: String(it.acoesGerais || it.acoes_coletivas || ''),
+    acoesIndividuais: String(it.acoesIndividuais || ''),
+    proximoPasso: String(it.proximoPasso || ''),
+    createdAt: parseInt(it.createdAt || Date.now(), 10) || Date.now(),
+    updatedAt: parseInt(it.updatedAt || Date.now(), 10) || Date.now()
+  };
+}
+function __tutoriaNormalizeStore(raw){
+  const src = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+  const tutorados = {};
+  if(src.tutorados && typeof src.tutorados === 'object'){
+    Object.keys(src.tutorados).forEach((k)=>{
+      tutorados[String(k)] = __tutoriaNormalizeAlunoRec({ alunoId: String(k), ...(src.tutorados[k] || {}) });
+    });
+  }
+  return {
+    version: 1,
+    tutorados,
+    coletivas: Array.isArray(src.coletivas) ? src.coletivas.map(__tutoriaNormalizeColetiva).filter(Boolean) : [],
+    meta: {
+      seedApplied: !!(src.meta && src.meta.seedApplied),
+      seedMatched: parseInt(src.meta && src.meta.seedMatched || 0, 10) || 0,
+      lastExportAt: parseInt(src.meta && src.meta.lastExportAt || 0, 10) || 0
+    },
+    updatedAt: parseInt(src.updatedAt || 0, 10) || 0
+  };
+}
+function __tutoriaEnsureBoot(){
+  if(!__sgpTutoria) __tutoriaLoad();
+  return __sgpTutoria;
+}
+function __tutoriaLoad(){
+  try{
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(__TUTORIA_KEY) : localStorage.getItem(__TUTORIA_KEY);
+    __sgpTutoria = __tutoriaNormalizeStore(raw ? JSON.parse(raw) : null);
+  }catch(_){
+    __sgpTutoria = __tutoriaDefaultStore();
+  }
+  __tutoriaAutoSeed();
+  return __sgpTutoria;
+}
+function __tutoriaPersist(silent){
+  __tutoriaEnsureBoot();
+  try{
+    __sgpTutoria.updatedAt = Date.now();
+    if(typeof __safeLSSet === 'function') __safeLSSet(__TUTORIA_KEY, JSON.stringify(__sgpTutoria));
+    else localStorage.setItem(__TUTORIA_KEY, JSON.stringify(__sgpTutoria));
+    if(!silent && typeof __markBackupRelevantChange === 'function') __markBackupRelevantChange('tutoria-save');
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e, 'tutoria.persist'); }catch(_){ }
+  }
+}
+function __tutoriaGetAlunoById(id){
+  return (alunos || []).find(a => String(a.id) === String(id)) || null;
+}
+function __tutoriaGetAlunoRec(id, createIfMissing){
+  __tutoriaEnsureBoot();
+  const key = String(id || '');
+  if(!key) return null;
+  if(!__sgpTutoria.tutorados[key] && createIfMissing){
+    const a = __tutoriaGetAlunoById(key);
+    __sgpTutoria.tutorados[key] = __tutoriaNormalizeAlunoRec({
+      alunoId: key,
+      nomeSnapshot: a ? a.nome : '',
+      turmaSnapshot: a ? a.turma : ''
+    });
+  }
+  const rec = __sgpTutoria.tutorados[key] || null;
+  if(rec){
+    const a = __tutoriaGetAlunoById(key);
+    if(a){
+      rec.nomeSnapshot = String(a.nome || rec.nomeSnapshot || '');
+      rec.turmaSnapshot = String(a.turma || rec.turmaSnapshot || '');
+    }
+  }
+  return rec;
+}
+function __tutoriaProfileFilledCount(rec){
+  if(!rec || !rec.perfil) return 0;
+  const p = rec.perfil;
+  const keys = Object.keys(__tutoriaDefaultPerfil());
+  return keys.filter(k => String(p[k] || '').trim()).length;
+}
+function __tutoriaCountEncontrosMes(rec){
+  const pref = __tutoriaMonthPrefix();
+  return (rec && Array.isArray(rec.encontros) ? rec.encontros : []).filter(e => String(e.date || '').startsWith(pref)).length;
+}
+function __tutoriaLastEncontro(rec){
+  const arr = (rec && Array.isArray(rec.encontros)) ? rec.encontros : [];
+  if(!arr.length) return null;
+  return arr.slice().sort((a,b)=> String(b.date || '').localeCompare(String(a.date || '')) || (b.createdAt||0)-(a.createdAt||0))[0];
+}
+function __tutoriaStatusInfo(a){
+  const rec = a ? __tutoriaGetAlunoRec(a.id, false) : null;
+  const count = __tutoriaCountEncontrosMes(rec);
+  const falta = Math.max(0, 2 - count);
+  let tone = 'ok';
+  let label = `${count}/2 no mês`;
+  if(count <= 0){ tone = 'danger'; label = '0/2 no mês'; }
+  else if(count === 1){ tone = 'warn'; label = '1/2 no mês'; }
+  return { count, falta, tone, label };
+}
+function __tutoriaAutoSeed(){
+  __tutoriaEnsureBoot();
+  if(__sgpTutoria.meta.seedApplied) return;
+  let matched = 0;
+  let changed = false;
+  const keys = new Set((__TUTORIA_SEED || []).map(item => `${__tutoriaNormTurma(item.turma)}|${__tutoriaNormName(item.nome)}`));
+  (alunos || []).forEach(a => {
+    const key = `${__tutoriaNormTurma(a.turma)}|${__tutoriaNormName(a.nome)}`;
+    if(keys.has(key)){
+      if(!a.tutorando){
+        a.tutorando = true;
+        matched++;
+        changed = true;
+      }
+      __tutoriaGetAlunoRec(a.id, true);
+    }
+  });
+  __sgpTutoria.meta.seedApplied = true;
+  __sgpTutoria.meta.seedMatched = matched;
+  if(changed){
+    try{ salvarDadosLocal(); }catch(_){ }
+  }
+  __tutoriaPersist(true);
+}
+function tutoriaAplicarListaBase(){
+  __tutoriaEnsureBoot();
+  let matched = 0;
+  const keys = new Set((__TUTORIA_SEED || []).map(item => `${__tutoriaNormTurma(item.turma)}|${__tutoriaNormName(item.nome)}`));
+  (alunos || []).forEach(a => {
+    const key = `${__tutoriaNormTurma(a.turma)}|${__tutoriaNormName(a.nome)}`;
+    if(keys.has(key)){
+      if(!a.tutorando) matched++;
+      a.tutorando = true;
+      __tutoriaGetAlunoRec(a.id, true);
+    }
+  });
+  __sgpTutoria.meta.seedMatched = matched;
+  try{ salvarDadosLocal(); }catch(_){ }
+  __tutoriaPersist();
+  tutoriaRefreshFiltersUI();
+  tutoriaRender();
+  if(typeof showToast === 'function'){
+    if(matched) showToast(`${matched} tutorando(s) marcados pela lista base.`);
+    else showToast('Nenhum nome da lista base foi encontrado nas turmas atuais.', 'error');
+  }
+}
+function __tutoriaGetTutorandos(){
+  __tutoriaEnsureBoot();
+  const q = String(__tutoriaSearch || '').trim().toLowerCase();
+  let list = (alunos || []).filter(a => {
+    if(!a) return false;
+    const hasRec = !!(__sgpTutoria.tutorados && __sgpTutoria.tutorados[String(a.id)]);
+    if(!(a.tutorando || hasRec)) return false;
+    if(__tutoriaFilterTurma && __tutoriaFilterTurma !== 'all' && String(a.turma || '') !== String(__tutoriaFilterTurma)) return false;
+    if(!q) return true;
+    const rec = __tutoriaGetAlunoRec(a.id, false);
+    const hay = [
+      a.nome, a.turma,
+      rec?.perfil?.sonhos, rec?.perfil?.projetoVida, rec?.perfil?.pontosAtencao, rec?.perfil?.fragilidades
+    ].map(v => String(v || '').toLowerCase()).join(' ');
+    return hay.includes(q);
+  });
+  list.sort((a,b)=>{
+    const sa = __tutoriaStatusInfo(a).count;
+    const sb = __tutoriaStatusInfo(b).count;
+    if(sa !== sb) return sa - sb;
+    const la = __tutoriaLastEncontro(__tutoriaGetAlunoRec(a.id, false))?.date || '';
+    const lb = __tutoriaLastEncontro(__tutoriaGetAlunoRec(b.id, false))?.date || '';
+    if(la !== lb) return String(la).localeCompare(String(lb));
+    return String(a.nome || '').localeCompare(String(b.nome || ''));
+  });
+  return list;
+}
+function __tutoriaGetTodosAlunos(){
+  let list = (alunos || []).filter(Boolean).slice();
+  if(__tutoriaFilterTurma && __tutoriaFilterTurma !== 'all'){
+    list = list.filter(a => String(a.turma || '') === String(__tutoriaFilterTurma));
+  }
+  list.sort((a,b)=> String(a.nome || '').localeCompare(String(b.nome || '')));
+  return list;
+}
+function tutoriaRefreshFiltersUI(){
+  __tutoriaEnsureBoot();
+  const turmaSel = document.getElementById('tutoriaFilterTurma');
+  const alunoSel = document.getElementById('tutoriaAlunoSelect');
+  const searchEl = document.getElementById('tutoriaSearch');
+  if(searchEl && searchEl.value !== (__tutoriaSearch || '')) searchEl.value = __tutoriaSearch || '';
+  if(turmaSel){
+    const current = __tutoriaFilterTurma || 'all';
+    const opts = ['<option value="all">Todas as turmas</option>']
+      .concat((turmas || []).map(t => `<option value="${_escHTML(t)}">${_escHTML(t)}</option>`));
+    turmaSel.innerHTML = opts.join('');
+    turmaSel.value = current;
+  }
+  if(alunoSel){
+    const all = __tutoriaGetTodosAlunos();
+    const opts = ['<option value="">Selecione um aluno…</option>']
+      .concat(all.map(a => `<option value="${_escHTML(String(a.id))}">${_escHTML(a.nome)} • ${_escHTML(a.turma || 'Sem turma')}</option>`));
+    alunoSel.innerHTML = opts.join('');
+    if(__tutoriaCurrentAlunoId && all.some(a => String(a.id) === String(__tutoriaCurrentAlunoId))){
+      alunoSel.value = String(__tutoriaCurrentAlunoId);
+    }
+  }
+}
+function tutoriaSetFilterTurma(v){
+  __tutoriaFilterTurma = v || 'all';
+  tutoriaRefreshFiltersUI();
+  tutoriaRender();
+}
+function tutoriaSetSearch(v){
+  __tutoriaSearch = String(v || '');
+  tutoriaRender();
+}
+function tutoriaSelecionarAlunoDoSelect(){
+  const sel = document.getElementById('tutoriaAlunoSelect');
+  const id = String(sel?.value || '');
+  if(!id) return;
+  __tutoriaCurrentAlunoId = id;
+  __tutoriaTab = 'individual';
+  tutoriaRender();
+}
+function tutoriaToggleTutorandoSelecionado(forceValue){
+  const id = String(__tutoriaCurrentAlunoId || document.getElementById('tutoriaAlunoSelect')?.value || '');
+  if(!id){
+    if(typeof showToast === 'function') showToast('Selecione um aluno.', 'error');
+    return;
+  }
+  const a = __tutoriaGetAlunoById(id);
+  if(!a){
+    if(typeof showToast === 'function') showToast('Aluno não encontrado.', 'error');
+    return;
+  }
+  const next = (typeof forceValue === 'boolean') ? forceValue : !a.tutorando;
+  a.tutorando = next;
+  if(next) __tutoriaGetAlunoRec(id, true);
+  try{ salvarDadosLocal(); }catch(_){ }
+  __tutoriaPersist();
+  tutoriaRefreshFiltersUI();
+  tutoriaRender();
+  if(typeof showToast === 'function') showToast(next ? 'Aluno marcado como tutorando.' : 'Aluno desmarcado como tutorando.');
+}
+function __tutoriaRenderStatusPill(info){
+  return `<span class="tutoria-pill ${_escHTML(info.tone)}"><i class="fas fa-traffic-light"></i> ${_escHTML(info.label)}</span>`;
+}
+function __tutoriaBuildRoteiro(rec, aluno){
+  const p = (rec && rec.perfil) ? rec.perfil : __tutoriaDefaultPerfil();
+  const sonhos = __tutoriaLines(p.sonhos);
+  const virtudes = __tutoriaLines(p.virtudes);
+  const atencoes = __tutoriaLines(p.pontosAtencao);
+  const academicas = __tutoriaLines(p.prioridadesAcademicas);
+  const protagonismo = __tutoriaLines(p.prioridadesProtagonismo);
+  const nome = String((aluno && aluno.nome) || rec?.nomeSnapshot || 'estudante').split(' ')[0];
+  const roteiro = [
+    `1. Acolha ${nome} pelo nome e comece com uma pergunta simples sobre como ele(a) está hoje.`,
+    virtudes[0] ? `2. Reforce uma virtude observada: "${virtudes[0]}".` : `2. Faça um elogio sincero sobre um esforço recente.`,
+    sonhos[0] ? `3. Retome um sonho ou projeto citado: "${sonhos[0]}".` : `3. Pergunte sobre um sonho, objetivo ou plano importante.`,
+    atencoes[0] ? `4. Converse sobre um ponto de atenção: "${atencoes[0]}".` : `4. Identifique um ponto de atenção acadêmico ou comportamental.`,
+    academicas[0] ? `5. Fechem um combinado acadêmico prático para "${academicas[0]}".` : `5. Definam um passo acadêmico pequeno e possível para a semana.`,
+    protagonismo[0] ? `6. Conecte o encontro ao protagonismo: "${protagonismo[0]}".` : `6. Pergunte como ele(a) pode participar mais da vida escolar.`,
+    `7. Registre o essencial do encontro e marque o próximo passo.`
+  ];
+  return roteiro.join('\n');
+}
+function tutoriaGerarAbordagens(){
+  const a = __tutoriaGetAlunoById(__tutoriaCurrentAlunoId);
+  const rec = __tutoriaGetAlunoRec(__tutoriaCurrentAlunoId, true);
+  if(!a || !rec) return;
+  const p = rec.perfil;
+  const sonhos = __tutoriaLines(p.sonhos);
+  const gostos = __tutoriaLines(p.gostos);
+  const virtudes = __tutoriaLines(p.virtudes);
+  const atencoes = __tutoriaLines(p.pontosAtencao);
+  const academicas = __tutoriaLines(p.prioridadesAcademicas);
+  const nome = String(a.nome || '').split(' ')[0] || 'Você';
+  const lines = [
+    `${nome}, bom te ver. Como você está hoje?`,
+    sonhos[0] ? `Você comentou sobre ${sonhos[0].toLowerCase()}. Como esse sonho está na sua cabeça hoje?` : `Tem algum sonho ou meta que está mais forte para você neste momento?`,
+    gostos[0] ? `Lembrei que você gosta de ${gostos[0].toLowerCase()}. O que isso diz sobre você?` : `O que você mais gosta de fazer e que te ajuda a se sentir bem?`,
+    virtudes[0] ? `Uma qualidade sua que chama atenção é ${virtudes[0].toLowerCase()}. Você percebe isso em você?` : `Qual qualidade sua você acha que mais te ajuda a seguir em frente?`,
+    atencoes[0] ? `Vamos pensar juntos em um passo pequeno para melhorar ${atencoes[0].toLowerCase()}?` : `Qual dificuldade você quer enfrentar primeiro, sem pressa e com ajuda?`,
+    academicas[0] ? `Que combinado simples podemos fazer para avançar em ${academicas[0].toLowerCase()} até o próximo encontro?` : `Qual seria uma meta simples para a próxima semana?`
+  ];
+  rec.perfil.abordagens = lines.join('\n');
+  rec.updatedAt = Date.now();
+  a.tutorando = true;
+  try{ salvarDadosLocal(); }catch(_){ }
+  __tutoriaPersist();
+  tutoriaRender();
+  if(typeof showToast === 'function') showToast('6 abordagens geradas com base no perfil.');
+}
+function tutoriaSalvarPerfil(){
+  const a = __tutoriaGetAlunoById(__tutoriaCurrentAlunoId);
+  const rec = __tutoriaGetAlunoRec(__tutoriaCurrentAlunoId, true);
+  if(!a || !rec) return;
+  const map = {
+    dadosPessoais:'tutoriaDadosPessoais',
+    dadosFamilia:'tutoriaDadosFamilia',
+    historico:'tutoriaHistorico',
+    perfilFamiliar:'tutoriaPerfilFamiliar',
+    sonhos:'tutoriaSonhos',
+    projetoVida:'tutoriaProjetoVida',
+    gostos:'tutoriaGostos',
+    virtudes:'tutoriaVirtudes',
+    habilidades:'tutoriaHabilidades',
+    pontosPositivos:'tutoriaPontosPositivos',
+    fragilidades:'tutoriaFragilidades',
+    pontosAtencao:'tutoriaPontosAtencao',
+    combinados:'tutoriaCombinados',
+    prioridadesAcademicas:'tutoriaPrioridadesAcademicas',
+    prioridadesProtagonismo:'tutoriaPrioridadesProtagonismo',
+    combinadosEducadores:'tutoriaCombinadosEducadores',
+    abordagens:'tutoriaAbordagens',
+    observacoesGerais:'tutoriaObservacoesGerais'
+  };
+  Object.keys(map).forEach((k)=>{
+    const el = document.getElementById(map[k]);
+    rec.perfil[k] = String(el?.value || '');
+  });
+  rec.updatedAt = Date.now();
+  a.tutorando = true;
+  try{ salvarDadosLocal(); }catch(_){ }
+  __tutoriaPersist();
+  tutoriaRefreshFiltersUI();
+  tutoriaRender();
+  if(typeof showToast === 'function') showToast('Perfil de tutoria salvo.');
+}
+function __tutoriaCreatePlannerTask(task){
+  try{
+    if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks || []);
+    if(!Array.isArray(plannerTasks)) plannerTasks = [];
+    const obj = {
+      id: (typeof _plannerUID === 'function') ? _plannerUID() : __newId(),
+      title: task.title || 'Tutoria',
+      date: task.date || __tutoriaTodayISO(),
+      time: task.time || '',
+      turma: task.turma || '',
+      bimestre: String(task.bimestre || bimestreAtual || ''),
+      category: task.category || 'Tutoria',
+      repeat: '',
+      priority: task.priority || 'Alta',
+      status: 'open',
+      notes: task.notes || '',
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    plannerTasks.unshift(obj);
+    if(typeof plannerPersist === 'function') plannerPersist();
+    else if(typeof __safeLSSet === 'function') __safeLSSet('sgp_planner', JSON.stringify(plannerTasks || []));
+  }catch(_){ }
+}
+function tutoriaRegistrarEncontro(){
+  const a = __tutoriaGetAlunoById(__tutoriaCurrentAlunoId);
+  const rec = __tutoriaGetAlunoRec(__tutoriaCurrentAlunoId, true);
+  if(!a || !rec) return;
+  const date = String(document.getElementById('tutoriaEncontroData')?.value || __tutoriaTodayISO());
+  const encontro = __tutoriaNormalizeEncontro({
+    id: __newId(),
+    date,
+    duration: document.getElementById('tutoriaEncontroDuracao')?.value || 10,
+    focus: document.getElementById('tutoriaEncontroFoco')?.value || 'acolhimento',
+    acolheu: !!document.getElementById('tutoriaPilarAcolheu')?.checked,
+    engajou: !!document.getElementById('tutoriaPilarEngajou')?.checked,
+    fezJunto: !!document.getElementById('tutoriaPilarFezJunto')?.checked,
+    acompanhou: !!document.getElementById('tutoriaPilarAcompanhou')?.checked,
+    desenvolveu: !!document.getElementById('tutoriaPilarDesenvolveu')?.checked,
+    advances: document.getElementById('tutoriaEncontroAvancos')?.value || '',
+    combinados: document.getElementById('tutoriaEncontroCombinados')?.value || '',
+    nextStep: document.getElementById('tutoriaEncontroProximoPasso')?.value || '',
+    nextDate: document.getElementById('tutoriaEncontroProximaData')?.value || '',
+    notes: document.getElementById('tutoriaEncontroObs')?.value || ''
+  });
+  rec.encontros.unshift(encontro);
+  rec.encontros.sort((x,y)=> String(y.date || '').localeCompare(String(x.date || '')) || (y.createdAt||0)-(x.createdAt||0));
+  rec.updatedAt = Date.now();
+  a.tutorando = true;
+  const addPlanner = !!document.getElementById('tutoriaEncontroAddPlanner')?.checked;
+  if(addPlanner && encontro.nextDate){
+    __tutoriaCreatePlannerTask({
+      title: `Tutoria • ${a.nome}`,
+      date: encontro.nextDate,
+      turma: a.turma || '',
+      notes: [encontro.nextStep, encontro.combinados, encontro.notes].filter(Boolean).join('\n\n')
+    });
+  }
+  try{ salvarDadosLocal(); }catch(_){ }
+  __tutoriaPersist();
+  tutoriaRender();
+  if(typeof showToast === 'function') showToast('Encontro individual registrado.');
+}
+function tutoriaExcluirEncontro(id){
+  const rec = __tutoriaGetAlunoRec(__tutoriaCurrentAlunoId, false);
+  if(!rec) return;
+  rec.encontros = (rec.encontros || []).filter(e => String(e.id) !== String(id));
+  rec.updatedAt = Date.now();
+  __tutoriaPersist();
+  tutoriaRender();
+  if(typeof showToast === 'function') showToast('Registro removido.');
+}
+function __tutoriaResetScrollTop(){
+  const scrollEl = document.getElementById('tutoriaMainScroll');
+  if(scrollEl) scrollEl.scrollTop = 0;
+}
+function tutoriaUpdateActionsUI(){
+  const toolbar = document.getElementById('tutoriaToolbar');
+  const btn = document.getElementById('tutoriaToggleActionsBtn');
+  const collapsed = !!__tutoriaActionsCollapsed;
+  if(toolbar) toolbar.classList.toggle('actions-collapsed', collapsed);
+  if(btn){
+    btn.innerHTML = collapsed ? '<i class="fas fa-chevron-down"></i> Mostrar ações' : '<i class="fas fa-chevron-up"></i> Ocultar ações';
+    btn.title = collapsed ? 'Expandir ações rápidas' : 'Recolher ações rápidas';
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  }
+}
+function tutoriaToggleActionsCollapsed(force){
+  __tutoriaActionsCollapsed = (typeof force === 'boolean') ? force : !__tutoriaActionsCollapsed;
+  tutoriaUpdateActionsUI();
+}
+function tutoriaSetTab(tab){
+  __tutoriaTab = tab || 'painel';
+  tutoriaRender();
+  __tutoriaResetScrollTop();
+}
+function tutoriaAbrirAluno(id){
+  __tutoriaCurrentAlunoId = String(id || '');
+  __tutoriaTab = 'individual';
+  tutoriaRender();
+  __tutoriaResetScrollTop();
+}
+function tutoriaAbrirTema(nome){
+  __tutoriaTab = 'coletiva';
+  tutoriaRender();
+  __tutoriaResetScrollTop();
+  setTimeout(()=>{ tutoriaAplicarTemaModelo(nome); }, 20);
+}
+function __tutoriaPainelHtml(){
+  const list = __tutoriaGetTutorandos();
+  const total = list.length;
+  const pendentes = list.filter(a => __tutoriaStatusInfo(a).count < 2).length;
+  const completos = list.filter(a => __tutoriaProfileFilledCount(__tutoriaGetAlunoRec(a.id, false)) >= 8).length;
+  const coletivasMes = (__sgpTutoria.coletivas || []).filter(c => String(c.date || '').startsWith(__tutoriaMonthPrefix())).length;
+  const pendList = list.slice().sort((a,b)=>{
+    const sa = __tutoriaStatusInfo(a).count;
+    const sb = __tutoriaStatusInfo(b).count;
+    if(sa !== sb) return sa - sb;
+    const la = __tutoriaLastEncontro(__tutoriaGetAlunoRec(a.id, false))?.date || '';
+    const lb = __tutoriaLastEncontro(__tutoriaGetAlunoRec(b.id, false))?.date || '';
+    return String(la).localeCompare(String(lb));
+  }).slice(0,8);
+
+  const pendHtml = pendList.length ? pendList.map(a => {
+    const rec = __tutoriaGetAlunoRec(a.id, false);
+    const info = __tutoriaStatusInfo(a);
+    const last = __tutoriaLastEncontro(rec);
+    return `
+      <div class="tutoria-item" data-onclick="tutoriaAbrirAluno('${_escHTML(String(a.id))}')">
+        <div class="top">
+          <div>
+            <div class="name">${_escHTML(a.nome)}</div>
+            <div class="tutoria-note">${_escHTML(a.turma || 'Sem turma')} • Último encontro: ${_escHTML(__tutoriaHumanDate(last?.date || ''))}</div>
+          </div>
+          ${__tutoriaRenderStatusPill(info)}
+        </div>
+      </div>
+    `;
+  }).join('') : `<div class="tutoria-empty">Nenhum tutorando marcado ainda.</div>`;
+
+  const temasHtml = Object.keys(__TUTORIA_TEMAS).map(nome => `<button class="tutoria-theme-chip" data-onclick="tutoriaAbrirTema('${_escHTML(nome)}')">${_escHTML(nome)}</button>`).join('');
+
+  return `
+    <div class="tutoria-kpis">
+      <div class="tutoria-kpi"><div class="num">${total}</div><div class="lbl">Tutorandos ativos</div><div class="sub">Com filtro atual aplicado.</div></div>
+      <div class="tutoria-kpi"><div class="num">${pendentes}</div><div class="lbl">Pendentes no mês</div><div class="sub">Meta de referência: 2 encontros individuais por mês.</div></div>
+      <div class="tutoria-kpi"><div class="num">${completos}</div><div class="lbl">Perfis consistentes</div><div class="sub">Com dados-base já preenchidos.</div></div>
+      <div class="tutoria-kpi"><div class="num">${coletivasMes}</div><div class="lbl">Coletivas no mês</div><div class="sub">Registros da roda de conversa.</div></div>
+    </div>
+
+    <div class="tutoria-grid-2">
+      <div class="tutoria-card">
+        <div class="tutoria-section-title">
+          <h3><i class="fas fa-clock"></i> Quem precisa de atenção agora</h3>
+          <button class="tutoria-linkish" data-onclick="tutoriaSetTab('individual')">Abrir individual</button>
+        </div>
+        <div class="tutoria-list">${pendHtml}</div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="tutoria-card">
+          <div class="tutoria-section-title">
+            <h3><i class="fas fa-route"></i> Fluxo rápido da Tutoria</h3>
+          </div>
+          <div class="tutoria-flow">
+            <div class="step">
+              <strong>Antes</strong>
+              Levante dados do estudante e da família, sonhos, projeto de vida e prepare 6 abordagens.
+            </div>
+            <div class="step">
+              <strong>Durante</strong>
+              Acolha pelo nome, elogie virtudes, escute com atenção e feche um combinado possível.
+            </div>
+            <div class="step">
+              <strong>Depois</strong>
+              Registre o essencial do encontro, os combinados e o próximo passo.
+            </div>
+          </div>
+        </div>
+
+        <div class="tutoria-card">
+          <div class="tutoria-section-title">
+            <h3><i class="fas fa-users"></i> Temas prontos para roda de conversa</h3>
+            <button class="tutoria-linkish" data-onclick="tutoriaSetTab('coletiva')">Abrir coletiva</button>
+          </div>
+          <div class="tutoria-theme-bank">${temasHtml}</div>
+          <div class="tutoria-script">
+            Use os temas como ponto de partida. O foco é acolher, promover escuta ativa, gerar reflexão e fechar com uma ação concreta da turma.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+function __tutoriaRenderAlunoCard(a){
+  const rec = __tutoriaGetAlunoRec(a.id, false);
+  const info = __tutoriaStatusInfo(a);
+  const last = __tutoriaLastEncontro(rec);
+  const filled = __tutoriaProfileFilledCount(rec);
+  return `
+    <div class="tutoria-item${String(__tutoriaCurrentAlunoId) === String(a.id) ? ' active' : ''}" data-onclick="tutoriaAbrirAluno('${_escHTML(String(a.id))}')">
+      <div class="top">
+        <div>
+          <div class="name">${_escHTML(a.nome)}</div>
+          <div class="tutoria-note">${_escHTML(a.turma || 'Sem turma')} • Perfil: ${filled}/18</div>
+        </div>
+        ${__tutoriaRenderStatusPill(info)}
+      </div>
+      <div class="meta">
+        <span class="tutoria-pill soft"><i class="fas fa-calendar"></i> Último: ${_escHTML(__tutoriaHumanDate(last?.date || ''))}</span>
+        ${a.tutorando ? `<span class="tutoria-pill ok"><i class="fas fa-user-check"></i> Tutorando</span>` : `<span class="tutoria-pill soft"><i class="fas fa-user"></i> Não marcado</span>`}
+      </div>
+    </div>
+  `;
+}
+function __tutoriaIndividualHtml(){
+  const list = __tutoriaGetTutorandos();
+  if(!__tutoriaCurrentAlunoId){
+    __tutoriaCurrentAlunoId = String((list[0] && list[0].id) || ((alunos && alunos[0]) ? alunos[0].id : '') || '');
+  }
+  let aluno = __tutoriaGetAlunoById(__tutoriaCurrentAlunoId);
+  if(!aluno && list.length){
+    aluno = list[0];
+    __tutoriaCurrentAlunoId = String(aluno.id);
+  }
+  const left = list.length ? list.map(__tutoriaRenderAlunoCard).join('') : `<div class="tutoria-empty">Marque alunos como tutorandos no card do aluno ou por aqui.</div>`;
+  if(!aluno){
+    return `
+      <div class="tutoria-grid-2">
+        <div class="tutoria-card"><div class="tutoria-list">${left}</div></div>
+        <div class="tutoria-card"><div class="tutoria-empty">Nenhum aluno disponível no SGP para iniciar a tutoria.</div></div>
+      </div>
+    `;
+  }
+  const rec = __tutoriaGetAlunoRec(aluno.id, true);
+  const info = __tutoriaStatusInfo(aluno);
+  const roteiro = __tutoriaBuildRoteiro(rec, aluno);
+  const encontros = (rec.encontros || []).map(e => `
+    <div class="tutoria-timeline-item">
+      <div class="hd">
+        <div>
+          <strong>${_escHTML(__tutoriaHumanDate(e.date))}</strong>
+          <div class="tutoria-note">${_escHTML(e.focus || 'acolhimento')} • ${_escHTML(String(e.duration || 10))} min</div>
+        </div>
+        <button class="tutoria-mini-btn" data-onclick="tutoriaExcluirEncontro('${_escHTML(String(e.id))}')"><i class="fas fa-trash"></i></button>
+      </div>
+      <div class="meta" style="margin-bottom:8px;">
+        ${e.acolheu ? '<span class="tutoria-pill ok">Acolheu</span>' : ''}
+        ${e.engajou ? '<span class="tutoria-pill ok">Engajou</span>' : ''}
+        ${e.fezJunto ? '<span class="tutoria-pill warn">Fez junto</span>' : ''}
+        ${e.acompanhou ? '<span class="tutoria-pill soft">Acompanhou</span>' : ''}
+        ${e.desenvolveu ? '<span class="tutoria-pill soft">Desenvolveu</span>' : ''}
+      </div>
+      ${e.advances ? `<div><strong>Avanços:</strong> ${_escHTML(e.advances)}</div>` : ''}
+      ${e.combinados ? `<div><strong>Combinados:</strong> ${_escHTML(e.combinados)}</div>` : ''}
+      ${e.nextStep || e.nextDate ? `<div><strong>Próximo passo:</strong> ${_escHTML(e.nextStep || '—')} ${e.nextDate ? `• ${_escHTML(__tutoriaHumanDate(e.nextDate))}` : ''}</div>` : ''}
+      ${e.notes ? `<div class="tutoria-note" style="margin-top:8px;">${_escHTML(e.notes)}</div>` : ''}
+    </div>
+  `).join('') || `<div class="tutoria-empty">Ainda não há encontros registrados para este tutorado.</div>`;
+
+  return `
+    <div class="tutoria-grid-2">
+      <div class="tutoria-card">
+        <div class="tutoria-section-title">
+          <h3><i class="fas fa-user-group"></i> Tutorandos</h3>
+          <span class="tutoria-note">${_escHTML(String(list.length))} com o filtro atual</span>
+        </div>
+        <div class="tutoria-list">${left}</div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="tutoria-card">
+          <div class="tutoria-section-title">
+            <div>
+              <h3 style="margin-bottom:4px;">${_escHTML(aluno.nome)}</h3>
+              <div class="tutoria-note">${_escHTML(aluno.turma || 'Sem turma')} • Perfil preenchido: ${_escHTML(String(__tutoriaProfileFilledCount(rec)))} / 18</div>
+            </div>
+            <div class="meta" style="justify-content:flex-end;">
+              ${__tutoriaRenderStatusPill(info)}
+              ${aluno.tutorando ? `<span class="tutoria-pill ok"><i class="fas fa-user-check"></i> Tutorando</span>` : `<span class="tutoria-pill soft"><i class="fas fa-user"></i> Não marcado</span>`}
+            </div>
+          </div>
+
+          ${__tutoriaAlunoPainelHtml(aluno, bimestreAtual, true)}
+
+          <div class="tutoria-form-grid">
+            ${__tutoriaTextArea('tutoriaDadosPessoais','Dados pessoais', rec.perfil.dadosPessoais, 3, false, 'Nascimento, endereço, telefone, observações úteis...')}
+            ${__tutoriaTextArea('tutoriaDadosFamilia','Dados da família', rec.perfil.dadosFamilia, 3, false, 'Responsáveis, contato, vínculo...')}
+            ${__tutoriaTextArea('tutoriaHistorico','Breve histórico do estudante', rec.perfil.historico, 4, true, 'Nível atual, disciplina preferida, dificuldade, o que gostaria de aprender...')}
+            ${__tutoriaTextArea('tutoriaPerfilFamiliar','Breve perfil familiar', rec.perfil.perfilFamiliar, 4, true, 'Com quem mora, rotina da casa, quem acompanha mais...')}
+            ${__tutoriaTextArea('tutoriaSonhos','Sonhos', rec.perfil.sonhos, 4, false, 'Um item por linha')}
+            ${__tutoriaTextArea('tutoriaProjetoVida','Projeto de Vida', rec.perfil.projetoVida, 4, false, 'Um item por linha')}
+            ${__tutoriaTextArea('tutoriaGostos','Gostos e preferências', rec.perfil.gostos, 3, false, 'Time, música, atividades, interesses...')}
+            ${__tutoriaTextArea('tutoriaVirtudes','Virtudes / características positivas', rec.perfil.virtudes, 3, false, 'Um item por linha')}
+            ${__tutoriaTextArea('tutoriaHabilidades','Habilidades', rec.perfil.habilidades, 3, false, 'Um item por linha')}
+            ${__tutoriaTextArea('tutoriaPontosPositivos','Pontos positivos atuais', rec.perfil.pontosPositivos, 3, false, 'Um item por linha')}
+            ${__tutoriaTextArea('tutoriaFragilidades','Fragilidades / vulnerabilidades', rec.perfil.fragilidades, 3, false, 'Um item por linha')}
+            ${__tutoriaTextArea('tutoriaPontosAtencao','Pontos de atenção', rec.perfil.pontosAtencao, 3, false, 'Um item por linha')}
+            ${__tutoriaTextArea('tutoriaPrioridadesAcademicas','Prioridades acadêmicas', rec.perfil.prioridadesAcademicas, 3, false, 'Um item por linha')}
+            ${__tutoriaTextArea('tutoriaPrioridadesProtagonismo','Prioridades de protagonismo', rec.perfil.prioridadesProtagonismo, 3, false, 'Um item por linha')}
+            ${__tutoriaTextArea('tutoriaCombinados','Combinados com o tutorado', rec.perfil.combinados, 4, true, 'O que fazer, quando fazer, o que evitar...')}
+            ${__tutoriaTextArea('tutoriaCombinadosEducadores','Combinados com os educadores', rec.perfil.combinadosEducadores, 4, true, 'Como a equipe vai apoiar este estudante...')}
+            ${__tutoriaTextArea('tutoriaAbordagens','6 abordagens de acolhimento', rec.perfil.abordagens, 6, true, 'Uma abordagem por linha')}
+            ${__tutoriaTextArea('tutoriaObservacoesGerais','Observações gerais', rec.perfil.observacoesGerais, 4, true, 'Anotações livres')}
+          </div>
+
+          <div class="tutoria-actions" style="margin-top:12px;">
+            <button class="btn-planner" data-onclick="tutoriaGerarAbordagens()"><i class="fas fa-wand-magic-sparkles"></i> Gerar 6 abordagens</button>
+            <button class="btn-planner" data-onclick="tutoriaSalvarPerfil()"><i class="fas fa-save"></i> Salvar perfil</button>
+            <button class="btn-planner" data-onclick="tutoriaImprimirRelatorioAluno('${_escHTML(String(aluno.id))}')"><i class="fas fa-print"></i> Relatório do aluno</button>
+            <button class="btn-planner" data-onclick="tutoriaImprimirRelatoriosTurma('${_escHTML(String(aluno.turma || ''))}','${_escHTML(String(aluno.id))}')"><i class="fas fa-layer-group"></i> Lote da turma</button>
+            <button class="btn-planner" data-onclick="tutoriaToggleTutorandoSelecionado(true)"><i class="fas fa-user-check"></i> Garantir como tutorando</button>
+          </div>
+        </div>
+
+        <div class="tutoria-card">
+          <div class="tutoria-section-title">
+            <h3><i class="fas fa-scroll"></i> Roteiro rápido de 5 a 10 minutos</h3>
+          </div>
+          <div class="tutoria-script">${_escHTML(roteiro).replace(/\n/g,'<br>')}</div>
+        </div>
+
+        <div class="tutoria-card">
+          <div class="tutoria-section-title">
+            <h3><i class="fas fa-pen-to-square"></i> Registro rápido do encontro</h3>
+            <span class="tutoria-note">Salva no histórico e pode criar tarefa no Planner.</span>
+          </div>
+          <div class="tutoria-form-grid">
+            ${__tutoriaInput('tutoriaEncontroData','Data', __tutoriaTodayISO(), 'date', false, '')}
+            ${__tutoriaInput('tutoriaEncontroDuracao','Duração (min)', '10', 'number', false, '')}
+            <div class="form-group full">
+              <label for="tutoriaEncontroFoco">Foco do encontro</label>
+              <select id="tutoriaEncontroFoco" class="inp">
+                <option value="acolhimento">Acolhimento</option>
+                <option value="sonho">Sonho</option>
+                <option value="projeto de vida">Projeto de vida</option>
+                <option value="acadêmico">Acadêmico</option>
+                <option value="protagonismo">Protagonismo</option>
+                <option value="família">Família</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label>Pilares do encontro</label>
+              <div class="intel-grid" style="grid-template-columns: repeat(5, minmax(0,1fr));">
+                <label class="check-intel"><input type="checkbox" id="tutoriaPilarAcolheu" checked> Acolheu</label>
+                <label class="check-intel"><input type="checkbox" id="tutoriaPilarEngajou" checked> Engajou</label>
+                <label class="check-intel"><input type="checkbox" id="tutoriaPilarFezJunto"> Fez junto</label>
+                <label class="check-intel"><input type="checkbox" id="tutoriaPilarAcompanhou" checked> Acompanhou</label>
+                <label class="check-intel"><input type="checkbox" id="tutoriaPilarDesenvolveu"> Desenvolveu</label>
+              </div>
+            </div>
+            ${__tutoriaTextArea('tutoriaEncontroAvancos','Avanços percebidos', '', 3, false, 'Primeiros avanços, mudança de postura, resposta positiva...')}
+            ${__tutoriaTextArea('tutoriaEncontroCombinados','Combinados', '', 3, false, 'O que ficou combinado até o próximo encontro...')}
+            ${__tutoriaInput('tutoriaEncontroProximaData','Próxima data', '', 'date', false, '')}
+            ${__tutoriaInput('tutoriaEncontroProximoPasso','Próximo passo', '', 'text', false, 'Ex: conferir tarefa de leitura')}
+            ${__tutoriaTextArea('tutoriaEncontroObs','Observações do encontro', '', 4, true, 'Escuta, percepção, vínculo, encaminhamentos...')}
+            <div class="form-group full">
+              <label class="check-intel"><input type="checkbox" id="tutoriaEncontroAddPlanner" checked> Criar tarefa no Planner para o próximo encontro, se houver data.</label>
+            </div>
+          </div>
+          <div class="tutoria-actions" style="margin-top:12px;">
+            <button class="btn-planner" data-onclick="tutoriaRegistrarEncontro()"><i class="fas fa-save"></i> Registrar encontro</button>
+          </div>
+        </div>
+
+        <div class="tutoria-card">
+          <div class="tutoria-section-title">
+            <h3><i class="fas fa-timeline"></i> Histórico individual</h3>
+            <span class="tutoria-note">${_escHTML(String((rec.encontros || []).length))} registro(s)</span>
+          </div>
+          <div class="tutoria-timeline">${encontros}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+function tutoriaAplicarTemaModelo(nome){
+  const modelo = __TUTORIA_TEMAS[nome];
+  if(!modelo) return;
+  const temaEl = document.getElementById('tutoriaColetivaTema');
+  const objetivoEl = document.getElementById('tutoriaColetivaObjetivo');
+  const roteiroEl = document.getElementById('tutoriaColetivaRoteiro');
+  if(temaEl) temaEl.value = nome;
+  if(objetivoEl) objetivoEl.value = modelo.objetivo || '';
+  if(roteiroEl) roteiroEl.value = modelo.roteiro || '';
+}
+function tutoriaLimparColetivaForm(){
+  __tutoriaCurrentColetivaId = '';
+  const ids = {
+    tutoriaColetivaData: __tutoriaTodayISO(),
+    tutoriaColetivaTurma: (__tutoriaFilterTurma && __tutoriaFilterTurma !== 'all') ? __tutoriaFilterTurma : '',
+    tutoriaColetivaTema: '',
+    tutoriaColetivaObjetivo: '',
+    tutoriaColetivaRoteiro: '',
+    tutoriaColetivaReflexoes: '',
+    tutoriaColetivaAcoesGerais: '',
+    tutoriaColetivaAcoesIndividuais: '',
+    tutoriaColetivaProximoPasso: ''
+  };
+  Object.keys(ids).forEach((id)=>{
+    const el = document.getElementById(id);
+    if(el) el.value = ids[id];
+  });
+}
+function tutoriaEditarColetiva(id){
+  const item = (__sgpTutoria.coletivas || []).find(x => String(x.id) === String(id));
+  if(!item) return;
+  __tutoriaCurrentColetivaId = String(item.id);
+  tutoriaSetTab('coletiva');
+  setTimeout(()=>{
+    const map = {
+      tutoriaColetivaData: item.date || __tutoriaTodayISO(),
+      tutoriaColetivaTurma: item.turma || '',
+      tutoriaColetivaTema: item.tema || '',
+      tutoriaColetivaObjetivo: item.objetivo || '',
+      tutoriaColetivaRoteiro: item.roteiro || '',
+      tutoriaColetivaReflexoes: item.reflexoes || '',
+      tutoriaColetivaAcoesGerais: item.acoesGerais || '',
+      tutoriaColetivaAcoesIndividuais: item.acoesIndividuais || '',
+      tutoriaColetivaProximoPasso: item.proximoPasso || ''
+    };
+    Object.keys(map).forEach((idKey)=>{
+      const el = document.getElementById(idKey);
+      if(el) el.value = map[idKey];
+    });
+  }, 20);
+}
+function tutoriaSalvarColetiva(){
+  __tutoriaEnsureBoot();
+  const item = __tutoriaNormalizeColetiva({
+    id: __tutoriaCurrentColetivaId || __newId(),
+    date: document.getElementById('tutoriaColetivaData')?.value || __tutoriaTodayISO(),
+    turma: document.getElementById('tutoriaColetivaTurma')?.value || '',
+    tema: document.getElementById('tutoriaColetivaTema')?.value || '',
+    objetivo: document.getElementById('tutoriaColetivaObjetivo')?.value || '',
+    roteiro: document.getElementById('tutoriaColetivaRoteiro')?.value || '',
+    reflexoes: document.getElementById('tutoriaColetivaReflexoes')?.value || '',
+    acoesGerais: document.getElementById('tutoriaColetivaAcoesGerais')?.value || '',
+    acoesIndividuais: document.getElementById('tutoriaColetivaAcoesIndividuais')?.value || '',
+    proximoPasso: document.getElementById('tutoriaColetivaProximoPasso')?.value || ''
+  });
+  if(!item.turma){
+    if(typeof showToast === 'function') showToast('Selecione a turma da tutoria coletiva.', 'error');
+    return;
+  }
+  const idx = (__sgpTutoria.coletivas || []).findIndex(x => String(x.id) === String(item.id));
+  if(idx >= 0) __sgpTutoria.coletivas[idx] = item;
+  else __sgpTutoria.coletivas.unshift(item);
+
+  if(document.getElementById('tutoriaColetivaAddPlanner')?.checked){
+    __tutoriaCreatePlannerTask({
+      title: `Tutoria coletiva • ${item.turma}`,
+      date: item.date,
+      turma: item.turma,
+      notes: [item.tema ? `Tema: ${item.tema}` : '', item.objetivo, item.proximoPasso].filter(Boolean).join('\n\n'),
+      priority: 'Média'
+    });
+  }
+
+  __tutoriaPersist();
+  tutoriaRender();
+  setTimeout(()=>{ tutoriaLimparColetivaForm(); }, 20);
+  if(typeof showToast === 'function') showToast('Tutoria coletiva registrada.');
+}
+function tutoriaExcluirColetiva(id){
+  __sgpTutoria.coletivas = (__sgpTutoria.coletivas || []).filter(x => String(x.id) !== String(id));
+  __tutoriaPersist();
+  tutoriaRender();
+  if(typeof showToast === 'function') showToast('Registro coletivo removido.');
+}
+function __tutoriaColetivaHtml(){
+  const temasHtml = Object.keys(__TUTORIA_TEMAS).map(nome => `<button class="tutoria-theme-chip" data-onclick="tutoriaAplicarTemaModelo('${_escHTML(nome)}')">${_escHTML(nome)}</button>`).join('');
+  const turmasOpts = ['<option value="">Selecione…</option>'].concat((turmas || []).map(t => `<option value="${_escHTML(t)}">${_escHTML(t)}</option>`)).join('');
+  const rows = (__sgpTutoria.coletivas || []).slice().sort((a,b)=> String(b.date || '').localeCompare(String(a.date || ''))).map(item => `
+    <div class="tutoria-timeline-item">
+      <div class="hd">
+        <div>
+          <strong>${_escHTML(item.tema || 'Tutoria coletiva')}</strong>
+          <div class="tutoria-note">${_escHTML(item.turma || 'Sem turma')} • ${_escHTML(__tutoriaHumanDate(item.date))}</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="tutoria-mini-btn" data-onclick="tutoriaEditarColetiva('${_escHTML(String(item.id))}')"><i class="fas fa-pen"></i></button>
+          <button class="tutoria-mini-btn" data-onclick="tutoriaExcluirColetiva('${_escHTML(String(item.id))}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      ${item.objetivo ? `<div><strong>Objetivo:</strong> ${_escHTML(item.objetivo)}</div>` : ''}
+      ${item.roteiro ? `<div><strong>Roteiro:</strong> ${_escHTML(item.roteiro)}</div>` : ''}
+      ${item.acoesGerais ? `<div><strong>Ações gerais:</strong> ${_escHTML(item.acoesGerais)}</div>` : ''}
+      ${item.acoesIndividuais ? `<div><strong>Ações individuais:</strong> ${_escHTML(item.acoesIndividuais)}</div>` : ''}
+      ${item.proximoPasso ? `<div><strong>Próximo passo:</strong> ${_escHTML(item.proximoPasso)}</div>` : ''}
+    </div>
+  `).join('') || `<div class="tutoria-empty">Ainda não há registros de tutoria coletiva.</div>`;
+
+  return `
+    <div class="tutoria-grid-2">
+      <div class="tutoria-card">
+        <div class="tutoria-section-title">
+          <h3><i class="fas fa-comments"></i> Planejar roda de conversa</h3>
+          <span class="tutoria-note">Tema + objetivo + ações pós-roda.</span>
+        </div>
+        <div class="tutoria-theme-bank">${temasHtml}</div>
+        <div class="tutoria-form-grid">
+          ${__tutoriaInput('tutoriaColetivaData','Data', __tutoriaTodayISO(), 'date', false, '')}
+          <div class="form-group">
+            <label for="tutoriaColetivaTurma">Turma</label>
+            <select id="tutoriaColetivaTurma" class="inp">${turmasOpts}</select>
+          </div>
+          ${__tutoriaInput('tutoriaColetivaTema','Tema', '', 'text', true, 'Ex: Empatia')}
+          ${__tutoriaTextArea('tutoriaColetivaObjetivo','Objetivo', '', 3, true, 'Qual é a intenção pedagógica da roda?')}
+          ${__tutoriaTextArea('tutoriaColetivaRoteiro','Roteiro / passo a passo', '', 5, true, 'Acolhida, pergunta disparadora, debate, combinado...')}
+          ${__tutoriaTextArea('tutoriaColetivaReflexoes','Reflexões da turma', '', 4, true, 'Percepções observadas durante a roda')}
+          ${__tutoriaTextArea('tutoriaColetivaAcoesGerais','Ações gerais / coletivas', '', 4, false, 'O que a turma precisa fazer?')}
+          ${__tutoriaTextArea('tutoriaColetivaAcoesIndividuais','Ações individuais', '', 4, false, 'Quem precisa de acompanhamento individual?')}
+          ${__tutoriaTextArea('tutoriaColetivaProximoPasso','Próximo passo', '', 3, true, 'Tema ou encaminhamento para a próxima tutoria')}
+          <div class="form-group full">
+            <label class="check-intel"><input type="checkbox" id="tutoriaColetivaAddPlanner" checked> Criar tarefa no Planner para acompanhar a próxima ação.</label>
+          </div>
+        </div>
+        <div class="tutoria-actions" style="margin-top:12px;">
+          <button class="btn-planner" data-onclick="tutoriaSalvarColetiva()"><i class="fas fa-save"></i> Salvar coletiva</button>
+          <button class="btn-planner" data-onclick="tutoriaLimparColetivaForm()"><i class="fas fa-eraser"></i> Limpar</button>
+        </div>
+      </div>
+
+      <div class="tutoria-card">
+        <div class="tutoria-section-title">
+          <h3><i class="fas fa-list-check"></i> Histórico coletivo</h3>
+          <span class="tutoria-note">${_escHTML(String((__sgpTutoria.coletivas || []).length))} registro(s)</span>
+        </div>
+        <div class="tutoria-timeline">${rows}</div>
+      </div>
+    </div>
+  `;
+}
+function tutoriaRender(){
+  __tutoriaEnsureBoot();
+  tutoriaRefreshFiltersUI();
+
+  const tabMap = [
+    ['tutoriaTabPainel','painel'],
+    ['tutoriaTabIndividual','individual'],
+    ['tutoriaTabColetiva','coletiva']
+  ];
+  tabMap.forEach(([id,val])=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(__tutoriaTab === val) el.classList.add('active');
+    else el.classList.remove('active');
+  });
+
+  const content = document.getElementById('tutoriaContent');
+  if(!content) return;
+  if(__tutoriaTab === 'individual') content.innerHTML = __tutoriaIndividualHtml();
+  else if(__tutoriaTab === 'coletiva') content.innerHTML = __tutoriaColetivaHtml();
+  else content.innerHTML = __tutoriaPainelHtml();
+
+  const hint = document.getElementById('tutoriaHeaderHint');
+  if(hint){
+    if(__tutoriaTab === 'individual') hint.textContent = 'Perfil do tutorado + roteiro + registro rápido do encontro';
+    else if(__tutoriaTab === 'coletiva') hint.textContent = 'Roda de conversa + ações gerais e individuais';
+    else hint.textContent = 'Visão geral da tutoria com foco nas pendências do mês';
+  }
+
+  const foot = document.getElementById('tutoriaFooterInfo');
+  if(foot){
+    const total = __tutoriaGetTutorandos().length;
+    const coletivas = (__sgpTutoria.coletivas || []).filter(c => String(c.date || '').startsWith(__tutoriaMonthPrefix())).length;
+    foot.textContent = `Tutorandos com filtro atual: ${total} • Coletivas no mês: ${coletivas}`;
+  }
+
+  tutoriaUpdateActionsUI();
+  try{ __sgpBindDataOnclick(document.getElementById('modalTutoria') || document); }catch(_){ }
+}
+function abrirTutoria(alunoId){
+  __tutoriaEnsureBoot();
+  if(alunoId) {
+    __tutoriaCurrentAlunoId = String(alunoId);
+    __tutoriaTab = 'individual';
+  }
+  tutoriaRefreshFiltersUI();
+  try{ fecharModais(false); }catch(_){ }
+  abrirModal('modalTutoria');
+  tutoriaRender();
+  __tutoriaResetScrollTop();
+  tutoriaUpdateFullscreenUI();
+}
+
+function tutoriaUpdateFullscreenUI(){
+  const btn = document.getElementById('tutoriaFsBtn');
+  const modal = document.getElementById('modalTutoria');
+  const box = modal && modal.querySelector('.modal-box');
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+  const isFs = !!(fsEl && box && (fsEl === box || box.contains(fsEl)));
+  if(btn){
+    btn.innerHTML = isFs ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
+    btn.title = isFs ? 'Sair da tela cheia' : 'Tela cheia';
+  }
+  document.body.classList.toggle('tutoria-is-fullscreen', isFs);
+}
+
+function tutoriaToggleFullscreen(){
+  const box = document.querySelector('#modalTutoria .modal-box');
+  if(!box) return;
+  try{
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+    const isTutoriaFs = !!(fsEl && (fsEl === box || box.contains(fsEl)));
+    if(isTutoriaFs){
+      if(document.exitFullscreen) document.exitFullscreen();
+      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if(document.mozCancelFullScreen) document.mozCancelFullScreen();
+      else if(document.msExitFullscreen) document.msExitFullscreen();
+      return;
+    }
+    const req = box.requestFullscreen || box.webkitRequestFullscreen || box.mozRequestFullScreen || box.msRequestFullscreen;
+    if(req){
+      try{ req.call(box, {navigationUI:'hide'}); }catch(_){ req.call(box); }
+    }else if(typeof showToast === 'function'){
+      showToast('Tela cheia não suportada neste navegador.', 'error');
+    }
+  }catch(_){
+    if(typeof showToast === 'function') showToast('Não foi possível ativar a tela cheia.', 'error');
+  }
+}
+
+document.addEventListener('fullscreenchange', tutoriaUpdateFullscreenUI);
+document.addEventListener('webkitfullscreenchange', tutoriaUpdateFullscreenUI);
+document.addEventListener('mozfullscreenchange', tutoriaUpdateFullscreenUI);
+document.addEventListener('MSFullscreenChange', tutoriaUpdateFullscreenUI);
+function tutoriaExportJSON(){
+  __tutoriaEnsureBoot();
+  try{
+    __sgpTutoria.meta.lastExportAt = Date.now();
+    const blob = new Blob([JSON.stringify(__sgpTutoria, null, 2)], { type: 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `sgp_tutoria_${__tutoriaTodayISO()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ try{ URL.revokeObjectURL(a.href); a.remove(); }catch(_){ } }, 120);
+    __tutoriaPersist(true);
+  }catch(_){ }
+}
+function tutoriaImportFile(input){
+  const file = input && input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      const parsed = JSON.parse(String(reader.result || '{}'));
+      __sgpTutoria = __tutoriaNormalizeStore(parsed);
+      __tutoriaPersist();
+      tutoriaRefreshFiltersUI();
+      tutoriaRender();
+      if(typeof showToast === 'function') showToast('Tutoria importada com sucesso.');
+    }catch(e){
+      if(typeof showToast === 'function') showToast('Arquivo de tutoria inválido.', 'error');
+    }finally{
+      try{ input.value = ''; }catch(_){ }
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
 </script>
-</body>
-</html>
