@@ -6166,14 +6166,14 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                 <div class="tutoria-toolbar actions-collapsed" id="tutoriaToolbar">
                     <div class="tb"><label for="tutoriaFilterTurma">Turma</label><select id="tutoriaFilterTurma" class="inp" data-onchange="tutoriaSetFilterTurma(this.value)"></select></div>
                     <div class="tb"><label for="tutoriaSearch">Busca</label><input id="tutoriaSearch" class="inp" placeholder="Nome, sonho, ponto de atenção..." data-oninput="tutoriaSetSearch(this.value)"></div>
-                    <div class="tb"><label for="tutoriaAlunoSelect">Ir para aluno</label><select id="tutoriaAlunoSelect" class="inp"></select></div>
+                    <div class="tb"><label for="tutoriaAlunoSelect">Ir para aluno</label><select id="tutoriaAlunoSelect" class="inp" data-onchange="tutoriaSyncAlunoSelect(this.value)"></select></div>
                     <div class="tb tb-actions-toggle">
                         <span class="planner-mini">Ações rápidas recolhidas para liberar mais espaço de edição.</span>
                         <button id="tutoriaToggleActionsBtn" class="btn-planner tutoria-toolbar-toggle" data-onclick="tutoriaToggleActionsCollapsed()"><i class="fas fa-chevron-down"></i> Mostrar ações</button>
                     </div>
                     <div class="tb tb-actions" id="tutoriaToolbarActions">
                         <button class="btn-planner" data-onclick="tutoriaSelecionarAlunoDoSelect()"><i class="fas fa-user"></i> Abrir</button>
-                        <button class="btn-planner" data-onclick="tutoriaToggleTutorandoSelecionado()"><i class="fas fa-user-check"></i> Marcar</button>
+                        <button id="tutoriaToggleTutorandoBtn" class="btn-planner" data-onclick="tutoriaToggleTutorandoSelecionado()"><i class="fas fa-user-check"></i> Marcar</button>
                         <button class="btn-planner" data-onclick="tutoriaImprimirRelatorioAluno()"><i class="fas fa-print"></i> Relatório</button>
                         <button class="btn-planner" data-onclick="tutoriaImprimirRelatoriosTurma()"><i class="fas fa-layer-group"></i> Relatórios da turma</button>
                         <button class="btn-planner" data-onclick="tutoriaAplicarListaBase()"><i class="fas fa-wand-magic-sparkles"></i> Lista base</button>
@@ -15568,7 +15568,7 @@ function __tutoriaBuildAlunoReportHtml(alunoId, bim){
 function tutoriaImprimirRelatorioAluno(alunoId){
   try{
     __tutoriaEnsureBoot();
-    const id = String(alunoId || __tutoriaCurrentAlunoId || document.getElementById('tutoriaAlunoSelect')?.value || '');
+    const id = String(alunoId || __tutoriaResolveAlunoSelecionado(false) || '');
     if(!id){ if(typeof showToast === 'function') showToast('Selecione um aluno para gerar o relatório.', 'error'); return; }
     const html = __tutoriaBuildAlunoReportHtml(id, bimestreAtual);
     if(!html){ if(typeof showToast === 'function') showToast('Não foi possível montar o relatório.', 'error'); return; }
@@ -15586,7 +15586,7 @@ function __tutoriaResolveTurmaLote(turmaHint, alunoId){
     if(hint && hint !== 'all') return hint;
     const filtro = String(__tutoriaFilterTurma || '').trim();
     if(filtro && filtro !== 'all') return filtro;
-    const id = String(alunoId || __tutoriaCurrentAlunoId || document.getElementById('tutoriaAlunoSelect')?.value || '').trim();
+    const id = String(alunoId || __tutoriaResolveAlunoSelecionado(false) || '').trim();
     const a = id ? __tutoriaGetAlunoById(id) : null;
     const turmaAluno = String(a?.turma || '').trim();
     if(turmaAluno) return turmaAluno;
@@ -36602,6 +36602,28 @@ function __tutoriaGetTodosAlunos(){
   list.sort((a,b)=> String(a.nome || '').localeCompare(String(b.nome || '')));
   return list;
 }
+function __tutoriaResolveAlunoSelecionado(preferCurrent){
+  const sel = document.getElementById('tutoriaAlunoSelect');
+  const selectedId = String(sel?.value || '').trim();
+  const currentId = String(__tutoriaCurrentAlunoId || '').trim();
+  return preferCurrent ? (currentId || selectedId) : (selectedId || currentId);
+}
+function tutoriaUpdateAlunoActionUI(idHint){
+  const btn = document.getElementById('tutoriaToggleTutorandoBtn');
+  if(!btn) return;
+  const id = String(idHint || __tutoriaResolveAlunoSelecionado(false) || '').trim();
+  const aluno = id ? __tutoriaGetAlunoById(id) : null;
+  const marcado = !!(aluno && aluno.tutorando);
+  btn.innerHTML = marcado ? '<i class="fas fa-user-minus"></i> Desmarcar' : '<i class="fas fa-user-check"></i> Marcar';
+  btn.title = marcado ? 'Desmarcar aluno como tutorando' : 'Marcar aluno como tutorando';
+  btn.setAttribute('aria-pressed', marcado ? 'true' : 'false');
+}
+function tutoriaSyncAlunoSelect(v, preserveCurrent){
+  const id = String(v || document.getElementById('tutoriaAlunoSelect')?.value || '').trim();
+  if(id && !preserveCurrent) __tutoriaCurrentAlunoId = id;
+  tutoriaUpdateAlunoActionUI(id);
+  return id;
+}
 function tutoriaRefreshFiltersUI(){
   __tutoriaEnsureBoot();
   const turmaSel = document.getElementById('tutoriaFilterTurma');
@@ -36617,13 +36639,17 @@ function tutoriaRefreshFiltersUI(){
   }
   if(alunoSel){
     const all = __tutoriaGetTodosAlunos();
+    const currentId = String(__tutoriaCurrentAlunoId || '').trim();
     const opts = ['<option value="">Selecione um aluno…</option>']
       .concat(all.map(a => `<option value="${_escHTML(String(a.id))}">${_escHTML(a.nome)} • ${_escHTML(a.turma || 'Sem turma')}</option>`));
     alunoSel.innerHTML = opts.join('');
-    if(__tutoriaCurrentAlunoId && all.some(a => String(a.id) === String(__tutoriaCurrentAlunoId))){
-      alunoSel.value = String(__tutoriaCurrentAlunoId);
+    if(currentId && all.some(a => String(a.id) === currentId)){
+      alunoSel.value = currentId;
+    }else if(String(alunoSel.value || '').trim()){
+      alunoSel.value = String(alunoSel.value || '').trim();
     }
   }
+  tutoriaUpdateAlunoActionUI();
 }
 function tutoriaSetFilterTurma(v){
   __tutoriaFilterTurma = v || 'all';
@@ -36635,15 +36661,14 @@ function tutoriaSetSearch(v){
   tutoriaRender();
 }
 function tutoriaSelecionarAlunoDoSelect(){
-  const sel = document.getElementById('tutoriaAlunoSelect');
-  const id = String(sel?.value || '');
+  const id = tutoriaSyncAlunoSelect();
   if(!id) return;
   __tutoriaCurrentAlunoId = id;
   __tutoriaTab = 'individual';
   tutoriaRender();
 }
 function tutoriaToggleTutorandoSelecionado(forceValue){
-  const id = String(__tutoriaCurrentAlunoId || document.getElementById('tutoriaAlunoSelect')?.value || '');
+  const id = String(document.getElementById('tutoriaAlunoSelect')?.value || __tutoriaCurrentAlunoId || '').trim();
   if(!id){
     if(typeof showToast === 'function') showToast('Selecione um aluno.', 'error');
     return;
@@ -36653,6 +36678,7 @@ function tutoriaToggleTutorandoSelecionado(forceValue){
     if(typeof showToast === 'function') showToast('Aluno não encontrado.', 'error');
     return;
   }
+  __tutoriaCurrentAlunoId = id;
   const next = (typeof forceValue === 'boolean') ? forceValue : !a.tutorando;
   a.tutorando = next;
   if(next) __tutoriaGetAlunoRec(id, true);
@@ -36660,6 +36686,7 @@ function tutoriaToggleTutorandoSelecionado(forceValue){
   __tutoriaPersist();
   tutoriaRefreshFiltersUI();
   tutoriaRender();
+  tutoriaUpdateAlunoActionUI(id);
   if(typeof showToast === 'function') showToast(next ? 'Aluno marcado como tutorando.' : 'Aluno desmarcado como tutorando.');
 }
 function __tutoriaRenderStatusPill(info){
