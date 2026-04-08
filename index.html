@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.5.8)</title>
+    <title>SGP - Gestão Final (V20.5.9)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.5.8';
+      window.__SGP_SW_VERSION = '20.5.9';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -3185,6 +3185,70 @@ body.planner-is-fullscreen #modalPlanner .planner-body{
   border-color: rgba(37, 99, 235, 0.35);
 }
 .act-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+.act-save-indicator{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:40px;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.35);
+  background:rgba(255,255,255,.76);
+  color:#334155;
+  font-size:.82rem;
+  font-weight:800;
+  box-shadow:0 8px 22px rgba(15,23,42,.06);
+  transition:all .18s ease;
+}
+.act-save-indicator i{ font-size:.9rem; }
+.act-save-indicator small{
+  display:block;
+  font-size:.68rem;
+  font-weight:600;
+  color:#64748b;
+  line-height:1.1;
+}
+.act-save-indicator.ok{
+  background:rgba(34,197,94,.12);
+  border-color:rgba(34,197,94,.28);
+  color:#166534;
+}
+.act-save-indicator.error{
+  background:rgba(239,68,68,.12);
+  border-color:rgba(239,68,68,.28);
+  color:#991b1b;
+}
+.act-save-indicator.idle{
+  background:rgba(59,130,246,.08);
+  border-color:rgba(59,130,246,.20);
+  color:#1d4ed8;
+}
+.act-save-indicator.pulse{
+  transform:translateY(-1px);
+  box-shadow:0 12px 28px rgba(15,23,42,.12);
+}
+body.dark-mode .act-save-indicator{
+  background:rgba(15,23,42,.72);
+  border-color:rgba(148,163,184,.24);
+  color:#e2e8f0;
+}
+body.dark-mode .act-save-indicator small{ color:#94a3b8; }
+body.dark-mode .act-save-indicator.ok{
+  background:rgba(22,163,74,.18);
+  border-color:rgba(74,222,128,.24);
+  color:#dcfce7;
+}
+body.dark-mode .act-save-indicator.error{
+  background:rgba(185,28,28,.22);
+  border-color:rgba(248,113,113,.26);
+  color:#fee2e2;
+}
+body.dark-mode .act-save-indicator.idle{
+  background:rgba(30,64,175,.22);
+  border-color:rgba(96,165,250,.24);
+  color:#dbeafe;
+}
 
 .act-body{
   padding: 18px;
@@ -6350,6 +6414,13 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                     <button id="actBtnPresent" class="btn-planner" data-onclick="atividadesTogglePresent()" title="Modo apresentação (mostra só o jogo)"><i class="fas fa-tv"></i> Apresentar</button>
                     <button id="actBtnTV" class="btn-planner" data-onclick="actToggleTVMode()" title="Modo TV (botões grandes para projetor)"><i class="fas fa-desktop"></i> TV</button>
                     <button id="actBtnFullscreen" class="btn-planner" data-onclick="atividadesToggleFullscreen()" title="Tela cheia"><i class="fas fa-expand"></i> Tela cheia</button>
+                    <div id="actSaveIndicator" class="act-save-indicator idle" aria-live="polite" title="Status de salvamento do banco das atividades">
+                        <i class="fas fa-cloud-arrow-down"></i>
+                        <div>
+                            <div id="actSaveIndicatorText">Banco local pronto</div>
+                            <small id="actSaveIndicatorSub">Os itens ficam salvos no navegador.</small>
+                        </div>
+                    </div>
                     <input type="file" id="actImportFile" style="display:none;" accept="application/json" data-onchange="atividadesImportFile(this)">
                 </div>
             </div>
@@ -10742,6 +10813,7 @@ const __SGP_ATOMIC_CORE_KEY = 'sgp_state_core_v1';
 const __SGP_ATOMIC_CORE_TMP = 'sgp_state_core_tmp_v1';
 const __SGP_ATOMIC_CORE_META_KEY = 'sgp_state_core_meta_v1';
 window.__sgpIDBShadowCache = window.__sgpIDBShadowCache || {};
+window.__sgpIDBShadowReady = (window.__sgpIDBShadowReady === true);
 
 function __isActivityBankStorageKey(key){
   key = String(key || '');
@@ -11178,7 +11250,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.5.8",
+                version: "v20.5.9",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -20500,6 +20572,33 @@ function _actToast(msg, type){
   }catch(_){ alert(msg); }
 }
 
+const __actSaveUiState = { timer: null, lastOkAt: 0 };
+function _actFormatClock(ts){
+  try{
+    return new Date(ts || Date.now()).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }catch(_){ return ''; }
+}
+function _actSetSaveIndicator(state, text, subtext){
+  const wrap = document.getElementById('actSaveIndicator');
+  const textEl = document.getElementById('actSaveIndicatorText');
+  const subEl = document.getElementById('actSaveIndicatorSub');
+  if(!wrap) return;
+
+  wrap.classList.remove('idle','ok','error','pulse');
+  wrap.classList.add(state || 'idle');
+  if(textEl) textEl.textContent = text || 'Banco local pronto';
+  if(subEl) subEl.textContent = subtext || 'Os itens ficam salvos no navegador.';
+
+  if(__actSaveUiState.timer){
+    clearTimeout(__actSaveUiState.timer);
+    __actSaveUiState.timer = null;
+  }
+  wrap.classList.add('pulse');
+  __actSaveUiState.timer = setTimeout(()=>{
+    try{ wrap.classList.remove('pulse'); }catch(_){ }
+  }, 1200);
+}
+
 function _actSafeParse(key, fallback){
   try{
     const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(key) : localStorage.getItem(key);
@@ -20520,59 +20619,122 @@ function _actNormalizeArray(v){
   return [];
 }
 
-function _actSaveAll(){
+function _actNormForcaEntry(x){
+  return {
+    w: String(x?.w ?? x?.word ?? x?.palavra ?? '').trim(),
+    h: String(x?.h ?? x?.hint ?? x?.dica ?? '').trim(),
+    t: String(x?.t ?? x?.theory ?? x?.teoria ?? x?.explicacao ?? x?.exp ?? '').trim()
+  };
+}
+function _actNormVFEntry(x){
+  return {
+    t: String(x?.t ?? x?.text ?? x?.frase ?? x?.pergunta ?? '').trim(),
+    a: (String(x?.a ?? x?.ans ?? x?.resposta ?? 'V').toUpperCase()==='F') ? 'F' : 'V',
+    e: String(x?.e ?? x?.exp ?? x?.teoria ?? x?.explicacao ?? x?.explain ?? '').trim(),
+    tag: String(x?.tag ?? x?.g ?? x?.tema ?? x?.categoria ?? '').trim()
+  };
+}
+function _actNormMemEntry(x){
+  return {
+    a: String(x?.a ?? x?.left ?? '').trim(),
+    b: String(x?.b ?? x?.right ?? '').trim()
+  };
+}
+function _actNormFCEntry(x){
+  return {
+    f: String(x?.f ?? x?.front ?? x?.frente ?? x?.pergunta ?? x?.q ?? '').trim(),
+    b: String(x?.b ?? x?.back ?? x?.verso ?? x?.resposta ?? x?.a ?? '').trim(),
+    g: String(x?.g ?? x?.tag ?? x?.tema ?? x?.categoria ?? '').trim()
+  };
+}
+function _actNormRelEntry(x){
+  return {
+    a: String(x?.a || '').trim(),
+    b: String(x?.b || '').trim()
+  };
+}
+function _actNormRoletaEntry(x){
+  return String(x || '').trim();
+}
+function _actMergeByKey(current, incoming, keyFn){
+  const cur = Array.isArray(current) ? current.slice() : [];
+  const inc = Array.isArray(incoming) ? incoming.slice() : [];
+  if(!cur.length) return inc;
+  if(!inc.length) return cur;
+  const seen = new Set(cur.map(item => keyFn(item)));
+  inc.forEach((item)=>{
+    const key = keyFn(item);
+    if(!key || seen.has(key)) return;
+    cur.push(item);
+    seen.add(key);
+  });
+  return cur;
+}
+function _actLoadBaseBanksFromStorage(opts){
+  const merge = !!(opts && opts.merge);
+  const loaded = {
+    forca: _actNormalizeArray(_actSafeParse(ACT_STORAGE.forca, [])).map(_actNormForcaEntry).filter(x => x.w),
+    vf: _actNormalizeArray(_actSafeParse(ACT_STORAGE.vf, [])).map(_actNormVFEntry).filter(x => x.t),
+    mem: _actNormalizeArray(_actSafeParse(ACT_STORAGE.mem, [])).map(_actNormMemEntry).filter(x => x.a && x.b),
+    fc: _actNormalizeArray(_actSafeParse(ACT_STORAGE.fc, [])).map(_actNormFCEntry).filter(x => x.f && x.b),
+    rel: _actNormalizeArray(_actSafeParse(ACT_STORAGE.rel, [])).map(_actNormRelEntry).filter(x => x.a && x.b),
+    roleta: _actNormalizeArray(_actSafeParse(ACT_STORAGE.roleta, [])).map(_actNormRoletaEntry).filter(Boolean)
+  };
+
+  if(merge){
+    forcaBank = _actMergeByKey(forcaBank, loaded.forca, x => (String(x?.w||'')+'|'+String(x?.h||'')+'|'+String(x?.t||'')).toUpperCase());
+    vfBank = _actMergeByKey(vfBank, loaded.vf, x => (String(x?.t||'')+'|'+String(x?.a||'')+'|'+String(x?.e||'')+'|'+String(x?.tag||'')).toUpperCase());
+    memBank = _actMergeByKey(memBank, loaded.mem, x => (String(x?.a||'')+'|'+String(x?.b||'')).toUpperCase());
+    fcBank = _actMergeByKey(fcBank, loaded.fc, x => (String(x?.f||'')+'|'+String(x?.b||'')+'|'+String(x?.g||'')).toUpperCase());
+    relBank = _actMergeByKey(relBank, loaded.rel, x => (String(x?.a||'')+'|'+String(x?.b||'')).toUpperCase());
+    roletaBank = _actMergeByKey(roletaBank, loaded.roleta, x => String(x||'').toUpperCase());
+  }else{
+    forcaBank = loaded.forca;
+    vfBank = loaded.vf;
+    memBank = loaded.mem;
+    fcBank = loaded.fc;
+    relBank = loaded.rel;
+    roletaBank = loaded.roleta;
+  }
+  return loaded;
+}
+function __actRefreshBaseBanksAfterShadowHydration(){
+  try{ _actLoadBaseBanksFromStorage({ merge:true }); }catch(_){ return; }
+  try{ if(typeof forcaRenderBank === 'function') forcaRenderBank(); }catch(_){ }
+  try{ if(typeof vfRenderBank === 'function') vfRenderBank(); }catch(_){ }
+  try{ if(typeof memRenderBank === 'function') memRenderBank(); }catch(_){ }
+  try{ if(typeof fcRenderBank === 'function') fcRenderBank(); }catch(_){ }
+  try{ if(typeof relRenderBank === 'function') relRenderBank(); }catch(_){ }
+  try{ if(typeof roletaRenderList === 'function') roletaRenderList(); }catch(_){ }
+  try{ _actSetSaveIndicator('idle', 'Banco reidratado', 'Os itens foram recarregados do armazenamento local.'); }catch(_){ }
+}
+
+function _actSaveAll(label){
+  let ok = true;
   try{
-    __safeLSSet(ACT_STORAGE.forca, JSON.stringify(forcaBank));
-    __safeLSSet(ACT_STORAGE.vf, JSON.stringify(vfBank));
-    __safeLSSet(ACT_STORAGE.mem, JSON.stringify(memBank));
-    __safeLSSet(ACT_STORAGE.fc, JSON.stringify(fcBank));
-    __safeLSSet(ACT_STORAGE.rel, JSON.stringify(relBank));
-    __safeLSSet(ACT_STORAGE.roleta, JSON.stringify(roletaBank));
-  }catch(_){}
-  try{ if(typeof __markBackupRelevantChange === 'function') __markBackupRelevantChange('atividades-save'); }catch(_){}
+    ok = !!__safeLSSet(ACT_STORAGE.forca, JSON.stringify(forcaBank)) && ok;
+    ok = !!__safeLSSet(ACT_STORAGE.vf, JSON.stringify(vfBank)) && ok;
+    ok = !!__safeLSSet(ACT_STORAGE.mem, JSON.stringify(memBank)) && ok;
+    ok = !!__safeLSSet(ACT_STORAGE.fc, JSON.stringify(fcBank)) && ok;
+    ok = !!__safeLSSet(ACT_STORAGE.rel, JSON.stringify(relBank)) && ok;
+    ok = !!__safeLSSet(ACT_STORAGE.roleta, JSON.stringify(roletaBank)) && ok;
+  }catch(_){ ok = false; }
+
+  if(ok){
+    __actSaveUiState.lastOkAt = Date.now();
+    _actSetSaveIndicator('ok', (label || 'Banco das atividades') + ' salvo', 'Último salvamento: ' + _actFormatClock(__actSaveUiState.lastOkAt));
+    try{ if(typeof __markBackupRelevantChange === 'function') __markBackupRelevantChange('atividades-save'); }catch(_){ }
+  }else{
+    _actSetSaveIndicator('error', 'Falha ao salvar o banco', 'Confira o armazenamento do navegador ou exporte um backup.');
+  }
+  return ok;
 }
 
 function initAtividades(){
-  // Carrega bancos (com normalização)
-  forcaBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.forca, []))
-    .map(x => ({
-      w: String(x?.w ?? x?.word ?? x?.palavra ?? '').trim(),
-      h: String(x?.h ?? x?.hint ?? x?.dica ?? '').trim(),
-      t: String(x?.t ?? x?.theory ?? x?.teoria ?? x?.explicacao ?? x?.exp ?? '').trim()
-    }))
-    .filter(x => x.w);
-
-  vfBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.vf, []))
-    .map(x => ({
-      t: String(x?.t ?? x?.text ?? x?.frase ?? x?.pergunta ?? '').trim(),
-      a: (String(x?.a ?? x?.ans ?? x?.resposta ?? 'V').toUpperCase()==='F') ? 'F' : 'V',
-      e: String(x?.e ?? x?.exp ?? x?.teoria ?? x?.explicacao ?? x?.explain ?? '').trim()
-    }))
-    .filter(x => x.t);
-
-
-  memBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.mem, []))
-    .map(x => ({
-      a: String(x?.a ?? x?.left ?? '').trim(),
-      b: String(x?.b ?? x?.right ?? '').trim()
-    }))
-    .filter(x => x.a && x.b);
-
-  fcBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.fc, []))
-    .map(x => ({
-      f: String(x?.f ?? x?.front ?? x?.frente ?? x?.pergunta ?? x?.q ?? '').trim(),
-      b: String(x?.b ?? x?.back ?? x?.verso ?? x?.resposta ?? x?.a ?? '').trim(),
-      g: String(x?.g ?? x?.tag ?? x?.tema ?? x?.categoria ?? '').trim()
-    }))
-    .filter(x => x.f && x.b);
-
-  relBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.rel, []))
-    .map(x => ({ a: String(x?.a||'').trim(), b: String(x?.b||'').trim() }))
-    .filter(x => x.a && x.b);
-  roletaBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.roleta, []))
-    .map(x => String(x||'').trim()).filter(Boolean);
-
-  _actSaveAll(); // garante formato atual
+  // Carrega bancos do storage sem regravar na inicialização.
+  // Isso evita zerar o banco quando os dados ainda estão sendo reidratados do IndexedDB.
+  _actLoadBaseBanksFromStorage({ merge:false });
+  _actSetSaveIndicator('idle', 'Banco carregado', 'Os itens ficam salvos no navegador e podem ser exportados.');
 
   // UI inicial
   try{ _forcaBuildKeyboard(); }catch(_){}
@@ -20736,14 +20898,14 @@ function atividadesImportFile(input){
 
       const replace = confirm("Importar atividades: deseja SUBSTITUIR seus bancos atuais? (OK = substituir / Cancelar = mesclar)");
       if(replace){
-        forcaBank = newForca.map(x=>({ w:String(x?.w ?? x?.word ?? x?.palavra ?? '').trim(), h:String(x?.h ?? x?.hint ?? x?.dica ?? '').trim(), t:String(x?.t ?? x?.theory ?? x?.teoria ?? x?.explicacao ?? x?.exp ?? '').trim() })).filter(x=>x.w);
-        vfBank = newVf.map(x=>({ t:String(x?.t ?? x?.text ?? x?.frase ?? x?.pergunta ?? '').trim(), a:(String(x?.a ?? x?.ans ?? x?.resposta ?? 'V').toUpperCase()==='F')?'F':'V', e:String(x?.e ?? x?.exp ?? x?.teoria ?? x?.explicacao ?? x?.explain ?? '').trim() })).filter(x=>x.t);
-        memBank = newMem.map(x=>({ a:String(x?.a ?? x?.left ?? '').trim(), b:String(x?.b ?? x?.right ?? '').trim() })).filter(x=>x.a && x.b);
-        fcBank = newFc.map(x=>({ f:String(x?.f ?? x?.front ?? x?.frente ?? x?.pergunta ?? x?.q ?? '').trim(), b:String(x?.b ?? x?.back ?? x?.verso ?? x?.resposta ?? x?.a ?? '').trim(), g:String(x?.g ?? x?.tag ?? x?.tema ?? x?.categoria ?? '').trim() })).filter(x=>x.f && x.b);
+        forcaBank = newForca.map(_actNormForcaEntry).filter(x=>x.w);
+        vfBank = newVf.map(_actNormVFEntry).filter(x=>x.t);
+        memBank = newMem.map(_actNormMemEntry).filter(x=>x.a && x.b);
+        fcBank = newFc.map(_actNormFCEntry).filter(x=>x.f && x.b);
       }else{
         // mescla com dedupe simples
         const fKey = (x)=> (String(x.w||'')+'|'+String(x.h||'')).toUpperCase();
-        const vKey = (x)=> (String(x.t||'')+'|'+String(x.a||'')).toUpperCase();
+        const vKey = (x)=> (String(x.t||'')+'|'+String(x.a||'')+'|'+String(x.e||'')+'|'+String(x.tag||'')).toUpperCase();
         const mKey = (x)=> (String(x.a||'')+'|'+String(x.b||'')).toUpperCase();
         const cKey = (x)=> (String(x.f||'')+'|'+String(x.b||'')+'|'+String(x.g||'')).toUpperCase();
 
@@ -20755,7 +20917,7 @@ function atividadesImportFile(input){
 
         const vSet = new Set(vfBank.map(vKey));
         newVf.forEach(x=>{
-          const obj = { t:String(x?.t ?? x?.text ?? x?.frase ?? x?.pergunta ?? '').trim(), a:(String(x?.a ?? x?.ans ?? x?.resposta ?? 'V').toUpperCase()==='F')?'F':'V', e:String(x?.e ?? x?.exp ?? x?.teoria ?? x?.explicacao ?? x?.explain ?? '').trim() };
+          const obj = _actNormVFEntry(x);
           if(obj.t && !vSet.has(vKey(obj))){ vfBank.push(obj); vSet.add(vKey(obj)); }
         });
 
@@ -21191,7 +21353,7 @@ function vfAdicionar(){
   document.getElementById('vfTeoria').value = '';
   const tagEl=document.getElementById('vfTag'); if(tagEl) tagEl.value='';
 
-  _actSaveAll();
+  _actSaveAll('Banco V/F');
   vfRenderBank();
   _actToast('Adicionado!');
 }
@@ -21199,7 +21361,7 @@ function vfAdicionar(){
 function vfRemover(i){
   if(i<0 || i>=vfBank.length) return;
   vfBank.splice(i,1);
-  _actSaveAll();
+  _actSaveAll('Banco V/F');
   vfRenderBank();
 }
 
@@ -21207,7 +21369,7 @@ function vfLimparBanco(){
   if(!confirm("Limpar o banco de Verdadeiro/Falso?")) return;
   vfBank = [];
   vfResetSessao();
-  _actSaveAll();
+  _actSaveAll('Banco V/F');
   vfRenderBank();
 }
 
@@ -22058,6 +22220,7 @@ function __idbGetAllShadowRecords(){
   });
 }
 function __idbPrimeShadowCache(){
+  try{ window.__sgpIDBShadowReady = false; }catch(_){ }
   return Promise.resolve(__idbGetAllShadowRecords()).then(async(allShadowRecs)=>{
     try{ window.__sgpIDBShadowCache = window.__sgpIDBShadowCache || {}; }catch(_){ }
 
@@ -22097,7 +22260,7 @@ function __idbPrimeShadowCache(){
         }
       }
       if(typeof raw === 'string') window.__sgpIDBShadowCache[logicalKey] = raw;
-    }));
+    })).finally(()=>{ try{ window.__sgpIDBShadowReady = true; }catch(_){ } });
   });
 }
 function __requestPersistentStorage(){
@@ -22118,6 +22281,7 @@ function __rehydrateShadowBackedStateAfterIDB(){
   try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
   try{ if(typeof initBackupReminder === 'function') initBackupReminder(); }catch(_){ }
   try{ if(typeof __loadExtendedActivityBanks === 'function') __loadExtendedActivityBanks(); }catch(_){ }
+  try{ if(typeof __actRefreshBaseBanksAfterShadowHydration === 'function') __actRefreshBaseBanksAfterShadowHydration(); }catch(_){ }
   try{ if(typeof __scheduleStorageMonitorRefresh === 'function') __scheduleStorageMonitorRefresh(150); }catch(_){ }
 }
 
@@ -34554,7 +34718,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.5.8',
+        version: versionLabel || 'v20.5.9',
         total: arr.length,
         okCount,
         failCount,
@@ -35192,8 +35356,8 @@ async function __autoTestRunActivityBanks(add){
         {
             label:'V/F', key:'sgp_atividades_vf_bank', file:'atividades_vf.json',
             get:()=>vfBank, set:(v)=>{ vfBank = v; }, save:()=>_actSaveAll(),
-            load:()=>{ vfBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.vf, [])).map(x => ({ t: String(x?.t ?? x?.text ?? x?.frase ?? x?.pergunta ?? '').trim(), a: (String(x?.a ?? x?.ans ?? x?.resposta ?? 'V').toUpperCase()==='F') ? 'F' : 'V', e: String(x?.e ?? x?.exp ?? x?.teoria ?? x?.explicacao ?? x?.explain ?? '').trim() })).filter(x => x.t); },
-            probe:()=>({ t:'AUTOTESTE_VF_'+nonce, a:'V', e:'Exp '+nonce }),
+            load:()=>{ vfBank = _actNormalizeArray(_actSafeParse(ACT_STORAGE.vf, [])).map(_actNormVFEntry).filter(x => x.t); },
+            probe:()=>({ t:'AUTOTESTE_VF_'+nonce, a:'V', e:'Exp '+nonce, tag:'Teste' }),
             match:(x)=> !!(x && String(x.t||'') === 'AUTOTESTE_VF_'+nonce)
         },
         {
@@ -35923,7 +36087,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.5.8'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.5.9'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
