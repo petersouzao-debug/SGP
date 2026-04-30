@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.6.2)</title>
+    <title>SGP - Gestão Final (V20.6.3)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.6.2';
+      window.__SGP_SW_VERSION = '20.6.3';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -1936,6 +1936,10 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         .pp-dash-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
         .pp-dash-head h3{margin:0;display:flex;align-items:center;gap:8px;}
         .pp-dash-sub{font-size:.82rem;color:#64748b;margin-top:4px;}
+        .pp-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+        .pp-export-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(22,163,74,.28);background:linear-gradient(135deg,#f0fdf4,#ffffff);color:#15803d;border-radius:10px;padding:8px 12px;font-size:.78rem;font-weight:900;cursor:pointer;transition:.15s;box-shadow:0 4px 12px rgba(22,163,74,.08);}
+        .pp-export-btn:hover{border-color:#16a34a;transform:translateY(-1px);box-shadow:0 8px 18px rgba(22,163,74,.14);}
+        .pp-export-btn i{font-size:.82rem;}
         .pp-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;margin:10px 0 12px;}
         .pp-summary-item{border:1px solid var(--border-color);border-radius:12px;padding:10px 12px;background:rgba(248,250,252,.72);}
         .pp-summary-item .n{font-size:1.35rem;font-weight:950;line-height:1;}
@@ -1953,7 +1957,7 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         .pp-adequado{background:#dcfce7;color:#15803d;border-color:#bbf7d0;}
         .pp-avancado{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe;}
         .pp-empty{padding:14px;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b;background:#f8fafc;font-size:.86rem;}
-        @media(max-width:760px){.pp-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.massa-pp-panel{width:100%;}}
+        @media(max-width:760px){.pp-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.massa-pp-panel{width:100%;}.pp-actions{width:100%;justify-content:flex-start;}.pp-export-btn{width:100%;justify-content:center;}}
 
         /* ===== ENTREGAS: Status Badges ===== */
         .entrega-select{
@@ -5000,6 +5004,11 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                     <div>
                         <h3><i class="fas fa-medal" style="color:#2563eb;"></i> Prova Paulista — classificação por aluno</h3>
                         <div class="pp-dash-sub" id="dashProvaPaulistaInfo">Use a Edição em Massa para marcar qual atividade é Prova Paulista.</div>
+                    </div>
+                    <div class="pp-actions">
+                        <button class="pp-export-btn" id="btnExportProvaPaulistaCSV" data-onclick="exportarDashProvaPaulistaCSV()" title="Baixar os dados atuais da tabela em CSV para abrir no Excel">
+                            <i class="fas fa-file-excel"></i> Baixar CSV
+                        </button>
                     </div>
                 </div>
                 <div id="dashProvaPaulistaResumo" class="pp-summary-grid"></div>
@@ -11317,7 +11326,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.6.2",
+                version: "v20.6.3",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -16394,7 +16403,10 @@ function __massaExportCSV(){
   showToast('CSV exportado com sucesso!');
 }
 
-// Prova Paulista: helpers de classificação e marcação
+// Prova Paulista: helpers de classificação, marcação e exportação
+var __dashProvaPaulistaRows = [];
+var __dashProvaPaulistaMeta = {};
+
 function __ppIsAtividadeProvaPaulista(av, bim){
   if(!av) return false;
   const key = String(bim || bimestreAtual || 1);
@@ -16477,6 +16489,8 @@ function renderDashProvaPaulista(){
   const turmaLabel = (typeof filtroTurma !== 'undefined' && filtroTurma && filtroTurma !== 'Todas') ? filtroTurma : 'todas as turmas';
 
   if(!provas.length){
+    __dashProvaPaulistaRows = [];
+    __dashProvaPaulistaMeta = { bimestre: bimestreAtual, turmaLabel: turmaLabel, provas: [] };
     if(info) info.innerHTML = 'Nenhuma atividade marcada como Prova Paulista. Vá em <b>Edição em Massa</b> e marque a atividade correspondente.';
     resumo.innerHTML = '';
     if(wrap) wrap.style.display = 'none';
@@ -16504,6 +16518,8 @@ function renderDashProvaPaulista(){
   });
 
   const total = rows.length;
+  __dashProvaPaulistaRows = rows;
+  __dashProvaPaulistaMeta = { bimestre: bimestreAtual, turmaLabel: turmaLabel, provas: provas };
   const pct = (n)=> total ? Math.round(n/total*100) : 0;
   resumo.innerHTML = ['abaixo','basico','adequado','avancado'].map(k=>
     '<div class="pp-summary-item pp-'+k+'"><div class="n">'+counts[k]+' <span style="font-size:.78rem;font-weight:800;">('+pct(counts[k])+'%)</span></div><div class="l">'+labels[k]+'</div></div>'
@@ -16532,6 +16548,64 @@ function renderDashProvaPaulista(){
       '<td><span class="pp-badge pp-'+r.cls.key+'">'+r.cls.label+'</span></td>' +
     '</tr>';
   }).join('');
+}
+
+function __ppCSVCell(value){
+  let s = (value === null || typeof value === 'undefined') ? '' : String(value);
+  s = s.replace(/\r?\n/g, ' ').replace(/"/g, '""');
+  return '"' + s + '"';
+}
+
+function __ppSlugFileName(value){
+  return String(value || 'todas')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase() || 'todas';
+}
+
+function exportarDashProvaPaulistaCSV(){
+  try{ renderDashProvaPaulista(); }catch(_){ }
+  const rows = Array.isArray(__dashProvaPaulistaRows) ? __dashProvaPaulistaRows : [];
+  if(!rows.length){
+    showToast('Não há dados da Prova Paulista para exportar neste filtro.', 'warning');
+    return;
+  }
+
+  const bim = (__dashProvaPaulistaMeta && __dashProvaPaulistaMeta.bimestre) || bimestreAtual || 1;
+  const turma = (__dashProvaPaulistaMeta && __dashProvaPaulistaMeta.turmaLabel) || filtroTurma || 'todas';
+  const now = new Date();
+  const dataExportacao = now.toLocaleDateString('pt-BR');
+
+  const headers = ['#','Aluno','Turma','Disciplina','Atividade','Bimestre','Nota','Classificação','Data da exportação'];
+  const lines = [headers.map(__ppCSVCell).join(';')];
+
+  rows.forEach((r, idx)=>{
+    const nota = isFinite(r.nota) ? r.nota.toFixed(1).replace('.', ',') : '0,0';
+    lines.push([
+      idx + 1,
+      String(r.aluno?.nome || '').replace(/\s+/g,' ').trim(),
+      r.aluno?.turma || '',
+      r.prova?.discNome || '',
+      r.prova?.avNome || '',
+      bim + 'º bimestre',
+      nota,
+      r.cls?.label || '',
+      dataExportacao
+    ].map(__ppCSVCell).join(';'));
+  });
+
+  const csv = '\uFEFF' + lines.join('\r\n');
+  const filename = 'prova_paulista_' + __ppSlugFileName(turma) + '_' + bim + 'bim_' + now.toISOString().slice(0,10) + '.csv';
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  if(typeof __downloadBlob === 'function') __downloadBlob(blob, filename);
+  else {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  }
+  showToast('CSV da Prova Paulista baixado para edição no Excel.');
 }
 
 // Enhanced header (sorting removed per preference)
@@ -34933,7 +35007,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.6.2',
+        version: versionLabel || 'v20.6.3',
         total: arr.length,
         okCount,
         failCount,
@@ -36302,7 +36376,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.6.2'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.6.3'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }

@@ -1,4 +1,4 @@
-// SGP - Service Worker v20.6.2
+// SGP - Service Worker v20.6.3
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -45,8 +45,9 @@
 //  - FIX v20.5.9: indicador visual de salvamento no módulo Atividades e atualização de cache
 //  - FIX v20.6.1: atualização do Service Worker para entregar a correção de marcação/desmarcação na Tutoria
 //  - ADD v20.6.2: marcação de Prova Paulista na Edição em Massa e tabela de classificação no Dashboard
+//  - ADD v20.6.3: exportação CSV da tabela Prova Paulista no Dashboard
 
-const SW_VERSION = '20.6.2';
+const SW_VERSION = '20.6.3';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
