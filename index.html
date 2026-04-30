@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.6.1)</title>
+    <title>SGP - Gestão Final (V20.6.2)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.6.1';
+      window.__SGP_SW_VERSION = '20.6.2';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -1914,6 +1914,46 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         .massa-tool-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--card-bg);color:var(--text-color);font-size:.75rem;font-weight:600;cursor:pointer;transition:.15s;}
         .massa-tool-btn:hover{border-color:var(--primary);color:var(--primary);}
         .massa-tool-btn i{font-size:.72rem;}
+
+
+        /* ===== PROVA PAULISTA: marcação na Edição em Massa + tabela no Dashboard ===== */
+        .massa-pp-panel{
+          display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+          padding:7px 10px;border:1px solid rgba(37,99,235,.18);border-radius:10px;
+          background:rgba(37,99,235,.035);color:var(--text-main);font-size:.74rem;
+        }
+        .massa-pp-label{display:inline-flex;align-items:center;gap:6px;font-weight:900;color:#1d4ed8;margin-right:2px;}
+        .massa-pp-chip{
+          display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-color);
+          background:var(--card-bg);color:var(--text-main);padding:5px 8px;border-radius:999px;
+          font-size:.70rem;font-weight:800;cursor:pointer;transition:.15s;line-height:1;
+        }
+        .massa-pp-chip:hover{border-color:#2563eb;color:#1d4ed8;transform:translateY(-1px);}
+        .massa-pp-chip.active{background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;border-color:transparent;box-shadow:0 6px 14px rgba(37,99,235,.22);}
+        .massa-pp-chip .pp-ind{width:8px;height:8px;border-radius:50%;background:#cbd5e1;display:inline-block;}
+        .massa-pp-chip.active .pp-ind{background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.22);}
+        .massa-pp-hint{font-size:.68rem;color:#64748b;margin-left:2px;}
+        .pp-dash-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+        .pp-dash-head h3{margin:0;display:flex;align-items:center;gap:8px;}
+        .pp-dash-sub{font-size:.82rem;color:#64748b;margin-top:4px;}
+        .pp-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;margin:10px 0 12px;}
+        .pp-summary-item{border:1px solid var(--border-color);border-radius:12px;padding:10px 12px;background:rgba(248,250,252,.72);}
+        .pp-summary-item .n{font-size:1.35rem;font-weight:950;line-height:1;}
+        .pp-summary-item .l{font-size:.72rem;color:#64748b;font-weight:800;margin-top:4px;}
+        .pp-table-wrap{overflow:auto;border:1px solid var(--border-color);border-radius:12px;max-height:420px;background:var(--card-bg);}
+        .pp-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+        .pp-table th{position:sticky;top:0;background:#f8fafc;z-index:1;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border-color);color:#475569;white-space:nowrap;}
+        .pp-table td{padding:9px 12px;border-bottom:1px solid var(--border-color);vertical-align:middle;}
+        .pp-table tr:hover td{background:rgba(37,99,235,.035);}
+        .pp-nota{font-weight:950;font-size:.95rem;}
+        .pp-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 9px;border-radius:999px;font-weight:900;font-size:.74rem;white-space:nowrap;border:1px solid transparent;}
+        .pp-badge::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;}
+        .pp-abaixo{background:#fee2e2;color:#b91c1c;border-color:#fecaca;}
+        .pp-basico{background:#fef3c7;color:#b45309;border-color:#fde68a;}
+        .pp-adequado{background:#dcfce7;color:#15803d;border-color:#bbf7d0;}
+        .pp-avancado{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe;}
+        .pp-empty{padding:14px;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b;background:#f8fafc;font-size:.86rem;}
+        @media(max-width:760px){.pp-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.massa-pp-panel{width:100%;}}
 
         /* ===== ENTREGAS: Status Badges ===== */
         .entrega-select{
@@ -4830,6 +4870,7 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
             <div class="massa-toolbar-extra" id="massaToolbarExtra">
                 <button class="massa-tool-btn" onclick="__massaImportCSV()" title="Importar notas de arquivo CSV"><i class="fas fa-file-import"></i> Importar CSV</button>
                 <button class="massa-tool-btn" onclick="__massaExportCSV()" title="Exportar notas como CSV"><i class="fas fa-file-export"></i> Exportar CSV</button>
+                <div id="massaProvaPaulistaPanel" class="massa-pp-panel" aria-label="Marcação de Prova Paulista"></div>
             </div>
 
             <div id="massaProgressBar" class="massa-progress"></div>
@@ -4954,6 +4995,32 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                 </div>
             </div>
         
+            <div class="dash-card wide" id="dashProvaPaulistaCard">
+                <div class="pp-dash-head">
+                    <div>
+                        <h3><i class="fas fa-medal" style="color:#2563eb;"></i> Prova Paulista — classificação por aluno</h3>
+                        <div class="pp-dash-sub" id="dashProvaPaulistaInfo">Use a Edição em Massa para marcar qual atividade é Prova Paulista.</div>
+                    </div>
+                </div>
+                <div id="dashProvaPaulistaResumo" class="pp-summary-grid"></div>
+                <div class="pp-table-wrap" id="dashProvaPaulistaWrap">
+                    <table class="pp-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th>Disciplina</th>
+                                <th>Atividade</th>
+                                <th>Nota</th>
+                                <th>Classificação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashProvaPaulistaTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="dash-card wide" id="dashCompareTurmas">
                 <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
                     <h3 style="margin:0;">Comparar turmas</h3>
@@ -11250,7 +11317,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.6.1",
+                version: "v20.6.2",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -13456,6 +13523,11 @@ function addAulaIndividual(){
                 }
             });
 
+            __scheduleUiAfterPaint('dash-prova-paulista', function(){
+                if(visaoAtual!=='dash' || dashToken !== __dashRenderToken) return;
+                try{ renderDashProvaPaulista(); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'dash.provaPaulista'); }catch(_){} }
+            });
+
             __scheduleUiAfterPaint('dash-compare', function(){
                 if(visaoAtual!=='dash' || dashToken !== __dashRenderToken) return;
                 try{ renderDashCompareTurmas(); }catch(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e,'dash.compare'); }catch(_){} }
@@ -14829,6 +14901,8 @@ function ensureConfigSchema(){
       if(!av.id) av.id = _uid('av');
       if(!av.nome || !String(av.nome).trim()) av.nome = 'Avaliação';
       av.peso = isFinite(parseFloat(av.peso)) ? parseFloat(av.peso) : 0;
+      if(!av.provaPaulistaBims || typeof av.provaPaulistaBims !== 'object') av.provaPaulistaBims = {};
+      av.provaPaulista = !!(av.provaPaulista || av.prova_paulista || av.pp);
     });
   });
 
@@ -16320,6 +16394,146 @@ function __massaExportCSV(){
   showToast('CSV exportado com sucesso!');
 }
 
+// Prova Paulista: helpers de classificação e marcação
+function __ppIsAtividadeProvaPaulista(av, bim){
+  if(!av) return false;
+  const key = String(bim || bimestreAtual || 1);
+  if(av.provaPaulistaBims && typeof av.provaPaulistaBims === 'object'){
+    return !!av.provaPaulistaBims[key];
+  }
+  return !!(av.provaPaulista || av.prova_paulista || av.pp);
+}
+
+function __ppClassificarNota(nota){
+  const n = clampNota(nota);
+  if(n < 5) return {key:'abaixo', label:'Abaixo do básico', color:'#dc2626'};
+  if(n < 7) return {key:'basico', label:'Básico', color:'#f59e0b'};
+  if(n < 9) return {key:'adequado', label:'Adequado', color:'#16a34a'};
+  return {key:'avancado', label:'Avançado', color:'#2563eb'};
+}
+
+function __ppListProvasPaulistas(bim){
+  ensureConfigSchema();
+  const provas = [];
+  const key = bim || bimestreAtual || 1;
+  (config.disciplinas || []).forEach(disc => {
+    (disc.avaliacoes || []).forEach(av => {
+      if(__ppIsAtividadeProvaPaulista(av, key)){
+        provas.push({ discId: disc.id, discNome: disc.nome || disc.id, avId: av.id, avNome: av.nome || av.id });
+      }
+    });
+  });
+  return provas;
+}
+
+function __massaRenderProvaPaulistaControls(discId){
+  const panel = document.getElementById('massaProvaPaulistaPanel');
+  if(!panel) return;
+  ensureConfigSchema();
+  const disc = getDiscById(discId || _massaDiscDefault());
+  if(!disc){ panel.innerHTML=''; return; }
+  const avs = disc.avaliacoes || [];
+  if(!avs.length){ panel.innerHTML=''; return; }
+  const chips = avs.map(av => {
+    const active = __ppIsAtividadeProvaPaulista(av, bimestreAtual) ? ' active' : '';
+    const title = __ppIsAtividadeProvaPaulista(av, bimestreAtual) ? 'Desmarcar como Prova Paulista neste bimestre' : 'Marcar como Prova Paulista neste bimestre';
+    return '<button type="button" class="massa-pp-chip'+active+'" title="'+_escHTML(title)+'" onclick="__massaToggleProvaPaulista(\''+__u(disc.id)+'\',\''+__u(av.id)+'\')">' +
+      '<span class="pp-ind"></span>' + _escHTML(av.nome || av.id) + '</button>';
+  }).join('');
+  panel.innerHTML = '<span class="massa-pp-label"><i class="fas fa-medal"></i> Prova Paulista:</span>' + chips +
+    '<span class="massa-pp-hint">'+bimestreAtual+'º bim.</span>';
+}
+
+function __massaToggleProvaPaulista(discId, avId){
+  ensureConfigSchema();
+  const disc = getDiscById(discId);
+  if(!disc) return showToast('Disciplina não encontrada.', 'error');
+  const av = (disc.avaliacoes || []).find(x => String(x.id) === String(avId));
+  if(!av) return showToast('Atividade não encontrada.', 'error');
+  const key = String(bimestreAtual || 1);
+  if(!av.provaPaulistaBims || typeof av.provaPaulistaBims !== 'object') av.provaPaulistaBims = {};
+  const next = !__ppIsAtividadeProvaPaulista(av, key);
+  if(next) av.provaPaulistaBims[key] = true;
+  else delete av.provaPaulistaBims[key];
+  av.provaPaulista = false; // evita marcação global indevida: a Prova Paulista é bimestral
+  try{ delete av.prova_paulista; delete av.pp; }catch(_){ }
+  salvarDadosLocal();
+  __massaRenderProvaPaulistaControls(discId);
+  try{ renderDashProvaPaulista(); }catch(_){ }
+  showToast((next ? 'Marcada' : 'Desmarcada') + ' como Prova Paulista no ' + key + 'º bim.: ' + (av.nome || av.id));
+}
+
+function renderDashProvaPaulista(){
+  const card = document.getElementById('dashProvaPaulistaCard');
+  const info = document.getElementById('dashProvaPaulistaInfo');
+  const resumo = document.getElementById('dashProvaPaulistaResumo');
+  const tbody = document.getElementById('dashProvaPaulistaTbody');
+  const wrap = document.getElementById('dashProvaPaulistaWrap');
+  if(!card || !tbody || !resumo) return;
+
+  ensureConfigSchema();
+  const provas = __ppListProvasPaulistas(bimestreAtual);
+  const lista = getAlunosFiltrados();
+  const turmaLabel = (typeof filtroTurma !== 'undefined' && filtroTurma && filtroTurma !== 'Todas') ? filtroTurma : 'todas as turmas';
+
+  if(!provas.length){
+    if(info) info.innerHTML = 'Nenhuma atividade marcada como Prova Paulista. Vá em <b>Edição em Massa</b> e marque a atividade correspondente.';
+    resumo.innerHTML = '';
+    if(wrap) wrap.style.display = 'none';
+    tbody.innerHTML = '';
+    return;
+  }
+  if(wrap) wrap.style.display = '';
+
+  const counts = {abaixo:0, basico:0, adequado:0, avancado:0};
+  const labels = {abaixo:'Abaixo do básico', basico:'Básico', adequado:'Adequado', avancado:'Avançado'};
+  const rows = [];
+
+  lista.forEach(a=>{
+    const b = a?.bimestres?.[bimestreAtual];
+    if(!b) return;
+    try{ _syncBimestreRefs(b); }catch(_){ }
+    provas.forEach(p=>{
+      const notas = (b.notas_disc && b.notas_disc[p.discId]) ? b.notas_disc[p.discId] : {};
+      const raw = (notas && typeof notas[p.avId] !== 'undefined') ? notas[p.avId] : 0;
+      const nota = clampNota(raw);
+      const cls = __ppClassificarNota(nota);
+      counts[cls.key]++;
+      rows.push({ aluno:a, prova:p, nota, cls });
+    });
+  });
+
+  const total = rows.length;
+  const pct = (n)=> total ? Math.round(n/total*100) : 0;
+  resumo.innerHTML = ['abaixo','basico','adequado','avancado'].map(k=>
+    '<div class="pp-summary-item pp-'+k+'"><div class="n">'+counts[k]+' <span style="font-size:.78rem;font-weight:800;">('+pct(counts[k])+'%)</span></div><div class="l">'+labels[k]+'</div></div>'
+  ).join('');
+
+  if(info){
+    const provaTxt = provas.map(p => _escHTML(p.discNome + ' • ' + p.avNome)).join(' | ');
+    info.innerHTML = 'Bimestre atual: <b>'+bimestreAtual+'º</b> • Turma: <b>'+_escHTML(turmaLabel)+'</b> • Prova(s): <b>'+provaTxt+'</b>';
+  }
+
+  if(!rows.length){
+    tbody.innerHTML = '<tr><td colspan="7"><div class="pp-empty">Nenhum aluno encontrado para o filtro atual.</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r, idx)=>{
+    const nome = privacyMode ? '••••••••' : _escHTML(String(r.aluno?.nome || '').replace(/\s+/g,' ').trim());
+    const notaTxt = isFinite(r.nota) ? r.nota.toFixed(1) : '0.0';
+    return '<tr>' +
+      '<td>'+(idx+1)+'</td>' +
+      '<td>'+nome+'</td>' +
+      '<td>'+_escHTML(r.aluno?.turma || '')+'</td>' +
+      '<td>'+_escHTML(r.prova.discNome)+'</td>' +
+      '<td>'+_escHTML(r.prova.avNome)+'</td>' +
+      '<td class="pp-nota" style="color:'+r.cls.color+';">'+notaTxt+'</td>' +
+      '<td><span class="pp-badge pp-'+r.cls.key+'">'+r.cls.label+'</span></td>' +
+    '</tr>';
+  }).join('');
+}
+
 // Enhanced header (sorting removed per preference)
 function _renderMassaHeader(discId){
   const tr=document.getElementById('trMassaHead');
@@ -16355,6 +16569,7 @@ function renderizarEdicaoMassa(){
   const disc = getDiscById(discId);
   
   _renderMassaHeader(discId);
+  __massaRenderProvaPaulistaControls(discId);
   
   const ttl = document.getElementById('massaDiscTitle');
   if(ttl){
@@ -34718,7 +34933,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.6.1',
+        version: versionLabel || 'v20.6.2',
         total: arr.length,
         okCount,
         failCount,
@@ -36087,7 +36302,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.6.1'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.6.2'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
