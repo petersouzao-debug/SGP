@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.6.3)</title>
+    <title>SGP - Gestão Final (V20.6.4)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,7 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.6.3';
+      window.__SGP_SW_VERSION = '20.6.4';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -2382,6 +2382,18 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         .aluno-drag .mb-paee{color:#9333ea;} .aluno-drag .mb-tut{color:#16a34a;} .aluno-drag .mb-risk{color:#dc2626;} .aluno-drag .mb-beh{color:#f59e0b;}
         .mesa-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:6px 10px;border-radius:6px;font-size:.7rem;white-space:nowrap;z-index:100;pointer-events:none;opacity:0;transition:.2s;}
         .mesa:hover .mesa-tooltip,.aluno-drag:hover .mesa-tooltip{opacity:1;}
+        .mapa-pp-select{border-color:#bfdbfe!important;background:linear-gradient(135deg,#eff6ff,#fff);color:#1d4ed8;font-weight:800;}
+        .mapa-pp-legend{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 8px;border:1px solid #dbeafe;border-radius:10px;background:#f8fafc;font-size:.68rem;font-weight:800;color:#475569;}
+        .mapa-pp-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:2px;}
+        .mapa-pp-card{border-left-width:7px!important;position:relative;}
+        .mapa-pp-card .mapa-nome{display:block;line-height:1.05;max-height:2.25em;overflow:hidden;padding:0 3px 13px 3px;}
+        .mapa-pp-pill{position:absolute;left:5px;bottom:3px;display:inline-flex;align-items:center;gap:3px;border-radius:999px;padding:1px 6px;font-size:.52rem;font-weight:950;line-height:1.25;border:1px solid currentColor;background:rgba(255,255,255,.88);box-shadow:0 1px 4px rgba(15,23,42,.08);}
+        .mapa-pp-abaixo{background:linear-gradient(135deg,#fff,#fee2e2)!important;}
+        .mapa-pp-basico{background:linear-gradient(135deg,#fff,#fef3c7)!important;}
+        .mapa-pp-adequado{background:linear-gradient(135deg,#fff,#dcfce7)!important;}
+        .mapa-pp-avancado{background:linear-gradient(135deg,#fff,#dbeafe)!important;}
+        .mapa-pp-sem{background:linear-gradient(135deg,#fff,#f1f5f9)!important;}
+        .aluno-drag .mb-pp{font-size:.52rem;font-weight:950;border-radius:999px;padding:0 4px;border:1px solid currentColor;background:#fff;line-height:1.25;}
 
         /* Group colors */
         .grp-color-0{border-left-color:#dc2626!important;} .grp-color-1{border-left-color:#2563eb!important;} .grp-color-2{border-left-color:#16a34a!important;} .grp-color-3{border-left-color:#f59e0b!important;}
@@ -5231,6 +5243,17 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                         <option value="4x8">4×8 (32)</option>
                         <option value="5x8">5×8 (40)</option>
                     </select>
+                    <select id="mapaPpMode" class="inp mapa-pp-select" style="width:auto;padding:4px 6px;font-size:.78rem;" onchange="mapaModoClassificacaoChange()" data-onchange="mapaModoClassificacaoChange()" title="Escolha se o mapa usa o farol das médias ou a classificação da Prova Paulista">
+                        <option value="media">Farol das médias</option>
+                        <option value="pp">Prova Paulista</option>
+                    </select>
+                    <div id="mapaPpLegend" class="mapa-pp-legend" style="display:none;" title="Legenda da classificação da Prova Paulista">
+                        <span><i class="fas fa-medal" style="color:#2563eb;"></i> PP</span>
+                        <span><i class="mapa-pp-dot" style="background:#dc2626;"></i>Abaixo</span>
+                        <span><i class="mapa-pp-dot" style="background:#f59e0b;"></i>Básico</span>
+                        <span><i class="mapa-pp-dot" style="background:#16a34a;"></i>Adequado</span>
+                        <span><i class="mapa-pp-dot" style="background:#2563eb;"></i>Avançado</span>
+                    </div>
                     <button class="btn-tool" data-onclick="mapaAutoDistribuir()" title="Distribuir automaticamente"><i class="fas fa-wand-magic-sparkles"></i></button>
                     <button id="btnMapaReset" class="btn-tool" data-onclick="mapaResetTurma()" title="Resetar mapa (todos sem carteira)"><i class="fas fa-undo"></i></button>
                     <button id="btnMapaSwap" class="btn-tool" data-onclick="mapaToggleSwap()" title="Trocar 2 alunos de lugar"><i class="fas fa-rotate"></i></button>
@@ -11326,7 +11349,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.6.3",
+                version: "v20.6.4",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -32193,6 +32216,80 @@ function _sortExcluirAusentes(lista){
 // ================================================================
 // MAPA DE SALA (Features 7-13)
 // ================================================================
+function mapaPpModeEnabled(){
+  const sel=document.getElementById('mapaPpMode');
+  return !!(sel && sel.value==='pp');
+}
+
+function mapaAtualizarLegendaPp(){
+  const legend=document.getElementById('mapaPpLegend');
+  if(legend) legend.style.display = mapaPpModeEnabled() ? 'flex' : 'none';
+}
+
+function mapaModoClassificacaoChange(){
+  const sel=document.getElementById('mapaPpMode');
+  const mode=(sel && sel.value)||'media';
+  try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_mapa_pp_mode', mode); else localStorage.setItem('sgp_mapa_pp_mode', mode); }catch(_){ }
+  mapaAtualizarLegendaPp();
+  try{ renderizarMapa(); }catch(_){ }
+  if(mode==='pp'){
+    const provas=(typeof __ppListProvasPaulistas==='function') ? __ppListProvasPaulistas(bimestreAtual) : [];
+    if(!provas.length) showToast('Nenhuma atividade marcada como Prova Paulista neste bimestre. Marque em Edição em Massa.', 'warning');
+    else showToast('Mapa usando a classificação da Prova Paulista.');
+  } else {
+    showToast('Mapa voltou para o farol das médias.');
+  }
+}
+
+function mapaGetClassificacaoProvaPaulista(aluno){
+  try{
+    if(!aluno) return null;
+    const provas=(typeof __ppListProvasPaulistas==='function') ? __ppListProvasPaulistas(bimestreAtual) : [];
+    if(!provas.length) return null;
+    const b=aluno.bimestres && aluno.bimestres[bimestreAtual];
+    if(!b) return { key:'sem', label:'Sem dados', short:'S/D', color:'#94a3b8', nota:null, semDados:true, provas };
+    try{ if(typeof _syncBimestreRefs==='function') _syncBimestreRefs(b); }catch(_){ }
+    const notas=[];
+    provas.forEach(p=>{
+      const nd=(b.notas_disc && b.notas_disc[p.discId]) ? b.notas_disc[p.discId] : {};
+      if(nd && typeof nd[p.avId] !== 'undefined' && nd[p.avId] !== null && nd[p.avId] !== ''){
+        const v=(typeof clampNota==='function') ? clampNota(nd[p.avId]) : Number(nd[p.avId]);
+        if(Number.isFinite(v)) notas.push({nota:v, prova:p});
+      }
+    });
+    if(!notas.length) return { key:'sem', label:'Sem nota PP', short:'S/D', color:'#94a3b8', nota:null, semDados:true, provas };
+    const media=notas.reduce((acc,item)=>acc+item.nota,0)/notas.length;
+    const cls=(typeof __ppClassificarNota==='function') ? __ppClassificarNota(media) : {key:'sem',label:'Sem dados',color:'#94a3b8'};
+    const shortMap={abaixo:'AB', basico:'BAS', adequado:'ADQ', avancado:'AVA', sem:'S/D'};
+    return { key:cls.key||'sem', label:cls.label||'Sem dados', short:shortMap[cls.key]||'PP', color:cls.color||'#94a3b8', nota:media, semDados:false, provaCount:notas.length, provas:notas.map(x=>x.prova) };
+  }catch(e){
+    try{ console.warn('mapaGetClassificacaoProvaPaulista', e); }catch(_){ }
+    return null;
+  }
+}
+
+function mapaPpTooltipLine(pp){
+  if(!pp) return '';
+  if(pp.semDados) return '<br>Prova Paulista: sem nota lançada';
+  const nota=(Number.isFinite(pp.nota) ? pp.nota.toFixed(1) : '0.0');
+  const extra=pp.provaCount && pp.provaCount>1 ? ' média de '+pp.provaCount+' provas' : '';
+  return '<br>Prova Paulista: '+nota+' — '+_escHTML(pp.label)+extra;
+}
+
+function mapaPpPill(pp){
+  if(!pp) return '';
+  const nota=(Number.isFinite(pp.nota) ? pp.nota.toFixed(1) : '—');
+  return '<span class="mapa-pp-pill" style="color:'+_escHTML(pp.color||'#94a3b8')+';">PP '+_escHTML(nota)+' • '+_escHTML(pp.short||'')+'</span>';
+}
+
+// Restore saved Prova Paulista map mode
+try{
+  const savedMode=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_mapa_pp_mode') : localStorage.getItem('sgp_mapa_pp_mode');
+  const sel=document.getElementById('mapaPpMode');
+  if(sel && (savedMode==='pp' || savedMode==='media')) sel.value=savedMode;
+  setTimeout(mapaAtualizarLegendaPp, 0);
+}catch(_){ }
+
 let mapaGridCols=6, mapaGridRows=6;
 let mapaDisabledDesks=new Set();
 let mapaSwapMode=false, mapaSwapFirst=null, mapaDisableMode=false;
@@ -32331,21 +32428,28 @@ try{
       const isPAEE=a.elegivel;
       const isRisk=mlp<5||mred<5;
       const isBehLow=comp<7;
+      const ppMode=mapaPpModeEnabled();
+      const pp=ppMode ? mapaGetClassificacaoProvaPaulista(a) : null;
+      const corMapa=(ppMode && pp) ? (pp.color||'#94a3b8') : c;
+      const ppClass=(ppMode && pp) ? (' mapa-pp-card mapa-pp-'+(pp.key||'sem')) : '';
 
       // F10: Badges
       let badges='<div class="mesa-badges">';
+      if(ppMode && pp) badges+='<span class="mb-pp" title="Prova Paulista: '+_escHTML(pp.label||'')+'" style="color:'+_escHTML(pp.color||'#94a3b8')+';">PP</span>';
       if(isPAEE) badges+='<span class="mb-paee" title="PAEE">♿</span>';
       if(isRisk) badges+='<span class="mb-risk" title="Risco">⚠</span>';
       if(isBehLow) badges+='<span class="mb-beh" title="Comportamento baixo">⛔</span>';
       badges+='</div>';
 
       // F9: Tooltip
-      const tip=`<div class="mesa-tooltip">${_escHTML(a.nome)}<br>LP: ${mlp.toFixed(1)} | RED: ${mred.toFixed(1)} | Comp: ${comp}${isPAEE?' | PAEE':''}</div>`;
+      const ppLine=ppMode ? mapaPpTooltipLine(pp) : '';
+      const tip=`<div class="mesa-tooltip">${_escHTML(a.nome)}<br>LP: ${mlp.toFixed(1)} | RED: ${mred.toFixed(1)} | Comp: ${comp}${isPAEE?' | PAEE':''}${ppLine}</div>`;
 
       const selected=alunoSelecionadoParaMover===a.id;
       const swapSel=mapaSwapMode&&mapaSwapFirst!==null&&a.mesa===mapaSwapFirst;
       const clickCode = (mapaSwapMode && a.mesa!==null && a.mesa!==undefined) ? `mapaMesaClick(${a.mesa})` : `touchSelectAluno(${__u(a.id)})`;
-      const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${selected?'mobile-selected':''}" draggable="true" ondragstart="drag(event)" data-onclick="${clickCode}" style="border-left-color:${c};${swapSel?'box-shadow:0 0 10px #f59e0b;border-color:#f59e0b;':''}">${_escHTML(_mapaNomeCurto(a.nome))}${badges}${tip}</div>`;
+      const nomeHtml = ppMode ? `<span class="mapa-nome">${_escHTML(_mapaNomeCurto(a.nome))}</span>` : _escHTML(_mapaNomeCurto(a.nome));
+      const h=`<div id="drag_${__u(a.id)}" class="aluno-drag ${selected?'mobile-selected':''}${ppClass}" draggable="true" ondragstart="drag(event)" data-onclick="${clickCode}" style="border-left-color:${corMapa};${swapSel?'box-shadow:0 0 10px #f59e0b;border-color:#f59e0b;':''}">${nomeHtml}${ppMode?mapaPpPill(pp):''}${badges}${tip}</div>`;
 
       if(a.mesa!==null&&a.mesa<total&&!mapaDisabledDesks.has(a.mesa)){
         const m=document.getElementById('mesa_'+a.mesa);
@@ -32483,15 +32587,20 @@ function mapaImprimir(){
     h2{text-align:center;color:#334155;}
     .lousa{text-align:center;background:#475569;color:#fff;padding:6px;border-radius:4px;margin-bottom:12px;font-weight:bold;}
     .grid{display:grid;grid-template-columns:repeat(${mapaGridCols},1fr);gap:8px;max-width:800px;margin:0 auto;}
-    .mesa{border:2px solid #cbd5e1;border-radius:6px;height:55px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:bold;text-align:center;}
+    .mesa{border:2px solid #cbd5e1;border-radius:6px;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.78rem;font-weight:bold;text-align:center;padding:4px;box-sizing:border-box;}
     .mesa.occupied{background:#eff6ff;border-style:solid;}
     .mesa.disabled{background:#f1f5f9;opacity:.3;}
     .mesa.empty{border-style:dashed;}
+    .mesa small{font-size:.62rem;font-weight:800;margin-top:2px;}
+    .legenda{max-width:800px;margin:8px auto 12px;display:flex;gap:8px;flex-wrap:wrap;font-size:.72rem;color:#475569;justify-content:center;}
+    .legenda span{display:inline-flex;gap:4px;align-items:center;border:1px solid #e2e8f0;border-radius:999px;padding:3px 8px;}
+    .dot{width:9px;height:9px;border-radius:999px;display:inline-block;}
   
     .profdesk{max-width:800px;margin:12px auto 0;display:flex;justify-content:flex-end;}
     .profdesk .mesa-prof{border:2px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:10px 14px;font-weight:bold;color:#334155;}
 </style></head><body>
   <h2>Mapa de Sala — ${_escHTML(filtroTurma)}</h2>
+${mapaPpModeEnabled()?'<div class="legenda"><span><b>Prova Paulista</b></span><span><i class="dot" style="background:#dc2626"></i>Abaixo do básico</span><span><i class="dot" style="background:#f59e0b"></i>Básico</span><span><i class="dot" style="background:#16a34a"></i>Adequado</span><span><i class="dot" style="background:#2563eb"></i>Avançado</span></div>':''}
 <div class="grid">`);
 
   const total=mapaGridCols*mapaGridRows;
@@ -32501,7 +32610,15 @@ function mapaImprimir(){
       w.document.write('<div class="mesa disabled">✕</div>');
     } else {
       const a=ls.find(x=>x.mesa===i);
-      w.document.write(a?`<div class="mesa occupied">${_escHTML(_mapaNomeCurto(a.nome))}</div>`:'<div class="mesa empty"></div>');
+      if(a && mapaPpModeEnabled()){
+        const pp=mapaGetClassificacaoProvaPaulista(a);
+        const cor=(pp&&pp.color)||'#94a3b8';
+        const nota=(pp&&Number.isFinite(pp.nota)) ? pp.nota.toFixed(1) : '—';
+        const lbl=(pp&&pp.label)||'Sem dados';
+        w.document.write(`<div class="mesa occupied" style="border-left:6px solid ${cor};background:#fff;"><span>${_escHTML(_mapaNomeCurto(a.nome))}</span><small style="color:${cor};">PP ${nota} — ${_escHTML(lbl)}</small></div>`);
+      } else {
+        w.document.write(a?`<div class="mesa occupied">${_escHTML(_mapaNomeCurto(a.nome))}</div>`:'<div class="mesa empty"></div>');
+      }
     }
   }
   w.document.write('</div><div class="profdesk"><div class="mesa-prof">MESA DO PROFESSOR</div></div></body></html>');
@@ -35007,7 +35124,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.6.3',
+        version: versionLabel || 'v20.6.4',
         total: arr.length,
         okCount,
         failCount,
@@ -36376,7 +36493,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.6.3'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.6.4'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
