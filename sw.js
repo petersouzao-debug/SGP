@@ -1,4 +1,4 @@
-// SGP - Service Worker v20.6.4
+// SGP - Service Worker v20.7.6
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -47,8 +47,18 @@
 //  - ADD v20.6.2: marcação de Prova Paulista na Edição em Massa e tabela de classificação no Dashboard
 //  - ADD v20.6.3: exportação CSV da tabela Prova Paulista no Dashboard
 //  - ADD v20.6.4: opção no Mapa de Sala para visualizar classificação da Prova Paulista
+//  - FIX v20.6.5: estabilidade de backup, Tutoria, Mapa PP e nota vazia da Prova Paulista
+//  - FIX v20.6.6: AutoTeste PP/Backup, limite de backups internos e aviso de múltiplas PP no Mapa
+//  - FIX v20.6.7: IndexedDB seguro com confirmação em tx.oncomplete antes de limpar localStorage
+//  - FIX v20.6.8: restauração ZIP robusta, pré-validação de backup e diagnóstico detalhado de armazenamento
+//  - ADD v20.6.9: Excel real da Prova Paulista, filtros, resumo por turma e cálculo configurável no Mapa
+//  - FIX v20.7.0: atualização PWA/cache, diagnóstico de versão e fallback offline de ícones
+//  - ADD v20.7.1: plano de intervenção pedagógica da Prova Paulista no Dashboard
+//  - ADD v20.7.2: comunicados imprimíveis aos responsáveis a partir da Prova Paulista
+//  - ADD v20.7.5: integração Prova Paulista → Tutoria para acompanhamento pedagógico
+//  - ADD v20.7.6: exportação Excel .xlsx na Edição em Massa
 
-const SW_VERSION = '20.6.4';
+const SW_VERSION = '20.7.6';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
@@ -97,25 +107,54 @@ self.addEventListener('activate', (event) => {
     }
     // Reivindica todas as abas sem reload
     await self.clients.claim();
+    try {
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      clients.forEach(client => {
+        try { client.postMessage({ type: 'SGP_SW_ACTIVATED', version: SW_VERSION, cacheName: CACHE_NAME }); } catch (_) {}
+      });
+    } catch (_) {}
   })());
 });
 
-// ── MENSAGENS: SKIP_WAITING e CACHE_PURGE ──
+// ── MENSAGENS: SKIP_WAITING, versão e limpeza de cache ──
 self.addEventListener('message', (event) => {
+  const reply = (payload) => {
+    try {
+      if (event.ports && event.ports[0]) event.ports[0].postMessage(payload);
+      else if (event.source) event.source.postMessage(payload);
+    } catch (_) {}
+  };
   try {
     const msg = event && event.data;
-    if (msg === 'SKIP_WAITING') {
+    const type = (typeof msg === 'string') ? msg : (msg && msg.type);
+    if (type === 'GET_VERSION') {
+      reply({ type: 'SGP_SW_VERSION', version: SW_VERSION, cacheName: CACHE_NAME });
+      return;
+    }
+    if (type === 'SKIP_WAITING') {
       self.skipWaiting();
+      reply({ type: 'SKIP_WAITING_OK', version: SW_VERSION, cacheName: CACHE_NAME });
       return;
     }
-    if (msg === 'CACHE_PURGE') {
-      // Permite que o app force limpeza do cache (ex.: após update)
+    if (type === 'CACHE_PURGE') {
+      // Permite que o app force limpeza do cache atual (ex.: após update)
       caches.delete(CACHE_NAME).then(() => {
-        event.source && event.source.postMessage({ type: 'CACHE_PURGED' });
-      }).catch(() => {});
+        reply({ type: 'CACHE_PURGED', version: SW_VERSION, cacheName: CACHE_NAME });
+      }).catch(() => reply({ type: 'CACHE_PURGE_ERROR', version: SW_VERSION }));
       return;
     }
-  } catch (_) {}
+    if (type === 'CACHE_PURGE_ALL') {
+      caches.keys().then((names) => {
+        const sgpCaches = names.filter(name => String(name || '').toLowerCase().indexOf('sgp') !== -1);
+        return Promise.all(sgpCaches.map(name => caches.delete(name))).then(() => sgpCaches.length);
+      }).then((count) => {
+        reply({ type: 'CACHE_PURGED_ALL', version: SW_VERSION, cacheName: CACHE_NAME, deleted: count });
+      }).catch(() => reply({ type: 'CACHE_PURGE_ERROR', version: SW_VERSION }));
+      return;
+    }
+  } catch (_) {
+    reply({ type: 'SW_MESSAGE_ERROR', version: SW_VERSION });
+  }
 });
 
 // ── Helpers ──

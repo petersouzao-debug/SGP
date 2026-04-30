@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.6.4)</title>
+    <title>SGP - Gestão Final (V20.7.6)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,7 +42,8 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.6.4';
+      window.__SGP_SW_VERSION = '20.7.6';
+      window.__SGP_APP_VERSION = '20.7.6';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -89,6 +90,20 @@
           if(window.__SGP_SW_RELOADING) return;
           window.__SGP_SW_RELOADING = true;
           try{ location.reload(); }catch(_){ }
+        });
+        navigator.serviceWorker.addEventListener('message', (event)=>{
+          try{
+            const msg = event && event.data ? event.data : {};
+            if(msg && typeof msg === 'object'){
+              window.__SGP_SW_LAST_INFO = Object.assign({ receivedAt: Date.now() }, msg);
+              if(msg.type === 'CACHE_PURGED' || msg.type === 'CACHE_PURGED_ALL'){
+                try{ if(typeof showToast === 'function') showToast('Cache antigo limpo com sucesso.', 'success'); }catch(_){ }
+              }
+              if(msg.type === 'SGP_SW_ACTIVATED'){
+                try{ console.log('[SGP] Service Worker ativo:', msg.version, msg.cacheName || ''); }catch(_){ }
+              }
+            }
+          }catch(_){ }
         });
         window.__SGP_SW_UPDATE_LAST_TS = 0;
         window.__SGP_SW_UPDATE_TIMER = 0;
@@ -877,7 +892,10 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
       var c = window.getComputedStyle(t,'::before').getPropertyValue('content');
       t.parentNode && t.parentNode.removeChild(t);
       if(c && c!=='none' && c!=='""' && c!=="''") return true;
-      return hasHref;
+      // FIX v20.7.5: em modo offline o <link> do Font Awesome pode existir,
+      // mas o CSS não estar realmente carregado. O fallback SVG só deve ser
+      // bloqueado quando o pseudo-elemento do Font Awesome responder de fato.
+      return false;
     }catch(e){ return false; }
   }
 
@@ -1940,7 +1958,7 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         .pp-export-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(22,163,74,.28);background:linear-gradient(135deg,#f0fdf4,#ffffff);color:#15803d;border-radius:10px;padding:8px 12px;font-size:.78rem;font-weight:900;cursor:pointer;transition:.15s;box-shadow:0 4px 12px rgba(22,163,74,.08);}
         .pp-export-btn:hover{border-color:#16a34a;transform:translateY(-1px);box-shadow:0 8px 18px rgba(22,163,74,.14);}
         .pp-export-btn i{font-size:.82rem;}
-        .pp-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;margin:10px 0 12px;}
+        .pp-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0 12px;}
         .pp-summary-item{border:1px solid var(--border-color);border-radius:12px;padding:10px 12px;background:rgba(248,250,252,.72);}
         .pp-summary-item .n{font-size:1.35rem;font-weight:950;line-height:1;}
         .pp-summary-item .l{font-size:.72rem;color:#64748b;font-weight:800;margin-top:4px;}
@@ -1956,7 +1974,55 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         .pp-basico{background:#fef3c7;color:#b45309;border-color:#fde68a;}
         .pp-adequado{background:#dcfce7;color:#15803d;border-color:#bbf7d0;}
         .pp-avancado{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe;}
+        .pp-sem{background:#f1f5f9;color:#475569;border-color:#cbd5e1;}
         .pp-empty{padding:14px;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b;background:#f8fafc;font-size:.86rem;}
+        .pp-filter-bar{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px;margin:8px 0 12px;padding:10px;border:1px solid var(--border-color);border-radius:14px;background:rgba(248,250,252,.72);}
+        .pp-filter-bar label{display:flex;flex-direction:column;gap:4px;font-size:.70rem;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.03em;}
+        .pp-filter-bar select{width:100%;border:1px solid var(--border-color);border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:8px 10px;font-size:.82rem;font-weight:800;outline:none;}
+        .pp-filter-bar select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+        .pp-turma-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:10px 0 12px;}
+        .pp-turma-card{border:1px solid var(--border-color);border-radius:14px;padding:12px;background:linear-gradient(135deg,#ffffff,#f8fafc);box-shadow:0 6px 16px rgba(15,23,42,.04);}
+        .pp-turma-card .tt{font-weight:950;color:var(--text-main);margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;}
+        .pp-turma-card .mini{font-size:.72rem;color:#64748b;font-weight:800;}
+        .pp-turma-bars{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;align-items:end;min-height:48px;margin-top:8px;}
+        .pp-turma-bars .bar{border-radius:8px 8px 4px 4px;min-height:7px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;font-size:.60rem;font-weight:950;color:#fff;}
+        .pp-export-btn.xlsx{border-color:rgba(37,99,235,.26);background:linear-gradient(135deg,#eff6ff,#ffffff);color:#1d4ed8;}
+        .pp-export-btn.xlsx:hover{border-color:#2563eb;box-shadow:0 8px 18px rgba(37,99,235,.14);}
+        .pp-export-btn.interv{border-color:rgba(124,58,237,.28);background:linear-gradient(135deg,#f5f3ff,#ffffff);color:#6d28d9;}
+        .pp-export-btn.interv:hover{border-color:#7c3aed;box-shadow:0 8px 18px rgba(124,58,237,.14);}
+        .pp-intervencao-box{margin-top:12px;border:1px solid rgba(124,58,237,.22);border-radius:16px;background:linear-gradient(135deg,rgba(245,243,255,.82),rgba(255,255,255,.92));padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.06);}
+        .pp-intervencao-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+        .pp-intervencao-head h4{margin:0;color:#4c1d95;font-size:1rem;display:flex;align-items:center;gap:8px;}
+        .pp-intervencao-head .hint{font-size:.78rem;color:#64748b;font-weight:700;margin-top:4px;}
+        .pp-intervencao-actions{display:flex;gap:8px;flex-wrap:wrap;}
+        .pp-mini-btn{border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-main);border-radius:10px;padding:7px 10px;font-size:.76rem;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+        .pp-mini-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(15,23,42,.10);}
+        .pp-intervencao-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;}
+        .pp-interv-card{border:1px solid var(--border-color);border-left:5px solid #94a3b8;border-radius:14px;background:rgba(255,255,255,.78);padding:11px;}
+        .pp-interv-card h5{margin:0 0 6px;font-size:.88rem;color:var(--text-main);display:flex;justify-content:space-between;gap:8px;}
+        .pp-interv-card .count{font-size:.76rem;font-weight:950;border-radius:999px;padding:3px 7px;background:#f1f5f9;color:#475569;white-space:nowrap;}
+        .pp-interv-card ul{margin:6px 0 0 18px;padding:0;color:var(--text-main);font-size:.79rem;line-height:1.38;}
+        .pp-interv-card .students{margin-top:8px;color:#64748b;font-size:.76rem;line-height:1.35;}
+        .pp-interv-card.abaixo{border-left-color:#dc2626}.pp-interv-card.basico{border-left-color:#f59e0b}.pp-interv-card.adequado{border-left-color:#16a34a}.pp-interv-card.avancado{border-left-color:#2563eb}.pp-interv-card.sem{border-left-color:#94a3b8}
+        .pp-intervencao-footer{margin-top:10px;padding:10px;border:1px dashed rgba(100,116,139,.35);border-radius:12px;color:#475569;background:rgba(248,250,252,.72);font-size:.78rem;line-height:1.4;}
+        .pp-export-btn.comunicado{background:linear-gradient(135deg,#fff7ed,#fed7aa);color:#9a3412;border-color:rgba(234,88,12,.28);}
+        .pp-export-btn.tutoria{background:linear-gradient(135deg,#f0fdfa,#ccfbf1);color:#0f766e;border-color:rgba(15,118,110,.28);}
+        .pp-export-btn.tutoria:hover{border-color:#0f766e;box-shadow:0 8px 18px rgba(15,118,110,.14);}
+
+        .risk-pp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:.74rem;font-weight:900;border:1px solid rgba(148,163,184,.28);background:#f8fafc;white-space:nowrap;}
+        .risk-pp-chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;}
+        .risk-pp-chip.abaixo{background:#fee2e2;color:#b91c1c;border-color:#fecaca;}
+        .risk-pp-chip.basico{background:#fef3c7;color:#b45309;border-color:#fde68a;}
+        .risk-pp-chip.adequado{background:#dcfce7;color:#15803d;border-color:#bbf7d0;}
+        .risk-pp-chip.avancado{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe;}
+        .risk-pp-chip.sem{background:#f1f5f9;color:#475569;border-color:#cbd5e1;}
+        .risk-pp-chip.none{background:#f8fafc;color:#64748b;border-style:dashed;}
+        .risk-integrado-note{margin-top:10px;padding:10px 12px;border-radius:12px;background:linear-gradient(135deg,#eef2ff,#fff);border:1px solid rgba(79,70,229,.18);font-size:.80rem;color:#3730a3;line-height:1.45;}
+
+        .pp-comunicado-preview{margin-top:10px;border:1px dashed rgba(234,88,12,.35);border-radius:14px;background:rgba(255,247,237,.72);padding:10px;color:#7c2d12;font-size:.78rem;line-height:1.4;}
+        .mapa-pp-calc-select{border-color:#dbeafe!important;background:linear-gradient(135deg,#fff,#eff6ff);color:#1d4ed8;font-weight:800;}
+        @media(max-width:760px){.pp-filter-bar{grid-template-columns:1fr;}.pp-turma-summary{grid-template-columns:1fr;}}
+
         @media(max-width:760px){.pp-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.massa-pp-panel{width:100%;}.pp-actions{width:100%;justify-content:flex-start;}.pp-export-btn{width:100%;justify-content:center;}}
 
         /* ===== ENTREGAS: Status Badges ===== */
@@ -2384,6 +2450,7 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         .mesa:hover .mesa-tooltip,.aluno-drag:hover .mesa-tooltip{opacity:1;}
         .mapa-pp-select{border-color:#bfdbfe!important;background:linear-gradient(135deg,#eff6ff,#fff);color:#1d4ed8;font-weight:800;}
         .mapa-pp-legend{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 8px;border:1px solid #dbeafe;border-radius:10px;background:#f8fafc;font-size:.68rem;font-weight:800;color:#475569;}
+        .mapa-pp-hint{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-weight:900;}
         .mapa-pp-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:2px;}
         .mapa-pp-card{border-left-width:7px!important;position:relative;}
         .mapa-pp-card .mapa-nome{display:block;line-height:1.05;max-height:2.25em;overflow:hidden;padding:0 3px 13px 3px;}
@@ -4886,6 +4953,7 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
             <div class="massa-toolbar-extra" id="massaToolbarExtra">
                 <button class="massa-tool-btn" onclick="__massaImportCSV()" title="Importar notas de arquivo CSV"><i class="fas fa-file-import"></i> Importar CSV</button>
                 <button class="massa-tool-btn" onclick="__massaExportCSV()" title="Exportar notas como CSV"><i class="fas fa-file-export"></i> Exportar CSV</button>
+                <button class="massa-tool-btn" onclick="__massaExportXLSX()" title="Exportar notas como Excel .xlsx"><i class="fas fa-file-excel"></i> Exportar Excel</button>
                 <div id="massaProvaPaulistaPanel" class="massa-pp-panel" aria-label="Marcação de Prova Paulista"></div>
             </div>
 
@@ -5021,9 +5089,43 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                         <button class="pp-export-btn" id="btnExportProvaPaulistaCSV" data-onclick="exportarDashProvaPaulistaCSV()" title="Baixar os dados atuais da tabela em CSV para abrir no Excel">
                             <i class="fas fa-file-excel"></i> Baixar CSV
                         </button>
+                        <button class="pp-export-btn xlsx" id="btnExportProvaPaulistaXLSX" data-onclick="exportarDashProvaPaulistaXLSX()" title="Baixar planilha Excel .xlsx com aba geral, abas por turma e resumo">
+                            <i class="fas fa-table"></i> Baixar Excel
+                        </button>
+                        <button class="pp-export-btn interv" id="btnProvaPaulistaIntervencao" data-onclick="toggleDashProvaPaulistaIntervencao()" title="Gerar um plano pedagógico a partir dos alunos filtrados na tabela">
+                            <i class="fas fa-clipboard-list"></i> Intervenção
+                        </button>
+                        <button class="pp-export-btn comunicado" id="btnProvaPaulistaComunicados" data-onclick="imprimirDashProvaPaulistaComunicados()" title="Imprimir comunicados individuais aos responsáveis com base nos filtros atuais da tabela">
+                            <i class="fas fa-envelope-open-text"></i> Comunicados
+                        </button>
+                        <button class="pp-export-btn tutoria" id="btnProvaPaulistaTutoria" data-onclick="enviarDashProvaPaulistaTutoria()" title="Marcar alunos em maior atenção como tutorandos e registrar prioridade acadêmica na Tutoria">
+                            <i class="fas fa-user-check"></i> Tutoria
+                        </button>
                     </div>
                 </div>
                 <div id="dashProvaPaulistaResumo" class="pp-summary-grid"></div>
+                <div id="dashProvaPaulistaFiltros" class="pp-filter-bar" style="display:none;">
+                    <label>Bimestre
+                        <select id="ppFiltroBimestre" data-onchange="renderDashProvaPaulista()" onchange="renderDashProvaPaulista()"></select>
+                    </label>
+                    <label>Turma
+                        <select id="ppFiltroTurma" data-onchange="renderDashProvaPaulista()" onchange="renderDashProvaPaulista()"></select>
+                    </label>
+                    <label>Classificação
+                        <select id="ppFiltroClassificacao" data-onchange="renderDashProvaPaulista()" onchange="renderDashProvaPaulista()">
+                            <option value="todas">Todas</option>
+                            <option value="abaixo">Abaixo do básico</option>
+                            <option value="basico">Básico</option>
+                            <option value="adequado">Adequado</option>
+                            <option value="avancado">Avançado</option>
+                            <option value="sem">Sem dados</option>
+                        </select>
+                    </label>
+                    <label>Atividade
+                        <select id="ppFiltroAtividade" data-onchange="renderDashProvaPaulista()" onchange="renderDashProvaPaulista()"></select>
+                    </label>
+                </div>
+                <div id="dashProvaPaulistaResumoTurmas" class="pp-turma-summary"></div>
                 <div class="pp-table-wrap" id="dashProvaPaulistaWrap">
                     <table class="pp-table">
                         <thead>
@@ -5040,6 +5142,7 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                         <tbody id="dashProvaPaulistaTbody"></tbody>
                     </table>
                 </div>
+                <div id="dashProvaPaulistaIntervencao" class="pp-intervencao-box" style="display:none;"></div>
             </div>
 
             <div class="dash-card wide" id="dashCompareTurmas">
@@ -5247,12 +5350,20 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                         <option value="media">Farol das médias</option>
                         <option value="pp">Prova Paulista</option>
                     </select>
+                    <select id="mapaPpCalc" class="inp mapa-pp-calc-select" style="width:auto;padding:4px 6px;font-size:.78rem;display:none;" onchange="mapaPpCalcChange()" data-onchange="mapaPpCalcChange()" title="Escolha como calcular a Prova Paulista quando houver mais de uma atividade marcada">
+                        <option value="media">PP: média</option>
+                        <option value="ultima">PP: última</option>
+                        <option value="maior">PP: maior nota</option>
+                        <option value="menor">PP: menor nota</option>
+                    </select>
                     <div id="mapaPpLegend" class="mapa-pp-legend" style="display:none;" title="Legenda da classificação da Prova Paulista">
                         <span><i class="fas fa-medal" style="color:#2563eb;"></i> PP</span>
                         <span><i class="mapa-pp-dot" style="background:#dc2626;"></i>Abaixo</span>
                         <span><i class="mapa-pp-dot" style="background:#f59e0b;"></i>Básico</span>
                         <span><i class="mapa-pp-dot" style="background:#16a34a;"></i>Adequado</span>
                         <span><i class="mapa-pp-dot" style="background:#2563eb;"></i>Avançado</span>
+                        <span><i class="mapa-pp-dot" style="background:#94a3b8;"></i>Sem dados</span>
+                        <span id="mapaPpHint" class="mapa-pp-hint">Mapa: nota PP</span>
                     </div>
                     <button class="btn-tool" data-onclick="mapaAutoDistribuir()" title="Distribuir automaticamente"><i class="fas fa-wand-magic-sparkles"></i></button>
                     <button id="btnMapaReset" class="btn-tool" data-onclick="mapaResetTurma()" title="Resetar mapa (todos sem carteira)"><i class="fas fa-undo"></i></button>
@@ -5570,10 +5681,33 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                 <button class="btn-secondary" data-onclick="baixarLog()"><i class="fas fa-file-arrow-down"></i> Baixar log</button>
             </div>
 
+            <div style="margin-top:10px; padding:9px 12px; border-radius:10px; border:1px solid #fde68a; background:#fffbeb; color:#92400e; font-size:.82rem; line-height:1.35;">
+                <i class="fas fa-triangle-exclamation"></i> Restauração protegida: o SGP valida o backup antes de aplicar. Prefira o ZIP original gerado pelo sistema; ZIPs recompactados pelo Windows serão aceitos quando o navegador suportar descompressão segura.
+            </div>
+
             <div id="cfgBackupsList" style="margin-top:10px; max-height: 180px; overflow:auto; border:1px solid var(--border-color); border-radius:10px; padding:10px; background:var(--input-bg);">
                 <div style="font-size:0.85rem; color:#64748b;">Nenhum backup ainda.</div>
             </div>
             <div id="cfgAuditInfo" style="margin-top:8px; font-size:0.85rem; color:#64748b;"></div>
+
+            <hr style="margin: 18px 0;">
+
+            <h3 style="margin:0 0 10px 0;">PWA e atualização do sistema</h3>
+            <div id="cfgPWABox" style="border:1px solid var(--border-color); border-radius:12px; padding:12px; background:var(--input-bg);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+                    <div>
+                        <div style="font-weight:800; color:var(--text-color);">Versão e cache do aplicativo instalado</div>
+                        <div id="cfgPWAStatusText" style="margin-top:4px; font-size:0.84rem; color:#64748b; line-height:1.45;">Clique em “Verificar versão” para conferir o app, o Service Worker e o cache.</div>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn-secondary" data-onclick="__sgpShowPWAStatus()"><i class="fas fa-circle-info"></i> Verificar versão</button>
+                        <button class="btn-secondary" data-onclick="__sgpForceSystemUpdate()"><i class="fas fa-arrows-rotate"></i> Atualizar sistema</button>
+                    </div>
+                </div>
+                <div style="margin-top:9px; padding:8px 10px; border-radius:10px; background:rgba(14,165,233,.08); color:#075985; font-size:.82rem; line-height:1.35;">
+                    Use “Atualizar sistema” quando o PWA/celular insistir em abrir uma versão antiga. O botão limpa caches antigos do SGP, solicita atualização do Service Worker e recarrega o app.
+                </div>
+            </div>
 
             <hr style="margin: 18px 0;">
 
@@ -5596,6 +5730,7 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                     </div>
                 </div>
                 <div id="cfgStoragePersistText" style="margin-top:10px; font-size:0.83rem; color:#64748b;">Persistência do navegador: verificando...</div>
+                <div id="cfgStorageDetailText" style="margin-top:6px; font-size:0.82rem; color:#64748b; line-height:1.45;">Diagnóstico: aguardando leitura de chaves, backups e IndexedDB...</div>
                 <div id="cfgStorageAdvice" style="margin-top:8px; font-size:0.85rem; color:#475569;">O sistema exibirá alerta preventivo antes de o armazenamento ficar crítico.</div>
             </div>
 
@@ -7157,8 +7292,10 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
             const preferIDB = (typeof __shouldPreferIDBStorage === 'function') ? __shouldPreferIDBStorage(key, value) : false;
             const allowIDBFallback = (typeof __shouldFallbackToIDBStorage === 'function') ? __shouldFallbackToIDBStorage(key, value) : preferIDB;
 
-            if(preferIDB && typeof __idbShadowPut === 'function' && __idbShadowPut(key, value)){
-                try{ localStorage.removeItem(key); }catch(_){ }
+            // FIX v20.6.7: quando a chave deve ir para IndexedDB, não removemos a
+            // cópia antiga do localStorage antes de o IndexedDB confirmar tx.oncomplete.
+            // A remoção segura fica dentro de __idbShadowPut/__idbShadowCommit.
+            if(preferIDB && typeof __idbShadowPut === 'function' && __idbShadowPut(key, value, { removeLocalOnComplete:true, reason:'prefer-idb' })){
                 try{ if(key === __SGP_ATOMIC_CORE_KEY && typeof __persistCoreMetaFromString === 'function') __persistCoreMetaFromString(value); }catch(_){ }
                 return true;
             }
@@ -7173,8 +7310,9 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                 const isQuota = (typeof __isQuotaError==='function') ? __isQuotaError(e) : false;
                 try{ if(typeof __diagCapture==='function') __diagCapture(e, 'localStorage.setItem', {key, quota:isQuota}); }catch(_){ }
 
-                if((isQuota || allowIDBFallback) && typeof __idbShadowPut === 'function' && __idbShadowPut(key, value)){
-                    try{ localStorage.removeItem(key); }catch(_){ }
+                // FIX v20.6.7: em fallback por quota, o localStorage só é limpo depois
+                // de confirmação real da transação no IndexedDB.
+                if((isQuota || allowIDBFallback) && typeof __idbShadowPut === 'function' && __idbShadowPut(key, value, { removeLocalOnComplete:true, reason:isQuota ? 'quota-fallback' : 'idb-fallback' })){
                     try{ if(key === __SGP_ATOMIC_CORE_KEY && typeof __persistCoreMetaFromString === 'function') __persistCoreMetaFromString(value); }catch(_){ }
                     try{ if(typeof __AUDIT !== 'undefined' && Array.isArray(__AUDIT)){
                         __AUDIT.push({ ts: Date.now(), msg: 'Dados redirecionados para armazenamento ampliado (IndexedDB)' });
@@ -10306,6 +10444,10 @@ function __flushPendingPersistenceWork(){
       }
     }
   }catch(_){ }
+  try{
+    // Best-effort: inicia a espera por transações shadow sem bloquear a UI.
+    if(typeof __idbShadowFlushPending === 'function') __idbShadowFlushPending(1200).catch(()=>{});
+  }catch(_){ }
 }
 
 const __sgpDeferredInitState = window.__sgpDeferredInitState || (window.__sgpDeferredInitState = { planner:false, atividades:false, correcao:false, postBoot:false, idbWarmupStarted:false });
@@ -10912,6 +11054,8 @@ const __SGP_ATOMIC_CORE_KEY = 'sgp_state_core_v1';
 const __SGP_ATOMIC_CORE_TMP = 'sgp_state_core_tmp_v1';
 const __SGP_ATOMIC_CORE_META_KEY = 'sgp_state_core_meta_v1';
 window.__sgpIDBShadowCache = window.__sgpIDBShadowCache || {};
+window.__sgpIDBShadowPending = window.__sgpIDBShadowPending || {};
+window.__sgpIDBShadowStatus = window.__sgpIDBShadowStatus || {};
 window.__sgpIDBShadowReady = (window.__sgpIDBShadowReady === true);
 
 function __isActivityBankStorageKey(key){
@@ -10936,6 +11080,7 @@ function __getIDBShadowKeys(){
     'sgp_frequencia',
     'sgp_entregas',
     'sgp_entregas_doc_prazos_v1',
+    'sgp_tutoria_v1',
     'sgp_ranking_v1',
     'sgp_audit_log',
     'sgp_freq_events',
@@ -10959,6 +11104,8 @@ function __getIDBShadowKeys(){
     'sgp_fontsize',
     'sgp_sidebar_hidden',
     'sgp_mapa_grid',
+    'sgp_mapa_pp_mode',
+    'sgp_mapa_pp_calc',
     'sgp_plano_disc_last',
     'sgp_cor_sort_q',
     'sgp_cor_sort_b',
@@ -11027,6 +11174,17 @@ function __persistCoreMetaFromString(raw, parsedObj){
   }catch(_){ }
 }
 function __storageGetItem(key){
+  key = String(key || '');
+  try{
+    // FIX v20.6.7: para chaves que vivem preferencialmente no IndexedDB
+    // ou que ainda estão com gravação pendente, o cache shadow representa o valor
+    // mais recente da sessão. Isso evita ler uma cópia antiga do localStorage.
+    const preferCache = ((typeof __shouldPreferIDBStorage === 'function') && __shouldPreferIDBStorage(key, ''))
+      || !!(window.__sgpIDBShadowPending && window.__sgpIDBShadowPending[key]);
+    if(preferCache && window.__sgpIDBShadowCache && typeof window.__sgpIDBShadowCache[key] === 'string'){
+      return window.__sgpIDBShadowCache[key];
+    }
+  }catch(_){ }
   try{
     const raw = localStorage.getItem(key);
     if(raw !== null && typeof raw !== 'undefined') return raw;
@@ -11079,6 +11237,8 @@ function __clearStorageKeysByPrefix(prefix){
 function __getBackupUiPrefKeys(){
   return [
     'sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid',
+    'sgp_mapa_pp_mode',
+    'sgp_mapa_pp_calc',
     'sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b','sgp_atividades_sorteio_turma'
   ];
 }
@@ -11344,12 +11504,169 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             return out;
         }
 
+        // FIX v20.6.9: leitor ZIP mais robusto para restauração.
+        // Mantém __zipReadStore síncrono para o ZIP gerado pelo SGP, mas adiciona
+        // suporte assíncrono a ZIPs recompactados com DEFLATE (método 8), quando
+        // o navegador oferece DecompressionStream.
+        async function __inflateZipDeflateData(u8){
+            let lastErr = null;
+            if(typeof DecompressionStream !== 'undefined'){
+                const formats = ['deflate-raw', 'deflate'];
+                for(const fmt of formats){
+                    try{
+                        const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream(fmt));
+                        const ab = await new Response(stream).arrayBuffer();
+                        return new Uint8Array(ab);
+                    }catch(e){ lastErr = e; }
+                }
+            }
+            throw new Error('ZIP compactado: este navegador não conseguiu descompactar o arquivo. Prefira restaurar o ZIP original gerado pelo SGP.');
+        }
+        async function __zipReadAny(arrayBuffer){
+            const u8 = new Uint8Array(arrayBuffer);
+            const dv = new DataView(arrayBuffer);
+            const EOCD_SIG = 0x06054b50;
+            const CEN_SIG = 0x02014b50;
+            const LOC_SIG = 0x04034b50;
+            const dec = new TextDecoder('utf-8');
+            let eocd = -1;
+            const maxComment = 0xFFFF;
+            const start = Math.max(0, u8.length - (22 + maxComment));
+            for(let i=u8.length-22; i>=start; i--){
+                if(dv.getUint32(i, true) === EOCD_SIG){ eocd = i; break; }
+            }
+            if(eocd < 0) throw new Error('ZIP inválido: final do arquivo não encontrado.');
+
+            const totalEntries = dv.getUint16(eocd + 10, true);
+            const cdSize = dv.getUint32(eocd + 12, true);
+            const cdOffset = dv.getUint32(eocd + 16, true);
+            if(cdOffset < 0 || cdOffset >= u8.length) throw new Error('ZIP inválido: índice central fora do arquivo.');
+
+            let ptr = cdOffset;
+            const out = {};
+            for(let n=0; n<totalEntries; n++){
+                if(ptr + 46 > u8.length || dv.getUint32(ptr, true) !== CEN_SIG) throw new Error('ZIP inválido: diretório central corrompido.');
+                const flags = dv.getUint16(ptr + 8, true);
+                const comp = dv.getUint16(ptr + 10, true);
+                const cSize = dv.getUint32(ptr + 20, true);
+                const nameLen = dv.getUint16(ptr + 28, true);
+                const extraLen = dv.getUint16(ptr + 30, true);
+                const commentLen = dv.getUint16(ptr + 32, true);
+                const localOff = dv.getUint32(ptr + 42, true);
+                const nameBytes = u8.slice(ptr + 46, ptr + 46 + nameLen);
+                let name = dec.decode(nameBytes).replace(/\\/g, '/');
+                ptr = ptr + 46 + nameLen + extraLen + commentLen;
+                if(!name || name.endsWith('/')) continue;
+                if(localOff + 30 > u8.length || dv.getUint32(localOff, true) !== LOC_SIG) throw new Error('ZIP inválido: cabeçalho local corrompido.');
+                const lNameLen = dv.getUint16(localOff + 26, true);
+                const lExtraLen = dv.getUint16(localOff + 28, true);
+                const dataOff = localOff + 30 + lNameLen + lExtraLen;
+                if(dataOff < 0 || dataOff + cSize > u8.length) throw new Error('ZIP inválido: conteúdo fora dos limites.');
+                const data = u8.slice(dataOff, dataOff + cSize);
+                let plain;
+                if(comp === 0){
+                    plain = data;
+                }else if(comp === 8){
+                    plain = await __inflateZipDeflateData(data);
+                }else{
+                    throw new Error('ZIP com método de compressão não suportado pelo SGP: ' + comp + '.');
+                }
+                out[name] = dec.decode(plain);
+            }
+            return out;
+        }
+        function __normalizeSgpBackupFileMap(files){
+            try{
+                if(!files || typeof files !== 'object') return files;
+                if(Object.prototype.hasOwnProperty.call(files, 'sgp_core.json')) return files;
+                const keys = Object.keys(files || {});
+                const coreKey = keys.find(k => String(k).replace(/\\/g,'/').endsWith('/sgp_core.json'));
+                if(!coreKey) return files;
+                const normCoreKey = String(coreKey).replace(/\\/g,'/');
+                const prefix = normCoreKey.slice(0, normCoreKey.length - 'sgp_core.json'.length);
+                const out = {};
+                keys.forEach(k=>{
+                    const nk = String(k).replace(/\\/g,'/');
+                    if(!nk.startsWith(prefix)) return;
+                    const shortName = nk.slice(prefix.length);
+                    if(!shortName || shortName.includes('../') || shortName.startsWith('/')) return;
+                    out[shortName] = files[k];
+                });
+                return Object.keys(out).length ? out : files;
+            }catch(_){ return files; }
+        }
+        function __zipReadJsonSafe(files, fname){
+            try{
+                if(!files || typeof files[fname] === 'undefined') return null;
+                return JSON.parse(files[fname]);
+            }catch(_){ return null; }
+        }
+        function __validateSgpBackupZipFiles(files){
+            const result = { ok:false, message:'Backup ZIP inválido.', warnings:[] };
+            try{
+                files = __normalizeSgpBackupFileMap(files);
+                if(!files || typeof files !== 'object' || !Object.keys(files).length){
+                    result.message = 'Backup ZIP vazio ou ilegível.'; return result;
+                }
+                const manifest = __zipReadJsonSafe(files, 'manifest.json');
+                if(manifest && manifest.app && String(manifest.app) !== 'SGP Pro'){
+                    result.message = 'Backup ZIP incompatível com este app.'; return result;
+                }
+                const fullExport = __zipReadJsonSafe(files, 'sgp_storage_full.json');
+                const fullStorage = (fullExport && fullExport.storage && typeof fullExport.storage === 'object' && !Array.isArray(fullExport.storage)) ? fullExport.storage : null;
+                let core = __zipReadJsonSafe(files, 'sgp_core.json');
+                if(!core && fullStorage && fullStorage[__SGP_ATOMIC_CORE_KEY]){
+                    try{ core = JSON.parse(fullStorage[__SGP_ATOMIC_CORE_KEY]); }catch(_){ core = null; }
+                }
+                if(!core || typeof core !== 'object' || Array.isArray(core)){
+                    result.message = 'Backup ZIP inválido: sgp_core.json ausente ou corrompido.'; return result;
+                }
+                if(!Array.isArray(core.turmas)){
+                    result.message = 'Backup ZIP inválido: lista de turmas ausente ou corrompida.'; return result;
+                }
+                if(!Array.isArray(core.alunos)){
+                    result.message = 'Backup ZIP inválido: lista de alunos ausente ou corrompida.'; return result;
+                }
+                if(core.aulas !== undefined && !Array.isArray(core.aulas)){
+                    result.message = 'Backup ZIP inválido: lista de aulas corrompida.'; return result;
+                }
+                const cfg = core.config;
+                if(!(cfg && typeof cfg === 'object' && !Array.isArray(cfg))){
+                    result.message = 'Backup ZIP inválido: configurações ausentes ou corrompidas.'; return result;
+                }
+                if(files['sgp_planner.json']){
+                    const p = __zipReadJsonSafe(files, 'sgp_planner.json');
+                    if(!(Array.isArray(p) || (p && typeof p === 'object' && Array.isArray(p.tasks)))){
+                        result.message = 'Backup ZIP inválido: planner corrompido.'; return result;
+                    }
+                }
+                if(files['sgp_correcao_provas.json']){
+                    const cp = __zipReadJsonSafe(files, 'sgp_correcao_provas.json');
+                    if(!(cp && typeof cp === 'object' && !Array.isArray(cp))){
+                        result.message = 'Backup ZIP inválido: correção de provas corrompida.'; return result;
+                    }
+                }
+                if(!manifest) result.warnings.push('manifest.json ausente; restauração permitida pela estrutura principal.');
+                if(!files['sgp_storage_full.json']) result.warnings.push('sgp_storage_full.json ausente; chaves extras futuras podem não ser restauradas.');
+                result.ok = true;
+                result.message = 'Backup validado com segurança.';
+                result.files = files;
+                result.core = core;
+                result.manifest = manifest;
+                return result;
+            }catch(e){
+                result.message = 'Falha ao validar backup: ' + (e && e.message ? e.message : String(e));
+                return result;
+            }
+        }
+
+
         function __collectBackupFiles(){
             // Normaliza o que precisa antes de exportar
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.6.4",
+                version: "v20.7.6",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -11452,6 +11769,9 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
 // Histórico do AutoTeste
             const __bkAutoTestHistory = _lsArr('sgp_autotest_history_v1');
             files.push(['sgp_autotest_history_v1.json', JSON.stringify(__bkAutoTestHistory || [], null, 2)]);
+// Tutoria
+            const __bkTutoria = _lsObj('sgp_tutoria_v1');
+            files.push(['sgp_tutoria_v1.json', JSON.stringify(__bkTutoria || {}, null, 2)]);
 // Meta do arquivo local vinculado (HD)
             // FIX: exporta sempre com pending=false — o ZIP é um snapshot completo e consistente;
             // restaurar um ZIP com pending=true causaria "HD: pendente" espúrio na UI após restore,
@@ -11521,13 +11841,17 @@ __safeLSSet('sgp_last_backup', Date.now());
             // --- ZIP (novo) ---
             if(name.endsWith('.zip') || (file.type && String(file.type).includes('zip'))){
                 const r = new FileReader();
-                r.onload = (e)=>{
+                r.onload = async (e)=>{
                     let __beforeRestore = null;
                     let __restoreStarted = false;
                     try{
                         try{ if(typeof __snapshotStr === 'function') __beforeRestore = __snapshotStr(); }catch(_){ __beforeRestore = null; }
                         if(__beforeRestore && typeof __applySnapshot === 'function') __restoreStarted = true;
-                        const files = __zipReadStore(e.target.result);
+                        let files = (typeof __zipReadAny === 'function') ? await __zipReadAny(e.target.result) : __zipReadStore(e.target.result);
+                        files = (typeof __normalizeSgpBackupFileMap === 'function') ? __normalizeSgpBackupFileMap(files) : files;
+                        const __backupValidation = (typeof __validateSgpBackupZipFiles === 'function') ? __validateSgpBackupZipFiles(files) : { ok:true, files };
+                        if(!__backupValidation || !__backupValidation.ok) throw new Error((__backupValidation && __backupValidation.message) || 'Backup ZIP inválido.');
+                        files = __backupValidation.files || files;
                         const readJson = (fname)=>{
                             if(!files || typeof files[fname] === 'undefined') return null;
                             try{ return JSON.parse(files[fname]); }catch(err){ return null; }
@@ -11773,8 +12097,23 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                         // Restore histórico do AutoTeste
                         try{
                             const _rAutoTestHistory = readJson('sgp_autotest_history_v1.json');
-                            const restoredAutoTestHistory = Array.isArray(_rAutoTestHistory) ? _rAutoTestHistory.filter(x=>x && typeof x === 'object').slice(0,25) : [];
+                            const restoredAutoTestHistory = Array.isArray(_rAutoTestHistory) ? _rAutoTestHistory.filter(x=>x && typeof x === 'object').slice(0,10) : [];
                             __safeLSSet('sgp_autotest_history_v1', JSON.stringify(restoredAutoTestHistory));
+                        }catch(_){ }
+
+                        // Restore Tutoria
+                        try{
+                            let restoredTutoria = null;
+                            const bkTutoria = readJson('sgp_tutoria_v1.json');
+                            if(bkTutoria && typeof bkTutoria === 'object' && !Array.isArray(bkTutoria)) restoredTutoria = bkTutoria;
+                            else if(fullStorage && fullStorage['sgp_tutoria_v1']){
+                                try{ const parsedTutoria = JSON.parse(fullStorage['sgp_tutoria_v1']); if(parsedTutoria && typeof parsedTutoria === 'object' && !Array.isArray(parsedTutoria)) restoredTutoria = parsedTutoria; }catch(__){}
+                            }
+                            if(restoredTutoria){
+                                if(typeof __tutoriaNormalizeStore === 'function') __sgpTutoria = __tutoriaNormalizeStore(restoredTutoria);
+                                else __sgpTutoria = restoredTutoria;
+                                __safeLSSet('sgp_tutoria_v1', JSON.stringify(__sgpTutoria || restoredTutoria));
+                            }
                         }catch(_){ }
 
                         // Restore correção de provas (sgp_correcao_provas)
@@ -11810,9 +12149,9 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                                     'sgp_planner','sgp_correcao_provas','sgp_frequencia','sgp_entregas','sgp_ranking_v1','sgp_rank_event_log_v1','sgp_rank_hist_cfg',
                                     'sgp_atividades_forca_bank','sgp_atividades_vf_bank','sgp_atividades_mem_bank','sgp_atividades_fc_bank',
                                     'sgp_atividades_rel_bank','sgp_atividades_roleta_bank','sgp_atividades_quiz_bank','sgp_atividades_comp_bank','sgp_atividades_ord_bank',
-                                    'sgp_audit_log','sgp_freq_events','sgp_busca_ativa','sgp_entregas_doc_prazos_v1','sgp_links_cards_v1','sgp_autotest_history_v1',
+                                    'sgp_audit_log','sgp_freq_events','sgp_busca_ativa','sgp_entregas_doc_prazos_v1','sgp_tutoria_v1','sgp_links_cards_v1','sgp_autotest_history_v1',
                                     'sgp_linked_file_meta','sgp_linked_file_last_sync','sgp_linked_file_pending',
-                                    'sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid',
+                                    'sgp_darkmode','sgp_accent','sgp_fontsize','sgp_sidebar_hidden','sgp_mapa_grid','sgp_mapa_pp_mode','sgp_mapa_pp_calc',
                                     'sgp_plano_disc_last','sgp_cor_sort_q','sgp_cor_sort_b','sgp_atividades_sorteio_turma',
                                     'sgp_audit','sgp_autobackups','sgp_autobackups_meta','sgp_lastBackupAt'
                                 ]);
@@ -11855,7 +12194,9 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
             }catch(_){ } }catch(_){}
                         try{ checkBackupStatus(); }catch(_){}
                         try{ dadosNaoSalvosEmArquivo = false; }catch(_){}
-                        showToast("Backup ZIP carregado!");
+                        try{ if(typeof __afterRestoreReloadModules === 'function') __afterRestoreReloadModules(); }catch(_){ }
+                        showToast("Backup ZIP carregado! O sistema será recarregado para atualizar todos os módulos.");
+                        try{ setTimeout(()=>{ try{ location.reload(); }catch(__){} }, 900); }catch(_){ }
                     }catch(err){
                         console.error(err);
                         let __rolledBack = false;
@@ -11865,7 +12206,7 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                                 __rolledBack = true;
                             }
                         }catch(_){ __rolledBack = false; }
-                        if(!__rolledBack) showToast("Erro ao carregar backup ZIP.", "error");
+                        showToast("Erro ao carregar backup ZIP: " + ((err && err.message) ? err.message : "arquivo inválido ou corrompido."), "error");
                     }finally{
                         i.value='';
                     }
@@ -16426,6 +16767,111 @@ function __massaExportCSV(){
   showToast('CSV exportado com sucesso!');
 }
 
+
+// Export Excel (.xlsx) — Edição em Massa (v20.7.6)
+function __massaExportXLSX(){
+  try{
+    const discId = _massaDiscDefault();
+    const disc = getDiscById(discId);
+    if(!disc){ showToast('Selecione uma disciplina.', 'error'); return; }
+    const avs = Array.isArray(disc.avaliacoes) ? disc.avaliacoes : [];
+    const lista = getAlunosFiltrados();
+    if(!lista.length){ showToast('Não há alunos para exportar em Excel.', 'warning'); return; }
+    if(typeof __zipStore !== 'function' || typeof __ppSheetXml !== 'function' || typeof __ppXlsxStyles !== 'function'){
+      showToast('Gerador de Excel indisponível nesta versão.', 'error');
+      return;
+    }
+
+    const now = new Date();
+    const dataExportacao = now.toLocaleDateString('pt-BR');
+    const bimLabel = (bimestreAtual || 1) + 'º bimestre';
+    const headers = ['#','Aluno','Turma','Bimestre','Disciplina'].concat(avs.map(av => av.nome || av.id)).concat(['Média','Data da exportação']);
+
+    const rowFromAluno = (a, idx) => {
+      const b = a && a.bimestres ? a.bimestres[bimestreAtual] : null;
+      if(b) _syncBimestreRefs(b);
+      const notas = (b && b.notas_disc && b.notas_disc[discId]) ? b.notas_disc[discId] : {};
+      const media = calcularMediaDisc(discId, notas || {});
+      const cells = [idx+1, String(a?.nome || '').replace(/\s+/g,' ').trim(), a?.turma || '', bimLabel, disc.nome || disc.id];
+      avs.forEach(av => {
+        const raw = notas ? notas[av.id] : '';
+        const hasValue = !(raw === null || typeof raw === 'undefined' || raw === '');
+        if(hasValue){
+          const n = Number(String(raw).replace(',', '.'));
+          cells.push(Number.isFinite(n) ? {v:Number(n.toFixed(2)), s:7} : String(raw));
+        }else{
+          cells.push('');
+        }
+      });
+      cells.push(Number.isFinite(media) ? {v:Number(media.toFixed(2)), s:7} : '');
+      cells.push(dataExportacao);
+      return cells;
+    };
+
+    const notasRows = [headers.map(h=>({v:h,s:1}))].concat(lista.map(rowFromAluno));
+
+    const resumoHeaders = ['Atividade','Preenchidas','Vazias','Média','Menor nota','Maior nota','Marcada como Prova Paulista'];
+    const resumoRows = [resumoHeaders.map(h=>({v:h,s:1}))];
+    avs.forEach(av => {
+      const vals = [];
+      lista.forEach(a => {
+        const b = a && a.bimestres ? a.bimestres[bimestreAtual] : null;
+        if(b) _syncBimestreRefs(b);
+        const raw = b?.notas_disc?.[discId]?.[av.id];
+        if(raw === null || typeof raw === 'undefined' || raw === '') return;
+        const n = Number(String(raw).replace(',', '.'));
+        if(Number.isFinite(n)) vals.push(n);
+      });
+      const avg = vals.length ? vals.reduce((s,n)=>s+n,0)/vals.length : null;
+      resumoRows.push([
+        av.nome || av.id,
+        vals.length,
+        Math.max(0, lista.length - vals.length),
+        avg === null ? '' : {v:Number(avg.toFixed(2)), s:7},
+        vals.length ? {v:Number(Math.min(...vals).toFixed(2)), s:7} : '',
+        vals.length ? {v:Number(Math.max(...vals).toFixed(2)), s:7} : '',
+        (typeof __ppIsAtividadeProvaPaulista === 'function' && __ppIsAtividadeProvaPaulista(av, bimestreAtual)) ? 'Sim' : 'Não'
+      ]);
+    });
+
+    const used = new Set();
+    const sheetNameBase = (disc.nome || disc.id || 'Notas').slice(0, 24);
+    const sheets = [
+      {name:__ppSheetName(sheetNameBase, used), rows:notasRows},
+      {name:__ppSheetName('Resumo', used), rows:resumoRows}
+    ];
+
+    const workbookSheets = sheets.map((s,i)=>'<sheet name="'+__ppXmlEsc(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('');
+    const rels = sheets.map((s,i)=>'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('') + '<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+    const overrides = sheets.map((s,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('');
+
+    const files = [
+      ['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+overrides+'</Types>'],
+      ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+      ['xl/workbook.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+workbookSheets+'</sheets></workbook>'],
+      ['xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+rels+'</Relationships>'],
+      ['xl/styles.xml',__ppXlsxStyles()]
+    ];
+    sheets.forEach((s,i)=>files.push(['xl/worksheets/sheet'+(i+1)+'.xml',__ppSheetXml(s.rows,{autoFilter:true,freeze:true})]));
+
+    const blob = __zipStore(files);
+    const turma = (filtroTurma && filtroTurma !== 'Todas') ? filtroTurma : 'todos';
+    const slug = (typeof __ppSlugFileName === 'function') ? __ppSlugFileName((disc.nome||disc.id)+'_'+turma) : String((disc.nome||disc.id)+'_'+turma).replace(/[^a-z0-9_-]+/gi,'_').toLowerCase();
+    const filename = 'edicao_massa_' + slug + '_' + (bimestreAtual || 1) + 'bim_' + now.toISOString().slice(0,10) + '.xlsx';
+    if(typeof __downloadBlob === 'function') __downloadBlob(blob, filename);
+    else{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 1500);
+    }
+    showToast('Excel da Edição em Massa baixado com abas, filtros e resumo.');
+  }catch(e){
+    console.error('Falha ao exportar Excel da Edição em Massa:', e);
+    showToast('Não foi possível exportar o Excel da Edição em Massa.', 'error');
+  }
+}
+
 // Prova Paulista: helpers de classificação, marcação e exportação
 var __dashProvaPaulistaRows = [];
 var __dashProvaPaulistaMeta = {};
@@ -16433,14 +16879,22 @@ var __dashProvaPaulistaMeta = {};
 function __ppIsAtividadeProvaPaulista(av, bim){
   if(!av) return false;
   const key = String(bim || bimestreAtual || 1);
-  if(av.provaPaulistaBims && typeof av.provaPaulistaBims === 'object'){
-    return !!av.provaPaulistaBims[key];
+  if(av.provaPaulistaBims && typeof av.provaPaulistaBims === 'object' && av.provaPaulistaBims[key]){
+    return true;
   }
   return !!(av.provaPaulista || av.prova_paulista || av.pp);
 }
 
+function __ppParseNota(valor){
+  if(valor === null || typeof valor === 'undefined' || valor === '') return null;
+  const n = Number(String(valor).replace(',', '.'));
+  if(!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(10, n));
+}
+
 function __ppClassificarNota(nota){
-  const n = clampNota(nota);
+  const n = __ppParseNota(nota);
+  if(n === null) return {key:'sem', label:'Sem dados', color:'#94a3b8'};
   if(n < 5) return {key:'abaixo', label:'Abaixo do básico', color:'#dc2626'};
   if(n < 7) return {key:'basico', label:'Básico', color:'#f59e0b'};
   if(n < 9) return {key:'adequado', label:'Adequado', color:'#16a34a'};
@@ -16452,9 +16906,17 @@ function __ppListProvasPaulistas(bim){
   const provas = [];
   const key = bim || bimestreAtual || 1;
   (config.disciplinas || []).forEach(disc => {
-    (disc.avaliacoes || []).forEach(av => {
+    (disc.avaliacoes || []).forEach((av, avIndex) => {
       if(__ppIsAtividadeProvaPaulista(av, key)){
-        provas.push({ discId: disc.id, discNome: disc.nome || disc.id, avId: av.id, avNome: av.nome || av.id });
+        provas.push({
+          discId: disc.id,
+          discNome: disc.nome || disc.id,
+          avId: av.id,
+          avNome: av.nome || av.id,
+          avIndex: avIndex,
+          ordem: provas.length,
+          data: av.data || av.dt || av.date || ''
+        });
       }
     });
   });
@@ -16495,82 +16957,395 @@ function __massaToggleProvaPaulista(discId, avId){
   salvarDadosLocal();
   __massaRenderProvaPaulistaControls(discId);
   try{ renderDashProvaPaulista(); }catch(_){ }
+  try{ if(typeof mapaAtualizarLegendaPp === 'function') mapaAtualizarLegendaPp(); }catch(_){ }
   showToast((next ? 'Marcada' : 'Desmarcada') + ' como Prova Paulista no ' + key + 'º bim.: ' + (av.nome || av.id));
 }
 
-function renderDashProvaPaulista(){
-  const card = document.getElementById('dashProvaPaulistaCard');
-  const info = document.getElementById('dashProvaPaulistaInfo');
-  const resumo = document.getElementById('dashProvaPaulistaResumo');
-  const tbody = document.getElementById('dashProvaPaulistaTbody');
-  const wrap = document.getElementById('dashProvaPaulistaWrap');
-  if(!card || !tbody || !resumo) return;
-
-  ensureConfigSchema();
-  const provas = __ppListProvasPaulistas(bimestreAtual);
-  const lista = getAlunosFiltrados();
-  const turmaLabel = (typeof filtroTurma !== 'undefined' && filtroTurma && filtroTurma !== 'Todas') ? filtroTurma : 'todas as turmas';
-
-  if(!provas.length){
-    __dashProvaPaulistaRows = [];
-    __dashProvaPaulistaMeta = { bimestre: bimestreAtual, turmaLabel: turmaLabel, provas: [] };
-    if(info) info.innerHTML = 'Nenhuma atividade marcada como Prova Paulista. Vá em <b>Edição em Massa</b> e marque a atividade correspondente.';
-    resumo.innerHTML = '';
-    if(wrap) wrap.style.display = 'none';
-    tbody.innerHTML = '';
-    return;
+function __ppEnsureDashboardFilters(provas, listaBase, bim){
+  const box = document.getElementById('dashProvaPaulistaFiltros');
+  if(!box) return {turma:'todas', cls:'todas', atividade:'todas', bim:bim};
+  box.style.display = provas && provas.length ? 'grid' : 'none';
+  const selB = document.getElementById('ppFiltroBimestre');
+  const selT = document.getElementById('ppFiltroTurma');
+  const selC = document.getElementById('ppFiltroClassificacao');
+  const selA = document.getElementById('ppFiltroAtividade');
+  const prevB = selB && selB.value ? selB.value : String(bim || bimestreAtual || 1);
+  const prevT = selT && selT.value ? selT.value : 'todas';
+  const prevC = selC && selC.value ? selC.value : 'todas';
+  const prevA = selA && selA.value ? selA.value : 'todas';
+  if(selB){ selB.innerHTML = [1,2,3,4].map(n=>'<option value="'+n+'" '+(String(prevB)===String(n)?'selected':'')+'>'+n+'º bimestre</option>').join(''); }
+  if(selT){
+    const turmas = Array.from(new Set((listaBase||[]).map(a=>a && a.turma).filter(Boolean))).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
+    selT.innerHTML = '<option value="todas">Todas</option>' + turmas.map(t=>'<option value="'+_escHTML(t)+'" '+(String(prevT)===String(t)?'selected':'')+'>'+_escHTML(t)+'</option>').join('');
+    if(prevT !== 'todas' && !turmas.includes(prevT)) selT.value = 'todas';
   }
-  if(wrap) wrap.style.display = '';
-
-  const counts = {abaixo:0, basico:0, adequado:0, avancado:0};
-  const labels = {abaixo:'Abaixo do básico', basico:'Básico', adequado:'Adequado', avancado:'Avançado'};
-  const rows = [];
-
-  lista.forEach(a=>{
-    const b = a?.bimestres?.[bimestreAtual];
-    if(!b) return;
+  if(selC){ selC.value = ['todas','abaixo','basico','adequado','avancado','sem'].includes(prevC) ? prevC : 'todas'; }
+  if(selA){
+    selA.innerHTML = '<option value="todas">Todas</option>' + (provas||[]).map(p=>{
+      const val = String(p.discId)+'::'+String(p.avId);
+      return '<option value="'+_escHTML(val)+'" '+(String(prevA)===val?'selected':'')+'>'+_escHTML(p.discNome+' • '+p.avNome)+'</option>';
+    }).join('');
+    if(prevA !== 'todas' && !(provas||[]).some(p=>String(p.discId)+'::'+String(p.avId)===prevA)) selA.value = 'todas';
+  }
+  return { turma:(selT&&selT.value)||'todas', cls:(selC&&selC.value)||'todas', atividade:(selA&&selA.value)||'todas', bim:Number((selB&&selB.value)||bim||bimestreAtual||1)||1 };
+}
+function __ppBuildRows(bim, lista, provas){
+  const rows=[];
+  (lista||[]).forEach(a=>{
+    const b=a&&a.bimestres&&a.bimestres[bim]; if(!b) return;
     try{ _syncBimestreRefs(b); }catch(_){ }
-    provas.forEach(p=>{
-      const notas = (b.notas_disc && b.notas_disc[p.discId]) ? b.notas_disc[p.discId] : {};
-      const raw = (notas && typeof notas[p.avId] !== 'undefined') ? notas[p.avId] : 0;
-      const nota = clampNota(raw);
-      const cls = __ppClassificarNota(nota);
-      counts[cls.key]++;
-      rows.push({ aluno:a, prova:p, nota, cls });
+    (provas||[]).forEach(p=>{
+      const notas=(b.notas_disc&&b.notas_disc[p.discId])?b.notas_disc[p.discId]:{};
+      const raw=(notas&&typeof notas[p.avId]!=='undefined')?notas[p.avId]:null;
+      const nota=__ppParseNota(raw); const cls=__ppClassificarNota(nota);
+      rows.push({aluno:a,prova:p,nota,cls});
     });
   });
+  return rows;
+}
+function __ppRenderResumoTurmas(rows){
+  const el=document.getElementById('dashProvaPaulistaResumoTurmas'); if(!el) return;
+  if(!rows||!rows.length){el.innerHTML='';return;}
+  const order=['abaixo','basico','adequado','avancado','sem'];
+  const labels={abaixo:'Abaixo',basico:'Básico',adequado:'Adequado',avancado:'Avançado',sem:'S/D'};
+  const colors={abaixo:'#dc2626',basico:'#f59e0b',adequado:'#16a34a',avancado:'#2563eb',sem:'#94a3b8'};
+  const by={}; rows.forEach(r=>{const t=String(r.aluno?.turma||'Sem turma'); if(!by[t])by[t]={total:0,abaixo:0,basico:0,adequado:0,avancado:0,sem:0}; by[t].total++; by[t][r.cls?.key||'sem']++;});
+  el.innerHTML=Object.keys(by).sort((a,b)=>a.localeCompare(b,'pt-BR')).map(t=>{const o=by[t]; const abaixoPct=o.total?Math.round(o.abaixo/o.total*100):0; const bars=order.map(k=>{const pct=o.total?Math.round(o[k]/o.total*100):0; const h=Math.max(7,pct*0.52); return '<div title="'+labels[k]+': '+o[k]+' ('+pct+'%)" class="bar" style="height:'+h+'px;background:'+colors[k]+';">'+(pct?pct+'%':'')+'</div>';}).join(''); return '<div class="pp-turma-card"><div class="tt"><span>'+_escHTML(t)+'</span><span class="mini">'+o.total+' registros</span></div><div class="mini"><b style="color:#dc2626;">'+abaixoPct+'%</b> em Abaixo do básico</div><div class="pp-turma-bars">'+bars+'</div></div>';}).join('');
+}
+function renderDashProvaPaulista(){
+  const card=document.getElementById('dashProvaPaulistaCard'), info=document.getElementById('dashProvaPaulistaInfo'), resumo=document.getElementById('dashProvaPaulistaResumo'), tbody=document.getElementById('dashProvaPaulistaTbody'), wrap=document.getElementById('dashProvaPaulistaWrap');
+  if(!card||!tbody||!resumo) return;
+  ensureConfigSchema();
+  let bimSel=Number(document.getElementById('ppFiltroBimestre')?.value||bimestreAtual||1)||1;
+  let provas=__ppListProvasPaulistas(bimSel); let listaBase=getAlunosFiltrados(); let filtros=__ppEnsureDashboardFilters(provas,listaBase,bimSel);
+  if(Number(filtros.bim)!==bimSel){bimSel=Number(filtros.bim)||bimestreAtual||1; provas=__ppListProvasPaulistas(bimSel); filtros=__ppEnsureDashboardFilters(provas,listaBase,bimSel);}
+  const turmaGlobalLabel=(typeof filtroTurma!=='undefined'&&filtroTurma&&filtroTurma!=='Todas')?filtroTurma:'todas as turmas';
+  if(!provas.length){__dashProvaPaulistaRows=[]; __dashProvaPaulistaMeta={bimestre:bimSel,turmaLabel:turmaGlobalLabel,provas:[],filtros}; if(info) info.innerHTML='Nenhuma atividade marcada como Prova Paulista para o <b>'+bimSel+'º bimestre</b>. Vá em <b>Edição em Massa</b> e marque a atividade correspondente.'; resumo.innerHTML=''; const rt=document.getElementById('dashProvaPaulistaResumoTurmas'); if(rt) rt.innerHTML=''; if(wrap) wrap.style.display='none'; tbody.innerHTML=''; return;}
+  if(wrap) wrap.style.display='';
+  let lista=listaBase.slice(); if(filtros.turma&&filtros.turma!=='todas') lista=lista.filter(a=>String(a?.turma||'')===String(filtros.turma));
+  let rows=__ppBuildRows(bimSel,lista,provas); if(filtros.atividade&&filtros.atividade!=='todas') rows=rows.filter(r=>String(r.prova.discId)+'::'+String(r.prova.avId)===filtros.atividade); if(filtros.cls&&filtros.cls!=='todas') rows=rows.filter(r=>String(r.cls?.key||'sem')===filtros.cls);
+  const counts={abaixo:0,basico:0,adequado:0,avancado:0,sem:0}; const labels={abaixo:'Abaixo do básico',basico:'Básico',adequado:'Adequado',avancado:'Avançado',sem:'Sem dados'}; rows.forEach(r=>{const k=r.cls?.key||'sem'; counts[k]=(counts[k]||0)+1;});
+  const total=rows.length; __dashProvaPaulistaRows=rows; __dashProvaPaulistaMeta={bimestre:bimSel,turmaLabel:(filtros.turma&&filtros.turma!=='todas')?filtros.turma:turmaGlobalLabel,provas,filtros}; const pct=n=>total?Math.round(n/total*100):0;
+  resumo.innerHTML=['abaixo','basico','adequado','avancado','sem'].map(k=>'<div class="pp-summary-item pp-'+k+'"><div class="n">'+counts[k]+' <span style="font-size:.78rem;font-weight:800;">('+pct(counts[k])+'%)</span></div><div class="l">'+labels[k]+'</div></div>').join('');
+  __ppRenderResumoTurmas(rows);
+  if(info){const provaTxt=provas.map(p=>_escHTML(p.discNome+' • '+p.avNome)).join(' | '); const calc=(typeof mapaGetPpCalcLabel==='function')?mapaGetPpCalcLabel():'Média'; const multiHint=provas.length>1?' • <span style="color:#1d4ed8;font-weight:800;">Mapa de Sala pode usar '+_escHTML(calc.toLowerCase())+' das '+provas.length+' provas marcadas.</span>':''; const filtTxt=(filtros.cls&&filtros.cls!=='todas')?' • Filtro: <b>'+_escHTML(labels[filtros.cls]||filtros.cls)+'</b>':''; info.innerHTML='Bimestre: <b>'+bimSel+'º</b> • Turma: <b>'+_escHTML(__dashProvaPaulistaMeta.turmaLabel)+'</b> • Prova(s): <b>'+provaTxt+'</b>'+filtTxt+multiHint;}
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="7"><div class="pp-empty">Nenhum aluno encontrado para os filtros atuais.</div></td></tr>';return;}
+  tbody.innerHTML=rows.map((r,idx)=>{const nome=privacyMode?'••••••••':_escHTML(String(r.aluno?.nome||'').replace(/\s+/g,' ').trim()); const notaTxt=(typeof r.nota==='number'&&Number.isFinite(r.nota))?r.nota.toFixed(1):'—'; return '<tr><td>'+(idx+1)+'</td><td>'+nome+'</td><td>'+_escHTML(r.aluno?.turma||'')+'</td><td>'+_escHTML(r.prova.discNome)+'</td><td>'+_escHTML(r.prova.avNome)+'</td><td class="pp-nota" style="color:'+r.cls.color+';">'+notaTxt+'</td><td><span class="pp-badge pp-'+r.cls.key+'">'+r.cls.label+'</span></td></tr>';}).join('');
+  try{ if(window.__ppIntervencaoAberta) renderDashProvaPaulistaIntervencao(); }catch(_){ }
+}
 
-  const total = rows.length;
-  __dashProvaPaulistaRows = rows;
-  __dashProvaPaulistaMeta = { bimestre: bimestreAtual, turmaLabel: turmaLabel, provas: provas };
-  const pct = (n)=> total ? Math.round(n/total*100) : 0;
-  resumo.innerHTML = ['abaixo','basico','adequado','avancado'].map(k=>
-    '<div class="pp-summary-item pp-'+k+'"><div class="n">'+counts[k]+' <span style="font-size:.78rem;font-weight:800;">('+pct(counts[k])+'%)</span></div><div class="l">'+labels[k]+'</div></div>'
-  ).join('');
+// Prova Paulista: plano de intervenção pedagógica a partir da tabela do Dashboard
+window.__ppIntervencaoAberta = false;
 
-  if(info){
-    const provaTxt = provas.map(p => _escHTML(p.discNome + ' • ' + p.avNome)).join(' | ');
-    info.innerHTML = 'Bimestre atual: <b>'+bimestreAtual+'º</b> • Turma: <b>'+_escHTML(turmaLabel)+'</b> • Prova(s): <b>'+provaTxt+'</b>';
-  }
+function __ppIntervencaoActions(key){
+  const map = {
+    abaixo: [
+      'Recomposição imediata das habilidades essenciais em pequenos grupos.',
+      'Reensino com exemplos guiados, leitura compartilhada do enunciado e resolução comentada.',
+      'Atividades curtas de retomada 2 vezes por semana, com registro de avanço.',
+      'Acompanhamento na Tutoria quando houver recorrência de baixo desempenho ou frequência instável.'
+    ],
+    basico: [
+      'Consolidar habilidades parcialmente dominadas com exercícios graduados.',
+      'Usar pares produtivos: aluno em Básico com aluno em Adequado/Avançado.',
+      'Aplicar mini-simulados de 5 questões com correção imediata.',
+      'Retomar vocabulário dos comandos: inferir, identificar, localizar, comparar e justificar.'
+    ],
+    adequado: [
+      'Manter rotina de aprofundamento com itens de maior complexidade.',
+      'Propor questões com justificativa da alternativa correta e análise dos distratores.',
+      'Estimular que o aluno explique estratégias de resolução para colegas.',
+      'Acompanhar para manter o nível e buscar avanço no próximo bimestre.'
+    ],
+    avancado: [
+      'Oferecer desafios extras e questões no modelo da Prova Paulista com maior complexidade.',
+      'Convidar para atuar como monitor em momentos pontuais, sem substituir o professor.',
+      'Propor produção de dicas, mapas mentais ou explicações curtas para a turma.',
+      'Trabalhar ampliação repertorial e autonomia na leitura de textos mais complexos.'
+    ],
+    sem: [
+      'Verificar se a nota não foi lançada, se houve ausência ou se falta segunda chamada.',
+      'Atualizar a Edição em Massa antes de fechar o diagnóstico.',
+      'Separar lista de alunos sem dados para conferência com diário, chamada e registros da turma.',
+      'Evitar classificar pedagogicamente o aluno sem nota válida.'
+    ]
+  };
+  return map[key] || map.sem;
+}
 
+function __ppIntervencaoLabel(key){
+  return {abaixo:'Abaixo do básico',basico:'Básico',adequado:'Adequado',avancado:'Avançado',sem:'Sem dados'}[key] || 'Sem dados';
+}
+
+function __ppIntervencaoGrouped(rows){
+  const ordem = ['abaixo','basico','adequado','avancado','sem'];
+  const grouped = {}; ordem.forEach(k=>grouped[k]=[]);
+  (rows||[]).forEach(r=>{ const k = (r && r.cls && r.cls.key) || 'sem'; (grouped[k] || grouped.sem).push(r); });
+  return {ordem, grouped};
+}
+
+function __ppIntervencaoPlainText(rows, meta){
+  const info = meta || {};
+  const turma = info.turmaLabel || 'todas as turmas';
+  const bim = info.bimestre || bimestreAtual || 1;
+  const provas = (info.provas||[]).map(p => (p.discNome||'') + ' - ' + (p.avNome||'')).join(' | ') || 'Prova Paulista marcada';
+  const data = new Date().toLocaleDateString('pt-BR');
+  const {ordem, grouped} = __ppIntervencaoGrouped(rows);
+  const lines = [];
+  lines.push('PLANO DE INTERVENÇÃO PEDAGÓGICA — PROVA PAULISTA');
+  lines.push('Turma/filtro: ' + turma);
+  lines.push('Bimestre: ' + bim + 'º');
+  lines.push('Prova(s): ' + provas);
+  lines.push('Registros considerados: ' + (rows||[]).length);
+  lines.push('Data: ' + data);
+  lines.push('');
+  ordem.forEach(k=>{
+    const arr = grouped[k] || [];
+    lines.push(__ppIntervencaoLabel(k).toUpperCase() + ' — ' + arr.length + ' registro(s)');
+    const nomes = arr.slice(0,25).map(r => String(r.aluno && r.aluno.nome || '').replace(/\s+/g,' ').trim()).filter(Boolean);
+    if(nomes.length) lines.push('Alunos: ' + nomes.join('; ') + (arr.length>25 ? '; ...' : ''));
+    lines.push('Ações sugeridas:');
+    __ppIntervencaoActions(k).forEach((a,i)=>lines.push((i+1)+'. '+a));
+    lines.push('');
+  });
+  lines.push('Observação: este plano é um apoio inicial. Ajuste as ações conforme habilidades trabalhadas, frequência, participação e registros de Tutoria.');
+  return lines.join('\n');
+}
+
+function renderDashProvaPaulistaIntervencao(){
+  const box = document.getElementById('dashProvaPaulistaIntervencao');
+  if(!box) return;
+  const rows = Array.isArray(__dashProvaPaulistaRows) ? __dashProvaPaulistaRows : [];
+  if(!window.__ppIntervencaoAberta){ box.style.display='none'; return; }
+  box.style.display = 'block';
   if(!rows.length){
-    tbody.innerHTML = '<tr><td colspan="7"><div class="pp-empty">Nenhum aluno encontrado para o filtro atual.</div></td></tr>';
+    box.innerHTML = '<div class="pp-intervencao-head"><div><h4><i class="fas fa-clipboard-list"></i> Plano de intervenção</h4><div class="hint">Não há registros da Prova Paulista nos filtros atuais.</div></div></div>';
     return;
   }
-
-  tbody.innerHTML = rows.map((r, idx)=>{
-    const nome = privacyMode ? '••••••••' : _escHTML(String(r.aluno?.nome || '').replace(/\s+/g,' ').trim());
-    const notaTxt = isFinite(r.nota) ? r.nota.toFixed(1) : '0.0';
-    return '<tr>' +
-      '<td>'+(idx+1)+'</td>' +
-      '<td>'+nome+'</td>' +
-      '<td>'+_escHTML(r.aluno?.turma || '')+'</td>' +
-      '<td>'+_escHTML(r.prova.discNome)+'</td>' +
-      '<td>'+_escHTML(r.prova.avNome)+'</td>' +
-      '<td class="pp-nota" style="color:'+r.cls.color+';">'+notaTxt+'</td>' +
-      '<td><span class="pp-badge pp-'+r.cls.key+'">'+r.cls.label+'</span></td>' +
-    '</tr>';
+  const meta = __dashProvaPaulistaMeta || {};
+  const {ordem, grouped} = __ppIntervencaoGrouped(rows);
+  const total = rows.length || 1;
+  const cards = ordem.map(k=>{
+    const arr = grouped[k] || [];
+    const nomes = arr.slice(0,12).map(r => privacyMode ? '••••••••' : _escHTML(String(r.aluno?.nome||'').replace(/\s+/g,' ').trim())).filter(Boolean);
+    const more = arr.length > 12 ? ' <b>+'+(arr.length-12)+'</b>' : '';
+    const studentLine = nomes.length ? '<div class="students"><b>Alunos:</b> '+nomes.join('; ')+more+'</div>' : '<div class="students">Nenhum aluno neste nível.</div>';
+    const actions = __ppIntervencaoActions(k).map(a=>'<li>'+_escHTML(a)+'</li>').join('');
+    const pct = Math.round(arr.length / total * 100);
+    return '<div class="pp-interv-card '+k+'"><h5><span>'+_escHTML(__ppIntervencaoLabel(k))+'</span><span class="count">'+arr.length+' • '+pct+'%</span></h5><ul>'+actions+'</ul>'+studentLine+'</div>';
   }).join('');
+  const turma = meta.turmaLabel || 'todas as turmas';
+  const bim = meta.bimestre || bimestreAtual || 1;
+  box.innerHTML = '<div class="pp-intervencao-head"><div><h4><i class="fas fa-clipboard-list"></i> Plano de intervenção pedagógica</h4><div class="hint">Gerado com base nos filtros atuais da tabela — '+_escHTML(turma)+' • '+bim+'º bimestre • '+rows.length+' registro(s).</div></div><div class="pp-intervencao-actions"><button class="pp-mini-btn" data-onclick="copiarDashProvaPaulistaIntervencao()"><i class="fas fa-copy"></i> Copiar</button><button class="pp-mini-btn" data-onclick="baixarDashProvaPaulistaIntervencaoTXT()"><i class="fas fa-download"></i> Baixar TXT</button><button class="pp-mini-btn" data-onclick="imprimirDashProvaPaulistaIntervencao()"><i class="fas fa-print"></i> Imprimir</button></div></div><div class="pp-intervencao-grid">'+cards+'</div><div class="pp-intervencao-footer"><b>Uso sugerido:</b> utilize este plano para organizar recuperação, reagrupamento produtivo, Tutoria e acompanhamento por habilidade. Para comunicação com a família, use o botão <b>Comunicados</b> após aplicar os filtros desejados. Alunos sem dados devem ser conferidos antes de entrar em qualquer lista pedagógica.</div>';
+}
+
+function toggleDashProvaPaulistaIntervencao(){
+  try{ renderDashProvaPaulista(); }catch(_){ }
+  window.__ppIntervencaoAberta = !window.__ppIntervencaoAberta;
+  renderDashProvaPaulistaIntervencao();
+  if(window.__ppIntervencaoAberta){
+    try{ document.getElementById('dashProvaPaulistaIntervencao')?.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(_){ }
+  }
+}
+
+async function copiarDashProvaPaulistaIntervencao(){
+  try{ renderDashProvaPaulista(); }catch(_){ }
+  const text = __ppIntervencaoPlainText(__dashProvaPaulistaRows||[], __dashProvaPaulistaMeta||{});
+  try{ await navigator.clipboard.writeText(text); showToast('Plano de intervenção copiado.'); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); showToast('Plano de intervenção copiado.'); }
+}
+
+function baixarDashProvaPaulistaIntervencaoTXT(){
+  try{ renderDashProvaPaulista(); }catch(_){ }
+  const rows = __dashProvaPaulistaRows||[];
+  if(!rows.length){ showToast('Não há dados para gerar o plano de intervenção.','warning'); return; }
+  const meta = __dashProvaPaulistaMeta||{};
+  const text = '\uFEFF' + __ppIntervencaoPlainText(rows, meta);
+  const bim = meta.bimestre || bimestreAtual || 1;
+  const turma = meta.turmaLabel || filtroTurma || 'todas';
+  const filename = 'intervencao_prova_paulista_' + __ppSlugFileName(turma) + '_' + bim + 'bim_' + new Date().toISOString().slice(0,10) + '.txt';
+  const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+  if(typeof __downloadBlob==='function') __downloadBlob(blob, filename);
+  else{ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); }
+  showToast('Plano de intervenção baixado em TXT.');
+}
+
+function imprimirDashProvaPaulistaIntervencao(){
+  try{ renderDashProvaPaulista(); }catch(_){ }
+  const rows = __dashProvaPaulistaRows||[];
+  if(!rows.length){ showToast('Não há dados para imprimir.','warning'); return; }
+  const text = __ppIntervencaoPlainText(rows, __dashProvaPaulistaMeta||{});
+  const w = window.open('', '_blank');
+  if(!w){ showToast('Não foi possível abrir a impressão. Verifique o bloqueador de pop-ups.','error'); return; }
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Plano de intervenção - Prova Paulista</title><style>body{font-family:Arial,sans-serif;margin:28px;color:#0f172a;}pre{white-space:pre-wrap;font-size:13px;line-height:1.45;}h1{font-size:20px;margin:0 0 12px;}@media print{button{display:none;}}</style></head><body><button onclick="window.print()" style="padding:8px 12px;margin-bottom:14px;">Imprimir</button><h1>Plano de intervenção — Prova Paulista</h1><pre>'+_escHTML(text)+'</pre></body></html>');
+  w.document.close();
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(_){ } }, 250);
+}
+
+
+// Prova Paulista: comunicados individuais para responsáveis (v20.7.6)
+function __ppComunicadoOrientacao(key){
+  const map = {
+    abaixo: 'O estudante precisa de acompanhamento mais próximo e retomada das habilidades essenciais. Recomendamos organizar uma rotina curta de estudos, revisar as atividades corrigidas e acompanhar a realização das propostas de recuperação.',
+    basico: 'O estudante demonstrou domínio parcial das habilidades avaliadas. Recomendamos manter rotina de estudos, refazer questões comentadas e participar das retomadas em sala para avançar ao nível Adequado.',
+    adequado: 'O estudante apresentou desempenho adequado. Recomendamos manter a rotina de estudos e aprofundar a leitura dos enunciados, a análise de alternativas e a justificativa das respostas.',
+    avancado: 'O estudante apresentou desempenho avançado. Recomendamos manter o empenho, realizar desafios de maior complexidade e apoiar os estudos com leitura regular.',
+    sem: 'Não há nota válida registrada para esta Prova Paulista no filtro atual. É importante verificar se houve ausência, pendência de lançamento ou necessidade de segunda chamada.'
+  };
+  return map[key] || map.sem;
+}
+
+function __ppComunicadoNivelAcao(key){
+  return {abaixo:'atenção prioritária', basico:'acompanhamento e consolidação', adequado:'manutenção e aprofundamento', avancado:'ampliação e desafio', sem:'conferência de registro'}[key] || 'conferência de registro';
+}
+
+function __ppComunicadosRows(rows){
+  const list = Array.isArray(rows) ? rows.slice() : [];
+  const order = {abaixo:0, basico:1, sem:2, adequado:3, avancado:4};
+  return list.sort((a,b)=>{
+    const ka=(a&&a.cls&&a.cls.key)||'sem', kb=(b&&b.cls&&b.cls.key)||'sem';
+    const oa=Object.prototype.hasOwnProperty.call(order,ka)?order[ka]:9;
+    const ob=Object.prototype.hasOwnProperty.call(order,kb)?order[kb]:9;
+    if(oa!==ob) return oa-ob;
+    const ta=String(a&&a.aluno&&a.aluno.turma||''), tb=String(b&&b.aluno&&b.aluno.turma||'');
+    if(ta!==tb) return ta.localeCompare(tb,'pt-BR');
+    return String(a&&a.aluno&&a.aluno.nome||'').localeCompare(String(b&&b.aluno&&b.aluno.nome||''),'pt-BR');
+  });
+}
+
+function __ppComunicadoHtml(rows, meta){
+  const info = meta || {};
+  const bim = info.bimestre || bimestreAtual || 1;
+  const data = new Date().toLocaleDateString('pt-BR');
+  const turmaFiltro = info.turmaLabel || filtroTurma || 'todas as turmas';
+  const provas = (info.provas||[]).map(p => (p.discNome||'') + ' — ' + (p.avNome||'')).join(' | ') || 'Prova Paulista';
+  const safeRows = __ppComunicadosRows(rows);
+  const escola = 'EE Iraci Sartori Vieira da Silva';
+  const cards = safeRows.map((r,idx)=>{
+    const aluno = privacyMode ? '••••••••' : String(r && r.aluno && r.aluno.nome || 'Aluno(a)').replace(/[\r\n]+/g,' ').trim();
+    const turma = String(r && r.aluno && r.aluno.turma || turmaFiltro || '').replace(/[\r\n]+/g,' ').trim();
+    const nota = (r && r.nota !== null && typeof r.nota !== 'undefined') ? Number(r.nota).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2}) : 'Sem dados';
+    const cls = (r && r.cls) ? r.cls : __ppClassificarNota(null);
+    const key = cls.key || 'sem';
+    const cor = cls.color || '#64748b';
+    const orient = __ppComunicadoOrientacao(key);
+    const acao = __ppComunicadoNivelAcao(key);
+    return '<section class="notice '+_escHTML(key)+'">'+
+      '<div class="top"><div><h2>Comunicado de acompanhamento — Prova Paulista</h2><div class="school">'+_escHTML(escola)+' • '+data+'</div></div><div class="badge" style="border-color:'+_escHTML(cor)+';color:'+_escHTML(cor)+';">'+_escHTML(cls.label||'Sem dados')+'</div></div>'+
+      '<p class="intro">Senhor(a) responsável, informamos o resultado registrado para acompanhamento pedagógico do(a) estudante.</p>'+
+      '<table><tr><th>Aluno(a)</th><td>'+_escHTML(aluno)+'</td></tr><tr><th>Turma</th><td>'+_escHTML(turma)+'</td></tr><tr><th>Bimestre</th><td>'+_escHTML(bim)+'º bimestre</td></tr><tr><th>Prova/atividade</th><td>'+_escHTML(provas)+'</td></tr><tr><th>Nota</th><td>'+_escHTML(nota)+'</td></tr><tr><th>Classificação</th><td><b style="color:'+_escHTML(cor)+';">'+_escHTML(cls.label||'Sem dados')+'</b></td></tr><tr><th>Ação indicada</th><td>'+_escHTML(acao)+'</td></tr></table>'+
+      '<p><b>Orientação pedagógica:</b> '+_escHTML(orient)+'</p>'+
+      '<p class="note">Solicitamos que a família acompanhe a rotina de estudos, verifique as atividades propostas e, quando necessário, entre em contato com a escola para alinharmos as ações de apoio.</p>'+
+      '<div class="sign"><span>Assinatura do responsável</span><span>Professor(a)</span></div>'+
+      '</section>';
+  }).join('');
+  return '<!doctype html><html><head><meta charset="utf-8"><title>Comunicados - Prova Paulista</title><style>'+ 
+    'body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f8fafc;color:#0f172a;} .toolbar{position:sticky;top:0;background:white;padding:10px 18px;border-bottom:1px solid #e2e8f0;display:flex;gap:10px;align-items:center;z-index:2;} .toolbar button{padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;cursor:pointer;font-weight:700;} .toolbar .hint{font-size:12px;color:#64748b;} .page{padding:18px;} .notice{page-break-after:always;background:white;border:1px solid #e2e8f0;border-radius:18px;padding:22px;margin:0 auto 18px;max-width:820px;box-shadow:0 10px 26px rgba(15,23,42,.08);} .top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;border-bottom:2px solid #e2e8f0;padding-bottom:10px;margin-bottom:14px;} h2{font-size:20px;margin:0 0 4px;} .school{font-size:12px;color:#64748b;font-weight:700;} .badge{border:2px solid #64748b;border-radius:999px;padding:6px 10px;font-weight:900;white-space:nowrap;font-size:12px;} .intro,.note{line-height:1.45;} table{width:100%;border-collapse:collapse;margin:12px 0;} th,td{border:1px solid #e2e8f0;padding:8px 10px;text-align:left;vertical-align:top;font-size:14px;} th{width:170px;background:#f8fafc;color:#334155;} .sign{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:34px;} .sign span{border-top:1px solid #334155;text-align:center;padding-top:6px;font-size:12px;color:#475569;} @media print{body{background:white}.toolbar{display:none}.page{padding:0}.notice{box-shadow:none;border-radius:0;border:0;margin:0;max-width:none;min-height:92vh}.notice:last-child{page-break-after:auto;}}'+
+    '</style></head><body><div class="toolbar"><button onclick="window.print()">Imprimir comunicados</button><span class="hint">Gerado com os filtros atuais da tabela da Prova Paulista • '+_escHTML(turmaFiltro)+' • '+_escHTML(bim)+'º bimestre • '+safeRows.length+' comunicado(s)</span></div><main class="page">'+cards+'</main></body></html>';
+}
+
+function imprimirDashProvaPaulistaComunicados(){
+  try{ renderDashProvaPaulista(); }catch(_){ }
+  const rows = Array.isArray(__dashProvaPaulistaRows) ? __dashProvaPaulistaRows : [];
+  if(!rows.length){ showToast('Não há dados da Prova Paulista nos filtros atuais para gerar comunicados.','warning'); return; }
+  const w = window.open('', '_blank');
+  if(!w){ showToast('Não foi possível abrir os comunicados. Verifique o bloqueador de pop-ups.','error'); return; }
+  w.document.write(__ppComunicadoHtml(rows, __dashProvaPaulistaMeta||{}));
+  w.document.close();
+  setTimeout(()=>{ try{ w.focus(); }catch(_){ } }, 150);
+  showToast('Comunicados da Prova Paulista gerados. Use os filtros da tabela para escolher turma ou classificação.');
+}
+
+
+// Prova Paulista: integração com Tutoria e acompanhamento pedagógico (v20.7.6)
+function __ppTutoriaNivelAcao(key){
+  const map = {
+    abaixo: 'prioridade alta: recomposição imediata e acompanhamento individualizado',
+    basico: 'prioridade média: consolidação das habilidades parcialmente dominadas',
+    sem: 'prioridade de verificação: conferir ausência, segunda chamada ou pendência de lançamento'
+  };
+  return map[key] || 'acompanhamento pedagógico';
+}
+
+function __ppTutoriaRows(rows){
+  const alvo = new Set(['abaixo','basico','sem']);
+  const peso = {abaixo:0, sem:1, basico:2, adequado:3, avancado:4};
+  const byAluno = new Map();
+  (Array.isArray(rows) ? rows : []).forEach(r => {
+    const id = String(r && r.aluno && r.aluno.id || '').trim();
+    const key = String(r && r.cls && r.cls.key || 'sem');
+    if(!id || !alvo.has(key)) return;
+    const old = byAluno.get(id);
+    if(!old || (peso[key] ?? 9) < (peso[String(old.cls && old.cls.key || 'sem')] ?? 9)) byAluno.set(id, r);
+  });
+  return Array.from(byAluno.values()).sort((a,b)=>{
+    const pa = peso[String(a.cls && a.cls.key || 'sem')] ?? 9;
+    const pb = peso[String(b.cls && b.cls.key || 'sem')] ?? 9;
+    if(pa !== pb) return pa - pb;
+    return String(a.aluno && a.aluno.nome || '').localeCompare(String(b.aluno && b.aluno.nome || ''), 'pt-BR');
+  });
+}
+
+function __ppTutoriaAppendLine(current, line, maxChars){
+  const base = String(current || '').trim();
+  const ln = String(line || '').trim();
+  if(!ln) return base;
+  if(base.includes(ln)) return base;
+  const out = base ? (base + '\n' + ln) : ln;
+  const lim = Math.max(800, parseInt(maxChars || 4200, 10) || 4200);
+  return out.length > lim ? out.slice(out.length - lim).replace(/^.*?\n/, '') : out;
+}
+
+function __ppTutoriaLine(row, meta){
+  const bim = (meta && meta.bimestre) || bimestreAtual || 1;
+  const prova = row && row.prova ? row.prova : {};
+  const cls = row && row.cls ? row.cls : __ppClassificarNota(null);
+  const notaTxt = (typeof row.nota === 'number' && Number.isFinite(row.nota)) ? row.nota.toFixed(1).replace('.', ',') : 'sem nota';
+  const disc = String(prova.discNome || 'Disciplina').trim();
+  const av = String(prova.avNome || 'Prova Paulista').trim();
+  return '[' + new Date().toLocaleDateString('pt-BR') + '] Prova Paulista ' + bim + 'º bim. — ' + disc + ' / ' + av + ': ' + notaTxt + ' — ' + (cls.label || 'Sem dados') + '. Ação: ' + __ppTutoriaNivelAcao(cls.key) + '.';
+}
+
+function enviarDashProvaPaulistaTutoria(){
+  try{
+    const rows = __ppTutoriaRows(window.__dashProvaPaulistaRows || []);
+    if(!rows.length){
+      if(typeof showToast === 'function') showToast('Não há alunos em Abaixo do básico, Básico ou Sem dados nos filtros atuais para enviar à Tutoria.', 'warning');
+      return;
+    }
+    if(typeof __tutoriaGetAlunoRec !== 'function' || typeof __tutoriaPersist !== 'function'){
+      if(typeof showToast === 'function') showToast('Módulo de Tutoria não disponível nesta versão.', 'error');
+      return;
+    }
+    const meta = window.__dashProvaPaulistaMeta || {};
+    const confirmMsg = 'Enviar ' + rows.length + ' aluno(s) dos filtros atuais para a Tutoria?\n\nSerão marcados como tutorandos os alunos em Abaixo do básico, Básico ou Sem dados, com registro da Prova Paulista em pontos de atenção e prioridades acadêmicas.';
+    if(typeof confirm === 'function' && !confirm(confirmMsg)) return;
+    if(typeof __tutoriaEnsureBoot === 'function') __tutoriaEnsureBoot();
+    let count = 0;
+    rows.forEach(row => {
+      const a = row && row.aluno;
+      if(!a || !a.id) return;
+      a.tutorando = true;
+      const rec = __tutoriaGetAlunoRec(a.id, true);
+      if(!rec || !rec.perfil) return;
+      const line = __ppTutoriaLine(row, meta);
+      rec.perfil.pontosAtencao = __ppTutoriaAppendLine(rec.perfil.pontosAtencao, line, 5200);
+      rec.perfil.prioridadesAcademicas = __ppTutoriaAppendLine(rec.perfil.prioridadesAcademicas, line, 5200);
+      const obs = 'Aluno incluído no acompanhamento da Tutoria a partir do diagnóstico da Prova Paulista.';
+      rec.perfil.observacoesGerais = __ppTutoriaAppendLine(rec.perfil.observacoesGerais, obs, 4200);
+      rec.updatedAt = Date.now();
+      count++;
+    });
+    try{ if(typeof salvarDadosLocal === 'function') salvarDadosLocal(); }catch(_){ }
+    try{ __tutoriaPersist(); }catch(_){ }
+    try{ if(typeof tutoriaRefreshFiltersUI === 'function') tutoriaRefreshFiltersUI(); }catch(_){ }
+    try{ if(typeof tutoriaRender === 'function') tutoriaRender(); }catch(_){ }
+    try{ if(typeof renderAlunos === 'function') renderAlunos(); }catch(_){ }
+    if(typeof showToast === 'function') showToast(count + ' aluno(s) enviados para acompanhamento na Tutoria.');
+  }catch(e){
+    try{ if(typeof __diagCapture === 'function') __diagCapture(e, 'pp.tutoria'); }catch(_){ }
+    if(typeof showToast === 'function') showToast('Erro ao enviar dados da Prova Paulista para a Tutoria.', 'error');
+  }
 }
 
 function __ppCSVCell(value){
@@ -16604,7 +17379,7 @@ function exportarDashProvaPaulistaCSV(){
   const lines = [headers.map(__ppCSVCell).join(';')];
 
   rows.forEach((r, idx)=>{
-    const nota = isFinite(r.nota) ? r.nota.toFixed(1).replace('.', ',') : '0,0';
+    const nota = (typeof r.nota === 'number' && Number.isFinite(r.nota)) ? r.nota.toFixed(1).replace('.', ',') : '';
     lines.push([
       idx + 1,
       String(r.aluno?.nome || '').replace(/\s+/g,' ').trim(),
@@ -16629,6 +17404,73 @@ function exportarDashProvaPaulistaCSV(){
     setTimeout(()=>URL.revokeObjectURL(url), 1500);
   }
   showToast('CSV da Prova Paulista baixado para edição no Excel.');
+}
+
+
+function __ppXmlEsc(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;'); }
+function __ppExcelCol(n){ let s=''; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s||'A'; }
+function __ppSheetName(name, used){ let s=String(name||'Planilha').replace(/[\\\/?*\[\]:]/g,' ').replace(/\s+/g,' ').trim().slice(0,31)||'Planilha'; let base=s,i=2; used=used||new Set(); while(used.has(s)){const suf=' '+i++; s=base.slice(0,31-suf.length)+suf;} used.add(s); return s; }
+function __ppSheetXml(rows, opts){
+  opts=opts||{};
+  const maxCols=rows.reduce((m,r)=>Math.max(m,(r||[]).length),0)||1;
+  const lastCell=__ppExcelCol(maxCols)+Math.max(1,rows.length);
+  const body=rows.map((row,rIdx)=>{
+    const r=rIdx+1;
+    const cells=(row||[]).map((cell,cIdx)=>{
+      const ref=__ppExcelCol(cIdx+1)+r;
+      let v=cell, style='';
+      if(v&&typeof v==='object'&&!Array.isArray(v)){style=v.s?' s="'+v.s+'"':''; v=v.v;}
+      if(typeof v==='number'&&Number.isFinite(v)) return '<c r="'+ref+'"'+style+'><v>'+v+'</v></c>';
+      return '<c r="'+ref+'" t="inlineStr"'+style+'><is><t>'+__ppXmlEsc(v)+'</t></is></c>';
+    }).join('');
+    return '<row r="'+r+'">'+cells+'</row>';
+  }).join('');
+  const autoFilter=opts.autoFilter?'<autoFilter ref="A1:'+__ppExcelCol(maxCols)+'1"/>':'';
+  const freeze=opts.freeze?'<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>':'';
+  const cols='<cols>'+Array.from({length:maxCols},(_,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+(i===1?30:(i===4?26:16))+'" customWidth="1"/>').join('')+'</cols>';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><dimension ref="A1:'+lastCell+'"/>'+freeze+cols+'<sheetData>'+body+'</sheetData>'+autoFilter+'</worksheet>';
+}
+function __ppXlsxStyles(){
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/><color rgb="FFFFFFFF"/></font></fonts><fills count="8"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1D4ED8"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFEE2E2"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFEF3C7"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDCFCE7"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDBEAFE"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFE2E8F0"/></left><right style="thin"><color rgb="FFE2E8F0"/></right><top style="thin"><color rgb="FFE2E8F0"/></top><bottom style="thin"><color rgb="FFE2E8F0"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="8"><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="6" borderId="1" xfId="0" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="7" borderId="1" xfId="0" applyFill="1" applyBorder="1"/><xf numFmtId="2" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+}
+function __ppClassStyleKey(key){ return {abaixo:2,basico:3,adequado:4,avancado:5,sem:6}[key]||0; }
+function exportarDashProvaPaulistaXLSX(){
+  try{renderDashProvaPaulista();}catch(_){ }
+  const rows=Array.isArray(__dashProvaPaulistaRows)?__dashProvaPaulistaRows:[];
+  if(!rows.length){showToast('Não há dados da Prova Paulista para exportar em Excel neste filtro.','warning');return;}
+  if(typeof __zipStore!=='function'){showToast('Gerador de Excel indisponível: função ZIP não encontrada.','error');return;}
+  const bim=(__dashProvaPaulistaMeta&&__dashProvaPaulistaMeta.bimestre)||bimestreAtual||1;
+  const turma=(__dashProvaPaulistaMeta&&__dashProvaPaulistaMeta.turmaLabel)||filtroTurma||'todas';
+  const now=new Date(), dataExportacao=now.toLocaleDateString('pt-BR');
+  const headers=['#','Aluno','Turma','Disciplina','Atividade','Bimestre','Nota','Classificação','Data da exportação'];
+  const asRow=(r,idx)=>[idx+1,String(r.aluno?.nome||'').replace(/\s+/g,' ').trim(),r.aluno?.turma||'',r.prova?.discNome||'',r.prova?.avNome||'',bim+'º bimestre',(typeof r.nota==='number'&&Number.isFinite(r.nota))?{v:Number(r.nota.toFixed(2)),s:7}:'',{v:r.cls?.label||'',s:__ppClassStyleKey(r.cls?.key)},dataExportacao];
+  const geral=[headers.map(h=>({v:h,s:1}))].concat(rows.map(asRow));
+  const byTurma={}; rows.forEach(r=>{const t=String(r.aluno?.turma||'Sem turma');(byTurma[t]=byTurma[t]||[]).push(r);});
+  const resumoRows=[[{v:'Turma',s:1},{v:'Total',s:1},{v:'Abaixo do básico',s:1},{v:'Básico',s:1},{v:'Adequado',s:1},{v:'Avançado',s:1},{v:'Sem dados',s:1},{v:'% Abaixo do básico',s:1}]];
+  Object.keys(byTurma).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(t=>{
+    const arr=byTurma[t], c={abaixo:0,basico:0,adequado:0,avancado:0,sem:0};
+    arr.forEach(r=>c[r.cls?.key||'sem']++);
+    resumoRows.push([t,arr.length,c.abaixo,c.basico,c.adequado,c.avancado,c.sem,arr.length?Math.round(c.abaixo/arr.length*100)+'%':'0%']);
+  });
+  const used=new Set();
+  const sheets=[{name:__ppSheetName('Geral',used),rows:geral},{name:__ppSheetName('Resumo por turma',used),rows:resumoRows}];
+  Object.keys(byTurma).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(t=>sheets.push({name:__ppSheetName(t,used),rows:[headers.map(h=>({v:h,s:1}))].concat(byTurma[t].map(asRow))}));
+  const workbookSheets=sheets.map((s,i)=>'<sheet name="'+__ppXmlEsc(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('');
+  const rels=sheets.map((s,i)=>'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('')+'<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+  const overrides=sheets.map((s,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('');
+  const files=[
+    ['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+overrides+'</Types>'],
+    ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+workbookSheets+'</sheets></workbook>'],
+    ['xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+rels+'</Relationships>'],
+    ['xl/styles.xml',__ppXlsxStyles()]
+  ];
+  sheets.forEach((s,i)=>files.push(['xl/worksheets/sheet'+(i+1)+'.xml',__ppSheetXml(s.rows,{autoFilter:true,freeze:true})]));
+  const blob=__zipStore(files);
+  const filename='prova_paulista_'+__ppSlugFileName(turma)+'_'+bim+'bim_'+now.toISOString().slice(0,10)+'.xlsx';
+  if(typeof __downloadBlob==='function') __downloadBlob(blob,filename);
+  else{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+  showToast('Excel da Prova Paulista baixado com abas, filtros e resumo por turma.');
 }
 
 // Enhanced header (sorting removed per preference)
@@ -17137,6 +17979,7 @@ let __BACKUPS_LOADED = false;
 let __BACKUPS_DIRTY = false;
 let __BACKUPS_META = { count:0, lastTs:0 };
 let __lastBackupAt = 0;
+const __AUTO_BACKUP_MAX = 5; // mantém apenas os 5 backups internos mais recentes para evitar crescimento excessivo do armazenamento
 
 function __sanitizeSnapshotForEmbedding(snapshotStr){
   if(typeof snapshotStr !== 'string' || !snapshotStr) return null;
@@ -17163,7 +18006,7 @@ function __sanitizeBackupEntry(entry){
 function __sanitizeBackupList(list){
   const arr = Array.isArray(list) ? list : [];
   const out = [];
-  for(let i=0; i<arr.length && out.length<10; i++){
+  for(let i=0; i<arr.length && out.length<__AUTO_BACKUP_MAX; i++){
     const item = __sanitizeBackupEntry(arr[i]);
     if(item) out.push(item);
   }
@@ -17245,6 +18088,7 @@ function __snapshotObj(){
     ? window.__sgpBuscaAtiva
     : __lsJson('sgp_busca_ativa', {});
   const entregasDocPrazosObj = __lsJson('sgp_entregas_doc_prazos_v1', {});
+  const tutoriaObj = __lsJson('sgp_tutoria_v1', null);
 
   // logs podem crescer muito → mantém só o final (para não estourar quota)
   const auditLog = (Array.isArray(window.__sgpAuditLog) ? window.__sgpAuditLog : __lsJson('sgp_audit_log', [])).slice(-300);
@@ -17286,6 +18130,7 @@ function __snapshotObj(){
     rankHistCfg: rankHistCfgObj,
     buscaAtiva: buscaAtivaObj,
     entregasDocPrazos: entregasDocPrazosObj,
+    tutoria: (tutoriaObj && typeof tutoriaObj === 'object' && !Array.isArray(tutoriaObj)) ? tutoriaObj : null,
     linksRapidos: (typeof __quickLinksSnapshot === 'function') ? __quickLinksSnapshot() : __lsJson('sgp_links_cards_v1', []),
     linkedFileMeta: (()=>{
       // FIX: neutraliza pending no snapshot em memória — consistente com os fixes
@@ -17305,7 +18150,7 @@ function __snapshotObj(){
     auditTrail: Array.isArray(__AUDIT) ? __AUDIT.slice(-500) : [],
     gradeEvents: (typeof __gradeEventsLoad === 'function') ? __gradeEventsLoad() : __lsJson('sgp_grade_events_v1', {}),
     gradeEventLog: (typeof __gradeEventLogLoad === 'function') ? __gradeEventLogLoad() : __lsArr('sgp_grade_event_log_v1'),
-    autobackups: __BACKUPS_LOADED ? ((typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(__BACKUPS) : (Array.isArray(__BACKUPS) ? __BACKUPS.slice(0, 10) : [])) : null,
+    autobackups: __BACKUPS_LOADED ? ((typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(__BACKUPS) : (Array.isArray(__BACKUPS) ? __BACKUPS.slice(0, __AUTO_BACKUP_MAX) : [])) : null,
     lastBackupAt: parseInt(__lastBackupAt || '0', 10) || 0
   };
 }
@@ -17407,7 +18252,7 @@ function __maybeAutoBackup(snapshotStr){
 
   try{ __ensureBackupsLoaded(); }catch(_){ }
   __BACKUPS.unshift({ id: 'bkp_'+now, ts: now, snapshot: snapshotStr });
-  __BACKUPS = __BACKUPS.slice(0, 10);
+  __BACKUPS = __BACKUPS.slice(0, __AUTO_BACKUP_MAX);
   __BACKUPS_DIRTY = true;
   __lastBackupAt = now;
 }
@@ -17453,6 +18298,19 @@ function __renderBackupsUI(){
 
 function _renderHistoricoConfig(){
   __renderBackupsUI();
+}
+
+function __afterRestoreReloadModules(){
+  try{
+    const savedMode = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_mapa_pp_mode') : localStorage.getItem('sgp_mapa_pp_mode');
+    const sel = document.getElementById('mapaPpMode');
+    if(sel && (savedMode === 'pp' || savedMode === 'media')) sel.value = savedMode;
+    if(typeof mapaAtualizarLegendaPp === 'function') mapaAtualizarLegendaPp();
+  }catch(_){ }
+  try{ if(typeof __tutoriaLoad === 'function'){ __sgpTutoria = null; __tutoriaLoad(); } }catch(_){ }
+  try{ if(typeof renderDashProvaPaulista === 'function') renderDashProvaPaulista(); }catch(_){ }
+  try{ if(typeof renderizarMapa === 'function') renderizarMapa(); }catch(_){ }
+  try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
 }
 
 function __applySnapshot(snapshotStr, label){
@@ -17547,6 +18405,19 @@ function __applySnapshot(snapshotStr, label){
       __safeLSSet('sgp_entregas_doc_prazos_v1', JSON.stringify(restoredEntregasDocPrazos));
     }catch(_){ }
     try{
+      if(Object.prototype.hasOwnProperty.call(data, 'tutoria')){
+        const restoredTutoria = (data.tutoria && typeof data.tutoria === 'object' && !Array.isArray(data.tutoria)) ? data.tutoria : null;
+        if(restoredTutoria){
+          if(typeof __tutoriaNormalizeStore === 'function') __sgpTutoria = __tutoriaNormalizeStore(restoredTutoria);
+          else __sgpTutoria = restoredTutoria;
+          __safeLSSet('sgp_tutoria_v1', JSON.stringify(__sgpTutoria || restoredTutoria));
+        }else{
+          try{ __safeLSRemove('sgp_tutoria_v1'); }catch(__){}
+          try{ __sgpTutoria = null; }catch(__){}
+        }
+      }
+    }catch(_){ }
+    try{
       const restoredQuickLinks = Array.isArray(data.linksRapidos) ? data.linksRapidos : [];
       quickLinksCards = quickLinksCoerce(restoredQuickLinks);
       window.__sgpQuickLinks = quickLinksCards;
@@ -17577,7 +18448,7 @@ function __applySnapshot(snapshotStr, label){
     try{
       __AUDIT = Array.isArray(data.auditTrail) ? data.auditTrail.slice(-500) : [];
       if(data && Object.prototype.hasOwnProperty.call(data, 'autobackups') && Array.isArray(data.autobackups)){
-        __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(data.autobackups) : data.autobackups.slice(0, 10);
+        __BACKUPS = (typeof __sanitizeBackupList === 'function') ? __sanitizeBackupList(data.autobackups) : data.autobackups.slice(0, __AUTO_BACKUP_MAX);
         __BACKUPS_LOADED = true;
         __BACKUPS_DIRTY = true;
         try{ __saveBackupsMeta(__BACKUPS); }catch(__){ }
@@ -17642,6 +18513,7 @@ function __applySnapshot(snapshotStr, label){
   // PERF FIX: removida chamada redundante a renderizarVisaoContent() logo após renderizarVisao()
   try{ if(typeof atualizarLabelsConfig === 'function') atualizarLabelsConfig(); }catch(_){ }
   try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
+  try{ if(typeof __afterRestoreReloadModules === 'function') __afterRestoreReloadModules(); }catch(_){ }
   showToast(label || "Restaurado!");
   __renderBackupsUI();
 }
@@ -17654,7 +18526,7 @@ function criarBackupAgora(){
   if(!snap) return showToast("Não foi possível criar backup.", "error");
   try{ __ensureBackupsLoaded(); }catch(_){ }
   __BACKUPS.unshift({ id: 'bkp_'+now, ts: now, snapshot: snap });
-  __BACKUPS = __BACKUPS.slice(0, 10);
+  __BACKUPS = __BACKUPS.slice(0, __AUTO_BACKUP_MAX);
   __BACKUPS_DIRTY = true;
   __lastBackupAt = now;
   __saveExtras();
@@ -18006,7 +18878,7 @@ function __renderDiagnosticoPainel(silent){
 
     // LOGS (auditoria + backups)
     const audit = (Array.isArray(__AUDIT)? __AUDIT.slice(Math.max(0, __AUDIT.length-120)) : []);
-    const backups = (Array.isArray(__BACKUPS)? __BACKUPS.slice(0, 10) : []);
+    const backups = (Array.isArray(__BACKUPS)? __BACKUPS.slice(0, __AUTO_BACKUP_MAX) : []);
     const auditHtml = (audit && audit.length) ? audit.slice().reverse().map(a=>`
         <div class="diag-row">
           <div style="display:flex; justify-content:space-between; gap:10px;">
@@ -22490,27 +23362,124 @@ function __idbGetRecordByKey(recKey){
     }catch(_){ resolve(null); }
   });
 }
-function __idbShadowPut(key, raw){
+function __idbShadowCommit(key, raw, opts){
+  opts = opts || {};
+  key = String(key || '');
+  if(typeof raw !== 'string') raw = String(raw ?? '');
+  const ts = Date.now();
+  try{ window.__sgpIDBShadowCache = window.__sgpIDBShadowCache || {}; }catch(_){ }
+  try{ window.__sgpIDBShadowPending = window.__sgpIDBShadowPending || {}; }catch(_){ }
+  try{ window.__sgpIDBShadowStatus = window.__sgpIDBShadowStatus || {}; }catch(_){ }
+  try{ window.__sgpIDBShadowCache[key] = raw; }catch(_){ }
+  try{ window.__sgpIDBShadowPending[key] = { ts, size: raw.length, reason: opts.reason || '' }; }catch(_){ }
+
+  return new Promise((resolve)=>{
+    if(!key || !__sgpDB){
+      try{ delete window.__sgpIDBShadowPending[key]; }catch(_){ }
+      return resolve(false);
+    }
+    let settled = false;
+    const done = (ok, ev)=>{
+      if(settled) return;
+      settled = true;
+      try{ delete window.__sgpIDBShadowPending[key]; }catch(_){ }
+      try{ window.__sgpIDBShadowStatus[key] = { ok: !!ok, ts: Date.now(), reason: opts.reason || '', error: ok ? '' : String((ev && ev.target && ev.target.error && ev.target.error.message) || (ev && ev.message) || '') }; }catch(_){ }
+      if(ok){
+        try{
+          if(opts.removeLocalOnComplete && window.__sgpIDBShadowCache && window.__sgpIDBShadowCache[key] === raw){
+            localStorage.removeItem(key);
+          }
+        }catch(_){ }
+      }else{
+        try{ if(typeof __diagCapture==='function') __diagCapture(new Error('Falha assíncrona na gravação IndexedDB'), '__idbShadowCommit', {key, reason:opts.reason || ''}); }catch(_){ }
+        try{
+          if(typeof __AUDIT !== 'undefined' && Array.isArray(__AUDIT)){
+            __AUDIT.push({ ts: Date.now(), msg: 'Falha ao confirmar gravação no IndexedDB: ' + key });
+            if(__AUDIT.length > 500) __AUDIT.shift();
+          }
+        }catch(_){ }
+      }
+      resolve(!!ok);
+    };
+    try{
+      const tx = __sgpDB.transaction([__IDB_STORE], 'readwrite');
+      tx.oncomplete = function(){ done(true); };
+      tx.onerror = function(e){ done(false, e); };
+      tx.onabort = function(e){ done(false, e); };
+      const req = tx.objectStore(__IDB_STORE).put({ key: __shadowStorageIdbKey(key), value: raw, ts, storage: 'shadow' });
+      req.onerror = function(e){ try{ console.warn('[SGP] IDB shadow put request error:', key, e && e.target && e.target.error); }catch(_){ } };
+    }catch(e){
+      done(false, e);
+    }
+  });
+}
+function __idbShadowPut(key, raw, opts){
   try{
-    if(typeof raw !== 'string') raw = String(raw ?? '');
-    window.__sgpIDBShadowCache[key] = raw;
     if(!__sgpDB) return false;
-    const tx = __sgpDB.transaction([__IDB_STORE], 'readwrite');
-    tx.objectStore(__IDB_STORE).put({ key: __shadowStorageIdbKey(key), value: raw, ts: Date.now(), storage: 'shadow' });
+    __idbShadowCommit(key, raw, opts).catch((e)=>{
+      try{ if(typeof __diagCapture==='function') __diagCapture(e, '__idbShadowPut.async', {key}); }catch(_){ }
+    });
     return true;
   }catch(e){
     try{ if(typeof __diagCapture==='function') __diagCapture(e, '__idbShadowPut', {key}); }catch(_){ }
     return false;
   }
 }
+async function __idbShadowPutAndWait(key, raw, opts){
+  try{
+    if(!__sgpDB && typeof initIndexedDB === 'function') await initIndexedDB();
+    if(!__sgpDB) return false;
+    return await __idbShadowCommit(key, raw, opts || {});
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e, '__idbShadowPutAndWait', {key}); }catch(_){ }
+    return false;
+  }
+}
 function __idbShadowDelete(key){
   try{ if(window.__sgpIDBShadowCache) delete window.__sgpIDBShadowCache[key]; }catch(_){ }
+  try{ if(window.__sgpIDBShadowPending) delete window.__sgpIDBShadowPending[key]; }catch(_){ }
   if(!__sgpDB) return false;
   try{
     const tx = __sgpDB.transaction([__IDB_STORE], 'readwrite');
+    tx.oncomplete = function(){ try{ if(window.__sgpIDBShadowStatus) window.__sgpIDBShadowStatus[key] = { ok:true, ts:Date.now(), reason:'delete' }; }catch(_){ } };
+    tx.onerror = function(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e, '__idbShadowDelete.tx', {key}); }catch(_){ } };
+    tx.onabort = function(e){ try{ if(typeof __diagCapture==='function') __diagCapture(e, '__idbShadowDelete.abort', {key}); }catch(_){ } };
     tx.objectStore(__IDB_STORE).delete(__shadowStorageIdbKey(key));
     return true;
   }catch(_){ return false; }
+}
+async function __idbShadowDeleteAndWait(key){
+  try{
+    key = String(key || '');
+    try{ if(window.__sgpIDBShadowCache) delete window.__sgpIDBShadowCache[key]; }catch(_){ }
+    try{ if(window.__sgpIDBShadowPending) delete window.__sgpIDBShadowPending[key]; }catch(_){ }
+    if(!__sgpDB && typeof initIndexedDB === 'function') await initIndexedDB();
+    if(!__sgpDB) return false;
+    return await new Promise((resolve)=>{
+      try{
+        const tx = __sgpDB.transaction([__IDB_STORE], 'readwrite');
+        tx.oncomplete = function(){ resolve(true); };
+        tx.onerror = function(){ resolve(false); };
+        tx.onabort = function(){ resolve(false); };
+        tx.objectStore(__IDB_STORE).delete(__shadowStorageIdbKey(key));
+      }catch(_){ resolve(false); }
+    });
+  }catch(_){ return false; }
+}
+function __idbShadowFlushPending(timeoutMs){
+  const started = Date.now();
+  const limit = Math.max(80, Number(timeoutMs) || 1200);
+  return new Promise((resolve)=>{
+    const tick = ()=>{
+      try{
+        const pending = window.__sgpIDBShadowPending || {};
+        if(Object.keys(pending).length === 0) return resolve(true);
+      }catch(_){ return resolve(true); }
+      if(Date.now() - started >= limit) return resolve(false);
+      setTimeout(tick, 35);
+    };
+    tick();
+  });
 }
 function __idbGetAllShadowRecords(){
   return new Promise((resolve)=>{
@@ -22596,6 +23565,153 @@ function __rehydrateShadowBackedStateAfterIDB(){
   try{ if(typeof __actRefreshBaseBanksAfterShadowHydration === 'function') __actRefreshBaseBanksAfterShadowHydration(); }catch(_){ }
   try{ if(typeof __scheduleStorageMonitorRefresh === 'function') __scheduleStorageMonitorRefresh(150); }catch(_){ }
 }
+
+
+// =========================
+// PWA/cache — atualização segura e diagnóstico de versão (v20.7.6)
+// =========================
+function __sgpPwaEscape(s){
+  try{ return String(s == null ? '' : s).replace(/[&<>'"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]; }); }catch(_){ return ''; }
+}
+function __sgpPostToSW(message, timeoutMs){
+  return new Promise((resolve)=>{
+    let done = false;
+    const finish = (value)=>{ if(done) return; done = true; resolve(value || null); };
+    try{
+      if(!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return finish(null);
+      const channel = new MessageChannel();
+      const timer = setTimeout(()=>finish(null), Math.max(250, Number(timeoutMs)||900));
+      channel.port1.onmessage = (event)=>{ try{ clearTimeout(timer); }catch(_){ } finish(event && event.data ? event.data : null); };
+      navigator.serviceWorker.controller.postMessage(message, [channel.port2]);
+    }catch(_){ finish(null); }
+  });
+}
+async function __sgpGetPWADiagnostics(){
+  const out = {
+    appVersion: String(window.__SGP_APP_VERSION || window.__SGP_SW_VERSION || '—'),
+    expectedSW: String(window.__SGP_SW_VERSION || '—'),
+    protocol: String(location.protocol || ''),
+    online: navigator.onLine !== false,
+    swSupported: ('serviceWorker' in navigator),
+    controlled: false,
+    controllerUrl: '',
+    swReported: '',
+    cacheName: '',
+    cacheCount: null,
+    sgpCacheCount: null,
+    lastInfoType: ''
+  };
+  try{
+    if(out.swSupported && navigator.serviceWorker.controller){
+      out.controlled = true;
+      out.controllerUrl = String(navigator.serviceWorker.controller.scriptURL || '');
+      const info = await __sgpPostToSW({ type:'GET_VERSION' }, 900);
+      if(info && typeof info === 'object'){
+        out.swReported = String(info.version || '');
+        out.cacheName = String(info.cacheName || '');
+        out.lastInfoType = String(info.type || '');
+      }
+    }
+  }catch(_){ }
+  try{
+    if(window.caches && typeof caches.keys === 'function'){
+      const keys = await caches.keys();
+      out.cacheCount = keys.length;
+      out.sgpCacheCount = keys.filter(k=>String(k||'').toLowerCase().indexOf('sgp') !== -1).length;
+    }
+  }catch(_){ }
+  return out;
+}
+function __renderPWAStatus(info){
+  try{
+    const el = document.getElementById('cfgPWAStatusText');
+    if(!el) return;
+    const expected = String((info && info.expectedSW) || window.__SGP_SW_VERSION || '—');
+    const reported = String((info && info.swReported) || '');
+    const ok = reported && expected && reported === expected;
+    const controlled = info && info.controlled;
+    const cacheTxt = (info && info.sgpCacheCount != null) ? String(info.sgpCacheCount) : '—';
+    const protocolTxt = (info && info.protocol === 'file:') ? 'arquivo local' : 'HTTP/HTTPS';
+    const status = ok ? 'atualizado' : (reported ? 'versão diferente' : (controlled ? 'sem resposta de versão' : 'não controlado'));
+    const color = ok ? '#16a34a' : (reported ? '#f59e0b' : '#64748b');
+    el.innerHTML = '<span style="font-weight:800;color:'+color+';">Status: '+__sgpPwaEscape(status)+'</span>'+
+      '<br>App: v'+__sgpPwaEscape((info && info.appVersion) || '—')+
+      ' • Service Worker esperado: v'+__sgpPwaEscape(expected)+
+      ' • Service Worker ativo: '+__sgpPwaEscape(reported ? ('v'+reported) : '—')+
+      '<br>Controle PWA: '+(controlled ? 'ativo' : 'não ativo')+
+      ' • Caches SGP: '+__sgpPwaEscape(cacheTxt)+
+      ' • Modo: '+__sgpPwaEscape(protocolTxt)+
+      ' • Internet: '+((info && info.online) ? 'sim' : 'não');
+  }catch(_){ }
+}
+async function __sgpShowPWAStatus(){
+  try{
+    const el = document.getElementById('cfgPWAStatusText');
+    if(el) el.textContent = 'Verificando versão, Service Worker e cache...';
+    const info = await __sgpGetPWADiagnostics();
+    __renderPWAStatus(info);
+    return info;
+  }catch(e){
+    try{ if(typeof __diagCapture === 'function') __diagCapture(e, '__sgpShowPWAStatus'); }catch(_){ }
+    try{ if(typeof showToast === 'function') showToast('Não foi possível verificar a versão do PWA.', 'error'); }catch(_){ }
+    return null;
+  }
+}
+async function __sgpForceSystemUpdate(){
+  const statusEl = document.getElementById('cfgPWAStatusText');
+  try{
+    if(location.protocol === 'file:'){
+      const msg = 'Atualização PWA não se aplica em arquivo local (file://). Abra pelo endereço instalado/servidor para usar o Service Worker.';
+      if(statusEl) statusEl.textContent = msg;
+      try{ if(typeof showToast === 'function') showToast(msg, 'warning'); }catch(_){ }
+      return false;
+    }
+    if(navigator.onLine === false){
+      const msg = 'Sem internet no momento. Para atualizar o PWA com segurança, conecte-se e tente novamente.';
+      if(statusEl) statusEl.textContent = msg;
+      try{ if(typeof showToast === 'function') showToast(msg, 'warning'); }catch(_){ }
+      return false;
+    }
+    if(statusEl) statusEl.textContent = 'Limpando caches antigos e solicitando atualização do sistema...';
+    try{ if(typeof showToast === 'function') showToast('Atualizando o sistema e limpando cache antigo...', 'info'); }catch(_){ }
+
+    try{
+      if('serviceWorker' in navigator){
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(async (reg)=>{
+          try{ if(reg && reg.waiting) reg.waiting.postMessage('SKIP_WAITING'); }catch(_){ }
+          try{ if(reg && typeof reg.update === 'function') await reg.update(); }catch(_){ }
+        }));
+        try{ await __sgpPostToSW({ type:'CACHE_PURGE_ALL' }, 1300); }catch(_){ }
+      }
+    }catch(_){ }
+
+    try{
+      if(window.caches && typeof caches.keys === 'function'){
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(k=>String(k||'').toLowerCase().indexOf('sgp') !== -1).map(k=>caches.delete(k)));
+      }
+    }catch(_){ }
+
+    try{ if(typeof __safeLSSet === 'function') __safeLSSet('sgp_last_manual_update', String(Date.now())); else localStorage.setItem('sgp_last_manual_update', String(Date.now())); }catch(_){ }
+    try{ await __sgpShowPWAStatus(); }catch(_){ }
+    try{ if(typeof showToast === 'function') showToast('Cache limpo. Recarregando a versão mais recente...', 'success'); }catch(_){ }
+    setTimeout(()=>{
+      try{
+        const url = new URL(location.href);
+        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.7.6') + '-' + Date.now());
+        location.replace(url.toString());
+      }catch(_){ location.reload(); }
+    }, 800);
+    return true;
+  }catch(e){
+    try{ if(typeof __diagCapture === 'function') __diagCapture(e, '__sgpForceSystemUpdate'); }catch(_){ }
+    if(statusEl) statusEl.textContent = 'Falha ao atualizar automaticamente. Feche e abra o PWA novamente.';
+    try{ if(typeof showToast === 'function') showToast('Falha ao atualizar automaticamente. Feche e abra o PWA novamente.', 'error'); }catch(_){ }
+    return false;
+  }
+}
+try{ window.__sgpShowPWAStatus = __sgpShowPWAStatus; window.__sgpForceSystemUpdate = __sgpForceSystemUpdate; }catch(_){ }
 
 let __storageMonitorCache = null;
 let __storageMonitorPromise = null;
@@ -22688,7 +23804,8 @@ function __renderStorageMonitor(state){
   const barEl = document.getElementById('cfgStorageBar');
   const adviceEl = document.getElementById('cfgStorageAdvice');
   const persistEl = document.getElementById('cfgStoragePersistText');
-  if(!statusEl && !metaEl && !usageEl && !percentEl && !barEl && !adviceEl && !persistEl) return;
+  const detailEl = document.getElementById('cfgStorageDetailText');
+  if(!statusEl && !metaEl && !usageEl && !percentEl && !barEl && !adviceEl && !persistEl && !detailEl) return;
 
   const level = __storageLevelFromPercent(state && state.percent);
   const percent = (state && isFinite(state.percent)) ? Math.max(0, Math.min(100, state.percent)) : null;
@@ -22719,6 +23836,19 @@ function __renderStorageMonitor(state){
   }
   if(adviceEl) adviceEl.textContent = __storageAdviceText(state);
   if(persistEl) persistEl.textContent = __storagePersistLabel(state);
+  if(detailEl){
+    const parts = [];
+    try{ parts.push('IndexedDB: ' + (state.idbActive ? 'ativo' : (state.idbAvailable ? 'disponível' : 'indisponível'))); }catch(_){ }
+    try{ parts.push('fila IDB: ' + String(state.idbPending || 0)); }catch(_){ }
+    try{ parts.push('chaves SGP: ' + String(state.storageKeys || 0)); }catch(_){ }
+    try{ parts.push('backups internos: ' + String(state.autoBackups || 0)); }catch(_){ }
+    try{ parts.push('backup pendente: ' + (state.backupPending ? 'sim' : 'não')); }catch(_){ }
+    try{ if(state.lastBackupAt){ parts.push('último ZIP: ' + new Date(state.lastBackupAt).toLocaleString('pt-BR')); } }catch(_){ }
+    try{ parts.push('app: v' + String(state.pwaAppVersion || window.__SGP_APP_VERSION || '—')); }catch(_){ }
+    try{ parts.push('SW: ' + (state.pwaSWReported ? ('v' + state.pwaSWReported) : (state.pwaControlled ? 'ativo sem versão' : 'não controlado'))); }catch(_){ }
+    try{ if(state.pwaSgpCacheCount != null) parts.push('caches SGP: ' + String(state.pwaSgpCacheCount)); }catch(_){ }
+    detailEl.textContent = 'Diagnóstico: ' + (parts.length ? parts.join(' • ') : 'sem detalhes adicionais.');
+  }
 }
 function __collectStorageMonitorState(force){
   if(__storageMonitorPromise && !force) return __storageMonitorPromise;
@@ -22732,7 +23862,22 @@ function __collectStorageMonitorState(force){
       percent: NaN,
       persistent: null,
       mode: (__sgpDB ? 'IndexedDB ativo' : (window.indexedDB ? 'IndexedDB disponível' : 'localStorage')),
-      sourceLabel: 'Estimativa local do app'
+      sourceLabel: 'Estimativa local do app',
+      idbAvailable: !!window.indexedDB,
+      idbActive: !!__sgpDB,
+      idbPending: 0,
+      idbCached: 0,
+      storageKeys: 0,
+      autoBackups: 0,
+      backupPending: false,
+      lastBackupAt: 0,
+      localBytes: 0,
+      pwaAppVersion: String(window.__SGP_APP_VERSION || window.__SGP_SW_VERSION || '—'),
+      pwaSWExpected: String(window.__SGP_SW_VERSION || '—'),
+      pwaSWReported: '',
+      pwaControlled: false,
+      pwaCacheCount: null,
+      pwaSgpCacheCount: null
     };
 
     try{
@@ -22758,6 +23903,27 @@ function __collectStorageMonitorState(force){
     }catch(_){ state.persistent = null; }
 
     state.mode = (__sgpDB ? 'IndexedDB ativo' : (window.indexedDB ? 'IndexedDB disponível' : 'localStorage'));
+    try{ state.idbAvailable = !!window.indexedDB; state.idbActive = !!__sgpDB; }catch(_){ }
+    try{ state.idbPending = Object.keys(window.__sgpIDBShadowPending || {}).length; }catch(_){ state.idbPending = 0; }
+    try{ state.idbCached = Object.keys(window.__sgpIDBShadowCache || {}).length; }catch(_){ state.idbCached = 0; }
+    try{ state.storageKeys = ((typeof __storageListKeys === 'function') ? __storageListKeys('sgp_') : []).length; }catch(_){ state.storageKeys = 0; }
+    try{ state.localBytes = __estimateLocalBytesOnly(); }catch(_){ state.localBytes = 0; }
+    try{ const rawBackups = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_autobackups') : localStorage.getItem('sgp_autobackups'); const arr = rawBackups ? JSON.parse(rawBackups) : []; state.autoBackups = Array.isArray(arr) ? arr.length : 0; }catch(_){ state.autoBackups = 0; }
+    try{ state.backupPending = String(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_backup_pending') : localStorage.getItem('sgp_backup_pending')) || '') === '1'; }catch(_){ state.backupPending = false; }
+    try{ const lb = parseInt(((typeof __storageGetItem === 'function') ? (__storageGetItem('sgp_last_backup') || __storageGetItem('sgp_lastBackupAt')) : (localStorage.getItem('sgp_last_backup') || localStorage.getItem('sgp_lastBackupAt'))) || '0', 10); state.lastBackupAt = (!isNaN(lb) && lb>0) ? lb : 0; }catch(_){ state.lastBackupAt = 0; }
+    try{
+      if(typeof __sgpGetPWADiagnostics === 'function'){
+        const pwa = await __sgpGetPWADiagnostics();
+        if(pwa){
+          state.pwaAppVersion = pwa.appVersion || state.pwaAppVersion;
+          state.pwaSWExpected = pwa.expectedSW || state.pwaSWExpected;
+          state.pwaSWReported = pwa.swReported || '';
+          state.pwaControlled = !!pwa.controlled;
+          state.pwaCacheCount = pwa.cacheCount;
+          state.pwaSgpCacheCount = pwa.sgpCacheCount;
+        }
+      }
+    }catch(_){ }
     if(state.quota > 0) state.percent = (state.usage / state.quota) * 100;
 
     __storageMonitorCache = state;
@@ -22772,7 +23938,16 @@ function __collectStorageMonitorState(force){
       percent: NaN,
       persistent: null,
       mode: (__sgpDB ? 'IndexedDB ativo' : (window.indexedDB ? 'IndexedDB disponível' : 'localStorage')),
-      sourceLabel: 'Estimativa local do app'
+      sourceLabel: 'Estimativa local do app',
+      idbAvailable: !!window.indexedDB,
+      idbActive: !!__sgpDB,
+      idbPending: Object.keys(window.__sgpIDBShadowPending || {}).length,
+      idbCached: Object.keys(window.__sgpIDBShadowCache || {}).length,
+      storageKeys: ((typeof __storageListKeys === 'function') ? __storageListKeys('sgp_') : []).length,
+      autoBackups: 0,
+      backupPending: String(((typeof __storageGetItem === 'function') ? __storageGetItem('sgp_backup_pending') : localStorage.getItem('sgp_backup_pending')) || '') === '1',
+      lastBackupAt: 0,
+      localBytes: __estimateLocalBytesOnly()
     };
     try{ if(typeof __diagCapture==='function') __diagCapture(e, '__collectStorageMonitorState'); }catch(_){ }
     __storageMonitorCache = fallback;
@@ -22799,6 +23974,7 @@ function __scheduleStorageMonitorRefresh(delay){
   try{ if(__storageMonitorTimer) clearTimeout(__storageMonitorTimer); }catch(_){ }
   __storageMonitorTimer = setTimeout(()=>{
     __updateStorageMonitor(false);
+    try{ if(typeof __sgpShowPWAStatus === 'function' && document.getElementById('cfgPWAStatusText')) __sgpShowPWAStatus(); }catch(_){ }
   }, Math.max(0, Number(delay)||0));
 }
 function __idbHasRequiredStores(db){
@@ -24412,6 +25588,84 @@ function __riskNivelFromScore(score){
   return { key:'baixo', label:'Baixo', color:'#166534', bg:'rgba(22,163,74,.10)' };
 }
 
+
+function __riskGetProvaPaulistaInfo(a, bim){
+  const base = { available:false, noProva:true, hasNota:false, key:'none', label:'Sem PP marcada', short:'—', color:'#64748b', nota:null, provaCount:0, provas:[], calc:'media', calcLabel:'Média das Provas Paulistas' };
+  try{
+    const b = parseInt(bim || bimestreAtual || 1, 10) || 1;
+    if(typeof __ppListProvasPaulistas !== 'function') return base;
+    const provas = __ppListProvasPaulistas(b) || [];
+    base.provaCount = provas.length;
+    base.provas = provas;
+    if(!provas.length) return base;
+    const calc = (typeof mapaGetPpCalcMode === 'function') ? mapaGetPpCalcMode() : 'media';
+    const calcLabel = (typeof mapaGetPpCalcLabel === 'function') ? mapaGetPpCalcLabel(calc) : 'Média das Provas Paulistas';
+    const outBase = Object.assign({}, base, { available:true, noProva:false, key:'sem', label:'Sem dados', short:'S/D', color:'#94a3b8', calc, calcLabel });
+    const bb = a && a.bimestres && a.bimestres[b];
+    if(!bb) return outBase;
+    try{ if(typeof _syncBimestreRefs === 'function') _syncBimestreRefs(bb); }catch(_){ }
+    const notas = [];
+    provas.forEach((p,idx)=>{
+      try{
+        const nd = (bb.notas_disc && bb.notas_disc[p.discId]) ? bb.notas_disc[p.discId] : {};
+        const raw = (nd && Object.prototype.hasOwnProperty.call(nd, p.avId)) ? nd[p.avId] : null;
+        const v = (typeof __ppParseNota === 'function') ? __ppParseNota(raw) : (raw === '' || raw === null || raw === undefined ? null : Number(String(raw).replace(',','.')));
+        if(typeof v === 'number' && Number.isFinite(v)){
+          notas.push({ nota:v, prova:p, idx, ordem:(typeof p.ordem === 'number' ? p.ordem : idx), data:p.data || '' });
+        }
+      }catch(_){ }
+    });
+    if(!notas.length) return outBase;
+    let escolhido = null, valor = null;
+    if(calc === 'maior') escolhido = notas.reduce((best,item)=> !best || item.nota > best.nota ? item : best, null);
+    else if(calc === 'menor') escolhido = notas.reduce((best,item)=> !best || item.nota < best.nota ? item : best, null);
+    else if(calc === 'ultima') escolhido = notas.slice().sort((a,b)=>{ const da=String(a.data||''), db=String(b.data||''); if(da && db && da !== db) return da.localeCompare(db); return (a.ordem||0)-(b.ordem||0); }).pop();
+    if(calc === 'media') valor = notas.reduce((acc,item)=>acc+item.nota,0) / notas.length;
+    else valor = escolhido ? escolhido.nota : notas[notas.length-1].nota;
+    const cls = (typeof __ppClassificarNota === 'function') ? __ppClassificarNota(valor) : { key:'sem', label:'Sem dados', color:'#94a3b8' };
+    const shortMap = { abaixo:'AB', basico:'BAS', adequado:'ADQ', avancado:'AVA', sem:'S/D' };
+    return Object.assign({}, outBase, {
+      hasNota:true,
+      key:cls.key || 'sem',
+      label:cls.label || 'Sem dados',
+      short:shortMap[cls.key] || 'PP',
+      color:cls.color || '#94a3b8',
+      nota:valor,
+      notaCount:notas.length,
+      provaCount:notas.length,
+      provas:notas.map(x=>x.prova),
+      provaEscolhida: escolhido && escolhido.prova
+    });
+  }catch(e){ try{ console.warn('__riskGetProvaPaulistaInfo', e); }catch(_){ } return base; }
+}
+function __riskProvaPaulistaText(pp){
+  try{
+    if(!pp || pp.noProva) return 'Sem Prova Paulista marcada';
+    if(!pp.hasNota) return 'Prova Paulista: sem dados';
+    const nota = (typeof pp.nota === 'number' && Number.isFinite(pp.nota)) ? pp.nota.toFixed(1) : '—';
+    const extra = (pp.provaCount && pp.provaCount > 1) ? (' • ' + (pp.calcLabel || 'média') + ' de ' + pp.provaCount) : '';
+    return 'Prova Paulista: ' + nota + ' — ' + (pp.label || 'Sem dados') + extra;
+  }catch(_){ return 'Prova Paulista: —'; }
+}
+function __riskProvaPaulistaBadgeHtml(pp){
+  try{
+    if(!pp || pp.noProva) return '<span class="risk-pp-chip none">Sem PP</span>';
+    const k = pp.key || 'sem';
+    const nota = (typeof pp.nota === 'number' && Number.isFinite(pp.nota)) ? pp.nota.toFixed(1) : '—';
+    const title = _escHTML(__riskProvaPaulistaText(pp));
+    return '<span class="risk-pp-chip '+_escHTML(k)+'" title="'+title+'">PP '+_escHTML(nota)+' • '+_escHTML(pp.short || '')+'</span>';
+  }catch(_){ return '<span class="risk-pp-chip sem">PP —</span>'; }
+}
+function __riskProvaPaulistaLevelWeight(pp){
+  try{
+    if(!pp || pp.noProva || !pp.available) return 0;
+    if(!pp.hasNota || pp.key === 'sem') return 10;
+    if(pp.key === 'abaixo') return 28;
+    if(pp.key === 'basico') return 14;
+    return 0;
+  }catch(_){ return 0; }
+}
+
 function __riskBuildAlunoRecord(a, bim){
   const out = {
     id: a?.id,
@@ -24424,6 +25678,7 @@ function __riskBuildAlunoRecord(a, bim){
     mediaLp: null,
     mediaRed: null,
     mediaGeral: null,
+    provaPaulista: { available:false, noProva:true, hasNota:false, key:'none', label:'Sem PP marcada', short:'—', color:'#64748b', nota:null, provaCount:0 },
     freqPct: null,
     freqTotal: 0,
     comportamento: null,
@@ -24436,7 +25691,7 @@ function __riskBuildAlunoRecord(a, bim){
     lastAction: null,
     historyCount: 0,
     isFlagged: false,
-    flags: { mediaCritica:false, freqCritica:false, entregasCriticas:0, comportamentoCritico:false, ocorrenciasCriticas:false, quedaCritica:false }
+    flags: { mediaCritica:false, freqCritica:false, entregasCriticas:0, comportamentoCritico:false, ocorrenciasCriticas:false, quedaCritica:false, ppCritica:false, ppBasico:false, ppSemDados:false, tutoriaAtiva:false }
   };
   try{
     const b = a?.bimestres?.[bim];
@@ -24454,6 +25709,20 @@ function __riskBuildAlunoRecord(a, bim){
     if(m1 !== null){ if(m1 < 5){ out.score += 22; out.fatores.push({ tipo:'nota', peso:22, texto:`${getDiscById(config.slot1)?.nome || 'Matéria 1'} abaixo de 5 (${m1.toFixed(1)})` }); out.flags.mediaCritica = true; } else if(m1 < 6){ out.score += 10; out.fatores.push({ tipo:'nota', peso:10, texto:`${getDiscById(config.slot1)?.nome || 'Matéria 1'} abaixo de 6 (${m1.toFixed(1)})` }); } }
     if(m2 !== null){ if(m2 < 5){ out.score += 22; out.fatores.push({ tipo:'nota', peso:22, texto:`${getDiscById(config.slot2)?.nome || 'Matéria 2'} abaixo de 5 (${m2.toFixed(1)})` }); out.flags.mediaCritica = true; } else if(m2 < 6){ out.score += 10; out.fatores.push({ tipo:'nota', peso:10, texto:`${getDiscById(config.slot2)?.nome || 'Matéria 2'} abaixo de 6 (${m2.toFixed(1)})` }); } }
     if(out.mediaGeral !== null){ if(out.mediaGeral < 5){ out.score += 12; out.fatores.push({ tipo:'nota', peso:12, texto:`Média geral muito baixa (${out.mediaGeral.toFixed(1)})` }); } else if(out.mediaGeral < 6){ out.score += 6; out.fatores.push({ tipo:'nota', peso:6, texto:`Média geral em atenção (${out.mediaGeral.toFixed(1)})` }); } }
+    try{
+      const pp = __riskGetProvaPaulistaInfo(a, bim);
+      out.provaPaulista = pp;
+      const ppWeight = __riskProvaPaulistaLevelWeight(pp);
+      if(ppWeight > 0){
+        out.score += ppWeight;
+        const ppTexto = __riskProvaPaulistaText(pp);
+        out.fatores.push({ tipo:'prova_paulista', peso:ppWeight, texto:ppTexto });
+        if(pp.key === 'abaixo') out.flags.ppCritica = true;
+        else if(pp.key === 'basico') out.flags.ppBasico = true;
+        else out.flags.ppSemDados = true;
+      }
+      if(a && a.tutorando) out.flags.tutoriaAtiva = true;
+    }catch(_){ }
     const freq = calcFreqAluno(a.id, bim);
     out.freqPct = freq.total > 0 ? freq.pct : null;
     out.freqTotal = freq.total || 0;
@@ -24470,7 +25739,9 @@ function __riskBuildAlunoRecord(a, bim){
     if(occ >= 3){ out.score += 12; out.fatores.push({ tipo:'ocorrencia', peso:12, texto:`${occ} ocorrência(s) no bimestre` }); out.flags.ocorrenciasCriticas = true; } else if(occ >= 1){ out.score += 5; out.fatores.push({ tipo:'ocorrencia', peso:5, texto:`${occ} ocorrência(s) registrada(s)` }); }
     if(bim > 1){ const prev = a?.bimestres?.[bim-1]; if(prev){ try{ _syncBimestreRefs(prev); }catch(_){ } const prevHasLp = !!(prev.notas_lp && !(typeof __cmpIsDiscEmpty === 'function' ? __cmpIsDiscEmpty(prev.notas_lp, disc1) : false)); const prevHasRed = !!(prev.notas_red && !(typeof __cmpIsDiscEmpty === 'function' ? __cmpIsDiscEmpty(prev.notas_red, disc2) : false)); const prevVals = []; if(prevHasLp) prevVals.push(clampNota(calcularMediaDisc(config.slot1, prev.notas_lp))); if(prevHasRed) prevVals.push(clampNota(calcularMediaDisc(config.slot2, prev.notas_red))); if(prevVals.length && out.mediaGeral !== null){ const prevMg = prevVals.reduce((s,v)=>s+v,0) / prevVals.length; const delta = out.mediaGeral - prevMg; out.trendDelta = delta; if(delta <= -1){ out.score += 10; out.fatores.push({ tipo:'tendencia', peso:10, texto:`Queda de ${Math.abs(delta).toFixed(1)} ponto(s) em relação ao bimestre anterior` }); out.flags.quedaCritica = true; } else if(delta <= -0.5){ out.score += 5; out.fatores.push({ tipo:'tendencia', peso:5, texto:`Queda recente de ${Math.abs(delta).toFixed(1)} ponto(s)` }); } } } }
     out.score = Math.min(100, Math.round(out.score)); out.nivel = __riskNivelFromScore(out.score);
-    out.isFlagged = !!(out.score >= 22 || out.flags.mediaCritica || out.flags.freqCritica || out.flags.entregasCriticas > 0 || out.flags.comportamentoCritico || out.flags.ocorrenciasCriticas || out.flags.quedaCritica);
+    out.isFlagged = !!(out.score >= 22 || out.flags.mediaCritica || out.flags.freqCritica || out.flags.ppCritica || out.flags.ppBasico || out.flags.ppSemDados || out.flags.entregasCriticas > 0 || out.flags.comportamentoCritico || out.flags.ocorrenciasCriticas || out.flags.quedaCritica);
+    if(out.provaPaulista && out.provaPaulista.available) out.resumo.push(__riskProvaPaulistaText(out.provaPaulista));
+    if(out.flags.tutoriaAtiva) out.resumo.push('Em acompanhamento na Tutoria');
     if(out.mediaGeral !== null) out.resumo.push(`Média ${out.mediaGeral.toFixed(1)}`);
     if(out.freqPct !== null) out.resumo.push(`Freq. ${out.freqPct.toFixed(0)}%`);
     if(out.absencePattern?.short && out.absencePattern.short !== 'Sem registros suficientes' && out.absencePattern.short !== 'Sem padrão forte detectado') out.resumo.push(`Ausência: ${out.absencePattern.short}`);
@@ -24496,6 +25767,14 @@ function __riskInterventionActions(rec){
   const acts = [];
   const add = (txt)=>{ if(txt && !acts.includes(txt)) acts.push(txt); };
   try{
+    const pp = rec?.provaPaulista;
+    if(pp && pp.available){
+      if(pp.key === 'abaixo') add('Plano de intervenção prioritária para Prova Paulista');
+      else if(pp.key === 'basico') add('Reensino focal para avançar do Básico ao Adequado');
+      else if(pp.key === 'sem') add('Verificar participação e lançamento da Prova Paulista');
+    }
+    if((rec?.flags?.ppCritica || rec?.flags?.ppBasico || rec?.flags?.ppSemDados) && !rec?.flags?.tutoriaAtiva) add('Encaminhar/atualizar acompanhamento na Tutoria');
+    if(rec?.flags?.ppCritica && rec?.freqPct !== null && rec.freqPct < 75) add('Busca ativa: baixo desempenho na PP combinado com baixa frequência');
     if(rec?.flags?.freqCritica) add('Contato com responsável e conferência de faltas');
     else if(rec?.freqPct !== null && rec?.freqPct < 85) add('Monitorar frequência na próxima semana');
 
@@ -24599,8 +25878,8 @@ function __riskCopyFamilyMessages(){
 function __riskBuildSummary(baseList, bim){
   const rows = __riskBuildList(baseList, bim);
   const flagged = rows.filter(r => r.isFlagged);
-  const summary = { total: rows.length, flagged: flagged.length, critico:0, alto:0, moderado:0, baixo:0, scoreMedio:0, rows, flaggedRows: flagged };
-  rows.forEach(r=>{ summary[r.nivel.key] = (summary[r.nivel.key] || 0) + 1; });
+  const summary = { total: rows.length, flagged: flagged.length, critico:0, alto:0, moderado:0, baixo:0, scoreMedio:0, pp:{abaixo:0, basico:0, adequado:0, avancado:0, sem:0, none:0, avaliados:0, atencao:0}, rows, flaggedRows: flagged };
+  rows.forEach(r=>{ summary[r.nivel.key] = (summary[r.nivel.key] || 0) + 1; const k=(r.provaPaulista && r.provaPaulista.key) || 'none'; summary.pp[k]=(summary.pp[k]||0)+1; if(k!=='none') summary.pp.avaliados++; if(k==='abaixo'||k==='basico'||k==='sem') summary.pp.atencao++; });
   if(flagged.length) summary.scoreMedio = flagged.reduce((s,r)=>s+r.score,0) / flagged.length;
   return summary;
 }
@@ -29882,6 +31161,7 @@ function __riskPanelOpenDetail(){
       </td>
       <td style="padding:10px 8px;border-bottom:1px solid var(--border-color);text-align:center;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:70px;padding:6px 10px;border-radius:999px;background:${r.nivel.bg};color:${r.nivel.color};font-weight:800;">${escHTML(r.nivel.label)} ${r.score}</span></td>
       <td style="padding:10px 8px;border-bottom:1px solid var(--border-color);text-align:center;">${mediaTxt}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid var(--border-color);text-align:center;min-width:150px;">${ppHtml}<div style="font-size:.68rem;color:#64748b;margin-top:4px;">${escHTML(ppDetail)}</div></td>
       <td style="padding:10px 8px;border-bottom:1px solid var(--border-color);text-align:center;">${freqTxt}</td>
       <td style="padding:10px 8px;border-bottom:1px solid var(--border-color);min-width:220px;">
         <div style="font-weight:700;color:#7c2d12;">${escHTML(padrao)}</div>
@@ -29923,18 +31203,20 @@ function __riskPanelOpenDetail(){
       <div style="padding:12px;border-radius:14px;background:rgba(249,115,22,.10);border:1px solid rgba(249,115,22,.18);"><div style="font-size:.75rem;color:#9a3412;">Alto</div><div style="font-size:1.5rem;font-weight:900;color:#c2410c;">${summary.alto||0}</div></div>
       <div style="padding:12px;border-radius:14px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.20);"><div style="font-size:.75rem;color:#92400e;">Moderado</div><div style="font-size:1.5rem;font-weight:900;color:#b45309;">${summary.moderado||0}</div></div>
       <div style="padding:12px;border-radius:14px;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.15);"><div style="font-size:.75rem;color:#1d4ed8;">Score médio</div><div style="font-size:1.5rem;font-weight:900;color:#1d4ed8;">${summary.flagged ? summary.scoreMedio.toFixed(0) : '0'}</div></div>
+      <div style="padding:12px;border-radius:14px;background:rgba(79,70,229,.08);border:1px solid rgba(79,70,229,.15);"><div style="font-size:.75rem;color:#3730a3;">PP em atenção</div><div style="font-size:1.5rem;font-weight:900;color:#3730a3;">${summary.pp?.atencao || 0}</div><div style="font-size:.70rem;color:#64748b;">Abaixo/Básico/Sem dados</div></div>
     </div>
     <div style="margin-top:12px;padding:10px 12px;border-radius:12px;background:#eff6ff;border:1px solid rgba(37,99,235,.18);font-size:.84rem;color:#1e3a8a;line-height:1.5;">
-      Agora a busca ativa organiza, no mesmo lugar, o <b>padrão de ausência</b>, um <b>resumo claro da situação</b> e o <b>status de comunicação do professor com a gestão</b>. O botão <b>Relatório gestão</b> abre um texto simples, pronto para copiar e encaminhar.
+      Agora a busca ativa organiza, no mesmo lugar, <b>Prova Paulista</b>, <b>frequência</b>, <b>entregas</b>, <b>Tutoria</b>, o padrão de ausência e o status de comunicação do professor com a gestão. O botão <b>Relatório gestão</b> abre um texto simples, pronto para copiar e encaminhar.
     </div>
     <div style="margin-top:14px;overflow:auto;border:1px solid var(--border-color);border-radius:14px;">
-      <table style="width:100%;border-collapse:collapse;font-size:.82rem;min-width:1540px;">
+      <table style="width:100%;border-collapse:collapse;font-size:.82rem;min-width:1680px;">
         <thead>
           <tr style="background:#f8fafc;">
             <th style="padding:10px 8px;border-bottom:1px solid var(--border-color);">#</th>
             <th style="padding:10px 8px;border-bottom:1px solid var(--border-color);text-align:left;">Aluno</th>
             <th style="padding:10px 8px;border-bottom:1px solid var(--border-color);">Nível</th>
             <th style="padding:10px 8px;border-bottom:1px solid var(--border-color);">Média</th>
+            <th style="padding:10px 8px;border-bottom:1px solid var(--border-color);">Prova Paulista</th>
             <th style="padding:10px 8px;border-bottom:1px solid var(--border-color);">Freq.</th>
             <th style="padding:10px 8px;border-bottom:1px solid var(--border-color);text-align:left;">Padrão de ausência</th>
             <th style="padding:10px 8px;border-bottom:1px solid var(--border-color);text-align:left;">Dados para gestão</th>
@@ -29942,10 +31224,10 @@ function __riskPanelOpenDetail(){
             <th style="padding:10px 8px;border-bottom:1px solid var(--border-color);text-align:left;">Comunicação do professor</th>
           </tr>
         </thead>
-        <tbody>${rows || `<tr><td colspan="9" style="padding:18px;text-align:center;color:#64748b;">Nenhum aluno sinalizado no momento.</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="10" style="padding:18px;text-align:center;color:#64748b;">Nenhum aluno sinalizado no momento.</td></tr>`}</tbody>
       </table>
     </div>
-    <div style="margin-top:10px;font-size:.76rem;color:#64748b;">Critério híbrido: notas, frequência, entregas ativas, comportamento, ocorrências e tendência em relação ao bimestre anterior.</div>
+    <div style="margin-top:10px;font-size:.76rem;color:#64748b;">Critério híbrido: Prova Paulista, notas, frequência, entregas ativas, Tutoria, comportamento, ocorrências e tendência em relação ao bimestre anterior.</div>
   </div>`;
   document.body.appendChild(overlay);
 }
@@ -29964,6 +31246,7 @@ function __v18RenderPedagogicalRiskPanel(dashEl){
   let listHtml = top.map(r => {
     const mediaTxt = r.mediaGeral !== null ? r.mediaGeral.toFixed(1) : '—';
     const freqTxt = r.freqPct !== null ? r.freqPct.toFixed(0) + '%' : '—';
+    const ppHtml = (typeof __riskProvaPaulistaBadgeHtml === 'function') ? __riskProvaPaulistaBadgeHtml(r.provaPaulista) : '';
     const padrao = r?.absencePattern?.short || 'Sem padrão forte detectado';
     const ultimaAcao = __riskFormatActionShort(r?.lastAction);
     return `<div style="display:grid;grid-template-columns:minmax(0,1.6fr) auto auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(148,163,184,.16);">
@@ -29973,6 +31256,7 @@ function __v18RenderPedagogicalRiskPanel(dashEl){
           <span style="display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:${r.nivel.bg};color:${r.nivel.color};font-size:.72rem;font-weight:800;">${escHTML(r.nivel.label)} ${r.score}</span>
         </div>
         <div style="font-size:.76rem;color:#64748b;margin-top:4px;">${escHTML(__riskShortReasons(r, 2) || (r.resumo||[]).join(' • ') || 'Acompanhar')}</div>
+        <div style="margin-top:5px;">${ppHtml}</div>
         <div style="font-size:.74rem;color:#7c2d12;margin-top:4px;"><b>Ausências:</b> ${escHTML(padrao)}</div>
         <div style="font-size:.74rem;color:#334155;margin-top:3px;"><b>Comunicação:</b> ${escHTML(ultimaAcao)}</div>
       </div>
@@ -29993,6 +31277,7 @@ function __v18RenderPedagogicalRiskPanel(dashEl){
         <button class="btn-secondary" onclick="__riskOpenManagementReportModal()"><i class="fas fa-file-lines"></i> Relatório gestão</button>
         <button class="btn-primary" onclick="__riskPanelOpenDetail()"><i class="fas fa-list"></i> Lista completa</button>
       </div>
+      <div class="risk-integrado-note"><b>Painel integrado:</b> o risco agora cruza Prova Paulista, médias, frequência, entregas, ocorrências e registros de Tutoria. A PP entra como fator prioritário quando o aluno está em Abaixo do básico, Básico ou sem dados.</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:14px;">
       <div style="padding:12px;border-radius:14px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.16);"><div style="font-size:.75rem;color:#7f1d1d;">Crítico</div><div style="font-size:1.6rem;font-weight:900;color:#b91c1c;">${summary.critico||0}</div></div>
@@ -31136,7 +32421,12 @@ function actQRGenerate(){
     new QRCode(container,{text:text,width:280,height:280,colorDark:'#1e293b',colorLight:'#ffffff'});
     return;
   }
-  // Load from CDN
+  // Load from CDN only when online; offline users receive a clear fallback immediately.
+  if(navigator.onLine === false){
+    try{ window.__SGP_LIB_ERR && window.__SGP_LIB_ERR('qrcodejs-offline'); }catch(_){ }
+    container.innerHTML='<div style="padding:16px;"><div style="font-size:.9rem;color:#92400e;margin-bottom:8px;">Sem internet: geração visual do QR não está disponível agora.</div><div style="padding:10px;background:#f1f5f9;border-radius:8px;word-break:break-all;font-size:.78rem;">'+_escHTML(text)+'</div><div style="margin-top:8px;font-size:.72rem;color:#64748b;">Copie o link acima ou conecte-se à internet e gere novamente.</div></div>';
+    return;
+  }
   var s=document.createElement('script');
   s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
   s.onload=function(){
@@ -31144,7 +32434,8 @@ function actQRGenerate(){
     new QRCode(container,{text:text,width:280,height:280,colorDark:'#1e293b',colorLight:'#ffffff'});
   };
   s.onerror=function(){
-    container.innerHTML='<div style="padding:16px;"><div style="font-size:.9rem;color:#dc2626;margin-bottom:8px;">QR offline indisponível.</div><div style="padding:10px;background:#f1f5f9;border-radius:8px;word-break:break-all;font-size:.78rem;">'+_escHTML(text)+'</div><div style="margin-top:8px;font-size:.72rem;color:#64748b;">Copie o link acima e compartilhe com os alunos.</div></div>';
+    try{ window.__SGP_LIB_ERR && window.__SGP_LIB_ERR('qrcodejs'); }catch(_){ }
+    container.innerHTML='<div style="padding:16px;"><div style="font-size:.9rem;color:#dc2626;margin-bottom:8px;">QR online indisponível.</div><div style="padding:10px;background:#f1f5f9;border-radius:8px;word-break:break-all;font-size:.78rem;">'+_escHTML(text)+'</div><div style="margin-top:8px;font-size:.72rem;color:#64748b;">Copie o link acima e compartilhe com os alunos.</div></div>';
   };
   document.head.appendChild(s);
 }
@@ -32220,73 +33511,112 @@ function mapaPpModeEnabled(){
   const sel=document.getElementById('mapaPpMode');
   return !!(sel && sel.value==='pp');
 }
-
-function mapaAtualizarLegendaPp(){
-  const legend=document.getElementById('mapaPpLegend');
-  if(legend) legend.style.display = mapaPpModeEnabled() ? 'flex' : 'none';
+function mapaGetPpCalcMode(){
+  const sel=document.getElementById('mapaPpCalc');
+  const v=(sel && sel.value) || 'media';
+  return ['media','ultima','maior','menor'].includes(v) ? v : 'media';
 }
-
+function mapaGetPpCalcLabel(mode){
+  mode = mode || mapaGetPpCalcMode();
+  return {media:'Média das Provas Paulistas', ultima:'Última Prova Paulista', maior:'Maior nota da Prova Paulista', menor:'Menor nota da Prova Paulista'}[mode] || 'Média das Provas Paulistas';
+}
+function mapaAtualizarLegendaPp(){
+  const enabled=mapaPpModeEnabled();
+  const legend=document.getElementById('mapaPpLegend');
+  const calcSel=document.getElementById('mapaPpCalc');
+  if(legend) legend.style.display=enabled?'flex':'none';
+  if(calcSel) calcSel.style.display=enabled?'inline-flex':'none';
+  try{
+    const hint=document.getElementById('mapaPpHint');
+    if(hint){
+      const provas=(typeof __ppListProvasPaulistas==='function')?__ppListProvasPaulistas(bimestreAtual):[];
+      const calc=mapaGetPpCalcLabel();
+      hint.textContent=!enabled?'':(provas.length>1?('Mapa: '+calc.toLowerCase()+' ('+provas.length+')'):'Mapa: nota PP');
+      hint.style.display=enabled?'inline-flex':'none';
+    }
+  }catch(_){ }
+}
 function mapaModoClassificacaoChange(){
   const sel=document.getElementById('mapaPpMode');
-  const mode=(sel && sel.value)||'media';
-  try{ if(typeof __safeLSSet==='function') __safeLSSet('sgp_mapa_pp_mode', mode); else localStorage.setItem('sgp_mapa_pp_mode', mode); }catch(_){ }
+  const mode=(sel&&sel.value)||'media';
+  try{if(typeof __safeLSSet==='function')__safeLSSet('sgp_mapa_pp_mode',mode);else localStorage.setItem('sgp_mapa_pp_mode',mode);}catch(_){ }
+  try{if(typeof __markBackupRelevantChange==='function')__markBackupRelevantChange('mapa-pp-mode');}catch(_){ }
   mapaAtualizarLegendaPp();
-  try{ renderizarMapa(); }catch(_){ }
+  try{renderizarMapa();}catch(_){ }
   if(mode==='pp'){
-    const provas=(typeof __ppListProvasPaulistas==='function') ? __ppListProvasPaulistas(bimestreAtual) : [];
-    if(!provas.length) showToast('Nenhuma atividade marcada como Prova Paulista neste bimestre. Marque em Edição em Massa.', 'warning');
+    const provas=(typeof __ppListProvasPaulistas==='function')?__ppListProvasPaulistas(bimestreAtual):[];
+    if(!provas.length)showToast('Nenhuma atividade marcada como Prova Paulista neste bimestre. Marque em Edição em Massa.','warning');
+    else if(provas.length>1)showToast('Mapa usando '+mapaGetPpCalcLabel().toLowerCase()+' das '+provas.length+' Provas Paulistas marcadas.');
     else showToast('Mapa usando a classificação da Prova Paulista.');
-  } else {
-    showToast('Mapa voltou para o farol das médias.');
-  }
+  } else showToast('Mapa voltou para o farol das médias.');
 }
-
+function mapaPpCalcChange(){
+  const calc=mapaGetPpCalcMode();
+  try{if(typeof __safeLSSet==='function')__safeLSSet('sgp_mapa_pp_calc',calc);else localStorage.setItem('sgp_mapa_pp_calc',calc);}catch(_){ }
+  try{if(typeof __markBackupRelevantChange==='function')__markBackupRelevantChange('mapa-pp-calc');}catch(_){ }
+  mapaAtualizarLegendaPp();
+  try{renderizarMapa();}catch(_){ }
+  try{renderDashProvaPaulista();}catch(_){ }
+  showToast('Cálculo do Mapa PP: '+mapaGetPpCalcLabel(calc)+'.');
+}
 function mapaGetClassificacaoProvaPaulista(aluno){
   try{
-    if(!aluno) return null;
-    const provas=(typeof __ppListProvasPaulistas==='function') ? __ppListProvasPaulistas(bimestreAtual) : [];
-    if(!provas.length) return null;
-    const b=aluno.bimestres && aluno.bimestres[bimestreAtual];
-    if(!b) return { key:'sem', label:'Sem dados', short:'S/D', color:'#94a3b8', nota:null, semDados:true, provas };
-    try{ if(typeof _syncBimestreRefs==='function') _syncBimestreRefs(b); }catch(_){ }
+    if(!aluno)return null;
+    const provas=(typeof __ppListProvasPaulistas==='function')?__ppListProvasPaulistas(bimestreAtual):[];
+    if(!provas.length)return null;
+    const b=aluno.bimestres&&aluno.bimestres[bimestreAtual];
+    if(!b)return {key:'sem',label:'Sem dados',short:'S/D',color:'#94a3b8',nota:null,semDados:true,provas,calc:mapaGetPpCalcMode()};
+    try{if(typeof _syncBimestreRefs==='function')_syncBimestreRefs(b);}catch(_){ }
     const notas=[];
-    provas.forEach(p=>{
-      const nd=(b.notas_disc && b.notas_disc[p.discId]) ? b.notas_disc[p.discId] : {};
-      if(nd && typeof nd[p.avId] !== 'undefined' && nd[p.avId] !== null && nd[p.avId] !== ''){
-        const v=(typeof clampNota==='function') ? clampNota(nd[p.avId]) : Number(nd[p.avId]);
-        if(Number.isFinite(v)) notas.push({nota:v, prova:p});
+    provas.forEach((p,idx)=>{
+      const nd=(b.notas_disc&&b.notas_disc[p.discId])?b.notas_disc[p.discId]:{};
+      if(nd&&typeof nd[p.avId]!=='undefined'&&nd[p.avId]!==null&&nd[p.avId]!==''){
+        const v=(typeof __ppParseNota==='function')?__ppParseNota(nd[p.avId]):Number(nd[p.avId]);
+        if(typeof v==='number'&&Number.isFinite(v))notas.push({nota:v,prova:p,idx,ordem:(typeof p.ordem==='number'?p.ordem:idx),data:p.data||''});
       }
     });
-    if(!notas.length) return { key:'sem', label:'Sem nota PP', short:'S/D', color:'#94a3b8', nota:null, semDados:true, provas };
-    const media=notas.reduce((acc,item)=>acc+item.nota,0)/notas.length;
-    const cls=(typeof __ppClassificarNota==='function') ? __ppClassificarNota(media) : {key:'sem',label:'Sem dados',color:'#94a3b8'};
-    const shortMap={abaixo:'AB', basico:'BAS', adequado:'ADQ', avancado:'AVA', sem:'S/D'};
-    return { key:cls.key||'sem', label:cls.label||'Sem dados', short:shortMap[cls.key]||'PP', color:cls.color||'#94a3b8', nota:media, semDados:false, provaCount:notas.length, provas:notas.map(x=>x.prova) };
-  }catch(e){
-    try{ console.warn('mapaGetClassificacaoProvaPaulista', e); }catch(_){ }
-    return null;
-  }
+    if(!notas.length)return {key:'sem',label:'Sem nota PP',short:'S/D',color:'#94a3b8',nota:null,semDados:true,provas,calc:mapaGetPpCalcMode()};
+    const calc=mapaGetPpCalcMode();
+    let escolhido=null, valor=null;
+    if(calc==='maior') escolhido=notas.reduce((best,item)=>!best||item.nota>best.nota?item:best,null);
+    else if(calc==='menor') escolhido=notas.reduce((best,item)=>!best||item.nota<best.nota?item:best,null);
+    else if(calc==='ultima') escolhido=notas.slice().sort((a,b)=>{const da=String(a.data||''),db=String(b.data||''); if(da&&db&&da!==db)return da.localeCompare(db); return (a.ordem||0)-(b.ordem||0);}).pop();
+    if(calc==='media') valor=notas.reduce((acc,item)=>acc+item.nota,0)/notas.length; else valor=escolhido?escolhido.nota:notas[notas.length-1].nota;
+    const cls=(typeof __ppClassificarNota==='function')?__ppClassificarNota(valor):{key:'sem',label:'Sem dados',color:'#94a3b8'};
+    const shortMap={abaixo:'AB',basico:'BAS',adequado:'ADQ',avancado:'AVA',sem:'S/D'};
+    return {key:cls.key||'sem',label:cls.label||'Sem dados',short:shortMap[cls.key]||'PP',color:cls.color||'#94a3b8',nota:valor,semDados:false,provaCount:notas.length,provas:notas.map(x=>x.prova),calc,calcLabel:mapaGetPpCalcLabel(calc),provaEscolhida:escolhido&&escolhido.prova};
+  }catch(e){try{console.warn('mapaGetClassificacaoProvaPaulista',e);}catch(_){ } return null;}
 }
-
 function mapaPpTooltipLine(pp){
-  if(!pp) return '';
-  if(pp.semDados) return '<br>Prova Paulista: sem nota lançada';
-  const nota=(Number.isFinite(pp.nota) ? pp.nota.toFixed(1) : '0.0');
-  const extra=pp.provaCount && pp.provaCount>1 ? ' média de '+pp.provaCount+' provas' : '';
+  if(!pp)return '';
+  if(pp.semDados)return '<br>Prova Paulista: sem nota lançada';
+  const nota=(typeof pp.nota==='number'&&Number.isFinite(pp.nota)?pp.nota.toFixed(1):'—');
+  let extra='';
+  if(pp.provaCount&&pp.provaCount>1){
+    const n=Number(pp.provaCount)||0;
+    const calc=(pp.calc||((typeof mapaGetPpCalcMode==='function')?mapaGetPpCalcMode():'media'));
+    const plural=n===1?'prova':'provas';
+    if(calc==='ultima') extra=' • última de '+n+' '+plural;
+    else if(calc==='maior') extra=' • maior nota entre '+n+' '+plural;
+    else if(calc==='menor') extra=' • menor nota entre '+n+' '+plural;
+    else extra=' • média de '+n+' '+plural;
+  }
   return '<br>Prova Paulista: '+nota+' — '+_escHTML(pp.label)+extra;
 }
-
 function mapaPpPill(pp){
-  if(!pp) return '';
-  const nota=(Number.isFinite(pp.nota) ? pp.nota.toFixed(1) : '—');
+  if(!pp)return '';
+  const nota=(typeof pp.nota==='number'&&Number.isFinite(pp.nota)?pp.nota.toFixed(1):'—');
   return '<span class="mapa-pp-pill" style="color:'+_escHTML(pp.color||'#94a3b8')+';">PP '+_escHTML(nota)+' • '+_escHTML(pp.short||'')+'</span>';
 }
 
-// Restore saved Prova Paulista map mode
+// Restore saved Prova Paulista map mode// Restore saved Prova Paulista map mode
 try{
   const savedMode=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_mapa_pp_mode') : localStorage.getItem('sgp_mapa_pp_mode');
+  const savedCalc=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_mapa_pp_calc') : localStorage.getItem('sgp_mapa_pp_calc');
   const sel=document.getElementById('mapaPpMode');
+  const calcSel=document.getElementById('mapaPpCalc');
   if(sel && (savedMode==='pp' || savedMode==='media')) sel.value=savedMode;
+  if(calcSel && ['media','ultima','maior','menor'].includes(savedCalc)) calcSel.value=savedCalc;
   setTimeout(mapaAtualizarLegendaPp, 0);
 }catch(_){ }
 
@@ -32600,7 +33930,7 @@ function mapaImprimir(){
     .profdesk .mesa-prof{border:2px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:10px 14px;font-weight:bold;color:#334155;}
 </style></head><body>
   <h2>Mapa de Sala — ${_escHTML(filtroTurma)}</h2>
-${mapaPpModeEnabled()?'<div class="legenda"><span><b>Prova Paulista</b></span><span><i class="dot" style="background:#dc2626"></i>Abaixo do básico</span><span><i class="dot" style="background:#f59e0b"></i>Básico</span><span><i class="dot" style="background:#16a34a"></i>Adequado</span><span><i class="dot" style="background:#2563eb"></i>Avançado</span></div>':''}
+${mapaPpModeEnabled()?'<div class="legenda"><span><b>Prova Paulista</b> — '+((typeof mapaGetPpCalcLabel==='function')?mapaGetPpCalcLabel():'Média')+'</span><span><i class="dot" style="background:#dc2626"></i>Abaixo do básico</span><span><i class="dot" style="background:#f59e0b"></i>Básico</span><span><i class="dot" style="background:#16a34a"></i>Adequado</span><span><i class="dot" style="background:#2563eb"></i>Avançado</span></div>':''}
 <div class="grid">`);
 
   const total=mapaGridCols*mapaGridRows;
@@ -35039,6 +36369,7 @@ function __autoTestInferModule(name){
     if(s.includes('armazenamento:')) return 'armazenamento';
     if(s.includes('hd local:')) return 'hdlocal';
     if(s.includes('interface:')) return 'interface';
+    if(s.includes('prova paulista') || s.includes('mapa de sala') || s.includes('mapa pp')) return 'prova';
     if(s.includes('dashboard:')) return 'dashboard';
     if(s.includes('bimestre ')) return 'bimestres';
     if(s.includes('integridade:')) return 'integridade';
@@ -35056,6 +36387,7 @@ function __autoTestModuleMeta(key){
         hdlocal: { key:'hdlocal', label:'HD Local', short:'HD LOCAL', bg:'rgba(234,179,8,.18)', color:'#a16207' },
         interface: { key:'interface', label:'Interface', short:'INTERFACE', bg:'rgba(20,184,166,.14)', color:'#0f766e' },
         dashboard: { key:'dashboard', label:'Dashboard', short:'DASHBOARD', bg:'rgba(244,114,182,.14)', color:'#be185d' },
+        prova: { key:'prova', label:'Prova Paulista', short:'PROVA PAULISTA', bg:'rgba(37,99,235,.14)', color:'#1d4ed8' },
         bimestres: { key:'bimestres', label:'Bimestres', short:'BIMESTRES', bg:'rgba(14,165,233,.14)', color:'#0369a1' },
         integridade: { key:'integridade', label:'Integridade', short:'INTEGRIDADE', bg:'rgba(249,115,22,.14)', color:'#c2410c' },
         compatibilidade: { key:'compatibilidade', label:'Compatibilidade', short:'COMPATIBILIDADE', bg:'rgba(168,85,247,.14)', color:'#7e22ce' },
@@ -35076,7 +36408,7 @@ function __autoTestHistoryRead(){
 }
 function __autoTestHistoryWrite(list){
     try{
-        const safe = Array.isArray(list) ? list.filter(x=>x && typeof x === 'object').slice(0,25) : [];
+        const safe = Array.isArray(list) ? list.filter(x=>x && typeof x === 'object').slice(0,10) : [];
         const json = JSON.stringify(safe);
         if(typeof __safeLSSet === 'function') __safeLSSet(__AUTO_TEST_HISTORY_KEY, json); else localStorage.setItem(__AUTO_TEST_HISTORY_KEY, json);
         return safe;
@@ -35124,7 +36456,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.6.4',
+        version: versionLabel || 'v20.7.6',
         total: arr.length,
         okCount,
         failCount,
@@ -35141,7 +36473,7 @@ function __autoTestHistoryStoreEntry(entry){
     const prev = __autoTestHistoryRead();
     const compare = __autoTestHistoryCompare(entry, prev[0] || null);
     const full = Object.assign({}, entry, { compare });
-    const next = [full].concat(prev).slice(0,25);
+    const next = [full].concat(prev).slice(0,10);
     __autoTestHistoryWrite(next);
     return { current: full, history: next, previous: prev[0] || null };
 }
@@ -35199,6 +36531,7 @@ function __autoTestBuildExecutiveSummary(results, grouped, activeModules, histor
         else if(key==='compatibilidade') pushImpact('Dados de versões anteriores podem carregar com inconsistências ou sem normalização adequada.');
         else if(key==='interface') pushImpact('Botões, modais, badges ou áreas críticas da interface podem não renderizar/abrir corretamente.');
         else if(key==='dashboard') pushImpact('Dashboard, contadores ou gráficos podem ficar incompletos ou quebrar em partes específicas.');
+        else if(key==='prova') pushImpact('A leitura da Prova Paulista, exportação CSV ou visualização no Mapa de Sala pode ficar inconsistente.');
         else if(key==='bimestres') pushImpact('A troca de bimestre pode falhar ou deixar gráficos/componentes sem atualização correta.');
         else if(key==='armazenamento') pushImpact('O monitor de armazenamento pode informar estado incorreto ou deixar de refletir a situação real do navegador.');
         else if(key==='hdlocal') pushImpact('O vínculo com arquivo local/HD pode não estar disponível ou consistente neste ambiente.');
@@ -35744,6 +37077,133 @@ async function __autoTestRunVersionCompatibility(add){
     }
 }
 
+
+function __autoTestRunProvaPaulistaMapa(add){
+    try{
+        const helpersOk = (typeof __ppParseNota === 'function' && typeof __ppClassificarNota === 'function' && typeof __ppListProvasPaulistas === 'function' && typeof __ppIsAtividadeProvaPaulista === 'function');
+        add('Prova Paulista: helpers disponíveis', helpersOk, helpersOk ? '' : 'Faltam __ppParseNota/__ppClassificarNota/__ppListProvasPaulistas/__ppIsAtividadeProvaPaulista.', 'critical', 'prova');
+        if(helpersOk){
+            const emptyOk = (__ppParseNota('') === null && __ppParseNota(null) === null && __ppParseNota(undefined) === null);
+            const zeroOk = (__ppParseNota(0) === 0 && __ppClassificarNota(0).key === 'abaixo');
+            const classesOk = (__ppClassificarNota(4.99).key === 'abaixo' && __ppClassificarNota(5).key === 'basico' && __ppClassificarNota(6.99).key === 'basico' && __ppClassificarNota(7).key === 'adequado' && __ppClassificarNota(8.99).key === 'adequado' && __ppClassificarNota(9).key === 'avancado' && __ppClassificarNota(10).key === 'avancado');
+            add('Prova Paulista: vazio é Sem dados', emptyOk, emptyOk ? '' : 'Campo vazio não pode virar nota 0.', 'important', 'prova');
+            add('Prova Paulista: nota 0 é Abaixo do básico', zeroOk, zeroOk ? '' : 'Nota 0 lançada deve continuar valendo como Abaixo do básico.', 'important', 'prova');
+            add('Prova Paulista: faixas de classificação', classesOk, classesOk ? '0–4,99 / 5–6,99 / 7–8,99 / 9–10 ok' : 'Algum limite de classificação retornou categoria incorreta.', 'critical', 'prova');
+        }
+
+        const dashElemsOk = !!(document.getElementById('dashProvaPaulistaCard') && document.getElementById('dashProvaPaulistaTbody') && document.getElementById('dashProvaPaulistaResumo'));
+        add('Prova Paulista: tabela do Dashboard renderizável', dashElemsOk, dashElemsOk ? '' : 'Faltam elementos da tabela PP no Dashboard.', 'important', 'prova');
+        const csvOk = (typeof exportarDashProvaPaulistaCSV === 'function' && typeof __ppCSVCell === 'function');
+        add('Prova Paulista: exportação CSV disponível', csvOk, csvOk ? '' : 'Faltam exportarDashProvaPaulistaCSV/__ppCSVCell.', 'important', 'prova');
+        const xlsxOk = (typeof exportarDashProvaPaulistaXLSX === 'function' && typeof __ppSheetXml === 'function');
+        add('Prova Paulista: exportação Excel disponível', xlsxOk, xlsxOk ? '' : 'Faltam exportarDashProvaPaulistaXLSX/__ppSheetXml.', 'important', 'prova');
+        const massaXlsxOk = (typeof __massaExportXLSX === 'function' && typeof __zipStore === 'function' && typeof __ppSheetXml === 'function');
+        add('Edição em Massa: exportação Excel disponível', massaXlsxOk, massaXlsxOk ? 'Botão/função de Excel .xlsx disponível para edição externa.' : 'Falta __massaExportXLSX ou gerador XLSX.', 'important', 'massa');
+        const intervOk = (typeof toggleDashProvaPaulistaIntervencao === 'function' && typeof __ppIntervencaoPlainText === 'function' && typeof imprimirDashProvaPaulistaIntervencao === 'function');
+        add('Prova Paulista: plano de intervenção disponível', intervOk, intervOk ? '' : 'Faltam funções de intervenção da Prova Paulista.', 'important', 'prova');
+        const comunicOk = (typeof imprimirDashProvaPaulistaComunicados === 'function' && typeof __ppComunicadoHtml === 'function' && typeof __ppComunicadoOrientacao === 'function');
+        add('Prova Paulista: comunicados aos responsáveis disponíveis', comunicOk, comunicOk ? '' : 'Faltam funções de comunicados imprimíveis da Prova Paulista.', 'important', 'prova');
+        const tutoriaPpOk = (typeof enviarDashProvaPaulistaTutoria === 'function' && typeof __ppTutoriaRows === 'function' && typeof __ppTutoriaLine === 'function');
+        add('Prova Paulista: integração com Tutoria disponível', tutoriaPpOk, tutoriaPpOk ? '' : 'Faltam funções para enviar alunos da Prova Paulista para acompanhamento na Tutoria.', 'important', 'prova');
+        const riscoIntegradoOk = (typeof __riskGetProvaPaulistaInfo === 'function' && typeof __riskProvaPaulistaText === 'function' && typeof __riskProvaPaulistaBadgeHtml === 'function' && typeof __riskBuildAlunoRecord === 'function');
+        add('Risco pedagógico: Prova Paulista integrada', riscoIntegradoOk, riscoIntegradoOk ? 'Painel de risco cruza PP, frequência, entregas e Tutoria.' : 'Faltam helpers de integração PP → risco pedagógico.', 'important', 'prova');
+        const mapaOk = !!(document.getElementById('mapaPpMode') && document.getElementById('mapaPpCalc') && typeof mapaGetClassificacaoProvaPaulista === 'function' && typeof mapaAtualizarLegendaPp === 'function' && typeof mapaGetPpCalcMode === 'function');
+        add('Mapa de Sala: modo Prova Paulista disponível', mapaOk, mapaOk ? '' : 'Faltam seletor do mapa ou funções mapaGetClassificacaoProvaPaulista/mapaAtualizarLegendaPp.', 'important', 'prova');
+
+        try{
+            const keys = (typeof __getBackupUiPrefKeys === 'function') ? __getBackupUiPrefKeys() : [];
+            const ok = Array.isArray(keys) && keys.includes('sgp_mapa_pp_mode') && keys.includes('sgp_mapa_pp_calc');
+            add('Prova Paulista: preferências do Mapa entram no backup', ok, ok ? '' : 'sgp_mapa_pp_mode ou sgp_mapa_pp_calc ausente em __getBackupUiPrefKeys.', 'important', 'backup');
+        }catch(e){ add('Prova Paulista: preferência do Mapa entra no backup', false, 'Erro: ' + (e && e.message ? e.message : e), 'important', 'backup'); }
+
+        try{
+            const keys = (typeof __getIDBShadowKeys === 'function') ? __getIDBShadowKeys() : [];
+            const ok = Array.isArray(keys) && keys.includes('sgp_mapa_pp_mode') && keys.includes('sgp_mapa_pp_calc') && keys.includes('sgp_tutoria_v1');
+            add('Backup: chaves Mapa PP/Tutoria protegidas no IndexedDB', ok, ok ? '' : 'sgp_mapa_pp_mode, sgp_mapa_pp_calc ou sgp_tutoria_v1 ausentes em __getIDBShadowKeys.', 'important', 'backup');
+        }catch(e){ add('Backup: chaves Mapa PP/Tutoria protegidas no IndexedDB', false, 'Erro: ' + (e && e.message ? e.message : e), 'important', 'backup'); }
+
+        try{
+            const prevMode = (typeof __storageGetItem === 'function') ? __storageGetItem('sgp_mapa_pp_mode') : localStorage.getItem('sgp_mapa_pp_mode');
+            try{ if(typeof __safeLSSet === 'function') __safeLSSet('sgp_mapa_pp_mode', 'pp'); else localStorage.setItem('sgp_mapa_pp_mode', 'pp'); }catch(_){ }
+            const snap = (typeof __snapshotObj === 'function') ? __snapshotObj() : null;
+            const prefOk = !!(snap && snap.uiPrefs && snap.uiPrefs.sgp_mapa_pp_mode === 'pp');
+            const tutoriaOk = !!(snap && Object.prototype.hasOwnProperty.call(snap, 'tutoria'));
+            add('Backup: snapshot preserva modo Prova Paulista do Mapa', prefOk, prefOk ? '' : 'uiPrefs.sgp_mapa_pp_mode não apareceu no snapshot.', 'important', 'backup');
+            add('Backup: snapshot inclui Tutoria', tutoriaOk, tutoriaOk ? '' : 'Campo tutoria ausente do snapshot.', 'important', 'backup');
+            try{
+                if(prevMode === null || typeof prevMode === 'undefined') __safeLSRemove('sgp_mapa_pp_mode');
+                else __safeLSSet('sgp_mapa_pp_mode', String(prevMode));
+            }catch(_){ }
+        }catch(e){ add('Backup: snapshot PP/Tutoria', false, 'Erro: ' + (e && e.message ? e.message : e), 'important', 'backup'); }
+
+        try{
+            const provas = helpersOk ? __ppListProvasPaulistas(bimestreAtual) : [];
+            const tooltipOk = (typeof mapaPpTooltipLine === 'function') ? mapaPpTooltipLine({semDados:false, nota:7, label:'Adequado', provaCount:2}).includes('média de 2 provas') : false;
+            add('Mapa de Sala: múltiplas Provas Paulistas ficam explícitas', provas.length > 1 ? tooltipOk : true, provas.length > 1 ? (tooltipOk ? 'Tooltip informa média de múltiplas provas.' : 'Há múltiplas PP, mas o tooltip não explica a média.') : 'Sem múltiplas PP marcadas neste momento.', 'warning', 'prova');
+        }catch(e){ add('Mapa de Sala: múltiplas Provas Paulistas ficam explícitas', false, 'Erro: ' + (e && e.message ? e.message : e), 'warning', 'prova'); }
+
+        try{
+            const maxOk = (typeof __AUTO_BACKUP_MAX === 'number' && __AUTO_BACKUP_MAX <= 5);
+            const currentOk = !Array.isArray(__BACKUPS) || __BACKUPS.length <= __AUTO_BACKUP_MAX;
+            add('AutoBackup: limite de backups internos', maxOk && currentOk, (maxOk ? ('limite=' + __AUTO_BACKUP_MAX) : 'constante __AUTO_BACKUP_MAX ausente/inválida') + (currentOk ? '' : (' • há '+__BACKUPS.length+' carregados')), 'warning', 'backup');
+        }catch(e){ add('AutoBackup: limite de backups internos', false, 'Erro: ' + (e && e.message ? e.message : e), 'warning', 'backup'); }
+    }catch(e){
+        add('Prova Paulista: AutoTeste específico', false, 'Erro: ' + (e && e.message ? e.message : e), 'important', 'prova');
+    }
+}
+
+
+async function __autoTestRunIndexedDBSeguro(add){
+    try{
+        const apiOk = !!window.indexedDB;
+        add('IndexedDB seguro: API disponível', apiOk, apiOk ? '' : 'IndexedDB não disponível neste navegador/ambiente.', 'warning', 'backup');
+        if(!apiOk) return;
+
+        const helpersOk = (typeof initIndexedDB === 'function' && typeof __idbShadowPutAndWait === 'function' && typeof __idbShadowFlushPending === 'function' && typeof __idbGetRecordByKey === 'function' && typeof __shadowStorageIdbKey === 'function');
+        add('IndexedDB seguro: helpers disponíveis', helpersOk, helpersOk ? '' : 'Faltam helpers de confirmação: __idbShadowPutAndWait/__idbShadowFlushPending.', 'important', 'backup');
+        if(!helpersOk) return;
+
+        const db = await initIndexedDB();
+        const dbOk = !!db;
+        add('IndexedDB seguro: database abre', dbOk, dbOk ? ('DB: ' + (__IDB_NAME || 'SGP_Database')) : 'Não foi possível abrir o IndexedDB.', 'important', 'backup');
+        if(!dbOk) return;
+
+        const key = 'sgp_autotest_idb_shadow_' + Date.now();
+        const raw = JSON.stringify({ nonce:key, ts:Date.now(), tipo:'indexeddb-seguro' });
+        let putOk = false;
+        let recOk = false;
+        let cacheOk = false;
+        let pendingOk = false;
+        let cleanupOk = false;
+        let localRemovalOk = false;
+        try{
+            try{ localStorage.setItem(key, 'valor-local-antigo'); }catch(_){ }
+            putOk = await __idbShadowPutAndWait(key, raw, { removeLocalOnComplete:true, reason:'autotest' });
+            await __idbShadowFlushPending(1000);
+            const rec = await __idbGetRecordByKey(__shadowStorageIdbKey(key));
+            recOk = !!(rec && rec.value === raw && rec.storage === 'shadow');
+            cacheOk = !!(window.__sgpIDBShadowCache && window.__sgpIDBShadowCache[key] === raw);
+            pendingOk = !(window.__sgpIDBShadowPending && window.__sgpIDBShadowPending[key]);
+            try{ localRemovalOk = localStorage.getItem(key) === null; }catch(_){ localRemovalOk = true; }
+        }catch(e){
+            putOk = false;
+        }finally{
+            try{ cleanupOk = await __idbShadowDeleteAndWait(key); }catch(_){ cleanupOk = false; }
+            try{ localStorage.removeItem(key); }catch(_){ }
+            try{ if(window.__sgpIDBShadowCache) delete window.__sgpIDBShadowCache[key]; }catch(_){ }
+            try{ if(window.__sgpIDBShadowPending) delete window.__sgpIDBShadowPending[key]; }catch(_){ }
+        }
+
+        add('IndexedDB seguro: gravação confirma em tx.oncomplete', putOk && recOk, (putOk && recOk) ? 'Registro shadow confirmado no banco.' : 'A gravação não confirmou corretamente no IndexedDB.', 'critical', 'backup');
+        add('IndexedDB seguro: cache usa valor mais recente', cacheOk, cacheOk ? '' : 'Cache shadow não refletiu o valor salvo.', 'important', 'backup');
+        add('IndexedDB seguro: fila pendente esvazia', pendingOk, pendingOk ? '' : 'A fila de gravações pendentes não foi limpa.', 'important', 'backup');
+        add('IndexedDB seguro: localStorage só limpa após confirmação', localRemovalOk, localRemovalOk ? '' : 'A chave local de teste não foi removida após confirmação no IndexedDB.', 'important', 'backup');
+        add('IndexedDB seguro: limpeza do teste', cleanupOk, cleanupOk ? '' : 'Não foi possível apagar o registro de teste no IndexedDB.', 'warning', 'backup');
+    }catch(e){
+        add('IndexedDB seguro: AutoTeste', false, 'Erro: ' + (e && e.message ? e.message : e), 'important', 'backup');
+    }
+}
+
 async function __autoTestRunActivityBanks(add){
     const hasBaseFlow = (typeof __storageGetItem === 'function' && typeof __collectBackupFiles === 'function' && typeof _actSafeParse === 'function' && typeof _actNormalizeArray === 'function');
     const hasSaveFns = (typeof _actSaveAll === 'function' && typeof quizSave === 'function' && typeof compSave === 'function' && typeof ordSave === 'function');
@@ -36040,6 +37500,9 @@ try{
             add('Armazenamento: monitor executa', false, 'Erro: '+(e && e.message ? e.message : e));
         }
 
+        // 1.2.1) IndexedDB seguro: confirma gravação antes de limpar localStorage
+        await __autoTestRunIndexedDBSeguro(add);
+
         // 1.3) Arquivo local vinculado (HD)
         try{
             const hdSupported = (typeof __localFileApiSupported === 'function') ? __localFileApiSupported() : false;
@@ -36053,6 +37516,9 @@ try{
 
         // 1.4) Integridade dos dados
         __autoTestRunDataIntegrity(add);
+
+        // 1.4.1) Prova Paulista / Mapa de Sala / Backup relacionado
+        __autoTestRunProvaPaulistaMapa(add);
 
         // 1.5) Bancos das atividades/jogos
         await __autoTestRunActivityBanks(add);
@@ -36159,6 +37625,7 @@ try{
         try{
             const has = (typeof __collectBackupFiles==='function' && typeof __zipStore==='function' && typeof __zipReadStore==='function');
             add('Backup: funções ZIP disponíveis', has, has?'':'Faltam __collectBackupFiles/__zipStore/__zipReadStore.');
+            add('Backup: leitor ZIP robusto/validado', (typeof __zipReadAny==='function' && typeof __validateSgpBackupZipFiles==='function'), (typeof __zipReadAny==='function' && typeof __validateSgpBackupZipFiles==='function') ? 'Suporta validação prévia e ZIP compactado quando o navegador permitir.' : 'Faltam __zipReadAny/__validateSgpBackupZipFiles.');
             if(has){
                 const tuples = __collectBackupFiles();
                 const blob = __zipStore(tuples);
@@ -36203,7 +37670,7 @@ try{
                         'atividades_forca.json','atividades_vf.json','atividades_memoria.json','atividades_flashcards.json',
                         'atividades_relacoes.json','atividades_roleta.json',
                         'atividades_quiz.json','atividades_completar.json','atividades_ordenar.json','sgp_storage_full.json',
-                        'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_busca_ativa.json','sgp_entregas_doc_prazos_v1.json','sgp_links_cards_v1.json','sgp_autotest_history_v1.json','sgp_linked_file_meta.json','sgp_ranking_v1.json','sgp_rank_event_log_v1.json','sgp_rank_hist_cfg.json',
+                        'sgp_correcao_provas.json','sgp_frequencia.json','sgp_entregas.json','sgp_busca_ativa.json','sgp_entregas_doc_prazos_v1.json','sgp_links_cards_v1.json','sgp_autotest_history_v1.json','sgp_tutoria_v1.json','sgp_linked_file_meta.json','sgp_ranking_v1.json','sgp_rank_event_log_v1.json','sgp_rank_hist_cfg.json',
                         'sgp_audit_log.json','sgp_freq_events.json',
                         'extras_audit.json','extras_lastBackupAt.json'
                     ];
@@ -36239,7 +37706,7 @@ try{
             if(hasSnap){
                 let obj=null;
                 try{ obj = __snapshotObj(); }catch(e){ obj=null; }
-                const requiredTop = ['turmas','alunos','aulas','planosSemana','config','layouts','correcaoProvas','planner','atividades','frequencia','entregas','buscaAtiva','entregasDocPrazos','linksRapidos','linkedFileMeta','ranking','rankHistCfg','uiPrefs','planoPrefs','auditLog','freqEvents','auditTrail','autobackups','lastBackupAt'];
+                const requiredTop = ['turmas','alunos','aulas','planosSemana','config','layouts','correcaoProvas','planner','atividades','frequencia','entregas','buscaAtiva','entregasDocPrazos','tutoria','linksRapidos','linkedFileMeta','ranking','rankHistCfg','uiPrefs','planoPrefs','auditLog','freqEvents','auditTrail','autobackups','lastBackupAt'];
                 const missingTop = requiredTop.filter(k=>!obj || typeof obj[k]==='undefined');
                 add('AutoBackup: snapshot completo', missingTop.length===0, missingTop.length?('Faltando: '+missingTop.join(', ')):'');
                 const acts = (obj && obj.atividades) ? obj.atividades : null;
@@ -36481,7 +37948,7 @@ try{
         const failCritical = results.filter(r=>!r.ok && r.severity==='critical').length;
         const failImportant = results.filter(r=>!r.ok && r.severity==='important').length;
         const failWarning = results.filter(r=>!r.ok && r.severity==='warning').length;
-        const moduleOrder = ['persistencia','integridade','compatibilidade','atividades','backup','armazenamento','hdlocal','dashboard','bimestres','pwa','geral'];
+        const moduleOrder = ['persistencia','integridade','compatibilidade','atividades','backup','armazenamento','hdlocal','dashboard','prova','bimestres','pwa','geral'];
         const grouped = {};
         results.forEach(r=>{
             const key = __autoTestInferModule(r.module || r.name);
@@ -36493,7 +37960,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.6.4'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.7.6'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
