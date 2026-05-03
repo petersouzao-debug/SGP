@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.7.6)</title>
+    <title>SGP - Gestão Final (V20.7.7)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,8 +42,8 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.7.6';
-      window.__SGP_APP_VERSION = '20.7.6';
+      window.__SGP_SW_VERSION = '20.7.7';
+      window.__SGP_APP_VERSION = '20.7.7';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -6158,6 +6158,7 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
               <button class="btn-primary" style="background:#475569;" data-onclick="gerarResumoPlanoSemana()"><i class="fas fa-bolt"></i> Gerar</button>
               <button class="btn-primary" data-onclick="copiarResumoPlanoSemana()"><i class="fas fa-copy"></i> Copiar</button>
               <button class="btn-primary" style="background:#475569;" data-onclick="exportarPlanoSemanaPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+              <button class="btn-primary" style="background:#0f766e;" data-onclick="exportarPlanoSemanaXLSX()" title="Exportar plano semanal em Excel .xlsx"><i class="fas fa-file-excel"></i> Excel</button>
             </div>
             <div id="planoSemanaStatus" style="font-size:12px; color:var(--text-muted);"></div>
           </div>
@@ -11666,7 +11667,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.7.6",
+                version: "v20.7.7",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -16768,7 +16769,7 @@ function __massaExportCSV(){
 }
 
 
-// Export Excel (.xlsx) — Edição em Massa (v20.7.6)
+// Export Excel (.xlsx) — Edição em Massa (v20.7.7)
 function __massaExportXLSX(){
   try{
     const discId = _massaDiscDefault();
@@ -17183,7 +17184,7 @@ function imprimirDashProvaPaulistaIntervencao(){
 }
 
 
-// Prova Paulista: comunicados individuais para responsáveis (v20.7.6)
+// Prova Paulista: comunicados individuais para responsáveis (v20.7.7)
 function __ppComunicadoOrientacao(key){
   const map = {
     abaixo: 'O estudante precisa de acompanhamento mais próximo e retomada das habilidades essenciais. Recomendamos organizar uma rotina curta de estudos, revisar as atividades corrigidas e acompanhar a realização das propostas de recuperação.',
@@ -17257,7 +17258,7 @@ function imprimirDashProvaPaulistaComunicados(){
 }
 
 
-// Prova Paulista: integração com Tutoria e acompanhamento pedagógico (v20.7.6)
+// Prova Paulista: integração com Tutoria e acompanhamento pedagógico (v20.7.7)
 function __ppTutoriaNivelAcao(key){
   const map = {
     abaixo: 'prioridade alta: recomposição imediata e acompanhamento individualizado',
@@ -20574,6 +20575,121 @@ function exportarPlanoSemanaPDF(){
 }
 
 
+
+
+// Export Excel (.xlsx) — Plano Semanal (v20.7.7)
+function exportarPlanoSemanaXLSX(){
+  try{
+    const col = __collectPlanoFromUI();
+    const inicio = col.inicio, fim = col.fim;
+    if(!inicio || !fim) return showToast('Preencha a semana (início e fim) antes de exportar o Excel.', 'error');
+    if(typeof __zipStore !== 'function' || typeof __ppSheetXml !== 'function' || typeof __ppXlsxStyles !== 'function'){
+      showToast('Gerador de Excel indisponível nesta versão.', 'error');
+      return;
+    }
+
+    const resumoEl = document.getElementById('planoSemanalResumo');
+    const resumo = (resumoEl && resumoEl.value && resumoEl.value.trim()) ? resumoEl.value : __planoBuildResumo(col);
+    if(resumoEl && !resumoEl.value.trim()) resumoEl.value = resumo;
+
+    const esc = __getEscopoPlano();
+    const turma = (esc === 'geral') ? 'Plano Geral' : (filtroTurma || 'Turma');
+    const discName = __planoDiscName(col.discId || __planoGetSelectedDiscId()) || 'Disciplina';
+    const now = new Date();
+    const dataExportacao = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR');
+    const periodo = __formatDateBR(inicio) + ' a ' + __formatDateBR(fim);
+    const modoLabel = (col.resumoModo === 'por_grupo') ? 'Agrupado por grupos de aulas' : 'Padrão por aula';
+
+    const metaRows = [
+      [{v:'Campo',s:1},{v:'Valor',s:1}],
+      ['Documento','Plano Semanal'],
+      ['Turma/Escopo', turma],
+      ['Disciplina', discName],
+      ['Semana', periodo],
+      ['Quantidade de aulas', col.qtdAulas || (col.aulas||[]).length || ''],
+      ['Modo do resumo', modoLabel],
+      ['Grupos definidos', col.gruposDef || '—'],
+      ['Data da exportação', dataExportacao]
+    ];
+
+    const aulasRows = [[
+      {v:'Aula',s:1},{v:'Conteúdo',s:1},{v:'Habilidades',s:1},{v:'Objetivos',s:1},
+      {v:'Sensibilização',s:1},{v:'Desenvolvimento e estratégias',s:1},{v:'Recursos',s:1},
+      {v:'Avaliação/Sistematização',s:1},{v:'Bloom - nível alvo',s:1},{v:'Bloom - verbo',s:1},{v:'Texto original',s:1}
+    ]];
+    (col.aulas || []).forEach((a,idx)=>{
+      aulasRows.push([
+        'Aula ' + (idx+1),
+        a.conteudo || '',
+        a.habilidades || '',
+        a.objetivos || '',
+        a.sensibilizacao || '',
+        a.desenvolvimento || '',
+        a.recursos || '',
+        a.avaliacao || '',
+        a.bloomNivel || '',
+        a.bloomVerbo || '',
+        a.texto || ''
+      ]);
+    });
+
+    const linhasResumo = String(resumo || '').replace(/\r/g,'').split('\n');
+    const resumoRows = [[{v:'#',s:1},{v:'Plano consolidado',s:1}]];
+    linhasResumo.forEach((linha,idx)=>resumoRows.push([idx+1, linha]));
+
+    const tipoRows = [[{v:'Tipo',s:1}].concat((col.aulas||[]).map((_,i)=>({v:'Aula '+(i+1),s:1})))];
+    const tipos = [
+      ['Conteúdo','conteudo'],
+      ['Habilidades','habilidades'],
+      ['Objetivos','objetivos'],
+      ['Sensibilização','sensibilizacao'],
+      ['Desenvolvimento e estratégias','desenvolvimento'],
+      ['Recursos','recursos'],
+      ['Avaliação/Sistematização','avaliacao']
+    ];
+    tipos.forEach(([label,key])=>{
+      const row=[label];
+      (col.aulas||[]).forEach(a=>row.push((a && a[key]) ? a[key] : ''));
+      tipoRows.push(row);
+    });
+
+    const used = new Set();
+    const sheets = [
+      {name:__ppSheetName('Plano consolidado', used), rows:resumoRows},
+      {name:__ppSheetName('Aulas', used), rows:aulasRows},
+      {name:__ppSheetName('Por tipo', used), rows:tipoRows},
+      {name:__ppSheetName('Metadados', used), rows:metaRows}
+    ];
+
+    const workbookSheets = sheets.map((sh,i)=>'<sheet name="'+__ppXmlEsc(sh.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('');
+    const rels = sheets.map((sh,i)=>'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('') + '<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+    const overrides = sheets.map((sh,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('');
+    const files = [
+      ['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+overrides+'</Types>'],
+      ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+      ['xl/workbook.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+workbookSheets+'</sheets></workbook>'],
+      ['xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+rels+'</Relationships>'],
+      ['xl/styles.xml',__ppXlsxStyles()]
+    ];
+    sheets.forEach((sh,i)=>files.push(['xl/worksheets/sheet'+(i+1)+'.xml',__ppSheetXml(sh.rows,{autoFilter:true,freeze:true})]));
+
+    const blob = __zipStore(files);
+    const slugBase = (typeof __ppSlugFileName === 'function') ? __ppSlugFileName((turma || 'turma') + '_' + discName) : String((turma||'turma')+'_'+discName).replace(/[^a-z0-9_-]+/gi,'_').toLowerCase();
+    const filename = 'plano_semanal_' + slugBase + '_' + inicio + '_a_' + fim + '.xlsx';
+    if(typeof __downloadBlob === 'function') __downloadBlob(blob, filename);
+    else{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 1500);
+    }
+    showToast('Excel do Plano Semanal baixado com abas de resumo, aulas e metadados.');
+  }catch(e){
+    console.error('Falha ao exportar Excel do Plano Semanal:', e);
+    showToast('Não foi possível exportar o Excel do Plano Semanal.', 'error');
+  }
+}
+
 function __extrairCampos(txt){
   txt = __limparTexto(txt);
   if(!txt) return {};
@@ -20638,7 +20754,7 @@ function extrairPlanoAula(n){
 }
 
 // Wrap safety for new functions (evita travar botões se der erro)
-['abrirPlanoSemanal','novoPlanoSemana','carregarPlanoSemana','salvarPlanoSemana','duplicarPlanoSemana','excluirPlanoSemana','gerarResumoPlanoSemana','copiarResumoPlanoSemana','exportarPlanoSemanaPDF','extrairPlanoAula','togglePlanoSemanalFullscreen','planoLoteDistribuir','planoLoteDistribuirEExtrair','planoLoteLimpar','planoPreenchTab','planoPreenchAplicar','planoPreenchAplicarEProximo','planoPreenchLerCampo','selecionarTodasTurmasPlano','limparSelecaoTurmasPlano','aplicarPlanoGeralNasTurmas','onBloomNivelChangeCrono','onBloomNivelChangePlano','planoAdjustAulas','planoDisciplinaChanged','planoResumoModoChanged','planoSetQtdAulas']
+['abrirPlanoSemanal','novoPlanoSemana','carregarPlanoSemana','salvarPlanoSemana','duplicarPlanoSemana','excluirPlanoSemana','gerarResumoPlanoSemana','copiarResumoPlanoSemana','exportarPlanoSemanaPDF','exportarPlanoSemanaXLSX','extrairPlanoAula','togglePlanoSemanalFullscreen','planoLoteDistribuir','planoLoteDistribuirEExtrair','planoLoteLimpar','planoPreenchTab','planoPreenchAplicar','planoPreenchAplicarEProximo','planoPreenchLerCampo','selecionarTodasTurmasPlano','limparSelecaoTurmasPlano','aplicarPlanoGeralNasTurmas','onBloomNivelChangeCrono','onBloomNivelChangePlano','planoAdjustAulas','planoDisciplinaChanged','planoResumoModoChanged','planoSetQtdAulas']
   .forEach(fn=>{ try{ if(typeof __wrapSafeGlobal === 'function') __wrapSafeGlobal(fn); }catch(e){} });
 
 
@@ -23568,7 +23684,7 @@ function __rehydrateShadowBackedStateAfterIDB(){
 
 
 // =========================
-// PWA/cache — atualização segura e diagnóstico de versão (v20.7.6)
+// PWA/cache — atualização segura e diagnóstico de versão (v20.7.7)
 // =========================
 function __sgpPwaEscape(s){
   try{ return String(s == null ? '' : s).replace(/[&<>'"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]; }); }catch(_){ return ''; }
@@ -23699,7 +23815,7 @@ async function __sgpForceSystemUpdate(){
     setTimeout(()=>{
       try{
         const url = new URL(location.href);
-        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.7.6') + '-' + Date.now());
+        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.7.7') + '-' + Date.now());
         location.replace(url.toString());
       }catch(_){ location.reload(); }
     }, 800);
@@ -36456,7 +36572,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.7.6',
+        version: versionLabel || 'v20.7.7',
         total: arr.length,
         okCount,
         failCount,
@@ -37099,6 +37215,8 @@ function __autoTestRunProvaPaulistaMapa(add){
         add('Prova Paulista: exportação Excel disponível', xlsxOk, xlsxOk ? '' : 'Faltam exportarDashProvaPaulistaXLSX/__ppSheetXml.', 'important', 'prova');
         const massaXlsxOk = (typeof __massaExportXLSX === 'function' && typeof __zipStore === 'function' && typeof __ppSheetXml === 'function');
         add('Edição em Massa: exportação Excel disponível', massaXlsxOk, massaXlsxOk ? 'Botão/função de Excel .xlsx disponível para edição externa.' : 'Falta __massaExportXLSX ou gerador XLSX.', 'important', 'massa');
+        const planoXlsxOk = (typeof exportarPlanoSemanaXLSX === 'function' && typeof __zipStore === 'function' && typeof __ppSheetXml === 'function');
+        add('Plano Semanal: exportação Excel disponível', planoXlsxOk, planoXlsxOk ? 'Função de Excel .xlsx disponível para exportar plano consolidado e aulas.' : 'Falta exportarPlanoSemanaXLSX ou gerador XLSX.', 'important', 'plano');
         const intervOk = (typeof toggleDashProvaPaulistaIntervencao === 'function' && typeof __ppIntervencaoPlainText === 'function' && typeof imprimirDashProvaPaulistaIntervencao === 'function');
         add('Prova Paulista: plano de intervenção disponível', intervOk, intervOk ? '' : 'Faltam funções de intervenção da Prova Paulista.', 'important', 'prova');
         const comunicOk = (typeof imprimirDashProvaPaulistaComunicados === 'function' && typeof __ppComunicadoHtml === 'function' && typeof __ppComunicadoOrientacao === 'function');
@@ -37960,7 +38078,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.7.6'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.7.7'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
