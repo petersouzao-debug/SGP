@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.7.8)</title>
+    <title>SGP - Gestão Final (V20.7.9)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,8 +42,8 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.7.8';
-      window.__SGP_APP_VERSION = '20.7.8';
+      window.__SGP_SW_VERSION = '20.7.9';
+      window.__SGP_APP_VERSION = '20.7.9';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -2314,6 +2314,33 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         .evt-planner { background-color: #f59e0b; }
         .evt-planner.done { background-color: #94a3b8; text-decoration: line-through; opacity:.7; }
         .evt-freq { background-color: #0d9488; font-size: .6rem !important; }
+
+        /* FIX v20.7.9: calendário compacto — eventos não podem deformar a grade mensal. */
+        .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; align-items: stretch; }
+        .cal-day { min-width: 0; overflow: hidden; max-height: 126px; }
+        .cal-day.has-events { background: linear-gradient(180deg, #f8fafc 0%, #f8fafc 72%, rgba(37,99,235,.035) 100%); }
+        .cal-events-stack { min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow: hidden; margin-top: 2px; }
+        .cal-event {
+            max-width: 100%; min-width: 0; height: 16px; line-height: 14px;
+            display: flex; align-items: center; gap: 4px;
+            font-size: 0.58rem; padding: 1px 5px; border-radius: 999px;
+            margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            opacity: .78; box-shadow: none; transform: none !important;
+        }
+        .cal-event::before {
+            content: ''; flex: 0 0 5px; width: 5px; height: 5px; border-radius: 999px;
+            background: rgba(255,255,255,.92); box-shadow: 0 0 0 1px rgba(15,23,42,.08);
+        }
+        .cal-event .cal-event-text { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+        .cal-event:hover { opacity: .95; transform: none !important; }
+        .cal-more {
+            height: 15px; line-height: 14px; max-width: 100%; min-width: 0;
+            font-size: .56rem; font-weight: 800; color: #64748b; background: rgba(100,116,139,.10);
+            border: 1px solid rgba(100,116,139,.18); border-radius: 999px; padding: 0 5px;
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: default;
+        }
+        body.dark-mode .cal-day.has-events { background: linear-gradient(180deg, #1e293b 0%, #1e293b 72%, rgba(96,165,250,.08) 100%); }
+        body.dark-mode .cal-more { color:#cbd5e1; background: rgba(148,163,184,.12); border-color: rgba(148,163,184,.22); }
 
         /* MODAIS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); display: none; justify-content: center; align-items: center; z-index: 9999; }
@@ -11667,7 +11694,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.7.8",
+                version: "v20.7.9",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -13681,32 +13708,51 @@ function addAulaIndividual(){
             for(let d=1;d<=dim;d++){
                 const dt=`${currAno}-${String(currMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const evs=aulas.filter(a=>a.data===dt);
-                let h=''; 
+                const eventItems=[];
 
-                // Aulas/eventos
+                const turmaCurta = (turma)=>{
+                    const raw = String(turma || '').trim();
+                    if(!raw) return '';
+                    return raw.replace(/º\s*Ano\s*/i,'º ').replace(/Ano\s*/i,'º ').replace(/\s+/g,' ').trim();
+                };
+
+                const addCalItem = (html)=>{ if(html) eventItems.push(html); };
+
+                // Aulas/eventos — visual compacto para não deformar o calendário.
                 evs.forEach(e=>{
                     let cClass = 'evt-aula';
-                    if(e.tipo === 'prova') cClass = 'evt-prova';
-                    if(e.tipo === 'atividade') cClass = 'evt-atividade';
-                    h+=`<div class="cal-event ${cClass}" data-onclick="excluirEventoCal(${__u(e.id)}, event)" title="${_escHTML(e.tema||'')}">${__u(e.turma?e.turma+': ':'')}${__u(e.tema)}</div>`
+                    let tipoLabel = 'Aula';
+                    if(e.tipo === 'prova'){ cClass = 'evt-prova'; tipoLabel = 'Prova'; }
+                    if(e.tipo === 'atividade'){ cClass = 'evt-atividade'; tipoLabel = 'Ativ.'; }
+                    const turmaLabel = turmaCurta(e.turma);
+                    const textoCurto = turmaLabel ? `${tipoLabel} · ${turmaLabel}` : tipoLabel;
+                    const titulo = `${tipoLabel}: ${String(e.tema||'Sem descrição')}${e.turma?' — '+e.turma:''}`;
+                    addCalItem(`<div class="cal-event ${cClass}" data-onclick="excluirEventoCal(${__u(e.id)}, event)" title="${_escHTML(titulo)}"><span class="cal-event-text">${_escHTML(textoCurto)}</span></div>`);
                 });
 
                 // Planner tasks
                 const pTasks=plannerByDate[dt]||[];
                 pTasks.forEach(tk=>{
                     const isDone=tk.status==='done';
-                    const icon=isDone?'✓':'📋';
-                    h+=`<div class="cal-event evt-planner ${isDone?'done':''}" onclick="try{abrirPlanner();}catch(e){}" title="${_escHTML(tk.title||'')}">${icon} ${_escHTML((tk.title||'').substring(0,20))}</div>`;
+                    const textoCurto = isDone ? 'Planner ✓' : 'Planner';
+                    addCalItem(`<div class="cal-event evt-planner ${isDone?'done':''}" onclick="try{abrirPlanner();}catch(e){}" title="${_escHTML(tk.title||'Planner')}"><span class="cal-event-text">${_escHTML(textoCurto)}</span></div>`);
                 });
 
                 // Frequency indicator
                 const fr=freqByDate[dt];
                 if(fr){
-                    h+=`<div class="cal-event evt-freq" title="Chamada: ${fr.P}P ${fr.F}F${fr.turma?' — '+fr.turma:''}">📝 ${fr.P}P ${fr.F}F</div>`;
+                    addCalItem(`<div class="cal-event evt-freq" title="Chamada: ${fr.P}P ${fr.F}F${fr.turma?' — '+fr.turma:''}"><span class="cal-event-text">Chamada</span></div>`);
+                }
+
+                const maxVisible = 4;
+                const visibleItems = eventItems.slice(0, maxVisible);
+                let h = '';
+                if(eventItems.length){
+                    h = `<div class="cal-events-stack">${visibleItems.join('')}${eventItems.length>maxVisible ? `<div class="cal-more" title="Mais ${eventItems.length-maxVisible} registro(s) neste dia">+${eventItems.length-maxVisible} registro(s)</div>` : ''}</div>`;
                 }
 
                 const cl=(d===t.getDate()&&currMes===t.getMonth()&&currAno===t.getFullYear())?'cal-today':'';
-                htmlBuffer+=`<div class="cal-day ${cl}" data-date="${dt}" data-onclick="abrirModalEvento('${dt}')"><span class="cal-number">${d}</span>${h}</div>`;
+                htmlBuffer+=`<div class="cal-day ${cl} ${eventItems.length?'has-events':''}" data-date="${dt}" data-onclick="abrirModalEvento('${dt}')"><span class="cal-number">${d}</span>${h}</div>`;
             }
             g.innerHTML = htmlBuffer;
         }
@@ -23815,7 +23861,7 @@ async function __sgpForceSystemUpdate(){
     setTimeout(()=>{
       try{
         const url = new URL(location.href);
-        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.7.8') + '-' + Date.now());
+        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.7.9') + '-' + Date.now());
         location.replace(url.toString());
       }catch(_){ location.reload(); }
     }, 800);
@@ -36555,7 +36601,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.7.8',
+        version: versionLabel || 'v20.7.9',
         total: arr.length,
         okCount,
         failCount,
@@ -38061,7 +38107,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.7.8'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.7.9'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
