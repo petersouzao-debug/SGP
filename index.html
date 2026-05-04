@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.7.9)</title>
+    <title>SGP - Gestão Final (V20.8.0)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,8 +42,8 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.7.9';
-      window.__SGP_APP_VERSION = '20.7.9';
+      window.__SGP_SW_VERSION = '20.8.0';
+      window.__SGP_APP_VERSION = '20.8.0';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -2315,7 +2315,7 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         .evt-planner.done { background-color: #94a3b8; text-decoration: line-through; opacity:.7; }
         .evt-freq { background-color: #0d9488; font-size: .6rem !important; }
 
-        /* FIX v20.7.9: calendário compacto — eventos não podem deformar a grade mensal. */
+        /* FIX v20.8.0: calendário compacto — eventos não podem deformar a grade mensal. */
         .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; align-items: stretch; }
         .cal-day { min-width: 0; overflow: hidden; max-height: 126px; }
         .cal-day.has-events { background: linear-gradient(180deg, #f8fafc 0%, #f8fafc 72%, rgba(37,99,235,.035) 100%); }
@@ -2341,6 +2341,30 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         }
         body.dark-mode .cal-day.has-events { background: linear-gradient(180deg, #1e293b 0%, #1e293b 72%, rgba(96,165,250,.08) 100%); }
         body.dark-mode .cal-more { color:#cbd5e1; background: rgba(148,163,184,.12); border-color: rgba(148,163,184,.22); }
+
+        /* FIX v20.8.0: ao clicar em uma data, o modal mostra todos os eventos daquele dia sem depender do hover. */
+        .modal-cal-evento-box { width: min(640px, 94vw); max-height: 86vh; overflow-y: auto; }
+        .cal-modal-date { display:inline-flex; align-items:center; gap:6px; margin: 2px 0 14px; color: var(--text-muted); font-size:.86rem; font-weight:700; }
+        .cal-day-events-panel { border:1px solid var(--border-color); border-radius:14px; background: rgba(248,250,252,.88); padding:12px; margin: 8px 0 16px; }
+        .cal-day-events-title { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; font-weight:900; color:var(--text-main); }
+        .cal-day-events-count { font-size:.72rem; color:#64748b; background:#eef2ff; border:1px solid #dbeafe; border-radius:999px; padding:3px 8px; white-space:nowrap; }
+        .cal-day-events-list { display:flex; flex-direction:column; gap:7px; max-height:260px; overflow:auto; padding-right:4px; }
+        .cal-day-event-row { display:grid; grid-template-columns: 82px 1fr auto; gap:10px; align-items:center; padding:8px 9px; border-radius:12px; background: var(--card-bg); border:1px solid rgba(148,163,184,.28); }
+        .cal-day-event-badge { display:inline-flex; align-items:center; justify-content:center; gap:5px; border-radius:999px; color:#fff; font-size:.72rem; font-weight:900; padding:4px 8px; white-space:nowrap; }
+        .cal-day-event-main { min-width:0; }
+        .cal-day-event-desc { font-size:.82rem; color:var(--text-main); font-weight:800; white-space:normal; word-break:break-word; }
+        .cal-day-event-meta { font-size:.72rem; color:var(--text-muted); margin-top:2px; }
+        .cal-day-event-actions { display:flex; gap:6px; align-items:center; }
+        .cal-day-event-mini-btn { border:1px solid var(--border-color); background:#f8fafc; color:#334155; border-radius:8px; padding:5px 8px; cursor:pointer; font-size:.72rem; font-weight:800; }
+        .cal-day-event-mini-btn.danger { color:#dc2626; border-color:#fecaca; background:#fff1f2; }
+        .cal-day-events-empty { color:var(--text-muted); font-size:.86rem; padding:8px; text-align:center; }
+        .cal-add-event-panel { border-top:1px solid var(--border-color); padding-top:14px; margin-top:10px; }
+        .cal-add-event-note { font-size:.78rem; color:var(--text-muted); margin: -4px 0 10px; }
+        .cal-more { cursor:pointer; }
+        body.dark-mode .cal-day-events-panel { background: rgba(15,23,42,.40); }
+        body.dark-mode .cal-day-events-count { background:rgba(59,130,246,.12); border-color:rgba(96,165,250,.24); color:#bfdbfe; }
+        body.dark-mode .cal-day-event-mini-btn { background:#0f172a; color:#e2e8f0; }
+        body.dark-mode .cal-day-event-mini-btn.danger { color:#fecaca; background:rgba(127,29,29,.25); border-color:rgba(248,113,113,.32); }
 
         /* MODAIS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); display: none; justify-content: center; align-items: center; z-index: 9999; }
@@ -6222,24 +6246,40 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
     </div>
 
     <div id="modalEventoCal" class="modal-overlay">
-        <div class="modal-box">
-            <h2>Novo Evento</h2>
+        <div class="modal-box modal-cal-evento-box">
+            <h2 style="margin-bottom:4px;"><i class="far fa-calendar-alt"></i> Eventos do dia</h2>
+            <div id="calModalDataLabel" class="cal-modal-date">Data selecionada</div>
             <input type="hidden" id="inputDataCal">
-            <div class="form-group">
-                <label>Tipo</label>
-                <select id="inputTipoEvento" class="inp">
-                    <option value="aula">Aula</option>
-                    <option value="prova">Prova</option>
-                    <option value="atividade">Atividade</option>
-                </select>
+
+            <div class="cal-day-events-panel">
+                <div class="cal-day-events-title">
+                    <span><i class="fas fa-list-check"></i> Registros desta data</span>
+                    <span id="calDiaEventosCount" class="cal-day-events-count">0 registro(s)</span>
+                </div>
+                <div id="calDiaEventosLista" class="cal-day-events-list">
+                    <div class="cal-day-events-empty">Nenhum evento registrado nesta data.</div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Descrição</label>
-                <input type="text" id="inputDescEvento" class="inp" placeholder="Ex: Prova Mensal, Aula 12...">
-            </div>
-            <div style="text-align: right; margin-top: 20px;">
-                <button data-onclick="fecharModais()" style="padding: 8px 15px; border:none; bg:transparent; cursor:pointer;">Cancelar</button>
-                <button data-onclick="salvarEventoCal()" class="btn-primary">Salvar</button>
+
+            <div class="cal-add-event-panel">
+                <h3 style="margin:0 0 8px;font-size:1rem;color:var(--text-main);"><i class="fas fa-plus-circle"></i> Adicionar novo evento</h3>
+                <div id="calAddEventoAviso" class="cal-add-event-note"></div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="inputTipoEvento" class="inp">
+                        <option value="aula">Aula</option>
+                        <option value="prova">Prova</option>
+                        <option value="atividade">Atividade</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="inputDescEvento" class="inp" placeholder="Ex: Prova Mensal, Aula 12...">
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center;margin-top: 20px;">
+                    <button data-onclick="fecharModais()" style="padding: 8px 15px; border:none; background:#f1f5f9; border-radius:8px; cursor:pointer;">Fechar</button>
+                    <button id="btnSalvarEventoCal" data-onclick="salvarEventoCal()" class="btn-primary">Salvar novo evento</button>
+                </div>
             </div>
         </div>
     </div>
@@ -11694,7 +11734,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.7.9",
+                version: "v20.8.0",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -13756,10 +13796,130 @@ function addAulaIndividual(){
             }
             g.innerHTML = htmlBuffer;
         }
+        function __calTipoInfo(tipo){
+            const t = String(tipo || 'aula').toLowerCase();
+            if(t === 'prova') return {label:'Prova', cls:'evt-prova', color:'#dc2626', icon:'fa-clipboard-check'};
+            if(t === 'atividade') return {label:'Atividade', cls:'evt-atividade', color:'#9333ea', icon:'fa-pen-to-square'};
+            if(t === 'planner') return {label:'Planner', cls:'evt-planner', color:'#f59e0b', icon:'fa-list-check'};
+            if(t === 'chamada') return {label:'Chamada', cls:'evt-freq', color:'#0d9488', icon:'fa-calendar-check'};
+            return {label:'Aula', cls:'evt-aula', color:'#3b82f6', icon:'fa-book-open'};
+        }
+
+        function __calDataBR(dt){
+            try{
+                const p=String(dt||'').split('-');
+                if(p.length===3) return `${p[2]}/${p[1]}/${p[0]}`;
+            }catch(_){}
+            return String(dt||'');
+        }
+
+        function __calEventosDoDia(dt){
+            const itens=[];
+            try{
+                (aulas||[]).filter(a=>a && a.data===dt).forEach(a=>{
+                    const info=__calTipoInfo(a.tipo || 'aula');
+                    itens.push({
+                        kind:'aula', id:a.id, tipo:a.tipo || 'aula', label:info.label, color:info.color, icon:info.icon,
+                        desc:String(a.tema || 'Sem descrição'), turma:String(a.turma || ''),
+                        meta:[a.turma?`Turma: ${a.turma}`:'', a.bimestre?`${a.bimestre}º bimestre`:''].filter(Boolean).join(' • '),
+                        deletavel:true
+                    });
+                });
+            }catch(_){}
+            try{
+                (plannerTasks||[]).forEach(tk=>{
+                    if(!tk || tk.date!==dt) return;
+                    const info=__calTipoInfo('planner');
+                    const st = tk.status==='done' ? 'Concluído' : (tk.status || 'Pendente');
+                    itens.push({
+                        kind:'planner', tipo:'planner', label:info.label, color:info.color, icon:info.icon,
+                        desc:String(tk.title || 'Tarefa do planner'), turma:String(tk.turma || ''),
+                        meta:[st, tk.bimestre?`${tk.bimestre}º bimestre`:''].filter(Boolean).join(' • '),
+                        planner:true
+                    });
+                });
+            }catch(_){}
+            try{
+                const freq=window.__sgpFrequencia||{};
+                Object.keys(freq).forEach(key=>{
+                    const p=key.split('|');
+                    if(p[2]!==dt) return;
+                    if(filtroTurma!=='Todas' && p[0]!==filtroTurma) return;
+                    const reg=freq[key]||{};
+                    let P=0,F=0;
+                    Object.keys(reg).forEach(k=>{ if(k==='_meta') return; if(reg[k]==='P') P++; else if(reg[k]==='F') F++; });
+                    if(P+F<=0) return;
+                    const info=__calTipoInfo('chamada');
+                    itens.push({
+                        kind:'chamada', tipo:'chamada', label:info.label, color:info.color, icon:info.icon,
+                        desc:`Chamada registrada`, turma:String(p[0]||''),
+                        meta:`${P} presente(s) • ${F} falta(s)${p[0]?' • Turma: '+p[0]:''}`
+                    });
+                });
+            }catch(_){}
+            return itens;
+        }
+
+        function __calRenderListaEventosDia(dt){
+            const lista=document.getElementById('calDiaEventosLista');
+            const count=document.getElementById('calDiaEventosCount');
+            const lab=document.getElementById('calModalDataLabel');
+            if(lab) lab.innerHTML = `<i class="far fa-calendar"></i> ${_escHTML(__calDataBR(dt))}`;
+            if(!lista) return;
+            const itens=__calEventosDoDia(dt);
+            if(count) count.textContent = `${itens.length} registro(s)`;
+            if(!itens.length){
+                lista.innerHTML = '<div class="cal-day-events-empty">Nenhum evento registrado nesta data.</div>';
+                return;
+            }
+            lista.innerHTML = itens.map((it,idx)=>{
+                const badge = `<span class="cal-day-event-badge" style="background:${it.color};"><i class="fas ${_escHTML(it.icon)}"></i> ${_escHTML(it.label)}</span>`;
+                const meta = it.meta ? `<div class="cal-day-event-meta">${_escHTML(it.meta)}</div>` : '';
+                const del = it.deletavel ? `<button type="button" class="cal-day-event-mini-btn danger" data-cal-del="${_escHTML(String(it.id))}" title="Excluir este evento"><i class="fas fa-trash"></i></button>` : '';
+                const planner = it.planner ? `<button type="button" class="cal-day-event-mini-btn" data-cal-planner="1"><i class="fas fa-arrow-up-right-from-square"></i> Abrir</button>` : '';
+                const actions = (del || planner) ? `<div class="cal-day-event-actions">${planner}${del}</div>` : '<div></div>';
+                return `<div class="cal-day-event-row" title="${_escHTML(it.desc)}"><div>${badge}</div><div class="cal-day-event-main"><div class="cal-day-event-desc">${_escHTML(it.desc)}</div>${meta}</div>${actions}</div>`;
+            }).join('');
+        }
+
+        function __calExcluirEventoDia(id){
+            if(!id) return;
+            const alvo = (aulas||[]).find(x => String(x && x.id) === String(id));
+            if(confirm('Excluir este evento do calendário?')){
+                excluirAula(alvo ? alvo.id : id);
+                const dt = document.getElementById('inputDataCal')?.value || '';
+                try{ __calRenderListaEventosDia(dt); }catch(_){}
+                try{ renderizarCalendario(); }catch(_){}
+            }
+        }
+
+        document.addEventListener('click', function(ev){
+            const del = ev.target && ev.target.closest ? ev.target.closest('[data-cal-del]') : null;
+            if(del){
+                ev.preventDefault(); ev.stopPropagation();
+                __calExcluirEventoDia(del.getAttribute('data-cal-del'));
+                return;
+            }
+            const pl = ev.target && ev.target.closest ? ev.target.closest('[data-cal-planner]') : null;
+            if(pl){
+                ev.preventDefault(); ev.stopPropagation();
+                try{ fecharModais(false); abrirPlanner(); }catch(e){ try{ showToast('Planner indisponível no momento.', 'error'); }catch(_){} }
+            }
+        });
+
         function abrirModalEvento(dt) {
-            if(filtroTurma === 'Todas') return showToast("Selecione uma turma.", "error");
             document.getElementById('inputDataCal').value = dt;
             document.getElementById('inputDescEvento').value = '';
+            const canAdd = filtroTurma !== 'Todas';
+            const aviso = document.getElementById('calAddEventoAviso');
+            const desc = document.getElementById('inputDescEvento');
+            const tipo = document.getElementById('inputTipoEvento');
+            const btn = document.getElementById('btnSalvarEventoCal');
+            if(aviso) aviso.textContent = canAdd ? `Novo evento será salvo na turma ${filtroTurma}.` : 'Para adicionar novo evento, selecione uma turma específica. Mesmo assim, os registros desta data podem ser consultados abaixo.';
+            if(desc) desc.disabled = !canAdd;
+            if(tipo) tipo.disabled = !canAdd;
+            if(btn){ btn.disabled = !canAdd; btn.style.opacity = canAdd ? '1' : '.55'; btn.style.cursor = canAdd ? 'pointer' : 'not-allowed'; }
+            __calRenderListaEventosDia(dt);
             abrirModal('modalEventoCal');
         }
         function salvarEventoCal() {
@@ -23861,7 +24021,7 @@ async function __sgpForceSystemUpdate(){
     setTimeout(()=>{
       try{
         const url = new URL(location.href);
-        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.7.9') + '-' + Date.now());
+        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.0') + '-' + Date.now());
         location.replace(url.toString());
       }catch(_){ location.reload(); }
     }, 800);
@@ -36601,7 +36761,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.7.9',
+        version: versionLabel || 'v20.8.0',
         total: arr.length,
         okCount,
         failCount,
@@ -38107,7 +38267,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.7.9'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.0'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }

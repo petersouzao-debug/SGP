@@ -1,4 +1,4 @@
-// SGP - Service Worker v20.7.9
+// SGP - Service Worker v20.8.0
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -57,9 +57,9 @@
 //  - ADD v20.7.2: comunicados imprimíveis aos responsáveis a partir da Prova Paulista
 //  - ADD v20.7.5: integração Prova Paulista → Tutoria para acompanhamento pedagógico
 //  - ADD v20.7.7: exportação Excel .xlsx no Plano Semanal
-//  - FIX v20.7.9: remove etiqueta azul de registro no Cronograma após marcar aula ministrada
+//  - FIX v20.8.0: remove etiqueta azul de registro no Cronograma após marcar aula ministrada
 
-const SW_VERSION = '20.7.9';
+const SW_VERSION = '20.8.0';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
