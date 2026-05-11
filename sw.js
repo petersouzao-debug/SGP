@@ -1,4 +1,4 @@
-// SGP - Service Worker v20.8.0
+// SGP - Service Worker v20.8.3
 // Melhorias desta versão:
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
@@ -59,7 +59,10 @@
 //  - ADD v20.7.7: exportação Excel .xlsx no Plano Semanal
 //  - FIX v20.8.0: remove etiqueta azul de registro no Cronograma após marcar aula ministrada
 
-const SW_VERSION = '20.8.0';
+//  - FIX v20.8.1: contador de tempo das Atividades ampliado e com mais destaque visual
+//  - FIX v20.8.2: cronômetro das Atividades ampliado novamente e com efeito sonoro nos últimos segundos
+//  - FIX v20.8.3: evita conflito do efeito pulse do cronômetro com outras animações do sistema
+const SW_VERSION = '20.8.3';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
