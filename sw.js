@@ -1,5 +1,6 @@
-// SGP - Service Worker v20.8.3
+// SGP - Service Worker v20.8.4
 // Melhorias desta versão:
+//  - FIX v20.8.4: alinha título, versão do app e Service Worker para forçar atualização do PWA/desktop
 //  - Performance do dashboard: abre a tela primeiro e adia gráficos/comparações pesadas
 //  - Limite de entradas no cache (CACHE_MAX_ENTRIES) evita crescimento ilimitado
 //  - Expiração de entradas antigas pelo campo x-sw-cached-at
@@ -62,7 +63,7 @@
 //  - FIX v20.8.1: contador de tempo das Atividades ampliado e com mais destaque visual
 //  - FIX v20.8.2: cronômetro das Atividades ampliado novamente e com efeito sonoro nos últimos segundos
 //  - FIX v20.8.3: evita conflito do efeito pulse do cronômetro com outras animações do sistema
-const SW_VERSION = '20.8.3';
+const SW_VERSION = '20.8.4';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
