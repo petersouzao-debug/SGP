@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.8.4)</title>
+    <title>SGP - Gestão Final (V20.8.5)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,8 +42,8 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.8.4';
-      window.__SGP_APP_VERSION = '20.8.4';
+      window.__SGP_SW_VERSION = '20.8.5';
+      window.__SGP_APP_VERSION = '20.8.5';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -1144,6 +1144,8 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         .aluno-badges { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px 36px; }
         .blitz-box { background:var(--bg-body); padding:6px; border-radius:8px; border:1px solid var(--border-color); display:inline-flex; align-items:center; gap:4px; }
         .blitz-icon { color:var(--warning); font-size:0.8rem; }
+        .btn-transfer-card { border:none; background:transparent; color:#2563eb; cursor:pointer; padding:8px; border-radius:6px; transition:background 0.2s; }
+        .btn-transfer-card:hover { background:rgba(37,99,235,0.1); }
         .btn-delete-card { border:none; background:transparent; color:var(--danger); cursor:pointer; padding:8px; border-radius:6px; transition:background 0.2s; }
         .btn-delete-card:hover { background:rgba(239,68,68,0.1); }
         .btn-boletim-card { background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:0.75rem; padding:4px 8px; border-radius:6px; cursor:pointer; transition:background 0.2s; display:inline-flex; align-items:center; gap:4px; }
@@ -1151,6 +1153,8 @@ body.dark-mode .aluno-tutoria-btn.warn{color:#fde68a;background:rgba(245,158,11,
         body.dark-mode .btn-boletim-card { background:#0c4a6e; color:#bae6fd; border-color:#075985; }
         body.dark-mode .btn-boletim-card:hover { background:#075985; }
         body.dark-mode .blitz-box { background:var(--bg-body); border-color:var(--border-color); }
+        body.dark-mode .btn-transfer-card { color:#93c5fd; }
+        body.dark-mode .btn-transfer-card:hover { background:rgba(96,165,250,0.15); }
         body.dark-mode .btn-delete-card { color:#f87171; }
         body.dark-mode .btn-delete-card:hover { background:rgba(248,113,113,0.15); }
 
@@ -6227,6 +6231,23 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
     <div id="planoSemanalPrint" style="position:fixed; left:-9999px; top:0; width:794px; padding:24px; background:#fff; color:#000; font-family: Arial, sans-serif;"></div>
     <div id="modalNovaTurma" class="modal-overlay"><div class="modal-box"><h2>Criar Turma</h2><div class="form-group"><input type="text" id="inputNomeTurma" class="inp"></div><div style="text-align: right; margin-top: 20px;"><button data-onclick="fecharModais()" style="padding: 8px 15px; border:none; bg:transparent; cursor:pointer;">Cancelar</button><button data-onclick="salvarTurma()" class="btn-primary">Salvar</button></div></div></div>
     <div id="modalNovoAluno" class="modal-overlay"><div class="modal-box"><h2>Adicionar Alunos</h2><div class="form-group"><select id="selectTurmaAluno" class="inp"></select></div><div class="form-group"><textarea id="inputNomes" class="inp" rows="5"></textarea></div><div style="text-align: right; margin-top: 20px;"><button data-onclick="fecharModais()" style="padding: 8px 15px; border:none; bg:transparent; cursor:pointer;">Cancelar</button><button data-onclick="salvarAlunos()" class="btn-primary">Cadastrar</button></div></div></div>
+    <div id="modalTransferirAluno" class="modal-overlay">
+        <div class="modal-box" style="max-width:480px;">
+            <h2><i class="fas fa-arrow-right"></i> Transferir aluno</h2>
+            <p id="transferAlunoInfo" style="margin:0 0 16px;color:var(--text-muted);line-height:1.5;"></p>
+            <div class="form-group">
+                <label for="selectTurmaDestino" style="display:block;margin-bottom:7px;font-weight:700;">Turma de destino</label>
+                <select id="selectTurmaDestino" class="inp"></select>
+            </div>
+            <div style="padding:10px 12px;border-radius:10px;background:rgba(37,99,235,.08);color:var(--text-main);font-size:.85rem;line-height:1.45;">
+                As notas, ocorrências, entregas, pareceres e demais dados do card serão mantidos. A posição no mapa de sala será liberada.
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
+                <button data-onclick="fecharModais()" style="padding:8px 15px;border:none;background:transparent;color:var(--text-main);cursor:pointer;">Cancelar</button>
+                <button data-onclick="confirmarTransferenciaAluno()" class="btn-primary"><i class="fas fa-arrow-right"></i> Transferir</button>
+            </div>
+        </div>
+    </div>
     <div id="modalSorteio" class="modal-overlay">
         <div class="modal-box" style="text-align:center;max-width:520px;">
             <h2 style="color:#64748b;"><i class="fas fa-dice"></i> Sorteador</h2>
@@ -7328,7 +7349,7 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
 
     <script>
         // --- ESTADOS ---
-        let turmas=[], alunos=[], aulas=[], planosSemana={}, correcaoProvas={}, filtroTurma='Todas', alunoEdicaoID=null, abaAtual='lp', visaoAtual='cards', bimestreAtual=1, filtroRiscoAtivo=false, filtroInclusaoAtivo=false, filtroTutoriaAtivo=false, privacyMode=false, currMes=new Date().getMonth(), currAno=new Date().getFullYear();
+        let turmas=[], alunos=[], aulas=[], planosSemana={}, correcaoProvas={}, filtroTurma='Todas', alunoEdicaoID=null, alunoTransferenciaID=null, abaAtual='lp', visaoAtual='cards', bimestreAtual=1, filtroRiscoAtivo=false, filtroInclusaoAtivo=false, filtroTutoriaAtivo=false, privacyMode=false, currMes=new Date().getMonth(), currAno=new Date().getFullYear();
 
         // --- COMPAT: lista base da turma (Ranking / Fechamento/SED) ---
         // Corrige erro: "_rankGetListaBase is not defined" em builds onde a função não existia.
@@ -11740,7 +11761,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.8.4",
+                version: "v20.8.5",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -12851,7 +12872,7 @@ function selTurma(n){
             card.setAttribute('aria-label', 'Aluno ' + (a.nome || ''));
             // Check if content actually changed
             const oldHash = card.dataset.hash || '';
-            const newHash = `${idx}_${b.media_lp}_${b.media_red}_${b.comportamento}_${a.elegivel}_${a.tutorando}`;
+            const newHash = `${idx}_${a.turma}_${b.media_lp}_${b.media_red}_${b.comportamento}_${a.elegivel}_${a.tutorando}`;
             if(oldHash === newHash) return;
             _fillCardHTML(card, a, b, idx);
             card.dataset.hash = newHash;
@@ -12872,7 +12893,7 @@ function selTurma(n){
                 ? `<div class="sparkline-box"><canvas class="sparkline-canvas" width="80" height="28"></canvas><span class="sparkline-trend ${trend.cls}">${trend.icon}</span></div>`
                 : '';
 
-            card.dataset.hash = `${idx}_${b.media_lp}_${b.media_red}_${b.comportamento}_${a.elegivel}_${a.tutorando}`;
+            card.dataset.hash = `${idx}_${a.turma}_${b.media_lp}_${b.media_red}_${b.comportamento}_${a.elegivel}_${a.tutorando}`;
             card.innerHTML = `
                 <div class="card-header">
                     <div class="card-header-left">
@@ -12893,6 +12914,9 @@ function selTurma(n){
                         </div>
                         <button class="btn-boletim-card" data-onclick="abrirBoletim(${__u(a.id)})" title="Boletim" aria-label="Ver boletim">
                             <i class="fas fa-print"></i>
+                        </button>
+                        <button class="btn-transfer-card" data-onclick="abrirTransferenciaAluno(${__u(a.id)})" title="Transferir para outra turma" aria-label="Transferir aluno para outra turma">
+                            <i class="fas fa-arrow-right"></i>
                         </button>
                         <button class="btn-delete-card" data-onclick="confirmarDelAluno(${__u(a.id)})" title="Remover aluno" aria-label="Remover aluno">
                             <i class="fas fa-trash"></i>
@@ -14607,6 +14631,50 @@ function __cmpBinIndex(v){
         }
         function abrirModalAluno(){if(turmas.length===0)return showToast("Crie Turma", "error"); const s=document.getElementById('selectTurmaAluno');s.innerHTML='';turmas.forEach(t=>s.innerHTML+=`<option value="${_escHTML(t)}">${_escHTML(t)}</option>`);if(filtroTurma!=='Todas')s.value=filtroTurma;abrirModal('modalNovoAluno');}
         function salvarAlunos(){const t=document.getElementById('selectTurmaAluno').value, ns=document.getElementById('inputNomes').value.split('\n'); const dL=()=>({a1:0,a2:0,a3:0,a4:0,a5:0,rec:0}); const dR=()=>({r1:0,r2:0,leit:0}); ns.forEach(n=>{if(n.trim())alunos.push({id:__newId(),nome:n.trim(),turma:t,mesa:null,inteligencias:[],bimestres:{1:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},2:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},3:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""},4:{notas_lp:dL(),media_lp:"0.0",notas_red:dR(),media_red:"0.0",entregas_red:{r1:'pendente',r2:'pendente'},livro:"",status_livro:"Pendente",comportamento:10,ocorrencias:[],parecer:""}}})});salvarDadosLocal();document.getElementById('inputNomes').value='';fecharModais();selTurma(t); showToast("Alunos cadastrados!");}
+
+        function abrirTransferenciaAluno(id){
+            const a = alunos.find(al => String(al.id) === String(id));
+            if(!a) return showToast("Aluno não encontrado.", "error");
+            const destinos = (turmas || []).filter(t => t && t !== a.turma);
+            if(destinos.length === 0) return showToast("Crie outra turma antes de transferir o aluno.", "error");
+
+            alunoTransferenciaID = a.id;
+            const info = document.getElementById('transferAlunoInfo');
+            if(info) info.textContent = `${a.nome} está atualmente na turma ${a.turma}.`;
+
+            const select = document.getElementById('selectTurmaDestino');
+            if(!select) return;
+            select.innerHTML = '';
+            destinos.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                select.appendChild(opt);
+            });
+            abrirModal('modalTransferirAluno');
+        }
+
+        function confirmarTransferenciaAluno(){
+            const a = alunos.find(al => String(al.id) === String(alunoTransferenciaID));
+            const select = document.getElementById('selectTurmaDestino');
+            const destino = select ? String(select.value || '').trim() : '';
+            if(!a) return showToast("Aluno não encontrado.", "error");
+            if(!destino || !(turmas || []).includes(destino)) return showToast("Selecione uma turma válida.", "error");
+            if(destino === a.turma) return showToast("O aluno já pertence a essa turma.", "error");
+
+            const origem = a.turma;
+            a.turma = destino;
+            a.mesa = null;
+            alunoTransferenciaID = null;
+
+            salvarDadosLocal();
+            fecharModais();
+            renderizarMenu();
+            renderizarVisaoContent();
+            try{ if(visaoAtual === 'correcao') corRenderAll(); }catch(_){ }
+            showToast(`${a.nome} foi transferido(a) de ${origem} para ${destino}.`, "success");
+        }
+
         function delAluno(id){if(confirm("Excluir?")){alunos=alunos.filter(a=>a.id!==id);salvarDadosLocal();renderizarVisaoContent();}}
         function confirmarDelAluno(id){
             const a = alunos.find(al => al.id === id);
@@ -19552,12 +19620,12 @@ function __wrapSafeGlobal(fnName){
 
 (function __wrapAllOnclickSafely(){
   const names = [
-    'abrirConfig','abrirDetalhes','abrirGeradorGrupos','abrirLinksRapidos','abrirModal','abrirModalAluno','abrirModalCopiarTabela','abrirModalEvento','abrirTimer',
+    'abrirConfig','abrirDetalhes','abrirGeradorGrupos','abrirLinksRapidos','abrirModal','abrirModalAluno','abrirTransferenciaAluno','abrirModalCopiarTabela','abrirModalEvento','abrirTimer',
     'addAulaIndividual','addOcorrencia','addTagParecer','apagarLayout','baixarBackup','baixarLog','cfgAdicionarDisciplina','clonarAulas','copiarConteudoTabela',
     'copiarListaRisco','criarBackupAgora','delAluno','delTurma','excluirAula','excluirBackup','excluirEventoCal','exportarCSV','fecharModais','funcBlitz',
     '__riskCopyFollowupList','__riskCopyFamilyMessages',
     'gerarGrupos','gerarParecer','imprimirFicha','limparBusca','mudarAba','mudarBimestre','mudarMes','mudarVisao','pauseTimer','redo','resetTimer',
-    'restaurarBackup','restaurarUltimoBackup','salvarAlteracoesDetalhadas','salvarAlunos','salvarAulasLote','salvarConfig','salvarEdicaoMassa','salvarEventoCal',
+    'restaurarBackup','restaurarUltimoBackup','salvarAlteracoesDetalhadas','salvarAlunos','confirmarTransferenciaAluno','salvarAulasLote','salvarConfig','salvarEdicaoMassa','salvarEventoCal',
     'salvarLayout','salvarTurma','selTurma','setTimer','sortearAluno','startTimer','toggleDarkMode','toggleFiltroInclusao','toggleFiltroRisco','toggleFiltroTutoria','togglePrivacy','linkCardsAdd','linkCardsRemove','abrirLinkCard',
     'toggleZenMode','touchSelectAluno','touchSelectMesa','undo','diagExecutarTestes','diagCopiarRelatorio','diagLimpar'
   ];
@@ -24027,7 +24095,7 @@ async function __sgpForceSystemUpdate(){
     setTimeout(()=>{
       try{
         const url = new URL(location.href);
-        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.4') + '-' + Date.now());
+        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.5') + '-' + Date.now());
         location.replace(url.toString());
       }catch(_){ location.reload(); }
     }, 800);
@@ -36800,7 +36868,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.8.4',
+        version: versionLabel || 'v20.8.5',
         total: arr.length,
         okCount,
         failCount,
@@ -38306,7 +38374,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.4'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.5'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
