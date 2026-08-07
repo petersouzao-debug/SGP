@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.8.5)</title>
+    <title>SGP - Gestão Final (V20.8.6)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,8 +42,8 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.8.5';
-      window.__SGP_APP_VERSION = '20.8.5';
+      window.__SGP_SW_VERSION = '20.8.6';
+      window.__SGP_APP_VERSION = '20.8.6';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -6937,10 +6937,13 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
 
                                 <div class="actions" style="margin-top:12px; gap:10px; flex-wrap:wrap;">
                                     <button class="btn-planner" data-onclick="vfIniciarSessao()"><i class="fas fa-play"></i> Iniciar sessão</button>
+                                    <button id="vfBtnTTS" class="btn-planner" data-onclick="vfTTSToggle()" title="Ativar ou desativar a leitura automática"><i class="fas fa-volume-high"></i> Leitor: ligado</button>
+                                    <button id="vfBtnTTSRepeat" class="btn-planner" data-onclick="vfTTSRepeat()" title="Repetir a leitura da pergunta ou da resposta"><i class="fas fa-repeat"></i> Repetir leitura</button>
                                     <button id="vfBtnNext" class="btn-primary" data-onclick="vfProxima()" title="Avançar para a próxima pergunta"><i class="fas fa-forward"></i> Próxima</button>
                                     <button class="btn-planner" data-onclick="vfResetSessao()"><i class="fas fa-rotate"></i> Reset</button>
                                 </div>
 
+                                <div id="vfTTSStatus" class="act-mini" style="margin-top:8px;"><i class="fas fa-volume-high"></i> Leitura automática ativada.</div>
                                 <div id="vfMsg" class="act-mini" style="margin-top:10px;"></div>
                             </div>
                         </div>
@@ -11761,7 +11764,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.8.5",
+                version: "v20.8.6",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -22125,6 +22128,151 @@ let vfState = {
   choice: null
 };
 
+// Leitor de texto do Verdadeiro/Falso — usa a síntese de voz nativa do navegador.
+// Mantido isolado da lógica do jogo para não alterar banco, pontuação ou sequência.
+const VF_TTS_STORAGE = 'sgp_atividades_vf_tts';
+let vfTTSState = { enabled: true };
+
+function _vfTTSAvailable(){
+  return !!(window.speechSynthesis && window.SpeechSynthesisUtterance);
+}
+
+function _vfTTSLoadPref(){
+  try{
+    const raw = (typeof __storageGetItem === 'function') ? __storageGetItem(VF_TTS_STORAGE) : localStorage.getItem(VF_TTS_STORAGE);
+    if(raw === '0') vfTTSState.enabled = false;
+    if(raw === '1') vfTTSState.enabled = true;
+  }catch(_){ }
+}
+
+function _vfTTSSavePref(){
+  try{
+    const val = vfTTSState.enabled ? '1' : '0';
+    if(typeof __safeLSSet === 'function') __safeLSSet(VF_TTS_STORAGE, val);
+    else localStorage.setItem(VF_TTS_STORAGE, val);
+  }catch(_){ }
+}
+
+function _vfTTSCurrentItem(){
+  if(!vfState.started || !Array.isArray(vfState.order) || vfBank.length===0) return null;
+  const idx = vfState.order[vfState.idx];
+  return Number.isInteger(idx) ? (vfBank[idx] || null) : null;
+}
+
+function _vfTTSVoice(){
+  try{
+    const voices = window.speechSynthesis.getVoices() || [];
+    return voices.find(v => String(v.lang||'').toLowerCase()==='pt-br')
+      || voices.find(v => String(v.lang||'').toLowerCase().startsWith('pt'))
+      || null;
+  }catch(_){ return null; }
+}
+
+function _vfTTSSpeak(text, force=false){
+  const txt = String(text || '').replace(/\s+/g,' ').trim();
+  if(!txt) return false;
+  if(!_vfTTSAvailable()){
+    if(force) _actToast('Leitura de voz não disponível neste navegador.', 'error');
+    return false;
+  }
+  if(!force && !vfTTSState.enabled) return false;
+  try{
+    const synth = window.speechSynthesis;
+    const wasBusy = !!(synth.speaking || synth.pending);
+    if(wasBusy) synth.cancel();
+    const u = new SpeechSynthesisUtterance(txt);
+    u.lang = 'pt-BR';
+    u.rate = 0.95;
+    u.pitch = 1;
+    const voice = _vfTTSVoice();
+    if(voice) u.voice = voice;
+    // Na primeira leitura fala imediatamente (melhor compatibilidade com o gesto do usuário).
+    // Se já havia uma fala em andamento, aguarda poucos ms após cancel() para evitar corte no Android/Chrome.
+    if(wasBusy){
+      setTimeout(()=>{ try{ synth.speak(u); }catch(_){ } }, 35);
+    }else{
+      synth.speak(u);
+    }
+    return true;
+  }catch(_){
+    if(force) _actToast('Não foi possível iniciar a leitura de voz.', 'error');
+    return false;
+  }
+}
+
+function _vfTTSQuestion(force=false){
+  const it = _vfTTSCurrentItem();
+  if(!it) return false;
+  return _vfTTSSpeak(`${String(it.t||'').trim()}. Verdadeiro ou falso?`, force);
+}
+
+function _vfTTSAnswer(force=false){
+  const it = _vfTTSCurrentItem();
+  if(!it) return false;
+  const ans = (it.a === 'F') ? 'Falso' : 'Verdadeiro';
+  return _vfTTSSpeak(`Resposta correta: ${ans}.`, force);
+}
+
+function vfTTSRepeat(){
+  if(!_vfTTSAvailable()){
+    _actToast('Leitura de voz não disponível neste navegador.', 'error');
+    return;
+  }
+  if(!vfState.started){
+    _actToast('Inicie uma sessão para usar o leitor.', 'error');
+    return;
+  }
+  const it = _vfTTSCurrentItem();
+  if(!it) return;
+  if(vfState.answered){
+    const ans = (it.a === 'F') ? 'Falso' : 'Verdadeiro';
+    _vfTTSSpeak(`${String(it.t||'').trim()}. Resposta correta: ${ans}.`, true);
+  }else{
+    _vfTTSQuestion(true);
+  }
+}
+
+function vfTTSUpdateUI(){
+  const btn = document.getElementById('vfBtnTTS');
+  const rpt = document.getElementById('vfBtnTTSRepeat');
+  const status = document.getElementById('vfTTSStatus');
+  const available = _vfTTSAvailable();
+
+  if(btn){
+    btn.disabled = !available;
+    btn.innerHTML = vfTTSState.enabled
+      ? '<i class="fas fa-volume-high"></i> Leitor: ligado'
+      : '<i class="fas fa-volume-xmark"></i> Leitor: desligado';
+    btn.title = available ? 'Ativar ou desativar a leitura automática' : 'Leitura de voz indisponível neste navegador';
+  }
+  if(rpt) rpt.disabled = !available || !vfState.started;
+  if(status){
+    if(!available) status.innerHTML = '<i class="fas fa-volume-xmark"></i> Leitura de voz indisponível neste navegador.';
+    else if(vfTTSState.enabled) status.innerHTML = '<i class="fas fa-volume-high"></i> Leitura automática ativada.';
+    else status.innerHTML = '<i class="fas fa-volume-xmark"></i> Leitura automática desativada.';
+  }
+}
+
+function vfTTSToggle(){
+  if(!_vfTTSAvailable()){
+    _actToast('Leitura de voz não disponível neste navegador.', 'error');
+    vfTTSUpdateUI();
+    return;
+  }
+  vfTTSState.enabled = !vfTTSState.enabled;
+  _vfTTSSavePref();
+  if(!vfTTSState.enabled){
+    try{ window.speechSynthesis.cancel(); }catch(_){ }
+  }
+  vfTTSUpdateUI();
+  if(vfTTSState.enabled && vfState.started){
+    if(vfState.answered) _vfTTSAnswer();
+    else _vfTTSQuestion();
+  }
+}
+
+_vfTTSLoadPref();
+
 // Estado Memória
 let memState = {
   started: false,
@@ -22986,6 +23134,8 @@ function vfIniciarSessao(){
   if(msg) msg.textContent = '';
 
   vfUpdateSessionUI();
+  vfTTSUpdateUI();
+  _vfTTSQuestion();
 }
 
 function vfResetSessao(){
@@ -22996,7 +23146,9 @@ function vfResetSessao(){
   vfState.choice = null;
   const msg = document.getElementById('vfMsg');
   if(msg) msg.textContent = '';
+  try{ if(_vfTTSAvailable()) window.speechSynthesis.cancel(); }catch(_){ }
   vfUpdateSessionUI();
+  vfTTSUpdateUI();
 }
 
 function vfResponder(choice){
@@ -23008,6 +23160,8 @@ function vfResponder(choice){
   vfState.choice = c;
 
   vfUpdateSessionUI();
+  vfTTSUpdateUI();
+  _vfTTSAnswer();
 }
 
 function vfProxima(){
@@ -23030,7 +23184,9 @@ function vfProxima(){
 
     const msg = document.getElementById('vfMsg');
     if(msg) msg.textContent = 'Sessão concluída. Clique em “Iniciar sessão” para jogar novamente.';
+    try{ if(_vfTTSAvailable()) window.speechSynthesis.cancel(); }catch(_){ }
     vfUpdateSessionUI();
+    vfTTSUpdateUI();
     return;
   }
 
@@ -23038,6 +23194,8 @@ function vfProxima(){
   vfState.choice = null;
 
   vfUpdateSessionUI();
+  vfTTSUpdateUI();
+  _vfTTSQuestion();
 }
 
 function vfUpdateSessionUI(){
@@ -23057,6 +23215,8 @@ function vfUpdateSessionUI(){
   const tt = document.getElementById('vfTheoryText');
 
   if(!show || !prog) return;
+
+  vfTTSUpdateUI();
 
   const setButtonsEnabled = (enabled)=>{
     if(btnV) btnV.disabled = !enabled;
@@ -24095,7 +24255,7 @@ async function __sgpForceSystemUpdate(){
     setTimeout(()=>{
       try{
         const url = new URL(location.href);
-        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.5') + '-' + Date.now());
+        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.6') + '-' + Date.now());
         location.replace(url.toString());
       }catch(_){ location.reload(); }
     }, 800);
@@ -36868,7 +37028,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.8.5',
+        version: versionLabel || 'v20.8.6',
         total: arr.length,
         okCount,
         failCount,
@@ -38374,7 +38534,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.5'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.6'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
