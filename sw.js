@@ -1,6 +1,7 @@
-// SGP - Service Worker v20.8.7
+// SGP - Service Worker v20.8.8
 // Melhorias desta versão:
 //  - ADD v20.8.7: impressão protegida do Mapa de Sala (somente nomes e posições)
+//  - FIX v20.8.8: lousa reposicionada atrás da mesa do professor na impressão para sala
 //  - ADD v20.8.6: leitor de texto opcional no Verdadeiro/Falso (pergunta, comando e resposta correta)
 //  - ADD v20.8.5: transferência de alunos entre turmas preservando o card e os dados pedagógicos
 //  - FIX v20.8.4: alinha título, versão do app e Service Worker para forçar atualização do PWA/desktop
@@ -66,7 +67,7 @@
 //  - FIX v20.8.1: contador de tempo das Atividades ampliado e com mais destaque visual
 //  - FIX v20.8.2: cronômetro das Atividades ampliado novamente e com efeito sonoro nos últimos segundos
 //  - FIX v20.8.3: evita conflito do efeito pulse do cronômetro com outras animações do sistema
-const SW_VERSION = '20.8.7';
+const SW_VERSION = '20.8.8';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
