@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.8.6)</title>
+    <title>SGP - Gestão Final (V20.8.7)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,8 +42,8 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.8.6';
-      window.__SGP_APP_VERSION = '20.8.6';
+      window.__SGP_SW_VERSION = '20.8.7';
+      window.__SGP_APP_VERSION = '20.8.7';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -5430,7 +5430,8 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
                     <button id="btnMapaReset" class="btn-tool" data-onclick="mapaResetTurma()" title="Resetar mapa (todos sem carteira)"><i class="fas fa-undo"></i></button>
                     <button id="btnMapaSwap" class="btn-tool" data-onclick="mapaToggleSwap()" title="Trocar 2 alunos de lugar"><i class="fas fa-rotate"></i></button>
                     <button class="btn-tool" data-onclick="mapaToggleDisable()" title="Desabilitar/habilitar mesas"><i class="fas fa-square-minus"></i></button>
-                    <button class="btn-tool" data-onclick="mapaImprimir()" title="Imprimir mapa"><i class="fas fa-print"></i></button>
+                    <button class="btn-tool" data-onclick="mapaImprimir()" title="Imprimir mapa completo"><i class="fas fa-print"></i></button>
+                    <button class="btn-tool" data-onclick="mapaImprimirParaSala()" title="Imprimir para sala: somente nomes, sem notas, classificações, PAEE ou alertas" style="width:auto;padding:0 8px;gap:4px;"><i class="fas fa-eye-slash"></i><span style="font-size:.72rem;font-weight:800;">Sala</span></button>
                     <span style="border-left:1px solid var(--border-color);height:20px;"></span>
                     <input type="text" id="inputNomeLayout" placeholder="Cenário..." style="padding:4px 6px;width:100px;font-size:.78rem;">
                     <button class="btn-tool" data-onclick="salvarLayout()"><i class="fas fa-save"></i></button>
@@ -11764,7 +11765,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.8.6",
+                version: "v20.8.7",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -24255,7 +24256,7 @@ async function __sgpForceSystemUpdate(){
     setTimeout(()=>{
       try{
         const url = new URL(location.href);
-        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.6') + '-' + Date.now());
+        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.7') + '-' + Date.now());
         location.replace(url.toString());
       }catch(_){ location.reload(); }
     }, 800);
@@ -34528,6 +34529,67 @@ ${mapaPpModeEnabled()?'<div class="legenda"><span><b>Prova Paulista</b> — '+((
   setTimeout(()=>{w.print();},300);
 }
 
+
+// Impressão segura para exposição em sala: mostra apenas nomes e posições.
+// Não imprime notas, classificação da Prova Paulista, PAEE, alertas ou cores de desempenho.
+function mapaImprimirParaSala(){
+  const grid=document.getElementById('salaGrid');
+  if(!grid) return;
+  if(filtroTurma==='Todas'){
+    try{ showToast("Selecione uma turma para imprimir o mapa.","error"); }catch(_){}
+    return;
+  }
+
+  const w=window.open('','_blank','width=900,height=700');
+  if(!w){
+    try{ showToast("Pop-up bloqueado. Permita pop-ups para imprimir.","error"); }catch(_){}
+    return;
+  }
+
+  const total=mapaGridCols*mapaGridRows;
+  const ls=getAlunosFiltrados();
+
+  w.document.write(`<html><head><title>Mapa de Sala - ${_escHTML(filtroTurma)}</title>
+  <meta charset="utf-8">
+  <style>
+    @page{size:auto;margin:12mm;}
+    *{box-sizing:border-box;}
+    body{font-family:Arial,Helvetica,sans-serif;padding:0;margin:0;color:#0f172a;background:#fff;}
+    h2{text-align:center;color:#0f172a;margin:0 0 6px;font-size:20px;}
+    .sub{text-align:center;color:#64748b;font-size:11px;margin:0 0 14px;}
+    .lousa{max-width:800px;margin:0 auto 12px;text-align:center;border:2px solid #475569;color:#334155;padding:6px;border-radius:6px;font-weight:800;letter-spacing:.08em;}
+    .grid{display:grid;grid-template-columns:repeat(${mapaGridCols},1fr);gap:8px;max-width:800px;margin:0 auto;}
+    .mesa{border:2px solid #94a3b8;border-radius:7px;min-height:58px;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:800;text-align:center;padding:5px;background:#fff;}
+    .mesa.occupied{border-style:solid;}
+    .mesa.empty{border-style:dashed;color:transparent;}
+    .mesa.disabled{border-style:dashed;border-color:#cbd5e1;color:#94a3b8;font-weight:500;}
+    .profdesk{max-width:800px;margin:12px auto 0;display:flex;justify-content:flex-end;}
+    .profdesk .mesa-prof{border:2px solid #94a3b8;border-radius:8px;background:#fff;padding:9px 14px;font-size:.78rem;font-weight:800;color:#334155;}
+    .privacy-note{max-width:800px;margin:10px auto 0;text-align:center;font-size:10px;color:#94a3b8;}
+    @media print{.privacy-note{display:none;} body{-webkit-print-color-adjust:economy;print-color-adjust:economy;}}
+  </style></head><body>
+  <h2>Mapa de Sala — ${_escHTML(filtroTurma)}</h2>
+  <div class="sub">Versão para exposição em sala • somente nomes e posições</div>
+  <div class="lousa">LOUSA</div>
+  <div class="grid">`);
+
+  for(let i=0;i<total;i++){
+    if(mapaDisabledDesks.has(i)){
+      w.document.write('<div class="mesa disabled">✕</div>');
+    } else {
+      const a=ls.find(x=>x.mesa===i);
+      w.document.write(a
+        ? `<div class="mesa occupied">${_escHTML(_mapaNomeCurto(a.nome))}</div>`
+        : '<div class="mesa empty">.</div>');
+    }
+  }
+
+  w.document.write('</div><div class="profdesk"><div class="mesa-prof">MESA DO PROFESSOR</div></div><div class="privacy-note">Impressão protegida: dados pedagógicos ocultados.</div></body></html>');
+  w.document.close();
+  try{ w.focus(); }catch(_){}
+  setTimeout(()=>{ try{ w.print(); }catch(_){} },300);
+}
+
 // F13: Auto-distribute
 function mapaAutoDistribuir(){
   if(filtroTurma==='Todas') return showToast("Selecione uma turma.","error");
@@ -37028,7 +37090,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.8.6',
+        version: versionLabel || 'v20.8.7',
         total: arr.length,
         okCount,
         failCount,
@@ -38534,7 +38596,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.6'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.7'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
