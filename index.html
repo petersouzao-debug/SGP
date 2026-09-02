@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.8.8)</title>
+    <title>SGP - Gestão Final (V20.8.16)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,8 +42,8 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.8.8';
-      window.__SGP_APP_VERSION = '20.8.8';
+      window.__SGP_SW_VERSION = '20.8.16';
+      window.__SGP_APP_VERSION = '20.8.16';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -4169,17 +4169,85 @@ body.dark-mode .cw-cell.black{background:#0f172a;}
 .ata-actions button{padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;}
 @media print{.ata-overlay,.ata-overlay *{visibility:visible!important;}.ata-overlay{position:fixed;inset:0;background:#fff;}.ata-container{width:100%;max-height:none;box-shadow:none;border-radius:0;}.ata-close,.ata-actions{display:none!important;}.ata-table{font-size:.7rem;}}
 
-/* F4: Atividades checklist */
+/* F4: Missão Digital — controle visual de tarefas/entregas por turma */
 .ativ-manager{margin-top:12px;}
-.ativ-add-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
-.ativ-add-row input{flex:1;min-width:150px;padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);font-size:.85rem;}
-.ativ-check-table{width:100%;border-collapse:collapse;}
-.ativ-check-table th,.ativ-check-table td{padding:5px 6px;border:1px solid var(--border-color);font-size:.8rem;text-align:center;}
-.ativ-check-table th{background:rgba(14,165,233,.08);white-space:nowrap;}
-.ativ-check-table td:first-child{text-align:left;}
-.ativ-chk{width:18px;height:18px;cursor:pointer;accent-color:#16a34a;}
-.ativ-del{background:none;border:none;color:#dc2626;cursor:pointer;font-size:.8rem;padding:2px 4px;}
-.ativ-pct{font-weight:600;font-size:.75rem;}
+.ativ-add-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
+.ativ-add-row input[type="text"],.ativ-add-row input[type="date"]{min-width:150px;padding:8px 10px;border-radius:9px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-main);font-size:.85rem;}
+.ativ-add-row input[type="text"]{flex:1;}
+.ent-add-all{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid var(--border-color);border-radius:9px;font-size:.76rem;font-weight:700;color:var(--text-muted);background:rgba(148,163,184,.06);cursor:pointer;user-select:none;}
+.ent-add-all input{accent-color:#0ea5e9;}
+.ent-mission-shell{display:grid;gap:12px;}
+.ent-mission-banner{border:1px solid rgba(14,165,233,.22);border-radius:16px;padding:14px;background:linear-gradient(135deg,rgba(14,165,233,.09),rgba(34,197,94,.06));}
+.ent-mission-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.ent-mission-title{font-size:.92rem;font-weight:900;color:var(--text-main);}
+.ent-mission-sub{font-size:.75rem;color:var(--text-muted);margin-top:3px;}
+.ent-progress-track{height:12px;border-radius:999px;background:rgba(148,163,184,.20);overflow:hidden;margin-top:10px;}
+.ent-progress-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,#0ea5e9,#16a34a);transition:width .2s ease;}
+.ent-progress-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:7px;font-size:.76rem;font-weight:800;color:var(--text-muted);}
+.ent-kpis{display:grid;grid-template-columns:repeat(5,minmax(110px,1fr));gap:8px;margin-top:12px;}
+.ent-kpi{border:1px solid var(--border-color);border-radius:12px;padding:9px 10px;background:var(--card-bg);min-width:0;}
+.ent-kpi .n{display:block;font-size:1.15rem;font-weight:950;color:var(--text-main);line-height:1.1;}
+.ent-kpi .l{display:block;font-size:.68rem;font-weight:800;color:var(--text-muted);margin-top:4px;line-height:1.25;}
+.ent-kpi.good .n{color:#15803d}.ent-kpi.warn .n{color:#a16207}.ent-kpi.danger .n{color:#b91c1c}.ent-kpi.info .n{color:#0369a1}.ent-kpi.recovered .n{color:#1d4ed8}
+.ent-classes-title{font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.45px;color:var(--text-muted);margin:2px 0 6px;}
+.ent-class-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;}
+.ent-class-card{border:1px solid var(--border-color);border-radius:11px;padding:9px 10px;background:var(--card-bg);}
+.ent-class-card.active{border-color:rgba(14,165,233,.55);box-shadow:0 0 0 2px rgba(14,165,233,.08);}
+.ent-class-card .row{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.76rem;font-weight:900;color:var(--text-main);}
+.ent-class-card .mini{font-size:.67rem;color:var(--text-muted);margin-top:4px;}
+.ent-class-bar{height:6px;border-radius:999px;background:rgba(148,163,184,.20);overflow:hidden;margin-top:7px;}
+.ent-class-bar>span{display:block;height:100%;background:linear-gradient(90deg,#0ea5e9,#16a34a);}
+.ent-toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:9px;border:1px solid var(--border-color);border-radius:12px;background:rgba(148,163,184,.05);}
+.ent-filter-btn{padding:7px 10px;border:1px solid var(--border-color);border-radius:9px;background:var(--card-bg);color:var(--text-muted);font-size:.74rem;font-weight:850;cursor:pointer;}
+.ent-filter-btn.active{background:#0ea5e9;color:#fff;border-color:#0ea5e9;}
+.ent-toolbar-spacer{flex:1;}
+.ent-action-btn{padding:7px 10px;border:1px solid var(--border-color);border-radius:9px;background:var(--card-bg);color:var(--text-main);font-size:.74rem;font-weight:800;cursor:pointer;}
+.ent-action-btn:hover,.ent-filter-btn:hover{transform:translateY(-1px);}
+.ent-legend{display:flex;gap:8px;flex-wrap:wrap;font-size:.69rem;color:var(--text-muted);align-items:center;}
+.ent-legend-item{display:inline-flex;align-items:center;gap:5px;}
+.ent-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none;}
+.ent-dot.done{background:#16a34a}.ent-dot.pending{background:#eab308}.ent-dot.overdue{background:#dc2626}.ent-dot.recovered{background:#2563eb}
+.ent-table-wrap{width:100%;overflow:auto;border:1px solid var(--border-color);border-radius:12px;max-height:54vh;}
+.ativ-check-table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px;}
+.ativ-check-table th,.ativ-check-table td{padding:7px 7px;border-right:1px solid var(--border-color);border-bottom:1px solid var(--border-color);font-size:.78rem;text-align:center;background:var(--card-bg);}
+.ativ-check-table th{background:rgba(14,165,233,.08);white-space:normal;position:sticky;top:0;z-index:3;vertical-align:top;}
+.ativ-check-table th:first-child,.ativ-check-table td:first-child{position:sticky;left:0;z-index:2;text-align:left;min-width:205px;box-shadow:1px 0 0 var(--border-color);}
+.ativ-check-table th:first-child{z-index:4;}
+.ativ-check-table tr:last-child td{border-bottom:none}.ativ-check-table th:last-child,.ativ-check-table td:last-child{border-right:none;}
+.ativ-chk{width:19px;height:19px;cursor:pointer;accent-color:#16a34a;vertical-align:middle;}
+.ativ-del,.ativ-edit{background:none;border:none;cursor:pointer;font-size:.78rem;padding:2px 3px;border-radius:5px;}
+.ativ-del{color:#dc2626}.ativ-edit{color:#0ea5e9}.ativ-del:hover,.ativ-edit:hover{background:rgba(148,163,184,.12);}
+.ativ-pct{font-weight:800;font-size:.74rem;}
+.ent-at-head{display:flex;flex-direction:column;gap:4px;min-width:135px;}
+.ent-at-title{font-weight:900;color:var(--text-main);line-height:1.2;}
+.ent-at-meta{font-size:.64rem;color:var(--text-muted);font-weight:700;}
+.ent-at-actions{display:flex;justify-content:center;gap:3px;}
+.ent-cell{min-width:80px;transition:background .15s;}
+.ent-cell.state-done{background:rgba(22,163,74,.08);}
+.ent-cell.state-pending{background:rgba(234,179,8,.09);}
+.ent-cell.state-overdue{background:rgba(220,38,38,.08);}
+.ent-cell.state-recovered{background:rgba(37,99,235,.09);}
+.ent-cell-status{display:flex;align-items:center;justify-content:center;gap:5px;}
+.ent-cell-status .ent-dot{width:8px;height:8px;}
+.ent-student-meta{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:3px;}
+.ent-student-badge{display:inline-flex;align-items:center;padding:2px 6px;border-radius:999px;font-size:.61rem;font-weight:900;border:1px solid transparent;}
+.ent-student-badge.good{background:#dcfce7;color:#166534;border-color:#bbf7d0;}
+.ent-student-badge.warn{background:#fef9c3;color:#854d0e;border-color:#fde68a;}
+.ent-student-badge.danger{background:#fee2e2;color:#991b1b;border-color:#fecaca;}
+body.dark-mode .ent-student-badge.good{background:rgba(22,163,74,.16);color:#86efac;border-color:rgba(34,197,94,.25);}
+body.dark-mode .ent-student-badge.warn{background:rgba(234,179,8,.14);color:#fde047;border-color:rgba(234,179,8,.24);}
+body.dark-mode .ent-student-badge.danger{background:rgba(220,38,38,.14);color:#fca5a5;border-color:rgba(220,38,38,.24);}
+.ent-empty{padding:28px 16px;text-align:center;color:var(--text-muted);border:1px dashed var(--border-color);border-radius:12px;}
+.ent-mission-100{font-size:.74rem;font-weight:950;color:#166534;background:#dcfce7;border:1px solid #bbf7d0;padding:6px 9px;border-radius:999px;}
+body.dark-mode .ent-mission-100{background:rgba(22,163,74,.15);color:#86efac;border-color:rgba(34,197,94,.25);}
+/* Missão Digital v20.8.16 — modo de tela cheia interno, sem depender de permissões do navegador. */
+.ent-modal-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
+.ent-fullscreen-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--border-color);border-radius:9px;background:var(--card-bg);color:var(--text-main);font-size:.74rem;font-weight:850;cursor:pointer;}
+.ent-fullscreen-btn:hover{transform:translateY(-1px);background:rgba(14,165,233,.07);border-color:rgba(14,165,233,.35);}
+#modalEntregas.ent-fullscreen{align-items:stretch!important;justify-content:stretch!important;backdrop-filter:none!important;}
+#modalEntregas.ent-fullscreen>.modal-box{width:100vw!important;max-width:100vw!important;height:100vh!important;max-height:100vh!important;margin:0!important;border-radius:0!important;padding:22px!important;overflow-y:auto!important;}
+#modalEntregas.ent-fullscreen .ent-table-wrap{max-height:68vh;}
+@media(max-width:820px){.ent-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.ent-kpis .ent-kpi:first-child{grid-column:1/-1;}.ent-toolbar-spacer{display:none;width:100%;}.ativ-add-row input[type="date"]{flex:1;}.ent-table-wrap{max-height:58vh;}.ent-fullscreen-btn span{display:none;}#modalEntregas.ent-fullscreen>.modal-box{padding:12px!important;}}
 
 /* F7: Theme customization */
 .theme-picker{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;}
@@ -4979,7 +5047,7 @@ body.dark-mode .tutoria-toolbar{background:rgba(14,165,233,.08);} .tutoria-toolb
             <button class="search-filter-chip" id="sfAta" data-onclick="gerarAtaTurma()" style="border-color:#0ea5e9;color:#0ea5e9;"><i class="fas fa-file-signature"></i> Ata da Turma</button>
             <button class="search-filter-chip" id="sfDiario" data-onclick="abrirDiarioClasse()" style="border-color:#7c3aed;color:#7c3aed;"><i class="fas fa-book-open"></i> Diário</button>
             <button class="search-filter-chip" id="sfMensal" data-onclick="abrirDiarioMensal()" style="border-color:#0d9488;color:#0d9488;"><i class="fas fa-calendar-check"></i> Mensal</button>
-            <button class="search-filter-chip" id="sfAtividades" data-onclick="abrirControleEntregas()" style="border-color:#16a34a;color:#16a34a;"><i class="fas fa-list-check"></i> Entregas</button>
+            <button class="search-filter-chip" id="sfAtividades" data-onclick="abrirControleEntregas()" style="border-color:#16a34a;color:#16a34a;"><i class="fas fa-list-check"></i> Missão Digital</button>
             <button class="search-filter-chip" id="sfAudit" data-onclick="abrirAuditTrail()" style="border-color:#64748b;color:#64748b;"><i class="fas fa-clock"></i> Histórico</button>
         </div>
 
@@ -7493,6 +7561,14 @@ Ex.: ANÁFORA | retoma termo anterior | É um mecanismo de coesão..."></textare
                                     if(blk.entregas[oldK] !== undefined && blk.entregas[newK] === undefined){
                                         try{ blk.entregas[newK] = JSON.parse(JSON.stringify(blk.entregas[oldK])); }
                                         catch(_){ blk.entregas[newK] = blk.entregas[oldK]; }
+                                    }
+                                }
+                                // Missão Digital v20.8.11: preserva também o histórico de recuperações
+                                // quando o reparo automático troca um ID de aluno duplicado.
+                                if(blk && blk.recuperadas && typeof blk.recuperadas === 'object'){
+                                    if(blk.recuperadas[oldK] !== undefined && blk.recuperadas[newK] === undefined){
+                                        try{ blk.recuperadas[newK] = JSON.parse(JSON.stringify(blk.recuperadas[oldK])); }
+                                        catch(_){ blk.recuperadas[newK] = blk.recuperadas[oldK]; }
                                     }
                                 }
                             });
@@ -11396,30 +11472,102 @@ function __atomicSaveCore(){
   }
 }
 
+function __coreStateSemCor(state){
+  const src = (state && typeof state === 'object') ? state : {};
+  return {
+    dataVersion: Number.isFinite(Number(src.dataVersion)) ? Number(src.dataVersion) : 1,
+    ts: Number.isFinite(Number(src.ts)) ? Number(src.ts) : Date.now(),
+    turmas: Array.isArray(src.turmas) ? src.turmas : [],
+    alunos: Array.isArray(src.alunos) ? src.alunos : [],
+    aulas: Array.isArray(src.aulas) ? src.aulas : [],
+    planosSemana: (src.planosSemana && typeof src.planosSemana === 'object' && !Array.isArray(src.planosSemana)) ? src.planosSemana : {},
+    config: (src.config && typeof src.config === 'object' && !Array.isArray(src.config)) ? src.config : {},
+    layouts: (src.layouts && typeof src.layouts === 'object' && !Array.isArray(src.layouts)) ? src.layouts : {}
+  };
+}
+function __cloneCoreMemoryState(){
+  try{ return JSON.parse(JSON.stringify(__buildAtomicCoreState())); }catch(_){ return null; }
+}
+function __restoreCoreMemoryState(state){
+  if(!state || typeof state !== 'object') return false;
+  try{
+    turmas = Array.isArray(state.turmas) ? state.turmas : [];
+    alunos = Array.isArray(state.alunos) ? state.alunos : [];
+    aulas = Array.isArray(state.aulas) ? state.aulas : [];
+    planosSemana = (state.planosSemana && typeof state.planosSemana === 'object' && !Array.isArray(state.planosSemana)) ? state.planosSemana : {};
+    config = (state.config && typeof state.config === 'object' && !Array.isArray(state.config)) ? state.config : {};
+    layouts = (state.layouts && typeof state.layouts === 'object' && !Array.isArray(state.layouts)) ? state.layouts : {};
+    if(state.correcaoProvas && typeof state.correcaoProvas === 'object' && !Array.isArray(state.correcaoProvas)) correcaoProvas = state.correcaoProvas;
+    return true;
+  }catch(_){ return false; }
+}
+async function __persistCoreStateConfirmed(state, opts){
+  opts = opts || {};
+  try{
+    const safeState = __coreStateSemCor(state);
+    const raw = JSON.stringify(safeState);
+    if(typeof __persistRawConfirmed !== 'function') return false;
+    const ok = await __persistRawConfirmed(__SGP_ATOMIC_CORE_KEY, raw, { preferIDB:true, reason:opts.reason || 'core-confirmed' });
+    if(!ok) return false;
+    try{ __persistCoreMetaFromString(raw, safeState); }catch(_){ }
+    try{ __safeLSRemove(__SGP_ATOMIC_CORE_TMP); }catch(_){ }
+    // Só remove as chaves legadas depois da confirmação do blob atômico.
+    try{
+      __safeLSRemove('sgp_turmas');
+      __safeLSRemove('sgp_alunos');
+      __safeLSRemove('sgp_aulas');
+      __safeLSRemove('sgp_planos_semanais');
+      __safeLSRemove('sgp_config');
+      __safeLSRemove('sgp_layouts');
+    }catch(_){ }
+    return true;
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'__persistCoreStateConfirmed'); }catch(_){ }
+    return false;
+  }
+}
+async function __saveCoreConfirmed(opts){
+  opts = opts || {};
+  const state = __buildAtomicCoreState();
+  const ok = await __persistCoreStateConfirmed(state, { reason:opts.reason || 'core-current-confirmed' });
+  if(!ok) return false;
+  if(!opts.skipMark){
+    try{ __markBackupRelevantChange(opts.reason || 'core-confirmed'); }catch(_){ }
+  }
+  try{ if(__SGP_EVT && typeof __SGP_EVT.emit==='function') __SGP_EVT.emit('afterSave', { ok:true, confirmed:true }); }catch(_){ }
+  return true;
+}
+
 function salvarDadosLocal() { 
   try{
-    const ok = (typeof __atomicSaveCore === 'function') ? __atomicSaveCore() : false;
+    let ok = (typeof __atomicSaveCore === 'function') ? __atomicSaveCore() : false;
 
-    // Fallback (último recurso): grava no formato antigo apenas se o modo atômico falhar
+    // Fallback (último recurso): só considera sucesso se TODAS as chaves legadas
+    // forem aceitas pelo armazenamento. O retorno agora é propagado aos wrappers.
     if(!ok){
-      __safeLSSet('sgp_turmas', JSON.stringify(turmas));
-      __safeLSSet('sgp_alunos', JSON.stringify(alunos));
-      __safeLSSet('sgp_aulas', JSON.stringify(aulas || []));
-      __safeLSSet('sgp_planos_semanais', JSON.stringify(planosSemana || {}));
-      __safeLSSet('sgp_config', JSON.stringify(config));
-      __safeLSSet('sgp_layouts', JSON.stringify(layouts || {}));
+      let fb = true;
+      fb = !!__safeLSSet('sgp_turmas', JSON.stringify(turmas)) && fb;
+      fb = !!__safeLSSet('sgp_alunos', JSON.stringify(alunos)) && fb;
+      fb = !!__safeLSSet('sgp_aulas', JSON.stringify(aulas || [])) && fb;
+      fb = !!__safeLSSet('sgp_planos_semanais', JSON.stringify(planosSemana || {})) && fb;
+      fb = !!__safeLSSet('sgp_config', JSON.stringify(config)) && fb;
+      fb = !!__safeLSSet('sgp_layouts', JSON.stringify(layouts || {})) && fb;
+      ok = fb;
     }
 
     // Planner/Atividades/Extras têm persistência própria; aqui garantimos o core consistente.
-    dadosNaoSalvosEmArquivo = true;
-    // Marca que há alterações locais mais recentes que o último backup ZIP
-    try{ __safeLSSet('sgp_last_core_save', Date.now()); }catch(_){ }
-    try{ __safeLSSet('sgp_backup_pending', '1'); }catch(_){ }
-    try{ if(typeof checkBackupStatus==='function') checkBackupStatus(); }catch(_){ }
+    if(ok){
+      dadosNaoSalvosEmArquivo = true;
+      try{ __safeLSSet('sgp_last_core_save', Date.now()); }catch(_){ }
+      try{ __safeLSSet('sgp_backup_pending', '1'); }catch(_){ }
+      try{ if(typeof checkBackupStatus==='function') checkBackupStatus(); }catch(_){ }
+    }
 
-    if(__SGP_EVT && typeof __SGP_EVT.emit==='function') __SGP_EVT.emit('afterSave', { ok });
+    if(__SGP_EVT && typeof __SGP_EVT.emit==='function') __SGP_EVT.emit('afterSave', { ok:!!ok });
+    return !!ok;
   }catch(e){
     try{ if(typeof __diagCapture==='function') __diagCapture(e, 'salvarDadosLocal'); }catch(_){}
+    return false;
   }
 }
 
@@ -11578,7 +11726,9 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             for(let n=0;n<totalEntries;n++){
                 if(dv.getUint32(ptr, true) !== CEN_SIG) throw new Error("ZIP inválido (central dir).");
                 const comp = dv.getUint16(ptr + 10, true);
+                const expectedCrc = dv.getUint32(ptr + 16, true) >>> 0;
                 const cSize = dv.getUint32(ptr + 20, true);
+                const uSize = dv.getUint32(ptr + 24, true);
                 const nameLen = dv.getUint16(ptr + 28, true);
                 const extraLen = dv.getUint16(ptr + 30, true);
                 const commentLen = dv.getUint16(ptr + 32, true);
@@ -11595,6 +11745,8 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
 
                 if(comp !== 0) throw new Error("ZIP com compressão não suportada.");
                 const data = u8.slice(dataOff, dataOff + cSize);
+                if(data.length !== uSize) throw new Error('ZIP inválido: tamanho descompactado divergente em ' + name + '.');
+                if((__crc32(data) >>> 0) !== expectedCrc) throw new Error('ZIP inválido: CRC divergente em ' + name + '. O arquivo pode estar corrompido.');
                 out[name] = dec.decode(data);
 
                 ptr = ptr + 46 + nameLen + extraLen + commentLen;
@@ -11647,7 +11799,9 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 if(ptr + 46 > u8.length || dv.getUint32(ptr, true) !== CEN_SIG) throw new Error('ZIP inválido: diretório central corrompido.');
                 const flags = dv.getUint16(ptr + 8, true);
                 const comp = dv.getUint16(ptr + 10, true);
+                const expectedCrc = dv.getUint32(ptr + 16, true) >>> 0;
                 const cSize = dv.getUint32(ptr + 20, true);
+                const uSize = dv.getUint32(ptr + 24, true);
                 const nameLen = dv.getUint16(ptr + 28, true);
                 const extraLen = dv.getUint16(ptr + 30, true);
                 const commentLen = dv.getUint16(ptr + 32, true);
@@ -11670,6 +11824,8 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 }else{
                     throw new Error('ZIP com método de compressão não suportado pelo SGP: ' + comp + '.');
                 }
+                if(plain.length !== uSize) throw new Error('ZIP inválido: tamanho descompactado divergente em ' + name + '.');
+                if((__crc32(plain) >>> 0) !== expectedCrc) throw new Error('ZIP inválido: CRC divergente em ' + name + '. O arquivo pode estar corrompido.');
                 out[name] = dec.decode(plain);
             }
             return out;
@@ -11700,6 +11856,91 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                 return JSON.parse(files[fname]);
             }catch(_){ return null; }
         }
+
+        // FIX v20.8.14: endurece somente a validação da Missão Digital.
+        // Mantém compatibilidade com backups antigos (recuperadas, prazo e createdAt
+        // opcionais), mas rejeita tipos inválidos de prazo e registros órfãos.
+        function __isValidMissaoDigitalStore(store){
+            if(!store || typeof store !== 'object' || Array.isArray(store)) return false;
+            try{
+                const isPlainObj=(v)=>!!(v && typeof v==='object' && !Array.isArray(v));
+                const isValidDate=(v)=>{
+                    if(v===null || typeof v==='undefined') return true;
+                    if(typeof v!=='string') return false;
+                    const str=v.trim();
+                    if(!str) return true; // prazo é opcional nos backups antigos
+                    if(!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+                    const parts=str.split('-').map(Number), y=parts[0], m=parts[1], d=parts[2];
+                    if(!Number.isInteger(y)||!Number.isInteger(m)||!Number.isInteger(d)||m<1||m>12||d<1||d>31) return false;
+                    const dt=new Date(Date.UTC(y,m-1,d));
+                    return dt.getUTCFullYear()===y && dt.getUTCMonth()===(m-1) && dt.getUTCDate()===d;
+                };
+                const checkStudentMaps=(obj, validIds)=>{
+                    if(!isPlainObj(obj)) return false;
+                    for(const sid of Object.keys(obj)){
+                        const map=obj[sid];
+                        if(!isPlainObj(map)) return false;
+                        for(const atId of Object.keys(map)){
+                            if(!validIds.has(String(atId).trim())) return false;
+                            const v=map[atId];
+                            // O formato oficial é booleano. 0/1 é tolerado apenas
+                            // para compatibilidade defensiva com exports legados.
+                            if(typeof v!=='boolean' && v!==0 && v!==1) return false;
+                        }
+                    }
+                    return true;
+                };
+                for(const k of Object.keys(store)){
+                    const block=store[k];
+                    if(!isPlainObj(block)) return false;
+                    if(!Object.prototype.hasOwnProperty.call(block,'atividades') || !Array.isArray(block.atividades)) return false;
+
+                    const ids=new Set();
+                    for(const at of block.atividades){
+                        if(!isPlainObj(at)) return false;
+                        if(!Object.prototype.hasOwnProperty.call(at,'id')) return false;
+                        if(typeof at.id!=='string' && typeof at.id!=='number') return false;
+                        const id=String(at.id).trim();
+                        if(!id || ids.has(id)) return false;
+                        ids.add(id);
+                        if(typeof at.nome!=='string' || !at.nome.trim()) return false;
+                        if(Object.prototype.hasOwnProperty.call(at,'prazo') && !isValidDate(at.prazo)) return false;
+                        if(Object.prototype.hasOwnProperty.call(at,'createdAt') && at.createdAt!==null && typeof at.createdAt!=='undefined' && !Number.isFinite(Number(at.createdAt))) return false;
+                    }
+
+                    // Esses dois campos já existiam no módulo original de Entregas.
+                    if(!Object.prototype.hasOwnProperty.call(block,'entregas') || !checkStudentMaps(block.entregas, ids)) return false;
+                    if(Object.prototype.hasOwnProperty.call(block,'recuperadas')){
+                        if(!checkStudentMaps(block.recuperadas, ids)) return false;
+                        // FIX v20.8.15: uma recuperação verdadeira só é coerente quando
+                        // a mesma tarefa também consta como concluída para o aluno.
+                        for(const sid of Object.keys(block.recuperadas)){
+                            const recMap=block.recuperadas[sid] || {};
+                            const doneMap=block.entregas[sid] || {};
+                            for(const atId of Object.keys(recMap)){
+                                const rec=recMap[atId];
+                                if((rec===true || rec===1) && !(doneMap[atId]===true || doneMap[atId]===1)) return false;
+                            }
+                        }
+                    }
+                }
+                return true;
+            }catch(_){ return false; }
+        }
+
+        // Comparação canônica usada apenas para detectar divergência entre as duas
+        // cópias redundantes da Missão Digital no mesmo backup.
+        function __stableJsonStringify(v){
+            if(Array.isArray(v)) return '[' + v.map(__stableJsonStringify).join(',') + ']';
+            if(v && typeof v==='object'){
+                return '{' + Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+__stableJsonStringify(v[k])).join(',') + '}';
+            }
+            return JSON.stringify(v);
+        }
+        function __missaoStoresEqual(a,b){
+            try{ return __stableJsonStringify(a)===__stableJsonStringify(b); }catch(_){ return false; }
+        }
+
         function __validateSgpBackupZipFiles(files){
             const result = { ok:false, message:'Backup ZIP inválido.', warnings:[] };
             try{
@@ -11745,6 +11986,41 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                         result.message = 'Backup ZIP inválido: correção de provas corrompida.'; return result;
                     }
                 }
+                // FIX v20.8.14: distingue cópia ausente de cópia presente/corrompida
+                // e nunca escolhe silenciosamente entre duas cópias válidas divergentes.
+                const __hasEntDedicated = Object.prototype.hasOwnProperty.call(files, 'sgp_entregas.json');
+                const __hasEntFull = !!(fullStorage && Object.prototype.hasOwnProperty.call(fullStorage, 'sgp_entregas'));
+                let __entDedicated = null, __entFull = null;
+                let __entDedicatedValid = false, __entFullValid = false;
+                if(__hasEntDedicated){
+                    __entDedicated = __zipReadJsonSafe(files, 'sgp_entregas.json');
+                    __entDedicatedValid = (typeof __isValidMissaoDigitalStore === 'function') ? __isValidMissaoDigitalStore(__entDedicated) : !!(__entDedicated && typeof __entDedicated === 'object' && !Array.isArray(__entDedicated));
+                }
+                if(__hasEntFull){
+                    try{
+                        const raw = fullStorage['sgp_entregas'];
+                        __entFull = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+                        __entFullValid = (typeof __isValidMissaoDigitalStore === 'function') ? __isValidMissaoDigitalStore(__entFull) : !!(__entFull && typeof __entFull === 'object' && !Array.isArray(__entFull));
+                    }catch(_){ __entFullValid = false; }
+                }
+                if(__hasEntDedicated && !__entDedicatedValid && (!__hasEntFull || !__entFullValid)){
+                    result.message = 'Backup ZIP inválido: a cópia da Missão Digital está corrompida e não há outra cópia válida para recuperação.'; return result;
+                }
+                if(__hasEntFull && !__entFullValid && (!__hasEntDedicated || !__entDedicatedValid)){
+                    result.message = 'Backup ZIP inválido: a cópia redundante da Missão Digital está corrompida e não há outra cópia válida para recuperação.'; return result;
+                }
+                if(__entDedicatedValid && __entFullValid && typeof __missaoStoresEqual==='function' && !__missaoStoresEqual(__entDedicated,__entFull)){
+                    result.message = 'Backup ZIP inválido: as duas cópias válidas da Missão Digital divergem. A restauração foi interrompida para evitar perda de dados.'; return result;
+                }
+                if(__hasEntDedicated && !__entDedicatedValid && __entFullValid){
+                    result.warnings.push('sgp_entregas.json corrompido; a Missão Digital será restaurada pela cópia redundante do armazenamento completo.');
+                }else if(!__hasEntDedicated && __entFullValid){
+                    result.warnings.push('sgp_entregas.json ausente; a Missão Digital será restaurada pela cópia redundante do armazenamento completo.');
+                }else if(__entDedicatedValid && __hasEntFull && !__entFullValid){
+                    result.warnings.push('A cópia redundante da Missão Digital está corrompida; será usada a cópia dedicada válida.');
+                }else if(!__hasEntDedicated && !__hasEntFull){
+                    result.warnings.push('Este backup é anterior à Missão Digital; os dados atuais desse módulo serão preservados.');
+                }
                 if(!manifest) result.warnings.push('manifest.json ausente; restauração permitida pela estrutura principal.');
                 if(!files['sgp_storage_full.json']) result.warnings.push('sgp_storage_full.json ausente; chaves extras futuras podem não ser restauradas.');
                 result.ok = true;
@@ -11765,7 +12041,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.8.8",
+                version: "v20.8.16",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -11830,8 +12106,18 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             const __bkFreq = (window.__sgpFrequencia && typeof window.__sgpFrequencia==='object') ? window.__sgpFrequencia : _lsObj('sgp_frequencia');
             files.push(['sgp_frequencia.json', JSON.stringify(__bkFreq || {}, null, 2)]);
 // Entregas
-            const __bkEnt = (window.__sgpEntregas && typeof window.__sgpEntregas==='object') ? window.__sgpEntregas : _lsObj('sgp_entregas');
-            files.push(['sgp_entregas.json', JSON.stringify(__bkEnt || {}, null, 2)]);
+            // FIX v20.8.15: produz uma única cópia canônica/normalizada para as duas
+            // redundâncias do backup. Assim, dados do antigo Controle de Entregas
+            // normalizados apenas em memória não fazem o próprio ZIP divergir do
+            // sgp_storage_full.json. A normalização ocorre em clone, sem mutar dados.
+            const __bkEntSource = (window.__sgpEntregas && typeof window.__sgpEntregas==='object') ? window.__sgpEntregas : _lsObj('sgp_entregas');
+            let __bkEnt = {};
+            try{
+                __bkEnt = JSON.parse(JSON.stringify(__bkEntSource || {}));
+                if(typeof _entEnsureBlock === 'function') Object.keys(__bkEnt).forEach(k=>{ __bkEnt[k]=_entEnsureBlock(__bkEnt[k]); });
+            }catch(_){ __bkEnt = {}; }
+            const __bkEntJson = JSON.stringify(__bkEnt || {}, null, 2);
+            files.push(['sgp_entregas.json', __bkEntJson]);
 // Ranking da Sala
             files.push(['sgp_ranking_v1.json', JSON.stringify(_lsObj('sgp_ranking_v1'), null, 2)]);
 // Ranking: trilha temporal dos pontos manuais
@@ -11892,6 +12178,9 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
                     if(__fullState && __fullState.storage && typeof __fullState.storage === 'object'){
                         try{
                             __fullState.storage['sgp_linked_file_pending'] = '0';
+                            // FIX v20.8.15: a cópia redundante deve representar
+                            // exatamente o mesmo estado semântico de sgp_entregas.json.
+                            __fullState.storage['sgp_entregas'] = JSON.stringify(__bkEnt || {});
                             const __rawMeta = __fullState.storage['sgp_linked_file_meta'];
                             if(__rawMeta){
                                 const __metaObj = JSON.parse(__rawMeta);
@@ -11912,7 +12201,16 @@ return files;
         function baixarBackup() { 
             try{
                 try{ if(typeof __flushPendingPersistenceWork === 'function') __flushPendingPersistenceWork(); }catch(_){ }
-                const zipBlob = __zipStore(__collectBackupFiles());
+                const __backupFiles = __collectBackupFiles();
+                // FIX v20.8.15: valida o conjunto EXATO que será compactado antes
+                // de informar sucesso. Impede criar um ZIP que o próprio SGP rejeite.
+                if(typeof __validateSgpBackupZipFiles === 'function'){
+                    const __backupMap = {};
+                    (__backupFiles||[]).forEach(pair=>{ if(Array.isArray(pair) && pair.length>=2) __backupMap[String(pair[0])] = String(pair[1]); });
+                    const __precheck = __validateSgpBackupZipFiles(__backupMap);
+                    if(!__precheck || !__precheck.ok) throw new Error((__precheck && __precheck.message) ? __precheck.message : 'Falha na validação interna do backup.');
+                }
+                const zipBlob = __zipStore(__backupFiles);
                 __downloadBlob(zipBlob, __backupFileName());
 __safeLSSet('sgp_last_backup', Date.now()); 
                 try{ __safeLSSet('sgp_backup_pending', '0'); }catch(_){ }
@@ -11951,6 +12249,7 @@ __safeLSSet('sgp_last_backup', Date.now());
                         const __backupValidation = (typeof __validateSgpBackupZipFiles === 'function') ? __validateSgpBackupZipFiles(files) : { ok:true, files };
                         if(!__backupValidation || !__backupValidation.ok) throw new Error((__backupValidation && __backupValidation.message) || 'Backup ZIP inválido.');
                         files = __backupValidation.files || files;
+                        const __restoreWarnings = Array.isArray(__backupValidation.warnings) ? __backupValidation.warnings.slice() : [];
                         const readJson = (fname)=>{
                             if(!files || typeof files[fname] === 'undefined') return null;
                             try{ return JSON.parse(files[fname]); }catch(err){ return null; }
@@ -12113,13 +12412,46 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                             __safeLSSet('sgp_frequencia', JSON.stringify(restoredFreq));
                         }catch(_){}
 
-                        // Restore entregas from backup
-                        try{
-                            const bkEntregas = readJson('sgp_entregas.json');
-                            const restoredEntregas = (bkEntregas && typeof bkEntregas === 'object' && !Array.isArray(bkEntregas)) ? bkEntregas : {};
-                            window.__sgpEntregas = restoredEntregas;
-                            __safeLSSet('sgp_entregas', JSON.stringify(restoredEntregas));
-                        }catch(_){}
+                        // Restore Missão Digital com redundância e sem apagamento silencioso.
+                        // Ordem: arquivo dedicado -> sgp_storage_full -> estado atual preservado.
+                        {
+                            let restoredEntregas = null;
+                            let entSource = '';
+                            try{
+                                const bkEntregas = readJson('sgp_entregas.json');
+                                if((typeof __isValidMissaoDigitalStore === 'function' && __isValidMissaoDigitalStore(bkEntregas)) ||
+                                   (typeof __isValidMissaoDigitalStore !== 'function' && bkEntregas && typeof bkEntregas === 'object' && !Array.isArray(bkEntregas))){
+                                    restoredEntregas = bkEntregas;
+                                    entSource = 'sgp_entregas.json';
+                                }
+                            }catch(_){ restoredEntregas = null; }
+                            if(!restoredEntregas && fullStorage && Object.prototype.hasOwnProperty.call(fullStorage, 'sgp_entregas')){
+                                try{
+                                    const rawEnt = fullStorage['sgp_entregas'];
+                                    const fbEnt = (typeof rawEnt === 'string') ? JSON.parse(rawEnt) : rawEnt;
+                                    if((typeof __isValidMissaoDigitalStore === 'function' && __isValidMissaoDigitalStore(fbEnt)) ||
+                                       (typeof __isValidMissaoDigitalStore !== 'function' && fbEnt && typeof fbEnt === 'object' && !Array.isArray(fbEnt))){
+                                        restoredEntregas = fbEnt;
+                                        entSource = 'sgp_storage_full.json';
+                                        __restoreWarnings.push('Missão Digital recuperada pela cópia redundante do armazenamento completo.');
+                                    }
+                                }catch(_){ restoredEntregas = null; }
+                            }
+                            if(!restoredEntregas){
+                                const currentEnt = (window.__sgpEntregas && typeof window.__sgpEntregas === 'object' && !Array.isArray(window.__sgpEntregas)) ? window.__sgpEntregas : {};
+                                try{ restoredEntregas = JSON.parse(JSON.stringify(currentEnt)); }catch(_){ restoredEntregas = currentEnt || {}; }
+                                entSource = 'estado atual preservado';
+                                if(Object.keys(restoredEntregas || {}).length){
+                                    __restoreWarnings.push('O backup não continha uma cópia válida da Missão Digital; os dados atuais desse módulo foram preservados para evitar perda.');
+                                }
+                            }
+                            try{
+                                Object.keys(restoredEntregas || {}).forEach(k=>{ restoredEntregas[k] = (typeof _entEnsureBlock === 'function') ? _entEnsureBlock(restoredEntregas[k]) : restoredEntregas[k]; });
+                            }catch(_){ }
+                            window.__sgpEntregas = restoredEntregas || {};
+                            const entSaved = (typeof __saveEntregas === 'function') ? await __saveEntregas({ skipMark:true }) : __safeLSSet('sgp_entregas', JSON.stringify(window.__sgpEntregas));
+                            if(!entSaved) throw new Error('Não foi possível persistir os dados da Missão Digital durante a restauração (' + entSource + ').');
+                        }
 
                         // Restore ranking from backup
                         try{
@@ -12270,7 +12602,10 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                         garantirEstruturaNova();
                         try{ if(typeof ensureConfigSchema === 'function') ensureConfigSchema(); }catch(_){ }
                         try{ if(typeof _syncAllStudents === 'function') _syncAllStudents(); }catch(_){ }
-                        salvarDadosLocal();
+                        const __zipCoreSaved = (typeof __saveCoreConfirmed==='function')
+                          ? await __saveCoreConfirmed({skipMark:true, reason:'zip-restore-core'})
+                          : !!salvarDadosLocal();
+                        if(!__zipCoreSaved) throw new Error('Não foi possível confirmar o salvamento dos dados principais restaurados.');
                         try{ __HIST.lastSnapshot = __snapshotStr(); }catch(_){ }
                         try{ if(typeof __UNDO_STACK!=='undefined'){ __UNDO_STACK.length=0; __REDO_STACK.length=0; } }catch(_){ }
                         renderizarMenu();
@@ -12294,15 +12629,21 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                         try{ checkBackupStatus(); }catch(_){}
                         try{ dadosNaoSalvosEmArquivo = false; }catch(_){}
                         try{ if(typeof __afterRestoreReloadModules === 'function') __afterRestoreReloadModules(); }catch(_){ }
-                        showToast("Backup ZIP carregado! O sistema será recarregado para atualizar todos os módulos.");
-                        try{ setTimeout(()=>{ try{ location.reload(); }catch(__){} }, 900); }catch(_){ }
+                        if(__restoreWarnings.length){
+                            const uniqWarnings = Array.from(new Set(__restoreWarnings.filter(Boolean)));
+                            showToast('Backup ZIP carregado com aviso: ' + uniqWarnings[0], 'warning');
+                            try{ console.warn('[SGP] Avisos da restauração:', uniqWarnings); }catch(_){ }
+                            try{ setTimeout(()=>{ try{ location.reload(); }catch(__){} }, 1800); }catch(_){ }
+                        }else{
+                            showToast("Backup ZIP carregado! O sistema será recarregado para atualizar todos os módulos.");
+                            try{ setTimeout(()=>{ try{ location.reload(); }catch(__){} }, 900); }catch(_){ }
+                        }
                     }catch(err){
                         console.error(err);
                         let __rolledBack = false;
                         try{
                             if(__restoreStarted && __beforeRestore && typeof __applySnapshot === 'function'){
-                                __applySnapshot(__beforeRestore, 'Falha na importação — estado anterior restaurado');
-                                __rolledBack = true;
+                                __rolledBack = !!(await __applySnapshot(__beforeRestore, 'Falha na importação — estado anterior restaurado'));
                             }
                         }catch(_){ __rolledBack = false; }
                         showToast("Erro ao carregar backup ZIP: " + ((err && err.message) ? err.message : "arquivo inválido ou corrompido."), "error");
@@ -12316,7 +12657,7 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
 
             // --- JSON (legado) ---
             const r=new FileReader(); 
-            r.onload=e=>{
+            r.onload=async e=>{
                 let __beforeRestore = null;
                 let __restoreStarted = false;
                 try{
@@ -12344,9 +12685,6 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                         frequencia: (d.frequencia && typeof d.frequencia === 'object' && !Array.isArray(d.frequencia))
                           ? d.frequencia
                           : (((d.sgp_frequencia && typeof d.sgp_frequencia === 'object' && !Array.isArray(d.sgp_frequencia)) ? d.sgp_frequencia : {})),
-                        entregas: (d.entregas && typeof d.entregas === 'object' && !Array.isArray(d.entregas))
-                          ? d.entregas
-                          : (((d.sgp_entregas && typeof d.sgp_entregas === 'object' && !Array.isArray(d.sgp_entregas)) ? d.sgp_entregas : {})),
                         buscaAtiva: (d.buscaAtiva && typeof d.buscaAtiva === 'object' && !Array.isArray(d.buscaAtiva))
                           ? d.buscaAtiva
                           : (((d.sgp_busca_ativa && typeof d.sgp_busca_ativa === 'object' && !Array.isArray(d.sgp_busca_ativa)) ? d.sgp_busca_ativa : {})),
@@ -12386,9 +12724,37 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                         lastBackupAt: (Object.prototype.hasOwnProperty.call(d, 'lastBackupAt')) ? (parseInt(d.lastBackupAt || '0', 10) || 0) : 0
                     };
 
+                    // FIX v20.8.14: JSON legado criado antes da Missão Digital não
+                    // deve ganhar artificialmente entregas:{} — isso apagaria os
+                    // dados atuais do módulo. Só inclui a propriedade se ela estava
+                    // realmente presente no arquivo e passou pela validação profunda.
+                    {
+                        const __legacyParseEnt=(v)=>{
+                            if(typeof v==='string'){ try{ return JSON.parse(v); }catch(_){ return null; } }
+                            return v;
+                        };
+                        const __hasLegacyEnt = Object.prototype.hasOwnProperty.call(d,'entregas');
+                        const __hasLegacySgpEnt = Object.prototype.hasOwnProperty.call(d,'sgp_entregas');
+                        const __legacyEnt = __hasLegacyEnt ? __legacyParseEnt(d.entregas) : null;
+                        const __legacySgpEnt = __hasLegacySgpEnt ? __legacyParseEnt(d.sgp_entregas) : null;
+                        const __validLegacyEnt = __hasLegacyEnt && ((typeof __isValidMissaoDigitalStore==='function') ? __isValidMissaoDigitalStore(__legacyEnt) : !!(__legacyEnt && typeof __legacyEnt==='object' && !Array.isArray(__legacyEnt)));
+                        const __validLegacySgpEnt = __hasLegacySgpEnt && ((typeof __isValidMissaoDigitalStore==='function') ? __isValidMissaoDigitalStore(__legacySgpEnt) : !!(__legacySgpEnt && typeof __legacySgpEnt==='object' && !Array.isArray(__legacySgpEnt)));
+
+                        if(__hasLegacyEnt && !__validLegacyEnt && (!__hasLegacySgpEnt || !__validLegacySgpEnt))
+                            throw new Error('Backup JSON contém dados inválidos da Missão Digital. A importação foi cancelada para evitar perda de informações.');
+                        if(__hasLegacySgpEnt && !__validLegacySgpEnt && (!__hasLegacyEnt || !__validLegacyEnt))
+                            throw new Error('Backup JSON contém dados inválidos da Missão Digital. A importação foi cancelada para evitar perda de informações.');
+                        if(__validLegacyEnt && __validLegacySgpEnt && typeof __missaoStoresEqual==='function' && !__missaoStoresEqual(__legacyEnt,__legacySgpEnt))
+                            throw new Error('Backup JSON contém duas cópias válidas, porém divergentes, da Missão Digital. A importação foi cancelada para evitar perda de informações.');
+
+                        if(__validLegacyEnt) legacySnapshot.entregas=__legacyEnt;
+                        else if(__validLegacySgpEnt) legacySnapshot.entregas=__legacySgpEnt;
+                    }
+
                     __restoreStarted = true;
                     if(typeof __applySnapshot === 'function'){
-                        __applySnapshot(JSON.stringify(legacySnapshot), 'Backup carregado!');
+                        const __legacyOk = await __applySnapshot(JSON.stringify(legacySnapshot), 'Backup carregado!');
+                        if(!__legacyOk) throw new Error('O backup JSON não pôde ser persistido com segurança.');
                     }else{
                         throw new Error('Função de restauração indisponível.');
                     }
@@ -12401,8 +12767,7 @@ if(typeof __lastBackupAt !== 'undefined') __lastBackupAt = (exLastBackupAt && ty
                     let __rolledBack = false;
                     try{
                         if(__restoreStarted && __beforeRestore && typeof __applySnapshot === 'function'){
-                            __applySnapshot(__beforeRestore, 'Falha na importação — estado anterior restaurado');
-                            __rolledBack = true;
+                            __rolledBack = !!(await __applySnapshot(__beforeRestore, 'Falha na importação — estado anterior restaurado'));
                         }
                     }catch(_){ __rolledBack = false; }
                     if(!__rolledBack) showToast("Erro ao carregar.", "error");
@@ -14605,29 +14970,47 @@ function __cmpBinIndex(v){
         }
 
         function salvarTurma(){const raw=document.getElementById('inputNomeTurma').value;const n=raw.replace(/\|/g,'-').trim();if(n&&!turmas.includes(n)){turmas.push(n);salvarDadosLocal();document.getElementById('inputNomeTurma').value='';fecharModais();selTurma(n); showToast("Turma criada!");}}
-        function delTurma(n,e){
+        async function delTurma(n,e){
             e.stopPropagation();
             if(confirm("Excluir?")){
+                const __txn = (typeof _entCriticalTxnSnapshot==='function') ? _entCriticalTxnSnapshot() : null;
+                const __entChanged = (typeof _entRemoveTurmaData==='function') ? _entRemoveTurmaData(n) : false;
+                if(__entChanged && typeof __saveEntregas==='function' && !(await __saveEntregas())){
+                    try{ if(__txn?.entregas) _entRestoreStore(__txn.entregas); }catch(_){ }
+                    return showToast('A turma não foi excluída porque os dados da Missão Digital não puderam ser salvos com segurança.','error');
+                }
+
+                // Altera primeiro apenas o núcleo. Limpezas auxiliares (frequência,
+                // planner e ranking) só acontecem depois de o núcleo ser confirmado.
                 turmas = turmas.filter(t => t !== n);
                 alunos = alunos.filter(a => a.turma !== n);
+                try{ if(Array.isArray(aulas)) aulas = aulas.filter(au => au.turma !== n); }catch(_){ }
+
+                const __coreOk = (typeof __saveCoreConfirmed==='function')
+                  ? await __saveCoreConfirmed({reason:'turma-delete'})
+                  : !!salvarDadosLocal();
+                if(!__coreOk){
+                    let __rolled=false;
+                    try{ if(typeof _entCriticalTxnRollback==='function') __rolled=await _entCriticalTxnRollback(__txn); }catch(_){ __rolled=false; }
+                    return showToast(__rolled
+                      ? 'A exclusão da turma foi cancelada porque o núcleo do SGP não pôde ser salvo. Nenhum dado foi alterado.'
+                      : 'Falha crítica ao salvar a exclusão da turma. O estado anterior foi restaurado em memória; faça um backup antes de continuar.', 'error');
+                }
+
                 filtroTurma = 'Todas';
                 try{
                     const freq = window.__sgpFrequencia || {};
                     Object.keys(freq).forEach(k => { if(k.startsWith(n + '|')) delete freq[k]; });
                     __saveFrequencia();
-                }catch(_){}
-                try{
-                    if(Array.isArray(aulas)) aulas = aulas.filter(au => au.turma !== n);
-                }catch(_){}
+                }catch(_){ }
                 try{
                     if(Array.isArray(plannerTasks)) plannerTasks = plannerTasks.filter(t => !t.turma || t.turma !== n);
                     __safeLSSet('sgp_planner', JSON.stringify(plannerTasks));
-                }catch(_){}
+                }catch(_){ }
                 try{
                     const rk = _rankLoad();
                     if(rk[n]){ delete rk[n]; _rankSave(rk); }
-                }catch(_){}
-                salvarDadosLocal();
+                }catch(_){ }
                 renderizarMenu();
                 renderizarVisaoContent();
                 showToast("Turma excluída.");
@@ -14658,7 +15041,7 @@ function __cmpBinIndex(v){
             abrirModal('modalTransferirAluno');
         }
 
-        function confirmarTransferenciaAluno(){
+        async function confirmarTransferenciaAluno(){
             const a = alunos.find(al => String(al.id) === String(alunoTransferenciaID));
             const select = document.getElementById('selectTurmaDestino');
             const destino = select ? String(select.value || '').trim() : '';
@@ -14667,32 +15050,67 @@ function __cmpBinIndex(v){
             if(destino === a.turma) return showToast("O aluno já pertence a essa turma.", "error");
 
             const origem = a.turma;
+            const __txn = (typeof _entCriticalTxnSnapshot==='function') ? _entCriticalTxnSnapshot() : null;
+            let __entTransfer = {changed:false,migrated:0,unmatched:0};
+            try{ if(typeof _entTransferAlunoData==='function') __entTransfer = _entTransferAlunoData(a.id, origem, destino) || __entTransfer; }catch(_){ }
+            if(__entTransfer.changed && typeof __saveEntregas==='function' && !(await __saveEntregas())){
+                try{ if(__txn?.entregas) _entRestoreStore(__txn.entregas); }catch(_){ }
+                return showToast('A transferência foi cancelada porque os dados da Missão Digital não puderam ser salvos com segurança.','error');
+            }
+
             a.turma = destino;
             a.mesa = null;
-            alunoTransferenciaID = null;
+            const __coreOk = (typeof __saveCoreConfirmed==='function')
+              ? await __saveCoreConfirmed({reason:'aluno-transfer'})
+              : !!salvarDadosLocal();
+            if(!__coreOk){
+                let __rolled=false;
+                try{ if(typeof _entCriticalTxnRollback==='function') __rolled=await _entCriticalTxnRollback(__txn); }catch(_){ __rolled=false; }
+                return showToast(__rolled
+                  ? 'A transferência foi cancelada porque o núcleo do SGP não pôde ser salvo. O aluno e a Missão Digital voltaram ao estado anterior.'
+                  : 'Falha crítica durante a transferência. O estado anterior foi restaurado em memória; faça um backup antes de continuar.', 'error');
+            }
 
-            salvarDadosLocal();
+            alunoTransferenciaID = null;
             fecharModais();
             renderizarMenu();
             renderizarVisaoContent();
             try{ if(visaoAtual === 'correcao') corRenderAll(); }catch(_){ }
-            showToast(`${a.nome} foi transferido(a) de ${origem} para ${destino}.`, "success");
+            const __migMsg = (__entTransfer && __entTransfer.migrated) ? ` ${__entTransfer.migrated} realização(ões) equivalente(s) da Missão Digital foram preservadas.` : '';
+            showToast(`${a.nome} foi transferido(a) de ${origem} para ${destino}.${__migMsg}`, "success");
         }
 
-        function delAluno(id){if(confirm("Excluir?")){alunos=alunos.filter(a=>a.id!==id);salvarDadosLocal();renderizarVisaoContent();}}
-        function confirmarDelAluno(id){
+        function delAluno(id){ return confirmarDelAluno(id); }
+        async function confirmarDelAluno(id){
             const a = alunos.find(al => al.id === id);
             const nomeCurto = a ? (a.nome || '').split(' ')[0] : 'este aluno';
-            if(confirm(`Tem certeza que deseja excluir "${nomeCurto}"?
+            if(confirm(`Tem certeza que deseja excluir "${nomeCurto}"?\n\nEsta ação não pode ser desfeita.`)){
+                const __txn = (typeof _entCriticalTxnSnapshot==='function') ? _entCriticalTxnSnapshot() : null;
+                const __entChanged = (typeof _entRemoveAlunoData==='function') ? _entRemoveAlunoData(id) : false;
+                if(__entChanged && typeof __saveEntregas==='function' && !(await __saveEntregas())){
+                    try{ if(__txn?.entregas) _entRestoreStore(__txn.entregas); }catch(_){ }
+                    return showToast('O aluno não foi excluído porque os dados da Missão Digital não puderam ser salvos com segurança.','error');
+                }
 
-Esta ação não pode ser desfeita.`)){
                 alunos = alunos.filter(al => al.id !== id);
+                const __coreOk = (typeof __saveCoreConfirmed==='function')
+                  ? await __saveCoreConfirmed({reason:'aluno-delete'})
+                  : !!salvarDadosLocal();
+                if(!__coreOk){
+                    let __rolled=false;
+                    try{ if(typeof _entCriticalTxnRollback==='function') __rolled=await _entCriticalTxnRollback(__txn); }catch(_){ __rolled=false; }
+                    return showToast(__rolled
+                      ? 'A exclusão do aluno foi cancelada porque o núcleo do SGP não pôde ser salvo. Nenhum dado foi removido.'
+                      : 'Falha crítica ao excluir o aluno. O estado anterior foi restaurado em memória; faça um backup antes de continuar.', 'error');
+                }
+
+                // Só limpa bancos auxiliares depois da confirmação do núcleo.
                 try{
                   const sid = String(id);
                   const freq = window.__sgpFrequencia || {};
                   Object.keys(freq).forEach(k => { if(freq[k] && freq[k][sid]) delete freq[k][sid]; });
                   __saveFrequencia();
-                }catch(_){}
+                }catch(_){ }
                 try{
                   const ba = window.__sgpBuscaAtiva || {};
                   if(ba[String(id)]){
@@ -14700,7 +15118,7 @@ Esta ação não pode ser desfeita.`)){
                     window.__sgpBuscaAtiva = ba;
                     __safeLSSet('sgp_busca_ativa', JSON.stringify(ba));
                   }
-                }catch(_){}
+                }catch(_){ }
                 try{
                   const rk = _rankLoad();
                   let changed = false;
@@ -14713,8 +15131,7 @@ Esta ação não pode ser desfeita.`)){
                     });
                   });
                   if(changed) _rankSave(rk);
-                }catch(_){}
-                salvarDadosLocal();
+                }catch(_){ }
                 showToast(`${nomeCurto} removido(a)`);
                 renderizarVisaoContent();
             }
@@ -18598,11 +19015,24 @@ function __afterRestoreReloadModules(){
   try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
 }
 
-function __applySnapshot(snapshotStr, label){
-  if(!snapshotStr) return;
+async function __applySnapshot(snapshotStr, label, opts){
+  opts = opts || {};
+  if(!snapshotStr) return false;
   let data=null;
-  try{ data=JSON.parse(snapshotStr); }catch(e){ return showToast("Snapshot inválido.", "error"); }
+  try{ data=JSON.parse(snapshotStr); }catch(e){ showToast("Snapshot inválido.", "error"); return false; }
+  if(Object.prototype.hasOwnProperty.call(data,'entregas') && typeof __isValidMissaoDigitalStore==='function' && !__isValidMissaoDigitalStore(data.entregas)){
+    showToast("Snapshot inválido: dados da Missão Digital estão corrompidos.", "error");
+    return false;
+  }
 
+  let __beforeSnapshot=null, __beforeCoreRaw=null, __beforeEntRaw=null;
+  if(!opts.__rollback){
+    try{ if(typeof __snapshotStr==='function') __beforeSnapshot=__snapshotStr(); }catch(_){ __beforeSnapshot=null; }
+    try{ __beforeCoreRaw=(typeof __storageGetItem==='function') ? __storageGetItem(__SGP_ATOMIC_CORE_KEY) : localStorage.getItem(__SGP_ATOMIC_CORE_KEY); }catch(_){ __beforeCoreRaw=null; }
+    try{ __beforeEntRaw=(typeof __storageGetItem==='function') ? __storageGetItem('sgp_entregas') : localStorage.getItem('sgp_entregas'); }catch(_){ __beforeEntRaw=null; }
+  }
+
+  let __applyError=null;
   __HIST.mute = true;
   try{
     turmas = Array.isArray(data.turmas) ? data.turmas : [];
@@ -18667,9 +19097,14 @@ function __applySnapshot(snapshotStr, label){
       __safeLSSet('sgp_frequencia', JSON.stringify(restoredFreq));
     }catch(_){ }
     try{
-      const restoredEntregas = (data.entregas && typeof data.entregas==='object' && !Array.isArray(data.entregas)) ? data.entregas : {};
-      window.__sgpEntregas = restoredEntregas;
-      __safeLSSet('sgp_entregas', JSON.stringify(restoredEntregas));
+      // FIX v20.8.14: snapshots antigos não possuíam a propriedade "entregas".
+      // Ausência significa "módulo desconhecido pelo backup", e não "apagar o
+      // módulo atual". Quando a propriedade existe (inclusive {}), restaura-a.
+      if(Object.prototype.hasOwnProperty.call(data,'entregas')){
+        const restoredEntregas = data.entregas;
+        window.__sgpEntregas = restoredEntregas;
+        try{ Object.keys(window.__sgpEntregas||{}).forEach(k=>{ if(typeof _entEnsureBlock==='function') window.__sgpEntregas[k]=_entEnsureBlock(window.__sgpEntregas[k]); }); }catch(__){ }
+      }
     }catch(_){ }
     try{
       const restoredRanking = (data.ranking && typeof data.ranking==='object' && !Array.isArray(data.ranking)) ? data.ranking : {};
@@ -18762,8 +19197,19 @@ function __applySnapshot(snapshotStr, label){
     ensureConfigSchema();
     _syncAllStudents();
 
-    // persiste no storage usando o mesmo formato do app
-    salvarDadosLocal();
+    // Persiste de forma confirmada os dois bancos críticos do restore. Em modo
+    // de rollback interno, a cópia persistida anterior já foi restaurada e não
+    // precisa ser regravada (evita falso erro quando setItem está indisponível).
+    if(!opts.skipCriticalConfirm){
+      const __corePersisted = (typeof __saveCoreConfirmed==='function')
+        ? await __saveCoreConfirmed({skipMark:true, reason:'snapshot-restore'})
+        : !!salvarDadosLocal();
+      if(!__corePersisted) throw new Error('Não foi possível confirmar o salvamento dos dados principais do snapshot.');
+      const __entPersisted = (typeof __saveEntregas==='function')
+        ? await __saveEntregas({skipMark:true})
+        : !!__safeLSSet('sgp_entregas', JSON.stringify(window.__sgpEntregas||{}));
+      if(!__entPersisted) throw new Error('Não foi possível confirmar o salvamento da Missão Digital do snapshot.');
+    }
     try{ __safeLSSet('sgp_planner', JSON.stringify(plannerTasks || [])); }catch(e){}
 
     try{
@@ -18787,8 +19233,33 @@ function __applySnapshot(snapshotStr, label){
     try{ if(typeof __freqBumpVersion === 'function') __freqBumpVersion(); }catch(_){ }
     __HIST.lastSnapshot = __snapshotStr();
     try{ if(typeof __UNDO_STACK!=='undefined'){ __UNDO_STACK.length=0; __REDO_STACK.length=0; } }catch(_){ }
+  }catch(e){
+    __applyError=e;
   }finally{
     __HIST.mute = false;
+  }
+
+  if(__applyError){
+    let __rollbackOk=false;
+    if(!opts.__rollback && __beforeSnapshot){
+      try{
+        // Primeiro devolve as cópias persistidas críticas ao valor anterior.
+        if(typeof __beforeEntRaw==='string' && typeof __persistRawConfirmed==='function')
+          await __persistRawConfirmed('sgp_entregas', __beforeEntRaw, {preferIDB:false, reason:'snapshot-rollback-entregas'});
+        else { try{ __safeLSRemove('sgp_entregas'); }catch(_){ } }
+        if(typeof __beforeCoreRaw==='string' && typeof __persistRawConfirmed==='function')
+          await __persistRawConfirmed(__SGP_ATOMIC_CORE_KEY, __beforeCoreRaw, {preferIDB:true, reason:'snapshot-rollback-core'});
+        else { try{ __safeLSRemove(__SGP_ATOMIC_CORE_KEY); }catch(_){ } }
+        // Depois restaura todo o estado em memória e os bancos auxiliares, sem
+        // exigir nova gravação dos dois bancos críticos já devolvidos acima.
+        __rollbackOk = await __applySnapshot(__beforeSnapshot, 'Estado anterior restaurado', {__rollback:true, suppressToast:true, skipCriticalConfirm:true});
+      }catch(_){ __rollbackOk=false; }
+    }
+    try{ if(typeof __diagCapture==='function') __diagCapture(__applyError,'__applySnapshot.confirmed'); }catch(_){ }
+    if(!opts.suppressToast){
+      showToast((__rollbackOk ? 'Restauração cancelada com segurança: ' : 'Falha ao restaurar snapshot: ') + (__applyError && __applyError.message ? __applyError.message : String(__applyError)), 'error');
+    }
+    return false;
   }
 
   applyThemeFromConfig();
@@ -18799,8 +19270,9 @@ function __applySnapshot(snapshotStr, label){
   try{ if(typeof atualizarLabelsConfig === 'function') atualizarLabelsConfig(); }catch(_){ }
   try{ if(typeof checkBackupStatus === 'function') checkBackupStatus(); }catch(_){ }
   try{ if(typeof __afterRestoreReloadModules === 'function') __afterRestoreReloadModules(); }catch(_){ }
-  showToast(label || "Restaurado!");
+  if(!opts.suppressToast) showToast(label || "Restaurado!");
   __renderBackupsUI();
+  return true;
 }
 
 // [REMOVED] Old undo/redo using __HIST - replaced by atomic undo/redo system (see below)
@@ -18819,17 +19291,17 @@ function criarBackupAgora(){
   showToast("Backup criado!");
 }
 
-function restaurarUltimoBackup(){
+async function restaurarUltimoBackup(){
   try{ __ensureBackupsLoaded(); }catch(_){ }
   if(!__BACKUPS.length) return showToast("Sem backups.");
-  __applySnapshot(__BACKUPS[0].snapshot, "Backup restaurado!");
+  await __applySnapshot(__BACKUPS[0].snapshot, "Backup restaurado!");
 }
 
-function restaurarBackup(id){
+async function restaurarBackup(id){
   try{ __ensureBackupsLoaded(); }catch(_){ }
   const b = __BACKUPS.find(x=>x.id===id);
   if(!b) return showToast("Backup não encontrado.", "error");
-  __applySnapshot(b.snapshot, "Backup restaurado!");
+  await __applySnapshot(b.snapshot, "Backup restaurado!");
 }
 
 function excluirBackup(id){
@@ -24023,6 +24495,115 @@ async function __idbShadowDeleteAndWait(key){
     });
   }catch(_){ return false; }
 }
+
+// FIX v20.8.12: persistência confirmada para operações críticas entre módulos.
+// Só retorna sucesso depois de conferir o meio de armazenamento efetivamente usado.
+async function __persistRawConfirmed(key, raw, opts){
+  opts = opts || {};
+  key = String(key || '');
+  raw = (typeof raw === 'string') ? raw : String(raw ?? '');
+  if(!key) return false;
+  const preferIDB = !!opts.preferIDB;
+  const reason = String(opts.reason || 'confirmed-save');
+  let idbTried = false;
+
+  const __restoreShadowCacheAfterFailure = (hadCache, oldCache)=>{
+    try{
+      window.__sgpIDBShadowCache = window.__sgpIDBShadowCache || {};
+      if(hadCache) window.__sgpIDBShadowCache[key] = oldCache;
+      else delete window.__sgpIDBShadowCache[key];
+      if(window.__sgpIDBShadowPending) delete window.__sgpIDBShadowPending[key];
+    }catch(_){ }
+  };
+
+  const __tryIDB = async()=>{
+    if(idbTried) return false;
+    idbTried = true;
+    if(typeof __idbShadowPutAndWait !== 'function' || typeof __idbGetRecordByKey !== 'function' || typeof __shadowStorageIdbKey !== 'function') return false;
+    let hadCache=false, oldCache;
+    try{
+      hadCache = !!(window.__sgpIDBShadowCache && Object.prototype.hasOwnProperty.call(window.__sgpIDBShadowCache,key));
+      oldCache = hadCache ? window.__sgpIDBShadowCache[key] : undefined;
+    }catch(_){ }
+    try{
+      // Se a cópia persistida no shadow já é exatamente a desejada, não regrava.
+      if(!__sgpDB && typeof initIndexedDB === 'function') await initIndexedDB();
+      if(__sgpDB){
+        const existing = await __idbGetRecordByKey(__shadowStorageIdbKey(key));
+        if(existing && String(existing.value ?? '') === raw){
+          try{
+            window.__sgpIDBShadowCache = window.__sgpIDBShadowCache || {};
+            window.__sgpIDBShadowCache[key] = raw;
+            if(window.__sgpIDBShadowPending) delete window.__sgpIDBShadowPending[key];
+          }catch(_){ }
+          return true;
+        }
+      }
+      const ok = await __idbShadowPutAndWait(key, raw, { removeLocalOnComplete:true, reason });
+      if(!ok){ __restoreShadowCacheAfterFailure(hadCache, oldCache); return false; }
+      const rec = await __idbGetRecordByKey(__shadowStorageIdbKey(key));
+      const verified = !!(rec && String(rec.value ?? '') === raw);
+      if(!verified) __restoreShadowCacheAfterFailure(hadCache, oldCache);
+      return verified;
+    }catch(e){
+      __restoreShadowCacheAfterFailure(hadCache, oldCache);
+      try{ if(typeof __diagCapture==='function') __diagCapture(e,'__persistRawConfirmed.idb',{key,reason}); }catch(_){ }
+      return false;
+    }
+  };
+
+  const __tryLocal = async()=>{
+    try{
+      // Evita transformar uma falha de setItem em falso negativo quando o valor
+      // correto já estava persistido (importante para rollback seguro).
+      if(localStorage.getItem(key) !== raw){
+        localStorage.setItem(key, raw);
+      }
+      if(localStorage.getItem(key) !== raw) return false;
+
+      // Se existir shadow antigo, ele não pode reaparecer depois e sobrescrever
+      // a cópia local recém-confirmada. Remove de forma aguardada quando possível.
+      let hasShadow=false;
+      try{
+        hasShadow = !!((window.__sgpIDBShadowCache && Object.prototype.hasOwnProperty.call(window.__sgpIDBShadowCache,key)) ||
+                      (window.__sgpIDBShadowPending && window.__sgpIDBShadowPending[key]));
+      }catch(_){ }
+      if(hasShadow || __sgpDB){
+        if(typeof __idbShadowDeleteAndWait === 'function'){
+          const delOk = await __idbShadowDeleteAndWait(key);
+          if(!delOk){
+            // Se não foi possível apagar, só aceita se o shadow persistido também
+            // já contiver exatamente o mesmo valor.
+            try{
+              if(__sgpDB && typeof __idbGetRecordByKey === 'function' && typeof __shadowStorageIdbKey === 'function'){
+                const rec = await __idbGetRecordByKey(__shadowStorageIdbKey(key));
+                if(rec && String(rec.value ?? '') === raw) return true;
+              }
+            }catch(_){ }
+            return false;
+          }
+        }else{
+          try{
+            if(window.__sgpIDBShadowCache) delete window.__sgpIDBShadowCache[key];
+            if(window.__sgpIDBShadowPending) delete window.__sgpIDBShadowPending[key];
+          }catch(_){ }
+        }
+      }
+      return true;
+    }catch(e){
+      try{ if(typeof __diagCapture==='function') __diagCapture(e,'__persistRawConfirmed.local',{key,reason}); }catch(_){ }
+      return false;
+    }
+  };
+
+  if(preferIDB){
+    if(await __tryIDB()) return true;
+    return await __tryLocal();
+  }
+  if(await __tryLocal()) return true;
+  return await __tryIDB();
+}
+
 function __idbShadowFlushPending(timeoutMs){
   const started = Date.now();
   const limit = Math.max(80, Number(timeoutMs) || 1200);
@@ -24174,7 +24755,7 @@ async function __sgpGetPWADiagnostics(){
     if(window.caches && typeof caches.keys === 'function'){
       const keys = await caches.keys();
       out.cacheCount = keys.length;
-      out.sgpCacheCount = keys.filter(k=>String(k||'').toLowerCase().indexOf('sgp') !== -1).length;
+      out.sgpCacheCount = keys.filter(k=>/^sgp(?:[-_]|$)/i.test(String(k||''))).length;
     }
   }catch(_){ }
   return out;
@@ -24246,7 +24827,7 @@ async function __sgpForceSystemUpdate(){
     try{
       if(window.caches && typeof caches.keys === 'function'){
         const keys = await caches.keys();
-        await Promise.all(keys.filter(k=>String(k||'').toLowerCase().indexOf('sgp') !== -1).map(k=>caches.delete(k)));
+        await Promise.all(keys.filter(k=>/^sgp(?:[-_]|$)/i.test(String(k||''))).map(k=>caches.delete(k)));
       }
     }catch(_){ }
 
@@ -24256,7 +24837,7 @@ async function __sgpForceSystemUpdate(){
     setTimeout(()=>{
       try{
         const url = new URL(location.href);
-        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.8') + '-' + Date.now());
+        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.16') + '-' + Date.now());
         location.replace(url.toString());
       }catch(_){ location.reload(); }
     }, 800);
@@ -25236,9 +25817,10 @@ async function __initLinkedStateFileSync(){
 // Hook into salvarDadosLocal to also save to IDB
 const __origSalvarDadosLocal = salvarDadosLocal;
 salvarDadosLocal = function(){
-  __origSalvarDadosLocal();
+  const ok = __origSalvarDadosLocal();
   try{ __idbSaveState(); }catch(_){}
   try{ __scheduleLinkedStateSync('local-save'); }catch(_){}
+  return ok;
 };
 
 // ===============================================
@@ -28843,98 +29425,577 @@ try{
 // V13 calendar hook removed — registro indicators now integrated into renderizarCalendario
 
 // ================================================================
-// F4: CONTROLE DE ENTREGAS DE ATIVIDADES
+// F4: MISSÃO DIGITAL — CONTROLE DE TAREFAS/ENTREGAS POR TURMA
 // ================================================================
-// Data: window.__sgpEntregas = { "turma|bimestre": { atividades: [{id,nome}], entregas: {alunoId: {atividadeId: true/false}} } }
+// Compatibilidade preservada:
+// window.__sgpEntregas = { "turma|bimestre": {
+//   atividades: [{id,nome,prazo,createdAt}],
+//   entregas: {alunoId: {atividadeId: true/false}},
+//   recuperadas: {alunoId: {atividadeId: true/false}}
+// }}
+// O campo entregas continua booleano para não quebrar backups/dados antigos.
 window.__sgpEntregas = {};
-function __loadEntregas(){ try{ const r=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_entregas') : localStorage.getItem('sgp_entregas'); if(r) window.__sgpEntregas=JSON.parse(r)||{}; }catch(_){} }
-function __saveEntregas(){
+let __entFiltroAtual='todos';
+function __loadEntregas(){
   try{
-    __safeLSSet('sgp_entregas', JSON.stringify(window.__sgpEntregas));
-    try{ __markBackupRelevantChange('entregas-save'); }catch(_){}
-  }catch(_){}
+    const r=(typeof __storageGetItem === 'function') ? __storageGetItem('sgp_entregas') : localStorage.getItem('sgp_entregas');
+    if(!r){ window.__sgpEntregas={}; return true; }
+    const parsed=JSON.parse(r);
+    if(!parsed || typeof parsed!=='object' || Array.isArray(parsed)){ window.__sgpEntregas={}; return false; }
+    window.__sgpEntregas=parsed;
+    Object.keys(window.__sgpEntregas).forEach(k=>{ window.__sgpEntregas[k]=_entEnsureBlock(window.__sgpEntregas[k]); });
+    return true;
+  }catch(_){ window.__sgpEntregas={}; return false; }
+}
+async function __saveEntregas(opts){
+  opts = opts || {};
+  const key='sgp_entregas';
+  try{
+    const raw=JSON.stringify(window.__sgpEntregas && typeof window.__sgpEntregas==='object' && !Array.isArray(window.__sgpEntregas) ? window.__sgpEntregas : {});
+    let persisted=false;
+
+    // 1) Caminho normal: localStorage, com leitura imediata de confirmação.
+    // Se o valor correto já estiver persistido, não exige nova escrita — isso
+    // permite rollback seguro mesmo quando setItem passa a falhar por quota.
+    try{ persisted=(localStorage.getItem(key)===raw); }catch(_){ persisted=false; }
+    try{
+      if(!persisted){
+        localStorage.setItem(key, raw);
+        persisted=(localStorage.getItem(key)===raw);
+      }
+      if(persisted){
+        // Se esta chave já viveu no IndexedDB por falta de espaço, a cópia antiga
+        // não deve permanecer capaz de reaparecer futuramente. Só inicializamos/
+        // tocamos o IndexedDB aqui quando há indício de shadow desta chave.
+        try{
+          const hasShadow=!!((window.__sgpIDBShadowCache && Object.prototype.hasOwnProperty.call(window.__sgpIDBShadowCache,key)) ||
+                             (window.__sgpIDBShadowPending && window.__sgpIDBShadowPending[key]) ||
+                             (window.__sgpIDBShadowStatus && window.__sgpIDBShadowStatus[key]));
+          if(hasShadow){
+            if(typeof __idbShadowDeleteAndWait==='function') await __idbShadowDeleteAndWait(key);
+            else if(typeof __idbShadowDelete==='function') __idbShadowDelete(key);
+          }
+        }catch(_){ }
+      }
+    }catch(e){
+      try{ if(typeof __diagCapture==='function') __diagCapture(e,'__saveEntregas.localStorage',{key}); }catch(_){ }
+      persisted=false;
+    }
+
+    // 2) Fallback real e aguardado: IndexedDB. Diferente de um fire-and-forget,
+    // só retornamos sucesso depois de tx.oncomplete e de reler o registro salvo.
+    if(!persisted){
+      if(typeof __idbShadowPutAndWait!=='function' || typeof __idbGetRecordByKey!=='function' || typeof __shadowStorageIdbKey!=='function') return false;
+      const idbOk=await __idbShadowPutAndWait(key, raw, { removeLocalOnComplete:true, reason:'missao-digital' });
+      if(!idbOk){
+        // Uma transação falha pode ter deixado no cache shadow o valor que tentou
+        // salvar. Reidrata o cache com o registro realmente persistido (se houver)
+        // para que a sessão não finja que a gravação falha foi concluída.
+        try{
+          const oldRec=await __idbGetRecordByKey(__shadowStorageIdbKey(key));
+          window.__sgpIDBShadowCache = window.__sgpIDBShadowCache || {};
+          if(oldRec && typeof oldRec.value==='string') window.__sgpIDBShadowCache[key]=oldRec.value;
+          else delete window.__sgpIDBShadowCache[key];
+          if(window.__sgpIDBShadowPending) delete window.__sgpIDBShadowPending[key];
+        }catch(_){ }
+        return false;
+      }
+      const rec=await __idbGetRecordByKey(__shadowStorageIdbKey(key));
+      persisted=!!(rec && String(rec.value ?? '')===raw);
+      if(!persisted) return false;
+    }
+
+    if(!opts.skipMark){ try{ __markBackupRelevantChange('entregas-save'); }catch(_){} }
+    return true;
+  }catch(e){
+    try{ if(typeof __diagCapture==='function') __diagCapture(e,'__saveEntregas'); }catch(_){ }
+    return false;
+  }
 }
 try{__loadEntregas();}catch(_){}
 
+function _entHojeISO(){
+  const n=new Date();
+  const y=n.getFullYear(), m=String(n.getMonth()+1).padStart(2,'0'), d=String(n.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+function _entIsValidISODate(v){
+  const str=String(v||'').trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+  const [y,m,d]=str.split('-').map(Number);
+  if(!Number.isInteger(y)||!Number.isInteger(m)||!Number.isInteger(d)||m<1||m>12||d<1||d>31) return false;
+  const dt=new Date(Date.UTC(y,m-1,d));
+  return dt.getUTCFullYear()===y && dt.getUTCMonth()===(m-1) && dt.getUTCDate()===d;
+}
+function _entPrazoFmt(v){
+  if(!v || !_entIsValidISODate(v)) return 'Sem prazo';
+  const p=String(v).split('-'); return `${p[2]}/${p[1]}/${p[0]}`;
+}
+function _entIsOverdue(at){ return !!(at && at.prazo && _entIsValidISODate(at.prazo) && String(at.prazo) < _entHojeISO()); }
+function _entEnsureBlock(block){
+  if(!block || typeof block!=='object' || Array.isArray(block)) block={};
+  if(!Array.isArray(block.atividades)) block.atividades=[];
+  block.atividades=block.atividades.filter(at=>at && typeof at==='object' && !Array.isArray(at)).map((at,idx)=>{
+    if(!at.id) at.id=`at_migrado_${Date.now()}_${idx}`;
+    at.id=String(at.id);
+    at.nome=String(at.nome||'Tarefa sem nome').trim()||'Tarefa sem nome';
+    at.prazo=(at.prazo===undefined || at.prazo===null) ? '' : String(at.prazo);
+    if(at.prazo && !_entIsValidISODate(at.prazo)) at.prazo='';
+    if(!at.createdAt || !Number.isFinite(Number(at.createdAt))) at.createdAt=Date.now();
+    return at;
+  });
+  if(!block.entregas || typeof block.entregas!=='object' || Array.isArray(block.entregas)) block.entregas={};
+  Object.keys(block.entregas).forEach(alId=>{
+    const ent=block.entregas[alId];
+    if(!ent || typeof ent!=='object' || Array.isArray(ent)) delete block.entregas[alId];
+  });
+  if(!block.recuperadas || typeof block.recuperadas!=='object' || Array.isArray(block.recuperadas)) block.recuperadas={};
+  // Remove marcações de recuperação órfãs para evitar que um estado antigo/corrompido
+  // reapareça quando a conclusão correspondente não existe mais.
+  Object.keys(block.recuperadas).forEach(alId=>{
+    const rec=block.recuperadas[alId];
+    if(!rec || typeof rec!=='object' || Array.isArray(rec)){ delete block.recuperadas[alId]; return; }
+    Object.keys(rec).forEach(atId=>{ if(!block.entregas?.[alId]?.[atId]) delete rec[atId]; });
+    if(!Object.keys(rec).length) delete block.recuperadas[alId];
+  });
+  return block;
+}
+function _entBlockFor(turma,bim,create){
+  const k=`${turma}|${bim}`;
+  if(!window.__sgpEntregas[k] && create!==false) window.__sgpEntregas[k]={atividades:[],entregas:{},recuperadas:{}};
+  if(!window.__sgpEntregas[k]) return null;
+  window.__sgpEntregas[k]=_entEnsureBlock(window.__sgpEntregas[k]);
+  return window.__sgpEntregas[k];
+}
+function _entCloneStore(){
+  try{ return JSON.parse(JSON.stringify(window.__sgpEntregas || {})); }catch(_){ return null; }
+}
+function _entRestoreStore(snapshot){
+  if(snapshot && typeof snapshot==='object' && !Array.isArray(snapshot)) window.__sgpEntregas=snapshot;
+}
+
+// Snapshot mínimo para operações que alteram simultaneamente o núcleo do SGP
+// e a Missão Digital. Permite desfazer ambos se uma das persistências falhar.
+function _entCriticalTxnSnapshot(){
+  let coreRaw=null;
+  try{ coreRaw=(typeof __storageGetItem==='function') ? __storageGetItem(__SGP_ATOMIC_CORE_KEY) : localStorage.getItem(__SGP_ATOMIC_CORE_KEY); }catch(_){ coreRaw=null; }
+  return {
+    core: (typeof __cloneCoreMemoryState==='function') ? __cloneCoreMemoryState() : null,
+    coreRaw: (typeof coreRaw==='string') ? coreRaw : null,
+    entregas: (typeof _entCloneStore==='function') ? _entCloneStore() : null
+  };
+}
+async function _entCriticalTxnRollback(snap){
+  if(!snap) return false;
+  try{ if(snap.core && typeof __restoreCoreMemoryState==='function') __restoreCoreMemoryState(snap.core); }catch(_){ }
+  try{ if(snap.entregas) _entRestoreStore(snap.entregas); }catch(_){ }
+  let entOk=true, coreOk=true;
+  try{
+    if(snap.entregas && typeof __persistRawConfirmed==='function'){
+      entOk=await __persistRawConfirmed('sgp_entregas', JSON.stringify(snap.entregas), { preferIDB:false, reason:'missao-txn-rollback' });
+    }
+  }catch(_){ entOk=false; }
+  try{
+    if(typeof __persistRawConfirmed==='function' && typeof snap.coreRaw==='string'){
+      coreOk=await __persistRawConfirmed(__SGP_ATOMIC_CORE_KEY, snap.coreRaw, { preferIDB:true, reason:'core-txn-rollback' });
+    }else if(snap.core && typeof __persistCoreStateConfirmed==='function'){
+      coreOk=await __persistCoreStateConfirmed(snap.core, { reason:'core-txn-rollback' });
+    }
+  }catch(_){ coreOk=false; }
+  return !!(entOk && coreOk);
+}
+
+function _entRemoveTurmaData(turma){
+  let changed=false; const prefix=String(turma||'')+'|';
+  Object.keys(window.__sgpEntregas||{}).forEach(k=>{ if(String(k).startsWith(prefix)){ delete window.__sgpEntregas[k]; changed=true; } });
+  return changed;
+}
+function _entRemoveAlunoData(alunoId){
+  const sid=String(alunoId); let changed=false;
+  Object.keys(window.__sgpEntregas||{}).forEach(k=>{
+    const d=_entEnsureBlock(window.__sgpEntregas[k]);
+    if(Object.prototype.hasOwnProperty.call(d.entregas,sid)){ delete d.entregas[sid]; changed=true; }
+    if(Object.prototype.hasOwnProperty.call(d.recuperadas,sid)){ delete d.recuperadas[sid]; changed=true; }
+    window.__sgpEntregas[k]=d;
+  });
+  return changed;
+}
+function _entTaskSignature(at){
+  const nome=String(at?.nome||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('pt-BR');
+  return nome+'|'+String(at?.prazo||'');
+}
+function _entTransferAlunoData(alunoId, origem, destino){
+  const sid=String(alunoId);
+  let changed=false, migrated=0, unmatched=0;
+  [1,2,3,4].forEach(bim=>{
+    const src=_entBlockFor(origem,bim,false);
+    if(!src) return;
+    const srcDone=(src.entregas && src.entregas[sid] && typeof src.entregas[sid]==='object') ? src.entregas[sid] : null;
+    const srcRec=(src.recuperadas && src.recuperadas[sid] && typeof src.recuperadas[sid]==='object') ? src.recuperadas[sid] : null;
+    if(!srcDone && !srcRec) return;
+    const dst=_entBlockFor(destino,bim,false);
+    if(dst && srcDone){
+      const bySig=new Map(), ambiguousSigs=new Set();
+      (dst.atividades||[]).forEach(at=>{
+        const sig=_entTaskSignature(at);
+        if(bySig.has(sig)) ambiguousSigs.add(sig);
+        else bySig.set(sig,at);
+      });
+      Object.keys(srcDone).forEach(srcAtId=>{
+        if(!srcDone[srcAtId]) return;
+        const srcAt=(src.atividades||[]).find(at=>String(at.id)===String(srcAtId));
+        if(!srcAt){ unmatched++; return; }
+        const sig=_entTaskSignature(srcAt);
+        // FIX v20.8.15: dados antigos podem já conter duplicidades. Nessa
+        // situação não escolhe a primeira tarefa silenciosamente.
+        if(ambiguousSigs.has(sig)){ unmatched++; return; }
+        const dstAt=bySig.get(sig);
+        if(!dstAt){ unmatched++; return; }
+        if(!dst.entregas[sid]) dst.entregas[sid]={};
+        if(!dst.recuperadas[sid]) dst.recuperadas[sid]={};
+        dst.entregas[sid][dstAt.id]=true;
+        if(srcRec?.[srcAtId] || dst.recuperadas[sid][dstAt.id]) dst.recuperadas[sid][dstAt.id]=true;
+        migrated++; changed=true;
+      });
+      if(dst.recuperadas[sid] && !Object.keys(dst.recuperadas[sid]).length) delete dst.recuperadas[sid];
+    }else if(srcDone){
+      unmatched += Object.keys(srcDone).filter(id=>!!srcDone[id]).length;
+    }
+    // Após a transferência, remove os vínculos ativos da turma de origem. O que
+    // possuir tarefa equivalente já foi migrado; tarefas exclusivas da origem não
+    // passam a gerar pendência artificial na turma de destino.
+    if(src.entregas && Object.prototype.hasOwnProperty.call(src.entregas,sid)){ delete src.entregas[sid]; changed=true; }
+    if(src.recuperadas && Object.prototype.hasOwnProperty.call(src.recuperadas,sid)){ delete src.recuperadas[sid]; changed=true; }
+  });
+  return {changed,migrated,unmatched};
+}
+function _entKey(){ return `${filtroTurma}|${bimestreAtual}`; }
+function _entData(){ return _entBlockFor(filtroTurma,bimestreAtual,true); }
+function _entStudentState(d,alunoId,at){
+  const done=!!(d.entregas?.[alunoId]?.[at.id]);
+  const recovered=done && !!(d.recuperadas?.[alunoId]?.[at.id]);
+  if(recovered) return 'recovered';
+  if(done) return 'done';
+  return _entIsOverdue(at) ? 'overdue' : 'pending';
+}
+function _entStudentSummary(d,alunoId,ativs){
+  let done=0,recovered=0,pending=0,overdue=0;
+  ativs.forEach(at=>{
+    const st=_entStudentState(d,alunoId,at);
+    if(st==='done') done++;
+    else if(st==='recovered'){done++;recovered++;}
+    else {pending++; if(st==='overdue') overdue++;}
+  });
+  const pct=ativs.length ? (done/ativs.length*100) : 0;
+  const plantao=overdue>0 || pending>=2;
+  const situacao=pending===0?'Em dia':(plantao?'Plantão':'Atenção');
+  return {done,recovered,pending,overdue,pct,plantao,situacao};
+}
+function _entMetricsFor(turma,bim){
+  const d=_entBlockFor(turma,bim,false);
+  const ativs=d?.atividades||[];
+  const lista=alunos.filter(a=>a.turma===turma);
+  let done=0,recovered=0,overdue=0,studentsComplete=0,plantao=0;
+  lista.forEach(a=>{
+    const s=d?_entStudentSummary(d,a.id,ativs):{done:0,recovered:0,pending:ativs.length,overdue:0,pct:0,plantao:false};
+    done+=s.done; recovered+=s.recovered; overdue+=s.overdue;
+    if(ativs.length && s.pending===0) studentsComplete++;
+    if(s.plantao) plantao++;
+  });
+  const expected=lista.length*ativs.length;
+  const pending=Math.max(0,expected-done);
+  const pct=expected ? (done/expected*100) : 0;
+  return {atividades:ativs.length,alunos:lista.length,expected,done,pending,recovered,overdue,studentsComplete,plantao,pct};
+}
+
+function entUpdateFullscreenUI(){
+  const overlay=document.getElementById('modalEntregas');
+  const btn=document.getElementById('entFsBtn');
+  const ativo=!!overlay?.classList.contains('ent-fullscreen');
+  if(btn){
+    btn.innerHTML=ativo ? '<i class="fas fa-compress"></i><span>Sair da tela cheia</span>' : '<i class="fas fa-expand"></i><span>Tela cheia</span>';
+    btn.title=ativo ? 'Voltar ao tamanho normal' : 'Expandir a Missão Digital para ocupar toda a tela';
+    btn.setAttribute('aria-label', ativo ? 'Sair da tela cheia' : 'Tela cheia');
+    btn.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+  }
+}
+function entToggleFullscreen(){
+  const overlay=document.getElementById('modalEntregas');
+  if(!overlay) return;
+  overlay.classList.toggle('ent-fullscreen');
+  entUpdateFullscreenUI();
+}
+
 function abrirControleEntregas(){
-  if(filtroTurma==='Todas') return showToast("Selecione uma turma.","error");
+  if(filtroTurma==='Todas') return showToast("Selecione uma turma para abrir a Missão Digital.","error");
   let overlay=document.getElementById('modalEntregas');
   if(!overlay){
     overlay=document.createElement('div');
     overlay.id='modalEntregas';
     overlay.className='modal-overlay';
-    overlay.innerHTML=`<div class="modal-box" style="max-width:950px;max-height:85vh;overflow-y:auto;">
-      <h2><i class="fas fa-list-check"></i> Controle de Entregas — <span id="entTurmaLabel"></span></h2>
-      <div class="ativ-add-row">
-        <input type="text" id="entNomeAtiv" placeholder="Nome da atividade (ex: Trabalho Cap.3)">
-        <button class="btn-primary" onclick="entAdicionarAtividade()"><i class="fas fa-plus"></i> Adicionar</button>
+    overlay.innerHTML=`<div class="modal-box" style="width:1180px;max-width:97vw;max-height:94vh;overflow-y:auto;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0;"><i class="fas fa-list-check"></i> Missão Digital — <span id="entTurmaLabel"></span></h2>
+          <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px;">Controle visual por turma: prazo, realização, pendências, recuperação e Plantão Digital.</div>
+        </div>
+        <div class="ent-modal-actions">
+          <button id="entFsBtn" class="ent-fullscreen-btn" onclick="entToggleFullscreen()" title="Expandir a Missão Digital para ocupar toda a tela" aria-label="Tela cheia"><i class="fas fa-expand"></i><span>Tela cheia</span></button>
+          <button data-onclick="fecharModais()" title="Fechar" style="border:none;background:transparent;color:var(--text-muted);font-size:1.25rem;cursor:pointer;padding:4px 7px;"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <div id="entMissionSummary" style="margin-top:12px;"></div>
+      <div class="ativ-add-row" style="margin-top:12px;">
+        <input type="text" id="entNomeAtiv" placeholder="Nome da tarefa digital (ex.: Aula 14 — Marcas culturais)">
+        <input type="date" id="entPrazoAtiv" title="Prazo da tarefa">
+        <label class="ent-add-all" title="Repete o mesmo cadastro no bimestre atual das demais turmas"><input type="checkbox" id="entTodasTurmas"> Cadastrar em todas as turmas</label>
+        <button class="btn-primary" onclick="entAdicionarAtividade()"><i class="fas fa-plus"></i> Cadastrar tarefa</button>
+      </div>
+      <div id="entTurmasOverview"></div>
+      <div class="ent-toolbar" style="margin-top:10px;">
+        <button id="entFilTodos" class="ent-filter-btn active" onclick="entSetFiltro('todos')"><i class="fas fa-users"></i> Todos</button>
+        <button id="entFilPend" class="ent-filter-btn" onclick="entSetFiltro('pendentes')"><i class="fas fa-clock"></i> Com pendência</button>
+        <button id="entFilPlantao" class="ent-filter-btn" onclick="entSetFiltro('plantao')"><i class="fas fa-laptop"></i> Plantão Digital</button>
+        <span class="ent-toolbar-spacer"></span>
+        <button class="ent-action-btn" onclick="entCopiarPendentes()" title="Copia uma lista pronta para acompanhamento/comunicação"><i class="fas fa-copy"></i> Copiar pendentes</button>
+      </div>
+      <div class="ent-legend" style="margin-top:9px;">
+        <span style="font-weight:900;">Semáforo:</span>
+        <span class="ent-legend-item"><span class="ent-dot done"></span> Concluída</span>
+        <span class="ent-legend-item"><span class="ent-dot pending"></span> Dentro do prazo</span>
+        <span class="ent-legend-item"><span class="ent-dot overdue"></span> Prazo vencido</span>
+        <span class="ent-legend-item"><span class="ent-dot recovered"></span> Recuperada após o prazo</span>
       </div>
       <div id="entTableContainer" class="ativ-manager"></div>
-      <div style="text-align:right;margin-top:12px;">
-        <button data-onclick="fecharModais()" style="padding:8px 15px;border:none;background:transparent;cursor:pointer;">Fechar</button>
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;">
+        <div style="font-size:.72rem;color:var(--text-muted);">Regra visual: tarefa vencida ou 2+ pendências → Plantão Digital. O aluno pode fazer em casa ou regularizar no plantão.</div>
+        <button data-onclick="fecharModais()" style="padding:8px 15px;border:1px solid var(--border-color);border-radius:9px;background:var(--card-bg);color:var(--text-main);cursor:pointer;">Fechar</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);
     if(typeof __SGP_setupDataHandlers==='function') __SGP_setupDataHandlers(overlay);
   }
+  __entFiltroAtual='todos';
   document.getElementById('entTurmaLabel').textContent=`${filtroTurma} — ${bimestreAtual}º Bim`;
+  overlay.classList.remove('ent-fullscreen');
   overlay.style.display='flex';
+  entUpdateFullscreenUI();
   __scheduleUiAfterPaint('modal-entregas', function(){ renderEntregas(); });
 }
 
-function _entKey(){ return `${filtroTurma}|${bimestreAtual}`; }
-function _entData(){ const k=_entKey(); if(!window.__sgpEntregas[k]) window.__sgpEntregas[k]={atividades:[],entregas:{}}; return window.__sgpEntregas[k]; }
-
-function entAdicionarAtividade(){
+async function entAdicionarAtividade(){
   const inp=document.getElementById('entNomeAtiv');
-  const nome=(inp.value||'').trim();
-  if(!nome) return showToast("Digite o nome da atividade.","error");
-  const d=_entData();
-  d.atividades.push({id:'at_'+Date.now(), nome});
-  inp.value='';
-  __saveEntregas(); renderEntregas();
-  __auditLog(`Atividade "${nome}" adicionada em ${filtroTurma}, ${bimestreAtual}ºBim`);
+  const prazoEl=document.getElementById('entPrazoAtiv');
+  const nome=(inp?.value||'').trim();
+  const prazo=(prazoEl?.value||'').trim();
+  if(!nome) return showToast("Digite o nome da tarefa.","error");
+  const aplicarTodas=!!document.getElementById('entTodasTurmas')?.checked;
+  const targets=aplicarTodas ? (turmas||[]).slice() : [filtroTurma];
+  const idBase='at_'+((typeof __newId==='function')?__newId():Date.now());
+  let added=0, skipped=0;
+  targets.forEach((turma,idx)=>{
+    if(!turma || turma==='Todas') return;
+    const d=_entBlockFor(turma,bimestreAtual,true);
+    const novaAssinatura=_entTaskSignature({nome,prazo});
+    const existe=d.atividades.some(a=>_entTaskSignature(a)===novaAssinatura);
+    if(existe){ skipped++; return; }
+    d.atividades.push({id:`${idBase}_${idx}`,nome,prazo,createdAt:Date.now()});
+    added++;
+  });
+  if(!added) return showToast("Essa tarefa já está cadastrada.","warning");
+  if(!(await __saveEntregas())){
+    targets.forEach((turma,idx)=>{ try{ const d=_entBlockFor(turma,bimestreAtual,false); if(d) d.atividades=d.atividades.filter(a=>a.id!==`${idBase}_${idx}`); }catch(_){} });
+    renderEntregas();
+    return showToast('A tarefa não pôde ser salva. A alteração foi desfeita para evitar perda silenciosa de dados.','error');
+  }
+  inp.value=''; if(prazoEl) prazoEl.value='';
+  renderEntregas();
+  try{ __auditLog(`Missão Digital: tarefa "${nome}" cadastrada em ${aplicarTodas?'todas as turmas':filtroTurma}, ${bimestreAtual}ºBim`); }catch(_){}
+  showToast(aplicarTodas ? `Tarefa cadastrada em ${added} turma(s)${skipped?` (${skipped} já possuía cadastro)`:''}.` : 'Tarefa cadastrada.','success');
 }
 
-function entRemoverAtividade(atId){
-  if(!confirm("Remover esta atividade e todos os registros de entrega?")) return;
+async function entEditarAtividade(atId){
   const d=_entData();
+  const at=d.atividades.find(a=>a.id===atId); if(!at) return;
+  const novoNome=prompt('Nome da tarefa:',at.nome||'');
+  if(novoNome===null) return;
+  const nome=String(novoNome).trim(); if(!nome) return showToast('O nome não pode ficar vazio.','error');
+  const novoPrazo=prompt('Prazo (AAAA-MM-DD). Deixe vazio para sem prazo:',at.prazo||'');
+  if(novoPrazo===null) return;
+  const prazo=String(novoPrazo).trim();
+  if(prazo && !_entIsValidISODate(prazo)) return showToast('Informe uma data real no formato AAAA-MM-DD.','error');
+  const novaAssinatura=_entTaskSignature({nome,prazo});
+  const duplicada=d.atividades.some(a=>a.id!==atId && _entTaskSignature(a)===novaAssinatura);
+  if(duplicada) return showToast('Já existe uma tarefa com esse nome e prazo nesta turma.','warning');
+  const oldPrazo=at.prazo;
+  const key=_entKey();
+  let before=null; try{ before=JSON.parse(JSON.stringify(d)); }catch(_){ }
+  at.nome=nome; at.prazo=prazo;
+  // O formato legado não possui data/hora de conclusão. Se o prazo for alterado,
+  // não é possível provar se uma entrega ocorreu antes ou depois do NOVO prazo.
+  // Por segurança, preservamos a conclusão, mas limpamos apenas a marca histórica
+  // de "recuperada" desta tarefa para não exibir um atraso possivelmente falso.
+  if(oldPrazo !== prazo){
+    Object.keys(d.recuperadas||{}).forEach(alId=>{
+      if(d.recuperadas[alId]){
+        delete d.recuperadas[alId][atId];
+        if(!Object.keys(d.recuperadas[alId]).length) delete d.recuperadas[alId];
+      }
+    });
+  }
+  if(!(await __saveEntregas())){
+    if(before) window.__sgpEntregas[key]=before;
+    renderEntregas();
+    return showToast('A edição não pôde ser salva e foi desfeita.','error');
+  }
+  renderEntregas();
+}
+
+async function entRemoverAtividade(atId){
+  if(!confirm("Remover esta tarefa e todos os registros de realização dela nesta turma?")) return;
+  const key=_entKey(), d=_entData();
+  let before=null; try{ before=JSON.parse(JSON.stringify(d)); }catch(_){}
   d.atividades=d.atividades.filter(a=>a.id!==atId);
-  Object.keys(d.entregas).forEach(alId=>{ delete d.entregas[alId][atId]; });
-  __saveEntregas(); renderEntregas();
+  Object.keys(d.entregas).forEach(alId=>{ if(d.entregas[alId]) delete d.entregas[alId][atId]; });
+  Object.keys(d.recuperadas||{}).forEach(alId=>{ if(d.recuperadas[alId]) delete d.recuperadas[alId][atId]; });
+  if(!(await __saveEntregas())){
+    if(before) window.__sgpEntregas[key]=before;
+    renderEntregas();
+    return showToast('A exclusão não pôde ser salva e foi desfeita.','error');
+  }
+  renderEntregas();
 }
 
-function entToggle(alunoId, atId){
+async function entToggle(alunoId,atId){
   const d=_entData();
   if(!d.entregas[alunoId]) d.entregas[alunoId]={};
-  d.entregas[alunoId][atId]=!d.entregas[alunoId][atId];
-  __saveEntregas(); renderEntregas();
+  if(!d.recuperadas[alunoId]) d.recuperadas[alunoId]={};
+  const oldDone=!!d.entregas[alunoId][atId];
+  const oldRecovered=!!d.recuperadas[alunoId][atId];
+  const novo=!oldDone;
+  d.entregas[alunoId][atId]=novo;
+  const at=d.atividades.find(a=>a.id===atId);
+  if(novo && _entIsOverdue(at)) d.recuperadas[alunoId][atId]=true;
+  else delete d.recuperadas[alunoId][atId];
+  if(!(await __saveEntregas())){
+    d.entregas[alunoId][atId]=oldDone;
+    if(oldRecovered) d.recuperadas[alunoId][atId]=true; else delete d.recuperadas[alunoId][atId];
+    renderEntregas();
+    return showToast('A alteração não pôde ser salva e foi desfeita.','error');
+  }
+  renderEntregas();
+}
+
+function entSetFiltro(tipo){
+  __entFiltroAtual=['todos','pendentes','plantao'].includes(tipo)?tipo:'todos';
+  ['Todos','Pend','Plantao'].forEach(x=>{ const el=document.getElementById('entFil'+x); if(el) el.classList.remove('active'); });
+  const map={todos:'entFilTodos',pendentes:'entFilPend',plantao:'entFilPlantao'};
+  document.getElementById(map[__entFiltroAtual])?.classList.add('active');
+  renderEntregas();
+}
+
+function _entRenderMissionSummary(){
+  const m=_entMetricsFor(filtroTurma,bimestreAtual);
+  const el=document.getElementById('entMissionSummary'); if(!el) return;
+  const pct=m.pct.toFixed(0);
+  el.innerHTML=`<div class="ent-mission-banner">
+    <div class="ent-mission-top">
+      <div><div class="ent-mission-title"><i class="fas fa-bullseye"></i> Meta da turma: 100% das tarefas realizadas</div><div class="ent-mission-sub">O indicador considera todas as tarefas cadastradas no ${bimestreAtual}º bimestre para ${escHTML(filtroTurma)}.</div></div>
+      ${m.expected>0 && m.pending===0?'<span class="ent-mission-100"><i class="fas fa-trophy"></i> MISSÃO CUMPRIDA — 100%</span>':''}
+    </div>
+    <div class="ent-progress-track" aria-label="Progresso da turma"><div class="ent-progress-fill" style="width:${Math.max(0,Math.min(100,m.pct))}%"></div></div>
+    <div class="ent-progress-meta"><span>${m.done} de ${m.expected} realizações concluídas</span><span>${pct}% concluído</span></div>
+    <div class="ent-kpis">
+      <div class="ent-kpi good"><span class="n">${pct}%</span><span class="l">Conclusão da turma</span></div>
+      <div class="ent-kpi info"><span class="n">${m.studentsComplete}/${m.alunos}</span><span class="l">Alunos 100% em dia</span></div>
+      <div class="ent-kpi warn"><span class="n">${m.pending}</span><span class="l">Realizações pendentes</span></div>
+      <div class="ent-kpi danger"><span class="n">${m.overdue}</span><span class="l">Pendências vencidas</span></div>
+      <div class="ent-kpi recovered"><span class="n">${m.recovered}</span><span class="l">Recuperadas no plantão</span></div>
+    </div>
+  </div>`;
+}
+
+function _entRenderTurmasOverview(){
+  const el=document.getElementById('entTurmasOverview'); if(!el) return;
+  const ts=(turmas||[]).filter(t=>t && t!=='Todas');
+  if(!ts.length){el.innerHTML='';return;}
+  let html=`<div class="ent-classes-title">Visão geral das turmas — ${bimestreAtual}º bimestre</div><div class="ent-class-grid">`;
+  ts.forEach(t=>{
+    const m=_entMetricsFor(t,bimestreAtual);
+    const pct=m.expected?m.pct.toFixed(0):'—';
+    html+=`<div class="ent-class-card ${t===filtroTurma?'active':''}"><div class="row"><span>${escHTML(t)}</span><span>${pct}${pct==='—'?'':'%'}</span></div><div class="mini">${m.atividades} tarefa(s) • ${m.pending} pendência(s) • ${m.plantao} no plantão</div><div class="ent-class-bar"><span style="width:${m.expected?Math.max(0,Math.min(100,m.pct)):0}%"></span></div></div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function entCopiarPendentes(){
+  const d=_entData(), ativs=d.atividades||[];
+  const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  if(!ativs.length) return showToast('Nenhuma tarefa cadastrada.','warning');
+  const lines=[`MISSÃO DIGITAL — ${filtroTurma} — ${bimestreAtual}º BIMESTRE`,`Pendências em ${new Date().toLocaleDateString('pt-BR')}`,''];
+  let qtd=0;
+  lista.forEach(a=>{
+    const pend=[];
+    ativs.forEach(at=>{
+      const st=_entStudentState(d,a.id,at);
+      if(st==='pending'||st==='overdue') pend.push(`${at.nome}${at.prazo?` (prazo ${_entPrazoFmt(at.prazo)})`:''}${st==='overdue'?' [VENCIDA]':''}`);
+    });
+    if(pend.length){qtd++;lines.push(`${a.nome}: ${pend.join('; ')}`);}
+  });
+  if(!qtd) return showToast('A turma está 100% em dia.','success');
+  lines.push('',`Total de alunos com pendência: ${qtd}.`,'Orientação: realizar em casa ou regularizar no Plantão Digital.');
+  const txt=lines.join('\n');
+  const fallback=()=>{ const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');showToast('Lista de pendentes copiada.','success');}catch(_){showToast('Não foi possível copiar.','error');}ta.remove(); };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>showToast('Lista de pendentes copiada.','success')).catch(fallback); else fallback();
 }
 
 function renderEntregas(){
   const d=_entData();
   const ativs=d.atividades||[];
-  const lista=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  if(!ativs.length){ document.getElementById('entTableContainer').innerHTML='<p style="color:#64748b;text-align:center;">Nenhuma atividade cadastrada. Use o campo acima para adicionar.</p>'; return; }
+  const listaBase=alunos.filter(a=>a.turma===filtroTurma).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  _entRenderMissionSummary();
+  _entRenderTurmasOverview();
+  const container=document.getElementById('entTableContainer'); if(!container) return;
+  if(!ativs.length){ container.innerHTML='<div class="ent-empty"><i class="fas fa-list-check" style="font-size:1.5rem;opacity:.55;"></i><div style="font-weight:900;margin-top:8px;">Nenhuma tarefa cadastrada nesta turma.</div><div style="font-size:.76rem;margin-top:4px;">Cadastre a tarefa digital acima e defina um prazo para ativar o semáforo.</div></div>'; return; }
 
-  let html=`<table class="ativ-check-table"><thead><tr><th style="text-align:left;">Aluno</th>`;
-  ativs.forEach(at=>{ html+=`<th>${escHTML(at.nome)} <button class="ativ-del" onclick="entRemoverAtividade('${at.id}')" title="Remover">&times;</button></th>`; });
-  html+=`<th>%</th></tr></thead><tbody>`;
-  lista.forEach(a=>{
-    const ent=d.entregas[a.id]||{};
-    let done=0;
-    html+=`<tr><td>${escHTML(a.nome)}</td>`;
-    ativs.forEach(at=>{
-      const checked=!!ent[at.id];
-      if(checked) done++;
-      html+=`<td><input type="checkbox" class="ativ-chk" ${checked?'checked':''} onchange="entToggle('${a.id}','${at.id}')"></td>`;
-    });
-    const pct=ativs.length?(done/ativs.length*100):0;
-    const cls=pct>=75?'good':(pct>=50?'warn':'danger');
-    html+=`<td><span class="ativ-pct freq-pct ${cls}">${pct.toFixed(0)}%</span></td></tr>`;
+  const summaries=new Map();
+  listaBase.forEach(a=>summaries.set(String(a.id),_entStudentSummary(d,a.id,ativs)));
+  const lista=listaBase.filter(a=>{
+    const s=summaries.get(String(a.id));
+    if(__entFiltroAtual==='pendentes') return s.pending>0;
+    if(__entFiltroAtual==='plantao') return s.plantao;
+    return true;
   });
-  html+=`</tbody></table>`;
-  document.getElementById('entTableContainer').innerHTML=html;
+
+  let html=`<div class="ent-table-wrap"><table class="ativ-check-table"><thead><tr><th>Aluno</th>`;
+  ativs.forEach(at=>{
+    let done=0;
+    listaBase.forEach(a=>{ const st=_entStudentState(d,a.id,at); if(st==='done'||st==='recovered') done++; });
+    const pct=listaBase.length?Math.round(done/listaBase.length*100):0;
+    html+=`<th><div class="ent-at-head"><div class="ent-at-title">${escHTML(at.nome)}</div><div class="ent-at-meta">${at.prazo?`Prazo: ${_entPrazoFmt(at.prazo)}`:'Sem prazo'} • ${done}/${listaBase.length} (${pct}%)</div><div class="ent-at-actions"><button class="ativ-edit" onclick="entEditarAtividade('${at.id}')" title="Editar nome/prazo"><i class="fas fa-pen"></i></button><button class="ativ-del" onclick="entRemoverAtividade('${at.id}')" title="Remover tarefa"><i class="fas fa-trash"></i></button></div></div></th>`;
+  });
+  html+=`<th>Progresso</th><th>Situação</th></tr></thead><tbody>`;
+
+  if(!lista.length){
+    html+=`<tr><td colspan="${ativs.length+3}" style="text-align:center;padding:24px;color:var(--text-muted);">Nenhum aluno corresponde ao filtro selecionado.</td></tr>`;
+  }else{
+    lista.forEach(a=>{
+      const s=summaries.get(String(a.id));
+      const badgeCls=s.situacao==='Em dia'?'good':(s.situacao==='Atenção'?'warn':'danger');
+      html+=`<tr><td><div style="font-weight:850;color:var(--text-main);">${escHTML(a.nome)}</div><div class="ent-student-meta"><span style="font-size:.64rem;color:var(--text-muted);">${s.done}/${ativs.length} tarefas</span>${s.recovered?`<span class="ent-student-badge" style="background:rgba(37,99,235,.10);color:#1d4ed8;border-color:rgba(37,99,235,.18);">${s.recovered} recuperada(s)</span>`:''}</div></td>`;
+      ativs.forEach(at=>{
+        const st=_entStudentState(d,a.id,at);
+        const checked=st==='done'||st==='recovered';
+        const title=st==='done'?'Concluída':(st==='recovered'?'Recuperada após o prazo':(st==='overdue'?'Pendente — prazo vencido':'Pendente — dentro do prazo'));
+        html+=`<td class="ent-cell state-${st}" title="${escHTML(title)}"><div class="ent-cell-status"><input type="checkbox" class="ativ-chk" ${checked?'checked':''} onchange="entToggle('${a.id}','${at.id}')"><span class="ent-dot ${st}"></span></div></td>`;
+      });
+      const pctCls=s.pct>=75?'good':(s.pct>=50?'warn':'danger');
+      html+=`<td><span class="ativ-pct freq-pct ${pctCls}">${s.pct.toFixed(0)}%</span></td><td><span class="ent-student-badge ${badgeCls}">${s.situacao}</span>${s.overdue?`<div style="font-size:.61rem;color:#b91c1c;font-weight:800;margin-top:4px;">${s.overdue} vencida(s)</div>`:''}</td></tr>`;
+    });
+  }
+  html+=`</tbody></table></div>`;
+  container.innerHTML=html;
 }
 
 // ================================================================
@@ -29312,7 +30373,7 @@ salvarDadosLocal=function(){
     __undoPushState('alteração');
     __undoSaveDebounce=now;
   }
-  __origSave2();
+  return __origSave2();
 };
 
 // Keyboard shortcuts Ctrl+Z / Ctrl+Y
@@ -37089,7 +38150,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.8.8',
+        version: versionLabel || 'v20.8.16',
         total: arr.length,
         okCount,
         failCount,
@@ -37633,7 +38694,7 @@ async function __autoTestRunVersionCompatibility(add){
                 autobackups: [],
                 lastBackupAt: 0
             };
-            __applySnapshot(JSON.stringify(legacySnapshot), 'AutoTeste');
+            await __applySnapshot(JSON.stringify(legacySnapshot), 'AutoTeste');
             await __autoTestSleep(120);
             const aluno = Array.isArray(alunos) ? alunos.find(a=>String(a.id) === 'aluno_' + nonce) : null;
             const plannerOk = Array.isArray(plannerTasks) && plannerTasks.some(t=>String(t.title) === 'Planner Compat ' + nonce && t.status === 'done');
@@ -37651,7 +38712,7 @@ async function __autoTestRunVersionCompatibility(add){
         }catch(e){
             add('Compatibilidade: snapshot legado recebe migrações mínimas', false, 'Erro: ' + (e && e.message ? e.message : e), 'critical', 'compatibilidade');
         } finally {
-            try{ if(beforeSnapshot && typeof __applySnapshot === 'function') __applySnapshot(beforeSnapshot, 'AutoTeste'); }catch(_){ }
+            try{ if(beforeSnapshot && typeof __applySnapshot === 'function') await __applySnapshot(beforeSnapshot, 'AutoTeste'); }catch(_){ }
             await __autoTestSleep(100);
         }
 
@@ -38380,7 +39441,7 @@ try{
                         const nonce = 'at_'+Date.now();
                         d.config.__autotest_nonce = nonce;
 
-                        __applySnapshot(JSON.stringify(d), 'AutoTeste');
+                        await __applySnapshot(JSON.stringify(d), 'AutoTeste');
                         await __autoTestSleep(80);
 
                         rtOk = !!(typeof config==='object' && config && config.__autotest_nonce===nonce);
@@ -38388,7 +39449,7 @@ try{
                     }catch(e){
                         rtOk=false; rtDet='Erro: '+(e && e.message ? e.message : e);
                     }finally{
-                        try{ __applySnapshot(before, 'AutoTeste'); }catch(_){}
+                        try{ await __applySnapshot(before, 'AutoTeste'); }catch(_){}
                         await __autoTestSleep(60);
 
                         // restaura funções originais
@@ -38530,7 +39591,7 @@ try{
                             add('Backup real: restauração recompõe dados', false, 'Erro: ' + (e && e.message ? e.message : e));
                         }finally{
                             try{
-                                if(beforeSnapshot && typeof __applySnapshot === 'function') __applySnapshot(beforeSnapshot, 'AutoTeste');
+                                if(beforeSnapshot && typeof __applySnapshot === 'function') await __applySnapshot(beforeSnapshot, 'AutoTeste');
                             }catch(_){}
                             await __autoTestSleep(90);
                             try{ carregarDados(); }catch(_){}
@@ -38595,7 +39656,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.8'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.16'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }

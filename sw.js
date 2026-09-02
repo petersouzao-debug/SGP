@@ -1,5 +1,15 @@
-// SGP - Service Worker v20.8.8
+// SGP - Service Worker v20.8.16
+//  - FIX v20.8.14: pacote de integridade da Missão Digital (sem alteração de estratégia de cache)
+//  - FIX v20.8.15: consistência de backup legado, assinatura única e pré-validação (cache inalterado)
+//  - UI v20.8.16: tela cheia interna da Missão Digital (cache inalterado)
 // Melhorias desta versão:
+//  - FIX v20.8.14: preserva Missão Digital ao restaurar backups legados sem esse módulo
+//  - FIX v20.8.14: validação semântica profunda + fallback seguro da cópia redundante
+//  - FIX v20.8.12: transações confirmadas entre núcleo e Missão Digital + rollback seguro
+//  - FIX v20.8.12: restauração interna confirmada, validação semântica de backup e datas reais
+//  - FIX v20.8.11: reforço de persistência/rollback e migração segura da Missão Digital
+//  - FIX v20.8.11: limpeza de cache limitada aos caches do SGP no mesmo domínio
+//  - ADD v20.8.9: Missão Digital com controle por turma, prazos, semáforo, plantão e resumo de conclusão
 //  - ADD v20.8.7: impressão protegida do Mapa de Sala (somente nomes e posições)
 //  - FIX v20.8.8: lousa reposicionada atrás da mesa do professor na impressão para sala
 //  - ADD v20.8.6: leitor de texto opcional no Verdadeiro/Falso (pergunta, comando e resposta correta)
@@ -67,7 +77,7 @@
 //  - FIX v20.8.1: contador de tempo das Atividades ampliado e com mais destaque visual
 //  - FIX v20.8.2: cronômetro das Atividades ampliado novamente e com efeito sonoro nos últimos segundos
 //  - FIX v20.8.3: evita conflito do efeito pulse do cronômetro com outras animações do sistema
-const SW_VERSION = '20.8.8';
+const SW_VERSION = '20.8.16';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado
@@ -108,7 +118,10 @@ self.addEventListener('activate', (event) => {
       const allCacheNames = await caches.keys();
       await Promise.all(
         allCacheNames
-          .filter(name => name !== CACHE_NAME)
+          // Segurança: limpa somente caches do próprio SGP. CacheStorage é compartilhado
+          // por origem; apagar caches sem o prefixo do app poderia afetar outro sistema
+          // hospedado no mesmo domínio.
+          .filter(name => name !== CACHE_NAME && /^sgp(?:[-_]|$)/i.test(String(name || '')))
           .map(name => caches.delete(name))
       );
     } catch (err) {
@@ -154,7 +167,7 @@ self.addEventListener('message', (event) => {
     }
     if (type === 'CACHE_PURGE_ALL') {
       caches.keys().then((names) => {
-        const sgpCaches = names.filter(name => String(name || '').toLowerCase().indexOf('sgp') !== -1);
+        const sgpCaches = names.filter(name => /^sgp(?:[-_]|$)/i.test(String(name || '')));
         return Promise.all(sgpCaches.map(name => caches.delete(name))).then(() => sgpCaches.length);
       }).then((count) => {
         reply({ type: 'CACHE_PURGED_ALL', version: SW_VERSION, cacheName: CACHE_NAME, deleted: count });
