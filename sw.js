@@ -1,7 +1,7 @@
-// SGP - Service Worker v20.8.18
+// SGP - Service Worker v20.8.19
 //  - FIX v20.8.14: pacote de integridade da Missão Digital (sem alteração de estratégia de cache)
 //  - FIX v20.8.15: consistência de backup legado, assinatura única e pré-validação (cache inalterado)
-//  - FIX v20.8.18: preserva a posição de rolagem ao marcar alunos na Missão Digital (cache inalterado)
+//  - FIX v20.8.19: permite alternar a turma pela Visão Geral dentro da Missão Digital (cache inalterado)
 // Melhorias desta versão:
 //  - FIX v20.8.14: preserva Missão Digital ao restaurar backups legados sem esse módulo
 //  - FIX v20.8.14: validação semântica profunda + fallback seguro da cópia redundante
@@ -77,7 +77,7 @@
 //  - FIX v20.8.1: contador de tempo das Atividades ampliado e com mais destaque visual
 //  - FIX v20.8.2: cronômetro das Atividades ampliado novamente e com efeito sonoro nos últimos segundos
 //  - FIX v20.8.3: evita conflito do efeito pulse do cronômetro com outras animações do sistema
-const SW_VERSION = '20.8.18';
+const SW_VERSION = '20.8.19';
 const CACHE_NAME = `sgp-v20-${SW_VERSION}`;
 
 // Limites de cache para evitar crescimento ilimitado

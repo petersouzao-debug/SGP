@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SGP">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SGP - Gestão Final (V20.8.18)</title>
+    <title>SGP - Gestão Final (V20.8.19)</title>
 
     <!-- PWA: Inline Manifest (ativado automaticamente quando servido via HTTP/HTTPS) -->
     <script>
@@ -42,8 +42,8 @@
       document.head.appendChild(appleIcon);
 
       // Register Service Worker (requires sw.js file alongside index.html)
-      window.__SGP_SW_VERSION = '20.8.18';
-      window.__SGP_APP_VERSION = '20.8.18';
+      window.__SGP_SW_VERSION = '20.8.19';
+      window.__SGP_APP_VERSION = '20.8.19';
       window.__SGP_SW_RELOADING = false;
       if('serviceWorker' in navigator){
         const swUrl = './sw.js?v=' + encodeURIComponent(window.__SGP_SW_VERSION);
@@ -4354,9 +4354,10 @@ body.dark-mode .ent-mission-100{background:rgba(22,163,74,.15);color:#86efac;bor
 #modalEntregas .ent-class-grid{gap:10px;}
 #modalEntregas .ent-class-card{
   border-radius:14px;padding:11px 12px;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
-  box-shadow:0 4px 14px rgba(15,23,42,.035);
+  box-shadow:0 4px 14px rgba(15,23,42,.035);cursor:pointer;outline:none;
 }
 #modalEntregas .ent-class-card:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(15,23,42,.07);}
+#modalEntregas .ent-class-card:focus-visible{box-shadow:0 0 0 3px rgba(14,165,233,.18),0 9px 20px rgba(15,23,42,.07);border-color:rgba(14,165,233,.62);}
 #modalEntregas .ent-class-card.active{border-color:rgba(14,165,233,.55);box-shadow:0 0 0 3px rgba(14,165,233,.09),0 8px 20px rgba(15,23,42,.055);}
 #modalEntregas .ent-class-bar{height:5px;margin-top:9px;}
 #modalEntregas .ent-toolbar{
@@ -12222,7 +12223,7 @@ function __pad2(n){ return String(n).padStart(2,'0'); }
             try{ if(typeof plannerNormalizeTasks === 'function') plannerTasks = plannerNormalizeTasks(plannerTasks); }catch(e){}
             const meta = {
                 app: "SGP Pro",
-                version: "v20.8.18",
+                version: "v20.8.19",
                 exportedAt: new Date().toISOString()
             };
             const core = { turmas, alunos, aulas, planosSemana, config, layouts };
@@ -25018,7 +25019,7 @@ async function __sgpForceSystemUpdate(){
     setTimeout(()=>{
       try{
         const url = new URL(location.href);
-        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.18') + '-' + Date.now());
+        url.searchParams.set('sgp_update', String(window.__SGP_SW_VERSION || '20.8.19') + '-' + Date.now());
         location.replace(url.toString());
       }catch(_){ location.reload(); }
     }, 800);
@@ -30127,18 +30128,56 @@ function _entRenderMissionSummary(){
   </div>`;
 }
 
+function entSelecionarTurma(turma){
+  const alvo=(turmas||[]).find(t=>String(t)===String(turma||''));
+  if(!alvo || alvo==='Todas') return;
+  if(alvo!==filtroTurma){
+    try{
+      if(typeof selTurma==='function') selTurma(alvo);
+      else filtroTurma=alvo;
+    }catch(_){ filtroTurma=alvo; }
+  }
+  const label=document.getElementById('entTurmaLabel');
+  if(label) label.textContent=`${filtroTurma} — ${bimestreAtual}º Bim`;
+  renderEntregas();
+}
+
+function _entBindTurmasOverview(){
+  const el=document.getElementById('entTurmasOverview');
+  if(!el || el.dataset.entTurmasBound==='1') return;
+  el.dataset.entTurmasBound='1';
+  const abrir=(target)=>{
+    const card=target?.closest?.('.ent-class-card[data-ent-turma]');
+    if(!card || !el.contains(card)) return;
+    let turma='';
+    try{ turma=decodeURIComponent(card.getAttribute('data-ent-turma')||''); }catch(_){ turma=card.getAttribute('data-ent-turma')||''; }
+    entSelecionarTurma(turma);
+  };
+  el.addEventListener('click',e=>abrir(e.target));
+  el.addEventListener('keydown',e=>{
+    if(e.key!=='Enter' && e.key!==' ') return;
+    const card=e.target?.closest?.('.ent-class-card[data-ent-turma]');
+    if(!card || !el.contains(card)) return;
+    e.preventDefault();
+    abrir(card);
+  });
+}
+
 function _entRenderTurmasOverview(){
   const el=document.getElementById('entTurmasOverview'); if(!el) return;
   const ts=(turmas||[]).filter(t=>t && t!=='Todas');
   if(!ts.length){el.innerHTML='';return;}
-  let html=`<div class="ent-classes-title">Visão geral das turmas — ${bimestreAtual}º bimestre</div><div class="ent-class-grid">`;
+  let html=`<div class="ent-classes-title">Visão geral das turmas — ${bimestreAtual}º bimestre <span style="font-weight:650;opacity:.72;letter-spacing:0;">• clique em uma turma para abrir</span></div><div class="ent-class-grid">`;
   ts.forEach(t=>{
     const m=_entMetricsFor(t,bimestreAtual);
     const pct=m.expected?m.pct.toFixed(0):'—';
-    html+=`<div class="ent-class-card ${t===filtroTurma?'active':''}"><div class="row"><span>${escHTML(t)}</span><span>${pct}${pct==='—'?'':'%'}</span></div><div class="mini">${m.atividades} tarefa(s) • ${m.pending} pendência(s) • ${m.plantao} no plantão</div><div class="ent-class-bar"><span style="width:${m.expected?Math.max(0,Math.min(100,m.pct)):0}%"></span></div></div>`;
+    const encoded=escHTML(encodeURIComponent(String(t)));
+    const active=t===filtroTurma;
+    html+=`<div class="ent-class-card ${active?'active':''}" role="button" tabindex="0" data-ent-turma="${encoded}" aria-label="Visualizar ${escHTML(t)} na Missão Digital" aria-current="${active?'true':'false'}"><div class="row"><span>${escHTML(t)}</span><span>${pct}${pct==='—'?'':'%'}</span></div><div class="mini">${m.atividades} tarefa(s) • ${m.pending} pendência(s) • ${m.plantao} no plantão</div><div class="ent-class-bar"><span style="width:${m.expected?Math.max(0,Math.min(100,m.pct)):0}%"></span></div></div>`;
   });
   html+='</div>';
   el.innerHTML=html;
+  _entBindTurmasOverview();
 }
 
 function entCopiarPendentes(){
@@ -38362,7 +38401,7 @@ function __autoTestHistoryBuildEntry(results, grouped, activeModules, versionLab
     const entry = {
         id: 'at_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         ts: new Date().toISOString(),
-        version: versionLabel || 'v20.8.18',
+        version: versionLabel || 'v20.8.19',
         total: arr.length,
         okCount,
         failCount,
@@ -39868,7 +39907,7 @@ try{
         let autoTestHistory = [];
         let autoTestHistoryCurrent = null;
         try{
-            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.18'));
+            const stored = __autoTestHistoryStoreEntry(__autoTestHistoryBuildEntry(results, grouped, activeModules, 'v20.8.19'));
             autoTestHistory = stored.history || [];
             autoTestHistoryCurrent = stored.current || null;
         }catch(_){ }
